@@ -1,0 +1,88 @@
+# Identifying subjects
+
+The TBI information of the ABCD dataset is split across a few files:
+
+* abcd_otbi01.txt: the raw, modified Ohio State TBI screen given at baseline
+* abcd_tbi01.txt: summary scores of abcd_otbi01.txt
+* abcd_lpohstbi01.txt: all longitudinal follow-ups of the baseline screen
+* abcd_lsstbi01.txt: summary scores of abcd_lpohstbi01.txt
+
+All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the abcd_otbi01.txt file.
+
+
+## Assigning meaningful mTBI variables
+
+The provided variable names are non-descriptive.
+A renamed version of the data is used for all subsequent analyses.
+The code below was used for renaming the abcd_otbi01.txt file.
+
+```{r child="wheeler-lab/abcd/prashanth_proj/rename-data/rename_abcd_otbi01.Rmd"}
+```
+
+Note that all variables with the same prefix (or number originally) are referring to the same injury or set of injuries.
+
+
+## Identifying subjects at a chronic stage post-mTBI
+
+To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
+
+* identifying which head injuries were mTBIs
+* identifying the time since the most recent mTBI
+
+The structure of the Ohio State TBI screen as used for ABCD data collection was not completely compatible with the most commonly used definition of mTBI @blennow_traumatic_2016:
+
+At least one of the following:
+
+* Any period of loss of consciousness
+* Any loss of memory
+* Any alteration in mental state
+* Focal neurological deficits
+
+but where the severity does not exceed:
+
+* LOC over 30 minutes
+* A Glasgow Coma Scale score below 13
+* Post-traumatic amnesia (PTA) greater than 24 hours
+
+A few aspects of the data collection process in the ABCD study precluded the usage of this definition:
+
+* No information was collected regarding the GCS
+* Feeling dazed and PTA were combined into a single variable, making it unclear which combination of symptoms was present
+* No information was collected regarding the duration of feeling dazed or experiencing PTA
+
+Consequently, I used the following definition to identify mTBIs:
+
+Any child who experienced at least one injury where that injury resulted in either:
+
+1. Less than 30 minutes of LOC (including 0 minutes) **AND** any duration of memory loss / feeling dazed
+2. LOC that is greater than 0 minutes but less than 30 minutes.
+
+The fixed nature of the questionnaire also meant that some information about multiple mTBIs sustained in the same way or about a very large number of mTBIs throughout a child's life could have been lost (see the previous section on identifying children with a history of mTBI).
+For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
+
+The code below generates a new file which adds the following columns to the TBI screen data:
+
+1. if a subject has experienced an mTBI prior to baseline
+2. which of the reported head injuries were mTBIs
+3. the time since a subject's most recent mTBI
+
+```{r child="wheeler-lab/abcd/prashanth_proj/process-data/generate_abcd_otbi01_detailed.Rmd"}
+```
+
+A few types of injuries were handled differently from the rest in the above code:
+
+* for `other_loc`, the questionnaire asked for a total number of injuries with LOC as well as a total number of injuries with LOC above 30 minutes.
+    * If their difference was above 0, they were labeled as having had an mTBI.
+* for `other_multi` and `other_other_multi`, insufficient information was provided to determine the severity of the associated injuries.
+
+For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
+The subject list was then defined in the following code:
+
+```{r child="wheeler-lab/abcd/prashanth_proj/get-subjects/get_baseline_mtbi_subjects.Rmd"}
+```
+
+## Some participant demographics
+
+## Handling twins
+
+## Identifying matched and non-matched control groups
