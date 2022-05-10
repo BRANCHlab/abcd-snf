@@ -294,81 +294,979 @@ div.csl-indent {
 <li>presence of feeling dazed or having memory loss following the injury</li>
 </ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/processed/prashanth_proj/abcd_otbi01_detailed.csv"</span>, <span class="at">guess_max =</span> <span class="cn">Inf</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/processed/prashanth_proj/baseline_chronic_mtbi_subjects.csv"</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_otbi01_detailed, subjects)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Identify mechanism of injury</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>mpis <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">matches</span>(<span class="st">"subjectkey"</span>) <span class="sc">|</span> <span class="fu">ends_with</span>(<span class="st">"mtbi_mpi"</span>))</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>latest_mtbi_mechanism <span class="ot">&lt;-</span> <span class="fu">colnames</span>(mpis)[<span class="fu">apply</span>(mpis,<span class="dv">1</span>,which.max)] <span class="sc">%&gt;%</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>{<span class="fu">gsub</span>(<span class="st">"_mtbi_mpi"</span>, <span class="st">""</span>, .)}</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>acute_symptoms<span class="sc">$</span>latest_mtbi_mechanism <span class="ot">&lt;-</span> latest_mtbi_mechanism</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Identify age of injury</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_age =</span> <span class="fu">case_when</span>(</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_age,</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_age,</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_age,</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_age,</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_age,</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_min_age,</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_effect_end_age))</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Identify presence &amp; duration of LOC</span></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-1 first create a compatible LOC variable for the 'other_mtbi' category</span></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">other_loc_loc =</span> <span class="fu">case_when</span>(</span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">30</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">30</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">2</span>,</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">3</span>,</span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_loc =</span> <span class="fu">case_when</span>(</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_loc,</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_loc,</span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_loc,</span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_loc,</span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_loc,</span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_loc,</span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_loc,</span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Identify presence of feeling dazed / memory loss following injury</span></span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_mem_daze =</span> <span class="fu">case_when</span>(</span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_mem_daze,</span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_mem_daze,</span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_mem_daze,</span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_mem_daze,</span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_mem_daze,</span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> <span class="cn">NA_real_</span>,</span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_mem_daze,</span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Trim acute_symptoms to only the required variables</span></span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(subjectkey,</span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>           src_subject_id,</span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mechanism,</span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_age,</span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_loc,</span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mem_daze)</span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a><span class="co"># write the output somewhere</span></span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(acute_symptoms,</span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>          <span class="st">"lab-data/abcd/processed/prashanth_proj/baseline-snf-inputs/baseline_chronic_acute_symptoms.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>✔ ggplot2 3.3.6     ✔ purrr   0.3.4
+✔ tibble  3.1.7     ✔ dplyr   1.0.9
+✔ tidyr   1.2.0     ✔ stringr 1.4.0
+✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'magrittr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:purrr':
+
+    set_names</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:tidyr':
+
+    extract</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/abcd_otbi01_detailed.csv"</span>, <span class="at">guess_max =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 11488 Columns: 67</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (6): subjectkey, src_subject_id, interview_date, sex, eventname, collec...
+dbl (50): collection_id, abcd_otbi01_id, dataset_id, interview_age, tbi_sele...
+lgl (11): other_other_multi_effect_type, other_other_multi_effect_start_age,...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>subject_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/"</span>,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"baseline-chronic-mtbi/subjects.csv"</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(subject_file, <span class="at">delim=</span><span class="st">","</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 424 Columns: 1
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (1): subjectkey
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_otbi01_detailed, subjects)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Identify mechanism of injury</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>mpis <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">matches</span>(<span class="st">"subjectkey"</span>) <span class="sc">|</span> <span class="fu">ends_with</span>(<span class="st">"mtbi_mpi"</span>))</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>latest_mtbi_mechanism <span class="ot">&lt;-</span> <span class="fu">colnames</span>(mpis)[<span class="fu">apply</span>(mpis,<span class="dv">1</span>,which.max)] <span class="sc">%&gt;%</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>{<span class="fu">gsub</span>(<span class="st">"_mtbi_mpi"</span>, <span class="st">""</span>, .)}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion
+
+Warning in FUN(newX[, i], ...): NAs introduced by coercion</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>acute_symptoms<span class="sc">$</span>latest_mtbi_mechanism <span class="ot">&lt;-</span> latest_mtbi_mechanism</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Identify age of injury</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_age =</span> <span class="fu">case_when</span>(</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_age,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_age,</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_age,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_age,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_age,</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_min_age,</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_effect_end_age))</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Identify presence &amp; duration of LOC</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-1 first create a compatible LOC variable for the 'other_mtbi' category</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">other_loc_loc =</span> <span class="fu">case_when</span>(</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">30</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">30</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">2</span>,</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">3</span>,</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_loc =</span> <span class="fu">case_when</span>(</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_loc,</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_loc,</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_loc,</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_loc,</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_loc,</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_loc,</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_loc,</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Identify presence of feeling dazed / memory loss following injury</span></span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_mem_daze =</span> <span class="fu">case_when</span>(</span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_mem_daze,</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_mem_daze,</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_mem_daze,</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_mem_daze,</span>
+<span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_mem_daze,</span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> <span class="cn">NA_real_</span>,</span>
+<span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_mem_daze,</span>
+<span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-49"><a href="#cb16-49" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Trim acute_symptoms to only the required variables</span></span>
+<span id="cb16-50"><a href="#cb16-50" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb16-51"><a href="#cb16-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(subjectkey,</span>
+<span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mechanism,</span>
+<span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_age,</span>
+<span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_loc,</span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mem_daze)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(acute_symptoms,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>          <span class="st">"lab-data/abcd/processed/prashanth-proj/baseline-chronic-mtbi/acute_symptoms.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="brain-structure-and-function" class="level2" data-number="7.2">
@@ -481,39 +1379,52 @@ div.csl-indent {
 </table>
 <p>I look at the parcellation used by Desikan et al., which covers dmtifp_331 to 472</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># To-do: find an awk import solution to make this faster https://stackoverflow.com/a/23198223/16626788</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Import data</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>abcd_dmdtifp101 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/4.0/evaluated-data/abcd_dmdtifp101.txt"</span>,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">col_select =</span> <span class="fu">c</span>(<span class="st">"subjectkey"</span>,</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>                                             <span class="st">"src_subject_id"</span>,</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                                             <span class="st">"eventname"</span>,</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>                                             <span class="st">"dmdtifp1_331"</span><span class="sc">:</span><span class="st">"dmdtifp1_472"</span>))[<span class="sc">-</span><span class="dv">1</span>, ]</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Import subject list</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/processed/prashanth_proj/baseline_chronic_mtbi_subjects.csv"</span>)</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data to only baseline timepoint</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>abcd_dmdtifp101_baseline <span class="ot">&lt;-</span> abcd_dmdtifp101 <span class="sc">%&gt;%</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data to only chronic baseline mTBI subjects</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>brain_str <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_dmdtifp101_baseline, subjects)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify children missing dMRI data:</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>mismatches <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="sc">!</span>(subjects<span class="sc">$</span>subjectkey <span class="sc">%in%</span> dmri<span class="sc">$</span>subjectkey))</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>subjects<span class="sc">$</span>subjectkey[mismatches]</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Write data</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(brain_str,</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>          <span class="st">"lab-data/abcd/processed/prashanth_proj/baseline-snf-inputs/baseline_chronic_brain_str.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co"># To-do: find an awk import solution to make this faster</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="co"># https://stackoverflow.com/a/23198223/16626788</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Import data</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>input_file <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/4.0/evaluated-data/abcd_dmdtifp101.txt"</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>abcd_dmdtifp101 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>                              <span class="at">col_select =</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">c</span>(<span class="st">"subjectkey"</span>,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>                                    <span class="st">"eventname"</span>,</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>                                    <span class="st">"dmdtifp1_331"</span><span class="sc">:</span><span class="st">"dmdtifp1_472"</span>))[<span class="sc">-</span><span class="dv">1</span>, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 19588 Columns: 144
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (144): subjectkey, eventname, dmdtifp1_331, dmdtifp1_332, dmdtifp1_333, ...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import subject list</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>subject_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/"</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"baseline-chronic-mtbi/subjects.csv"</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(subject_file, <span class="at">delim=</span><span class="st">","</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 424 Columns: 1
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (1): subjectkey
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data to only baseline timepoint</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>abcd_dmdtifp101_baseline <span class="ot">&lt;-</span> abcd_dmdtifp101 <span class="sc">%&gt;%</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data to only chronic baseline mTBI subjects</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>brain_str <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_dmdtifp101_baseline, subjects)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>output_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/"</span>,</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"baseline-chronic-mtbi/brain_str.csv"</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(brain_str, output_file)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
