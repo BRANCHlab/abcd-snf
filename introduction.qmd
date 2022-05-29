@@ -1,0 +1,151 @@
+# Introduction
+
+## Incorporating pilot work:
+- Keep the approach of bulk data grabbing scripts as done for the pilot
+- Include a new section on data preprocessing for SNF (04-preprocessing for SNF)
+- convert SNF script into a pilot script that explores 2 and 3 cluster options. this will become 05-pilot-snf and make room for 06-snf-approach-1 (inputs are inputs, outputs are not included - similar to what was done for the pilot)
+- remove the old branch that was specifically for 3 cluster options
+- new snf scripts can be used to explore the alternative styles of subtyping (e.g., including outputs in with the subtyping)
+- package development can be the next major stage: a refactoring of the code present earlier in the process (abcdwheelR)
+- systematic review on the horizon!
+
+The introduction should include background information, rationale, current status of literature, hypotheses (?) and aims/objectives.
+
+The logical flow of my research project:
+
+1. Paediatric mTBI can lead to serious impairments
+2. Heterogeneity is a barrier to mTBI care
+3. Previous attempts at characterizing this heterogeneity were limited
+4. We have lots of factors and a new way to subtype over all of them!
+* New data sources in depth
+* SNF in depth
+* Previous subtyping attempts in depth
+* We are poised to address the following gaps in knowledge and objectives:
+  - are there long-term subtypes of mTBI?
+  - how do they differ from the regular population
+  - how do the subtypes change with time?
+  * how effective are the clusters for prediction (predicting WHO gets mTBI, predicting what outcomes of mTBI you will have - ANOVA across individual measures OR clustered outcomes)
+  * can we validate this in other datasets?
+  * what are these subtypes? classic characterization / identification methods
+
+Concern:
+Our children did not all experience their mTBIs at the same time point.
+However, they are approximately equal in age.
+It is not practical to for a dataset to have a tight control on both time since injury and age, particularly outside of the context of school-level athletics.
+Our study assumes & tests the notion that there is heterogeneity at a persistent scale a
+
+
+Mild traumatic brain injuries (mTBI) are highly prevalent in children, can result in serious and long-lasting impairments, and currently have no effective treatments. The heterogeneity of patient and injury factors is considered to be a major barrier to improving the clinical management of mTBIs. The first part of my proposed PhD work will be to apply similarity network fusion
+
+## Mild traumatic brain injury
+
+Each **bookdown** chapter is an .Rmd file, and each .Rmd file can contain one (and only one) chapter. A chapter *must* start with a first-level heading: `# A good chapter`, and can contain one (and only one) first-level heading.
+
+Use 2nd-level and higher headings within chapters like: `## A short section` or `### An even shorter section`.
+
+The `index.Rmd` file is required, and is also your first book chapter. It will be the homepage when you render the book.
+
+You can use anything that Pandoc's Markdown supports; for example, a math equation $a^2 + b^2 = c^2$.
+
+It is also handy to account for good references, like what was done in Wang et al., 2014 @wang_similarity_2014.
+
+
+
+## The Adolescent Brain Cognitive Development (ABCD) study
+
+The Adolescent Brain Cognitive Development (ABCD) study is a long term study of pediatric development tracking patients from 21 research sites across the United States.
+
+### Identifying mTBI patients in the ABCD study
+
+The ABCD study
+
+## Cluster analysis
+
+
+### Clustering techniques
+
+### Cluster analysis evaluation
+
+#### Cluster tendency
+
+Will not examine the Hopkins statistic for cluster tendency - "The relatively high value for H in this single-cluster case is due to a comparison of the structure of this data set so uniformly distributed random numbers, Le., data intended to be completely unstructured. With unstructured data as a comparison, virtually any structure in the test data would lead to rejection of the null hypothesis whether the data are clustered or not" @lawson1990. However even such a variation of the Hopkins statistic would not be so interesting, and would likely be expected - demographic data is random noise.
+
+Whether or not the clusters are randomly distributed. This is challenging in the context of biomedical data - we do not expect the clusters to be randomly distributed by default (the demographic composition of any given country is far from random). In the context of mTBI, there are many facets of heterogeneity that would be interesting to examine:
+
+-   Heterogeneity of children with mTBI vs. those without
+
+    -   **Identifying the risk-of-sustaining-mtbi groups**: of all the children without a history of mTBI at baseline, is there a difference between the clustering of those that will develop an mTBI later on in the study and those who will not?
+
+    -   **Identifying the types of mTBI patients**: how does the heterogeneity of those who have mTBIs differ from the heterogeneity of those who don't have an mTBI? (Contrasted with the previous bullet point, this will help us learn more about the clusters that are formed BECAUSE of the mTBI and not because of being at a higher risk of mTBI)
+
+        -   **Identifying the types of mTBI outcomes:**
+
+            -   purely examining the clusters of patients using PPCS as the only input variable
+
+            -   can contrast mTBI PPCS vs. non-mTBI PPCS (though in that case, it's not quite a PPCS)
+
+## Similarity network fusion
+
+Advances in technology have facilitated the collection of massive and diverse datasets.
+ To harness the full potential of these datasets for pattern detection, prediction, and decision-making, techniques to effectively integrate diverse types of data are necessary.
+
+Similarity network fusion (SNF), developed by Wang et al.
+ in 2014 @wang_similarity_2014, is an example of such a technique which works by first constructing similarity pairwise similarity matrices of all observations for each data type and then merging those matrices into a single network in a way that captures the full spectrum of the underlying data.
+
+
+### Advantages of SNF over other data-integration techniques
+
+The most basic form of data-integration is to simply normalize and concatenate all available data types prior to analysis.
+This approach is known to reduce the signal-to-noise ratio of each individual data type @wang_similarity_2014, which is a serious concern in the context of biological data that is already very noisy to begin with.
+The authors of SNF also note that attempting to enhance signal by only including a pre-selected subset of data measures (features) can result in biased analyses.
+
+
+Analysis of each data type prior to combination can be difficult when the results of the independent analyses don't agree with each other @wang_similarity_2014. Circumventing this issue with consensus clustering (clustering based on the agreement of multiple different clustering algorithms) can result in the loss of valuable complementary information (i.e., the information that is not shared across data types), which is somewhat antithetical to the purpose of integrating diverse data-types in the first place.
+
+### Limitations of SNF
+
+### The SNF pipeline
+
+#### The basic pipeline
+
+The core procedure associated with SNF analyses involves the following steps:
+
+1.  Construct a similarity matrix for each pair of samples for each available data type
+2.  Fuse the similarity matrices using an iterative, nonlinear method (SNF)
+
+User-defined parameters of the pipeline include:
+
+-   The data types to include
+
+-   The similarity measure to use for each data type
+
+-   Hyperparameters related to the fusion step (though the original SNF paper demonstrates strong robustness
+
+The topic of feature selection (determining which variables to include) is not given much attention in the original description of the SNF pipeline. Though feature selection is known to be important in traditional cluster analysis due to the sensitivity of the algorithms to high-dimensionality,
+
+#### The original glioblastoma multiforme case study
+
+The authors of SNF work through a case study of applying the tool to the aggressive brain tumor, glioblastoma multiforme (GBM) @wang_similarity_2014.
+
+### The mathematical basis of SNF
+
+## Previous literature
+
+## Previous studies subtyping SNF
+@jacobs_integration_2021 applied SNF to integrate a variety of neuroimaging measures from children with neurodevelopmental disorders including autism spectrum disorder (ASD), obsessive-compulsive disorder (OCD), and attention-deficit/hyperactivity disorder (ADHD). Intriguingly, the derived clusters revealed that there were several children who were more similar to those of a different neurodevelopmental disorder than to those of their own.
+
+The pipeline in this study consisted of
+
+::: {#tri .theorem}
+For aa right triangle, if $c$ denotes the *length* of the hypotenuse and $a$ and $b$ denote the lengths of the **other** two sides, we have $$a^2 + b^2 = c^2$$
+:::
+
+Here is an equation.
+
+```{=tex}
+\begin{equation}
+  f\left(k\right) = \binom{n}{k} p^k\left(1-p\right)^{n-k}
+  (\#eq:binom)
+\end{equation}
+```
+You may refer to using `\@ref(eq:binom)`, like see Equation \@ref(eq:binom).
