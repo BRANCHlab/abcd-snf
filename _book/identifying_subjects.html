@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-0.9.362">
+<meta name="generator" content="quarto-0.9.345">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -184,7 +184,7 @@ div.csl-indent {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./summary.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Summary</span></a>
+  <a href="./subtyping_mtbi_lit.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Identifying subtypes of TBI: a literature review</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -214,7 +214,7 @@ div.csl-indent {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./brain_str.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">brain_str.html</span></a>
+  <a href="./evaluate_outcomes.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Evaluating outcome measures</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -285,63 +285,84 @@ div.csl-indent {
 <p>All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the <code>abcd_otbi01.txt</code> file.</p>
 <section id="renaming-the-mtbi-data" class="level2" data-number="6.1">
 <h2 data-number="6.1" class="anchored" data-anchor-id="renaming-the-mtbi-data"><span class="header-section-number">6.1</span> Renaming the mTBI data</h2>
-<p>The script below was used to rename the data columns of the abcd_otbi01 file, as the provided names are a bit tough to keep track of.</p>
+<p>The script below was used to rename the data columns of the abcd_otbi01 file to be more interpretable.</p>
 <p><strong>Script location</strong>:</p>
 <div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>✔ ggplot2 3.3.6     ✔ purrr   0.3.4
+✔ tibble  3.1.6     ✔ dplyr   1.0.9
+✔ tidyr   1.2.0     ✔ stringr 1.4.0
+✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()</code></pre>
+</div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "wheeler-lab/abcd/prashanth-proj/00-rename-data/rename_abcd_otbi01.Rmd"</code></pre>
 </div>
 </div>
 <p><strong>Renaming abcd_otbi01 columns</strong></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>abcd_otbi01 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/4.0/trauma/abcd_otbi01.txt"</span>)[<span class="sc">-</span><span class="dv">1</span>, ]</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_renamed <span class="ot">&lt;-</span> abcd_otbi01 <span class="sc">%&gt;%</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_inj =</span> tbi_1, <span class="co"># ever hospitalized/ER for head/neck injury?</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_loc =</span> tbi_1b, <span class="co"># if LOC, how long?</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_mem_daze =</span> tbi_1c, <span class="co"># were they dazed or have memory gap?</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_age =</span> tbi_1d, <span class="co"># how old were they?</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_inj =</span> tbi_2, <span class="co"># ever injured in a vehicle accident?</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_loc =</span> tbi_2b, <span class="co"># if LOC, how long?</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_mem_daze =</span> tbi_2c, <span class="co"># were they dazed or have memory gap?</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_age =</span> tbi_2d, <span class="co"># how old were they?</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_inj =</span> tbi_3, <span class="co"># ever injured head/neck from fall or hit?</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_loc =</span> tbi_3b, <span class="co"># if LOC, how long?</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_mem_daze =</span> tbi_3c, <span class="co"># were they dazed or have memory gap?</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_age =</span> tbi_3d, <span class="co"># how old were they?</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_inj =</span> tbi_4, <span class="co"># ever injure head/neck from violence?</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_loc =</span> tbi_4b, <span class="co"># if LOC, how long?</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_mem_daze =</span> tbi_4c, <span class="co"># were they dazed or have memory gap?</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_age =</span> tbi_4d, <span class="co"># how old were they?</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_inj =</span> tbi_5, <span class="co"># ever injure head or neck from blast?</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_loc =</span> tbi_5b, <span class="co"># if LOC, how long?</span></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_mem_daze =</span> tbi_5c, <span class="co"># were they dazed or have memory gap?</span></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_age =</span> tbi_5d, <span class="co"># how old were they?</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_inj =</span> tbi_6o, <span class="co"># any other injuries with LOC?</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_num =</span> tbi_6p, <span class="co"># how many more?</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_max_loc_mins =</span> tbi_6q, <span class="co"># how long was longest LOC?</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_num_over_30 =</span> tbi_6r, <span class="co"># how many were &gt;= 30 min?</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_min_age =</span> tbi_6s, <span class="co"># what was their youngest age?</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_inj =</span> tbi_7a, <span class="co"># did they have a period of multiple injuries?</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_loc =</span> tbi_7c1, <span class="co"># if LOC, how long?</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_mem_daze =</span> tbl_7c2, <span class="co"># were they dazed or have memory gap?</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_effect_start_age =</span> tbi_7e, <span class="co"># at what age did the effects begin?</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_effect_end_age =</span> tbi_7f, <span class="co"># at what age did the effects end?</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_inj =</span> tbi_7g, <span class="co"># was there another multiple injury period?</span></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_effect_type =</span> tbi_7i, <span class="co"># typical effect of the injury?</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_effect_start_age =</span> tbi_7k, <span class="co"># start age of those effects?</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_effect_end_age =</span> tbi_7l, <span class="co"># end age of those effects?</span></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_inj =</span> tbi_8g, <span class="co"># another period of multiple inj?</span></span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_effect_type =</span> tbi_8i, <span class="co"># typical effects?</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_effect_start_age =</span> tbi_8k, <span class="co"># start age of effects?</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_effect_end_age =</span> tbi_8l) <span class="co"># end age of effects?</span></span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>export_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/general/"</span>,</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    <span class="st">"abcd_otbi01_renamed.csv"</span>)</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(abcd_otbi01_renamed, export_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORT DATA ===============================================================</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>abcd_otbi01 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/4.0/trauma/abcd_otbi01.txt"</span>)[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># RENAME DATA ===============================================================</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_renamed <span class="ot">&lt;-</span> abcd_otbi01 <span class="sc">%&gt;%</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_inj =</span> tbi_1, <span class="co"># ever hospitalized/ER for head/neck injury?</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_loc =</span> tbi_1b, <span class="co"># if LOC, how long?</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_mem_daze =</span> tbi_1c, <span class="co"># were they dazed or have memory gap?</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">hosp_er_age =</span> tbi_1d, <span class="co"># how old were they?</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_inj =</span> tbi_2, <span class="co"># ever injured in a vehicle accident?</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_loc =</span> tbi_2b, <span class="co"># if LOC, how long?</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_mem_daze =</span> tbi_2c, <span class="co"># were they dazed or have memory gap?</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">vehicle_age =</span> tbi_2d, <span class="co"># how old were they?</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_inj =</span> tbi_3, <span class="co"># ever injured head/neck from fall or hit?</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_loc =</span> tbi_3b, <span class="co"># if LOC, how long?</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_mem_daze =</span> tbi_3c, <span class="co"># were they dazed or have memory gap?</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">fall_hit_age =</span> tbi_3d, <span class="co"># how old were they?</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_inj =</span> tbi_4, <span class="co"># ever injure head/neck from violence?</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_loc =</span> tbi_4b, <span class="co"># if LOC, how long?</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_mem_daze =</span> tbi_4c, <span class="co"># were they dazed or have memory gap?</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">violent_hit_age =</span> tbi_4d, <span class="co"># how old were they?</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_inj =</span> tbi_5, <span class="co"># ever injure head or neck from blast?</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_loc =</span> tbi_5b, <span class="co"># if LOC, how long?</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_mem_daze =</span> tbi_5c, <span class="co"># were they dazed or have memory gap?</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">blast_age =</span> tbi_5d, <span class="co"># how old were they?</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_inj =</span> tbi_6o, <span class="co"># any other injuries with LOC?</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_num =</span> tbi_6p, <span class="co"># how many more?</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_max_loc_mins =</span> tbi_6q, <span class="co"># how long was longest LOC?</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_num_over_30 =</span> tbi_6r, <span class="co"># how many were &gt;= 30 min?</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_loc_min_age =</span> tbi_6s, <span class="co"># what was their youngest age?</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_inj =</span> tbi_7a, <span class="co"># did they have a period of multiple injuries?</span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_loc =</span> tbi_7c1, <span class="co"># if LOC, how long?</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_mem_daze =</span> tbl_7c2, <span class="co"># were they dazed or have memory gap?</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_effect_start_age =</span> tbi_7e, <span class="co"># at what age did the effects begin?</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">multi_effect_end_age =</span> tbi_7f, <span class="co"># at what age did the effects end?</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_inj =</span> tbi_7g, <span class="co"># was there another multiple injury period?</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_effect_type =</span> tbi_7i, <span class="co"># typical effect of the injury?</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_effect_start_age =</span> tbi_7k, <span class="co"># start age of those effects?</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_multi_effect_end_age =</span> tbi_7l, <span class="co"># end age of those effects?</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_inj =</span> tbi_8g, <span class="co"># another period of multiple inj?</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_effect_type =</span> tbi_8i, <span class="co"># typical effects?</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_effect_start_age =</span> tbi_8k, <span class="co"># start age of effects?</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>        <span class="at">other_other_multi_effect_end_age =</span> tbi_8l) <span class="co"># end age of effects?</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a><span class="co"># EXPORT DATA ===============================================================</span></span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>export_path <span class="ot">&lt;-</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/data/abcd_otbi01_renamed.csv"</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(abcd_otbi01_renamed, export_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Note that all variables with the same prefix (or number originally) are referring to the same injury or set of injuries.</p>
 </section>
@@ -387,11 +408,267 @@ div.csl-indent {
 </ol>
 <p>hi</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="dv">5</span><span class="sc">+</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="dv">5</span><span class="sc">+</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 10</code></pre>
 </div>
 </div>
+<p>The code below adds the following information to the abcd_otbi01 file: 1. if a subject had &gt; 0 mTBI (colname: mTBI) 2. if a subject had &gt; 0 mod/sev TBI (colname: moderate_or_severe_tbi) 3. if each type of injury was an mTBI (colnames: x_mtbi) 4. the time since each type of mTBI 5. the time since the most recent mTBI</p>
+<p>There are additional sections which involve: 6. Visualizing the time since latest mTBI for each subject 7. Examining the number of mTBIs sustained by each subject</p>
+<p><strong>Script location</strong>:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "wheeler-lab/abcd/prashanth-proj/01-process-data/generate_abcd_otbi01_detailed.Rmd"</code></pre>
+</div>
+</div>
+<p><strong>Generate detailed form of abcd_otbi01</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORT DATA ===============================================================</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>input_file <span class="ot">&lt;-</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/data/abcd_otbi01_renamed.csv"</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>abcd_otbi01 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file, <span class="at">guess_max =</span> <span class="cn">Inf</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># guess_max = Inf required to import without parsing errors (see ?readr)</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co"># CONVERT TO NUMERIC ========================================================</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="ot">&lt;-</span> abcd_otbi01 <span class="sc">%&gt;%</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(hosp_er_inj<span class="sc">:</span>other_other_multi_effect_end_age, as.numeric))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>1. Identify if a subject has had mTBI prior to baseline (col: mTBI)</strong> It is not possible to properly classify mTBI in the ABCD dataset Here, I define an mTBI as a head/neck injury which was either: 1. LOC &lt; 30 mins (LOC &lt; 2) and memory loss (mem_daze == 1) 2. LOC between 0 and 30 mins (LOC == 1)</p>
+<p>In this section, I create an mTBI column with the values: 0 - definitely had 0 mTBI 1 - definitely had at LEAST one mTBI 0.5 - impossible to know if patient had at least one mTBI</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ASSIGN MTBIS ==============================================================</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    (hosp_er_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> hosp_er_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> hosp_er_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    (vehicle_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> vehicle_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> vehicle_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    (fall_hit_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> fall_hit_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> fall_hit_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    (violent_hit_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> violent_hit_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> violent_hit_loc <span class="sc">==</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    (blast_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> blast_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> blast_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    (other_loc_num <span class="sc">-</span> other_loc_num_over_30) <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    (multi_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> multi_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> multi_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    other_multi_inj <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="fl">0.5</span>,</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    other_other_multi_inj <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="fl">0.5</span>,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>2. Identify if a subject has had a moderate or severe TBI prior to baseline</strong> (col: moderate_or_severe_tbi). Based on the structure of the questionnaire, this can only be done by looking at LOC (no GCS or details regarding the duration of post-traumatic amnesia are present).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ASSIGN MODERATE / SEVERE TBI ==============================================</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">moderate_or_severe_tbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>     (hosp_er_loc <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>      vehicle_loc <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>      fall_hit_loc <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      violent_hit_loc <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>      blast_loc <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>      other_loc_num_over_30 <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">|</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>      multi_loc <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    other_multi_inj <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="fl">0.5</span>,</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    other_other_multi_inj <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="fl">0.5</span>,</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>     <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>3. Identify which injuries led to an mTBI (col: x_mtbi)</strong></p>
+<p>First I convert ages from approximate years to approximate months for subsequent calculations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># IDENTIFY MTBI AGE =========================================================</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>blast_age <span class="ot">&lt;-</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>blast_age <span class="sc">*</span> <span class="dv">12</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>hosp_er_age <span class="ot">&lt;-</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>hosp_er_age <span class="sc">*</span> <span class="dv">12</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>vehicle_age <span class="ot">&lt;-</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>vehicle_age <span class="sc">*</span> <span class="dv">12</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>fall_hit_age <span class="ot">&lt;-</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>fall_hit_age <span class="sc">*</span> <span class="dv">12</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>violent_hit_age <span class="ot">&lt;-</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>violent_hit_age <span class="sc">*</span> <span class="dv">12</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>other_loc_min_age <span class="ot">&lt;-</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>other_loc_min_age <span class="sc">*</span> <span class="dv">12</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span>multi_effect_end_age <span class="ot">&lt;-</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    abcd_otbi01_detailed<span class="sc">$</span>multi_effect_end_age <span class="sc">*</span> <span class="dv">12</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I then generate columns indicating which injury types were mTBIs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">hosp_er_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    (hosp_er_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> hosp_er_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> hosp_er_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">vehicle_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    (vehicle_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> vehicle_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> vehicle_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">fall_hit_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    (fall_hit_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> fall_hit_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> fall_hit_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">violent_hit_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    (violent_hit_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> violent_hit_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> violent_hit_loc <span class="sc">==</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">blast_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    (blast_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> blast_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> blast_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">other_loc_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    (other_loc_num <span class="sc">-</span> other_loc_num_over_30) <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">multi_mtbi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    (multi_loc <span class="sc">&lt;</span> <span class="dv">2</span> <span class="sc">&amp;</span> multi_mem_daze <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|</span> multi_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>4. Identify time since each type of mTBI (col: x_mtbi_mpi)</strong> The syntax <code>case_when(injury_type ~ ...)</code> means that variables are only calculated if the associated injury type actually was an mTBI.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># IDENTIFY TIME SINCE EACH MTBI =============================================</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">hosp_er_mtbi_mpi =</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(hosp_er_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> hosp_er_age))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">vehicle_mtbi_mpi =</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(vehicle_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> vehicle_age))</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">fall_hit_mtbi_mpi =</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(fall_hit_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> fall_hit_age))</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">violent_hit_mtbi_mpi =</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(violent_hit_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> violent_hit_age))</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">blast_mtbi_mpi =</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(blast_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> blast_age))</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">other_loc_mtbi_mpi =</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(other_loc_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> other_loc_min_age))</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">multi_mtbi_mpi =</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>         <span class="fu">case_when</span>(multi_mtbi <span class="sc">~</span> interview_age <span class="sc">-</span> multi_effect_end_age))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>5. Time since most recent mTBI (col: latest_mtbi_mpi)</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># IDENTIFY TIME SINCE LAST MTBI =============================================</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">latest_mtbi_mpi =</span> <span class="fu">pmin</span>(hosp_er_mtbi_mpi,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                               vehicle_mtbi_mpi,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                               fall_hit_mtbi_mpi,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                               violent_hit_mtbi_mpi,</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                               blast_mtbi_mpi,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                               other_loc_mtbi_mpi,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                               multi_mtbi_mpi, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>6. visualize time since most recent mTBI as a histogram</strong></p>
+<p>The histograms below show the distribution of the time-since-last-mtbi for each subject that received an mTBI prior to baseline data collection.</p>
+<p>All subjects:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># VISUALIZE DISTRIBUTION OF TIME SINCE LAST INJURY ==========================</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(abcd_otbi01_detailed, <span class="fu">aes</span>(<span class="at">x=</span>latest_mtbi_mpi)) <span class="sc">+</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">color=</span><span class="st">"darkblue"</span>, <span class="at">fill=</span><span class="st">"lightblue"</span>) <span class="sc">+</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Histogram of times since latest mTBI"</span>) <span class="sc">+</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Months since most recent mTBI"</span>) <span class="sc">+</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_light</span>(<span class="at">base_size=</span><span class="dv">30</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/snf/"</span>,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>              <span class="st">"figures-and-tables/full/"</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>              <span class="st">"all_subjects_latest_mtbi_mpi_hist.png"</span>),</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">height=</span><span class="dv">10</span>, <span class="at">width=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="lab-data/abcd/processed/prashanth-proj/snf/figures-and-tables/full/all_subjects_latest_mtbi_mpi_hist.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Elephant</figcaption><p></p>
+</figure>
+</div>
+<p>Cropped to children that are in a non-chronic stage post-mTBI (note that the negatives are a result of rounding used when anonymizing ages):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(abcd_otbi01_detailed, <span class="fu">aes</span>(<span class="at">x=</span>latest_mtbi_mpi)) <span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">color=</span><span class="st">"darkblue"</span>, <span class="at">fill=</span><span class="st">"lightblue"</span>) <span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Histogram of times since latest mTBI"</span>) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="sc">-</span><span class="dv">5</span>, <span class="dv">5</span>) <span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Months since most recent mTBI"</span>) <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_light</span>(<span class="at">base_size=</span><span class="dv">30</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/snf/"</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>              <span class="st">"figures-and-tables/full/"</span>,</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>              <span class="st">"all_subjects_latest_mtbi_mpi_hist_cropped.png"</span>),</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">height=</span><span class="dv">10</span>, <span class="at">width=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="lab-data/abcd/processed/prashanth-proj/snf/figures-and-tables/full/all_subjects_latest_mtbi_mpi_hist_cropped.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Elephant</figcaption><p></p>
+</figure>
+</div>
+<p>Some summarizing:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># TIME SINCE MTBI SUMMARY VALUES ============================================</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(abcd_otbi01_detailed<span class="sc">$</span>latest_mtbi_mpi <span class="sc">&lt;</span> <span class="dv">3</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 7 children had an mTBI within 3 months of baseline data collection</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>chronic_subject_mtbi_mpis <span class="ot">&lt;-</span> abcd_otbi01_detailed <span class="sc">%&gt;%</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(latest_mtbi_mpi) <span class="sc">%&gt;%</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(latest_mtbi_mpi <span class="sc">&gt;=</span> <span class="dv">3</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">max</span>(chronic_subject_mtbi_mpis)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">min</span>(chronic_subject_mtbi_mpis)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(chronic_subject_mtbi_mpis<span class="sc">$</span>latest_mtbi_mpi)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(chronic_subject_mtbi_mpis<span class="sc">$</span>latest_mtbi_mpi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>7. Identify number of mTBIs sustained by each subject (col: mtbi_count)</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># NUMBER OF MTBIS ===========================================================</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    other_loc_num[</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">is.na</span>(abcd_otbi01_detailed<span class="sc">$</span>other_loc_num)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed<span class="sc">$</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    other_loc_num_over_30[</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">is.na</span>(abcd_otbi01_detailed<span class="sc">$</span>other_loc_num_over_30)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">mtbi_count =</span> (hosp_er_mtbi <span class="sc">+</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>                         vehicle_mtbi <span class="sc">+</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>                         fall_hit_mtbi <span class="sc">+</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>                         violent_hit_mtbi <span class="sc">+</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>                         blast_mtbi <span class="sc">+</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                         (other_loc_num <span class="sc">-</span> other_loc_num_over_30) <span class="sc">+</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                         multi_mtbi))</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(abcd_otbi01_detailed<span class="sc">$</span>mtbi_count)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Of the 431 subjects with a previous mTBI,</p>
+<ul>
+<li>306 of them had 1 mTBI</li>
+<li>116 of them had 2 mTBIs</li>
+<li>7 of them had 7 mTBIs</li>
+<li>1 of them had 4 mTBIs</li>
+<li>1 of them had 5 mTBIs</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># EXPORT DATA ===============================================================</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>export_path <span class="ot">&lt;-</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/data/abcd_otbi01_detailed.csv"</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(abcd_otbi01_detailed, export_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>END OF SCRIPT</p>
 <p>A few types of injuries were handled differently from the rest in the above code:</p>
 <ul>
 <li>for <code>other_loc</code>, the questionnaire asked for a total number of injuries with LOC as well as a total number of injuries with LOC above 30 minutes.
@@ -401,6 +678,37 @@ div.csl-indent {
 <li>for <code>other_multi</code> and <code>other_other_multi</code>, insufficient information was provided to determine the severity of the associated injuries.</li>
 </ul>
 <p>For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury. The subject list was then defined in the following code:</p>
+<p>START OF SCRIPT</p>
+<p><strong>Script location</strong>:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "wheeler-lab/abcd/prashanth-proj/02-get-subjects/get-baseline-mtbi-subjects.Rmd"</code></pre>
+</div>
+</div>
+<p>Export chronic-stage mTBI subject list:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORT DATA ===============================================================</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>abcd_otbi01 <span class="ot">&lt;-</span><span class="fu">read_delim</span>(<span class="fu">paste0</span>(</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/data/"</span>,</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"abcd_otbi01_detailed.csv"</span>),</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">guess_max =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Extract subjects at a chronic stage post-mTBI:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SUBSET TO CHRONIC STAGE POST-MTBI =========================================</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>baseline_mtbi_subjects <span class="ot">&lt;-</span> abcd_otbi01 <span class="sc">%&gt;%</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mtbi <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> latest_mtbi_mpi <span class="sc">&gt;=</span> <span class="dv">3</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(subjectkey)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>output_path <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/subjects/"</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(baseline_mtbi_subjects,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>          <span class="fu">paste0</span>(output_path, <span class="st">"baseline_chronic_mtbi_subjects.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>END OF SCRIPT</p>
 </section>
 <section id="some-participant-demographics" class="level2" data-number="6.3">
 <h2 data-number="6.3" class="anchored" data-anchor-id="some-participant-demographics"><span class="header-section-number">6.3</span> Some participant demographics</h2>

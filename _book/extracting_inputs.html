@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-0.9.362">
+<meta name="generator" content="quarto-0.9.345">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -184,7 +184,7 @@ div.csl-indent {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./summary.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Summary</span></a>
+  <a href="./subtyping_mtbi_lit.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Identifying subtypes of TBI: a literature review</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -214,17 +214,22 @@ div.csl-indent {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./next_steps.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Next steps</span></a>
+  <a href="./evaluate_outcomes.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Evaluating outcome measures</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./limitations.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Limitations</span></a>
+  <a href="./next_steps.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Next steps</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./wrapping_up.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Wrapping-up</span></a>
+  <a href="./limitations.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Limitations</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrapping_up.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Wrapping-up</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -305,80 +310,89 @@ div.csl-indent {
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/abcd_otbi01_detailed.csv"</span>, <span class="at">guess_max =</span> <span class="cn">Inf</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>subject_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/"</span>,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"baseline-chronic-mtbi/subjects.csv"</span>)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(subject_file, <span class="at">delim=</span><span class="st">","</span>)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_otbi01_detailed, subjects)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORT DATA ===============================================================</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>data_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/snf/data/"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"abcd_otbi01_detailed.csv"</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>subject_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/snf/"</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"subjects/baseline_chronic_mtbi_subjects.csv"</span>)</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Identify mechanism of injury</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>mpis <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">matches</span>(<span class="st">"subjectkey"</span>) <span class="sc">|</span> <span class="fu">ends_with</span>(<span class="st">"mtbi_mpi"</span>))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>abcd_otbi01_detailed <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(data_path, <span class="at">guess_max =</span> <span class="cn">Inf</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(subject_path, <span class="at">delim=</span><span class="st">","</span>)</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>latest_mtbi_mechanism <span class="ot">&lt;-</span> <span class="fu">colnames</span>(mpis)[<span class="fu">apply</span>(mpis,<span class="dv">1</span>,which.max)] <span class="sc">%&gt;%</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>{<span class="fu">gsub</span>(<span class="st">"_mtbi_mpi"</span>, <span class="st">""</span>, .)}</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_otbi01_detailed, subjects)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>acute_symptoms<span class="sc">$</span>latest_mtbi_mechanism <span class="ot">&lt;-</span> latest_mtbi_mechanism</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Identify age of injury</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_age =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_age,</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_age,</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_age,</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_age,</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_age,</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_min_age,</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_effect_end_age))</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Identify presence &amp; duration of LOC</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-1 first create a compatible LOC variable for the 'other_mtbi' category</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">other_loc_loc =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">30</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">30</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">2</span>,</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">3</span>,</span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_loc =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_loc,</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_loc,</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_loc,</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_loc,</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_loc,</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_loc,</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_loc,</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Identify presence of feeling dazed / memory loss following injury</span></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_mem_daze =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_mem_daze,</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_mem_daze,</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_mem_daze,</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_mem_daze,</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_mem_daze,</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> <span class="cn">NA_real_</span>,</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_mem_daze,</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Trim acute_symptoms to only the required variables</span></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(subjectkey,</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mechanism,</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_age,</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_loc,</span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mem_daze)</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>output_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/"</span>,</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    <span class="st">"baseline-chronic-mtbi/inputs/acute_symptoms.csv"</span>)</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(acute_symptoms, output_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Identify mechanism of injury</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>mpis <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">matches</span>(<span class="st">"subjectkey"</span>) <span class="sc">|</span> <span class="fu">ends_with</span>(<span class="st">"mtbi_mpi"</span>))</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>latest_mtbi_mechanism <span class="ot">&lt;-</span> <span class="fu">colnames</span>(mpis)[<span class="fu">apply</span>(mpis,<span class="dv">1</span>,which.max)] <span class="sc">%&gt;%</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>{<span class="fu">gsub</span>(<span class="st">"_mtbi_mpi"</span>, <span class="st">""</span>, .)}</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>acute_symptoms<span class="sc">$</span>latest_mtbi_mechanism <span class="ot">&lt;-</span> latest_mtbi_mechanism</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Identify age of injury</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_age =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_age,</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_age,</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_age,</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_age,</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_age,</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_min_age,</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_effect_end_age))</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Identify presence &amp; duration of LOC</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-1 first create a compatible LOC variable for the 'other_mtbi' category</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">other_loc_loc =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">30</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">30</span> <span class="sc">&amp;</span> other_loc_max_loc_mins <span class="sc">&lt;=</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">2</span>,</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        other_loc_max_loc_mins <span class="sc">&gt;</span> <span class="dv">1440</span> <span class="sc">~</span> <span class="dv">3</span>,</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_loc =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_loc,</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_loc,</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_loc,</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_loc,</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_loc,</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> other_loc_loc,</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_loc,</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Identify presence of feeling dazed / memory loss following injury</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">latest_mtbi_mem_daze =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"hosp_er"</span> <span class="sc">~</span> hosp_er_mem_daze,</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> vehicle_mem_daze,</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"fall_hit"</span> <span class="sc">~</span> fall_hit_mem_daze,</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"violent_hit"</span> <span class="sc">~</span> violent_hit_mem_daze,</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> blast_mem_daze,</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"other_loc"</span> <span class="sc">~</span> <span class="cn">NA_real_</span>,</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>        latest_mtbi_mechanism <span class="sc">==</span> <span class="st">"multi"</span> <span class="sc">~</span> multi_mem_daze,</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Trim acute_symptoms to only the required variables</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(subjectkey,</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mechanism,</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_age,</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_loc,</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>           latest_mtbi_mem_daze)</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>output_path <span class="ot">&lt;-</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/inputs/acute_symptoms.csv"</span></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(acute_symptoms, output_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>END OF SCRIPT</p>
 </section>
 <section id="brain-structure-and-function" class="level2" data-number="7.2">
 <h2 data-number="7.2" class="anchored" data-anchor-id="brain-structure-and-function"><span class="header-section-number">7.2</span> Brain structure and function</h2>
@@ -493,6 +507,50 @@ div.csl-indent {
 </section>
 <section id="brain-structure-and-function-1" class="level2" data-number="7.3">
 <h2 data-number="7.3" class="anchored" data-anchor-id="brain-structure-and-function-1"><span class="header-section-number">7.3</span> Brain structure and function</h2>
+<p>START OF SCRIPT</p>
+<p><strong>Script location</strong>:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "wheeler-lab/abcd/prashanth-proj/03-get-inputs/get_brain_str.Rmd"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORT DATA ===============================================================</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>input_file <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/4.0/evaluated-data/abcd_dmdtifp101.txt"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>abcd_dmdtifp101 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">col_select =</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">c</span>(<span class="st">"subjectkey"</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                                    <span class="st">"eventname"</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                                    <span class="st">"dmdtifp1_331"</span><span class="sc">:</span><span class="st">"dmdtifp1_472"</span>))[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Import subject list</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>subject_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/subjects/"</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"baseline_chronic_mtbi_subjects.csv"</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(subject_file, <span class="at">delim=</span><span class="st">","</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data to only baseline timepoint</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>abcd_dmdtifp101_baseline <span class="ot">&lt;-</span> abcd_dmdtifp101 <span class="sc">%&gt;%</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data to only chronic baseline mTBI subjects</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>brain_str <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_dmdtifp101_baseline, subjects) <span class="sc">%&gt;%</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span><span class="st">"eventname"</span>)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>output_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/"</span>,</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"snf/inputs/brain_str.csv"</span>)</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(brain_str, output_file)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>END OF SCRIPT</p>
 </section>
 <section id="demographics" class="level2" data-number="7.4">
 <h2 data-number="7.4" class="anchored" data-anchor-id="demographics"><span class="header-section-number">7.4</span> Demographics (!)</h2>
@@ -512,6 +570,169 @@ div.csl-indent {
 <li>Pubertal development status</li>
 </ul>
 <p>Age and sex are commonly included in the ABCD study’s data files.</p>
+<p>START OF SCRIPT</p>
+<p><strong>Script location</strong>:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "wheeler-lab/abcd/prashanth-proj/03-get-inputs/get_demographics.Rmd"</code></pre>
+</div>
+</div>
+<p>This script is based on Eman’s <code>TBI_Demographics.Rmd</code>.</p>
+<ul>
+<li>Age</li>
+<li>Sex</li>
+<li>Pubertal development status (youth and parent-reported)</li>
+<li>Race</li>
+<li>Ethnicity</li>
+<li>Socioeconomic status</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORT DATA ===============================================================</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>subject_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/subjects/"</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"baseline_chronic_mtbi_subjects.csv"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>subjects <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(subject_file, <span class="at">delim=</span><span class="st">","</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Age, sex, parent-defined pubertal status</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="do">## 1-1 Import data</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>input_file_1 <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/4.0/med-history/abcd_ssphp01.txt"</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>abcd_ssphp01 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file_1)[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="do">## 1-2 Filter to baseline data only</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>abcd_ssphp01_baseline <span class="ot">&lt;-</span> abcd_ssphp01 <span class="sc">%&gt;%</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="do">## 1-3 Filter to baseline mTBI subjects only</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>abcd_ssphp01_mtbi_baseline <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_ssphp01_baseline, subjects)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="do">## 1-4 Isolate age, sex, and youth-reported pubertal status variables</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>abcd_ssphp01_mtbi_baseline <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"subjectkey"</span>,</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>           <span class="st">"interview_age"</span>,</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>           <span class="st">"sex"</span>,</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>           <span class="st">"pds_p_ss_male_category"</span>,</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>           <span class="st">"pds_p_ss_female_category"</span>)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="do">## 1-5 Dump excess variables</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(subject_file, input_file_1, abcd_ssphp01, abcd_ssphp01_baseline)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Youth-defined pubertal status</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-1 Import data</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>input_file_2 <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/4.0/med-history/abcd_ssphy01.txt"</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>abcd_ssphy01 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file_2)[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-2 Filter to baseline data only</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>abcd_ssphy01_baseline <span class="ot">&lt;-</span> abcd_ssphy01 <span class="sc">%&gt;%</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-3 Filter to baseline mTBI subjects only</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>abcd_ssphy01_mtbi_baseline <span class="ot">&lt;-</span> <span class="fu">merge</span>(abcd_ssphy01_baseline, subjects)</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-4 Isolate youth-reported pubertal status variables</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>abcd_ssphy01_mtbi_baseline <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"subjectkey"</span>,</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>           <span class="st">"pds_y_ss_male_category"</span>,</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>           <span class="st">"pds_y_ss_female_category"</span>)</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-5 Dump excess variables</span></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(input_file_2, abcd_ssphy01, abcd_ssphy01_baseline)</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Race</span></span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-1 Import data</span></span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>input_file_3 <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/4.0/demographics/pdem02.txt"</span></span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>pdem02 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file_3)[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-2 Filter to baseline data only</span></span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>pdem02_baseline <span class="ot">&lt;-</span> pdem02 <span class="sc">%&gt;%</span></span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-3 Filter to baseline mTBI subjects only</span></span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>pdem02_mtbi_baseline <span class="ot">&lt;-</span> <span class="fu">merge</span>(pdem02_baseline, subjects)</span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-4 Rename race variables for clarity</span></span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>pdem02_mtbi_baseline_renamed <span class="ot">&lt;-</span> pdem02_mtbi_baseline <span class="sc">%&gt;%</span></span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">white =</span> demo_race_a_p___10,</span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a>           <span class="at">black =</span> demo_race_a_p___11,</span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a>           <span class="at">native_american =</span> demo_race_a_p___12,</span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a>           <span class="at">native_alaskan =</span> demo_race_a_p___13,</span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>           <span class="at">native_hawaiian =</span> demo_race_a_p___14,</span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a>           <span class="at">guamanian =</span> demo_race_a_p___15,</span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a>           <span class="at">samoan =</span> demo_race_a_p___16,</span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>           <span class="at">other_pacific_islander =</span> demo_race_a_p___17,</span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>           <span class="at">asian =</span> demo_race_a_p___18,</span>
+<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a>           <span class="at">chinese =</span> demo_race_a_p___19,</span>
+<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a>           <span class="at">filipino =</span> demo_race_a_p___20,</span>
+<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a>           <span class="at">japanese =</span> demo_race_a_p___21,</span>
+<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a>           <span class="at">korean =</span> demo_race_a_p___22,</span>
+<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>           <span class="at">vietnamese =</span> demo_race_a_p___23,</span>
+<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a>           <span class="at">other_asian =</span> demo_race_a_p___24,</span>
+<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>           <span class="at">other =</span> demo_race_a_p___25,</span>
+<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a>           <span class="at">refuse_to_answer =</span> demo_race_a_p___77,</span>
+<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>           <span class="at">dont_know =</span> demo_race_a_p___99,</span>
+<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a>           <span class="at">hispanic_compound =</span> demo_ethn_v2)</span>
+<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-4.5 Fix the hispanic category</span></span>
+<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a>pdem02_mtbi_baseline_renamed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">hispanic =</span> <span class="fu">case_when</span>(hispanic_compound <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a>                                <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">0</span>))</span>
+<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-5 Isolate youth-reported pubertal status variables</span></span>
+<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a>pdem02_mtbi_baseline_renamed <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"subjectkey"</span>,</span>
+<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a>           <span class="st">"white"</span><span class="sc">:</span><span class="st">"dont_know"</span>, <span class="st">"hispanic"</span>)</span>
+<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-6 Dump excess variables</span></span>
+<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(input_file_3, pdem02, pdem02_baseline, pdem02_mtbi_baseline)</span>
+<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. SES</span></span>
+<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a><span class="do">## 4-1 Import data</span></span>
+<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a>input_file_4 <span class="ot">&lt;-</span> <span class="st">"lab-data/abcd/4.0/socioeconomic/acspsw03.txt"</span></span>
+<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a>acspsw03 <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(input_file_4)[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a><span class="do">## 4-2 Filter to baseline data only</span></span>
+<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a>acspsw03_baseline <span class="ot">&lt;-</span> acspsw03 <span class="sc">%&gt;%</span></span>
+<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(eventname <span class="sc">==</span> <span class="st">"baseline_year_1_arm_1"</span>)</span>
+<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-116"><a href="#cb6-116" aria-hidden="true" tabindex="-1"></a><span class="do">## 4-3 Filter to baseline mTBI subjects only</span></span>
+<span id="cb6-117"><a href="#cb6-117" aria-hidden="true" tabindex="-1"></a>acspsw03_mtbi_baseline <span class="ot">&lt;-</span> <span class="fu">merge</span>(acspsw03_baseline, subjects)</span>
+<span id="cb6-118"><a href="#cb6-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-119"><a href="#cb6-119" aria-hidden="true" tabindex="-1"></a><span class="do">## 4-4 Isolate SES-related variables (American Community Survey imputed raked</span></span>
+<span id="cb6-120"><a href="#cb6-120" aria-hidden="true" tabindex="-1"></a><span class="do">## propensity weight)</span></span>
+<span id="cb6-121"><a href="#cb6-121" aria-hidden="true" tabindex="-1"></a>acspsw03_mtbi_baseline <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb6-122"><a href="#cb6-122" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"subjectkey"</span>,</span>
+<span id="cb6-123"><a href="#cb6-123" aria-hidden="true" tabindex="-1"></a>           <span class="st">"acs_raked_propensity_score"</span>)</span>
+<span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a><span class="co"># 4-5 Dump excess variables</span></span>
+<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(input_file_4, acspsw03, acspsw03_baseline)</span>
+<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-129"><a href="#cb6-129" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Merge and write demographics file</span></span>
+<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a>demographic_dfs <span class="ot">&lt;-</span> <span class="fu">list</span>(subjects,</span>
+<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a>                        acspsw03_mtbi_baseline,</span>
+<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a>                        abcd_ssphp01_mtbi_baseline,</span>
+<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a>                        abcd_ssphy01_mtbi_baseline,</span>
+<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a>                        pdem02_mtbi_baseline_renamed)</span>
+<span id="cb6-135"><a href="#cb6-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a>baseline_chronic_mtbi_demographics <span class="ot">&lt;-</span> demographic_dfs <span class="sc">%&gt;%</span></span>
+<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a>    <span class="fu">reduce</span>(full_join, <span class="at">by=</span><span class="fu">c</span>(<span class="st">"subjectkey"</span>))</span>
+<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a>output_file <span class="ot">&lt;-</span></span>
+<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/inputs/demographics.csv"</span></span>
+<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(baseline_chronic_mtbi_demographics, output_file)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>END OF SCRIPT</p>
 </section>
 <section id="psychosocial-factors" class="level2" data-number="7.5">
 <h2 data-number="7.5" class="anchored" data-anchor-id="psychosocial-factors"><span class="header-section-number">7.5</span> Psychosocial factors</h2>
