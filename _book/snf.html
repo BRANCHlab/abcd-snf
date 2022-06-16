@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.344">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Clustering and classification for paediatric mTBI - 9&nbsp; Similarity network fusion</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<link href="./evaluate_outcomes.html" rel="next">
+<link href="./conclusion.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+    <div class="container-fluid d-flex justify-content-between">
+      <h1 class="quarto-secondary-nav-title"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Similarity network fusion</span></h1>
+      <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Clustering and classification for paediatric mTBI</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/psvelayudhan/pv-phd-research" title="Source Code" class="sidebar-tool px-1"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+      <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+    <div class="sidebar-item-container"> 
+        <a href="./abcd.html" class="sidebar-item-text sidebar-link">The ABCD dataset</a>
+      <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+        <i class="bi bi-chevron-right ms-2"></i>
+      </a>
+    </div>
+    <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./introduction.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./subtyping_mtbi_lit.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Identifying subtypes of TBI: a literature review</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proposed_methods.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Proposed methods</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./expected_outcomes_and_pitfalls.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Expected outcomes and possible pitfalls</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./identifying_subjects.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Identifying subjects</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./extracting_inputs.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Extracting input variables</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./conclusion.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusion</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./snf.html" class="sidebar-item-text sidebar-link active"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Similarity network fusion</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./evaluate_outcomes.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Evaluating outcome measures</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./next_steps.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Next steps</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./limitations.html" class="sidebar-item-text sidebar-link"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limitations</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">References</a>
+  </div>
+</li>
+    </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Similarity network fusion</span></h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    
+    
+  </div>
+  
+
+</header>
+
+<p>In this chapter I run through the SNF pipeline, which consists of:</p>
+<ol type="1">
+<li>Generating similarity matrices</li>
+<li>Applying SNF</li>
+<li>Clustering the SNF results into individual subtypes</li>
+</ol>
+<p>START OF SCRIPT</p>
+<p>The organization of this pilot script is a little untidy, and combines more things than should really exist in a single file (preprocessing data for SNF, running the SNF and clustering, statistical analyses and plots of the outputs, function definitions).</p>
+<p><strong>Script location</strong>:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "wheeler-lab/abcd/prashanth-proj/04-snf/snf.Rmd"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SNFtool)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggsignif)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fastDummies)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Some functions for to help with the analyses in this script:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Like head(), but just displays a maximum of 5 columns by default</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>quick <span class="ot">&lt;-</span> <span class="cf">function</span>(dataframe) {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">ncol</span>(dataframe) <span class="sc">&gt;=</span> <span class="dv">5</span>) {</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">head</span>(dataframe[,<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]))</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">head</span>(dataframe))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Reports if a dataframe had NAs, removes them, and prints the changes in the</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># dataframe's dimensions.</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>na_removal <span class="ot">&lt;-</span> <span class="cf">function</span>(dataframe) {</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    start_row <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dataframe)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    start_col <span class="ot">&lt;-</span> <span class="fu">ncol</span>(dataframe)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    na_status <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(dataframe))</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    dataframe <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(dataframe)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    end_row <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dataframe)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    end_col <span class="ot">&lt;-</span> <span class="fu">ncol</span>(dataframe)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"The presence of NAs in this object is "</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>                 na_status, <span class="st">"."</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>                 <span class="st">" Converted a "</span>,start_row,<span class="st">"x"</span>, start_col,</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>                 <span class="st">" dataframe to "</span>,end_row, <span class="st">"x"</span>, end_col))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(dataframe)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Euclidean distance matrix for continuous data</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>ed <span class="ot">&lt;-</span> <span class="cf">function</span>(dataframe) {</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">as.matrix</span>(<span class="fu">dist</span>(dataframe, <span class="at">method=</span><span class="st">"euclidean"</span>)))</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate binary (Jaccard) distance matrix for binary data</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>bd <span class="ot">&lt;-</span> <span class="cf">function</span>(dataframe) {</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">as.matrix</span>(<span class="fu">dist</span>(dataframe, <span class="at">method=</span><span class="st">"binary"</span>)))</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Assign subtype labels to dataframe</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>df_sublabel <span class="ot">&lt;-</span> <span class="cf">function</span>(d, subtypes) {</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(d)</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    d<span class="sc">$</span>subtype <span class="ot">&lt;-</span> subtypes</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    d<span class="sc">$</span>subtype <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(d<span class="sc">$</span>subtype)</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(d)</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="co"># PLOTTING FUNCTIONS ========================================================</span></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>cont_jitter <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y, ylabel, <span class="at">top_sig =</span> <span class="fu">max</span>(d[, y])<span class="sc">*</span><span class="fl">1.02</span>,</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>                        <span class="at">sigsize =</span> <span class="dv">8</span>, <span class="at">ymin =</span> <span class="fu">min</span>(d[, y]),</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>                        <span class="at">ymax =</span> <span class="fu">max</span>(d[, y])<span class="sc">*</span><span class="fl">1.05</span>) {</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>    jitter_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> d, <span class="fu">aes_string</span>(<span class="at">x =</span> <span class="st">"subtype"</span>, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">geom_jitter</span>(<span class="at">size=</span><span class="dv">3</span>, <span class="at">width=</span><span class="fl">0.1</span>, <span class="at">alpha=</span><span class="fl">0.5</span>,</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">aes_string</span>(<span class="at">color =</span> <span class="st">"subtype"</span>)) <span class="sc">+</span></span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">coord_cartesian</span>(<span class="at">ylim=</span><span class="fu">c</span>(ymin, ymax)) <span class="sc">+</span></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">25</span>)) <span class="sc">+</span></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">geom_signif</span>(<span class="at">comparisons =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"1"</span>, <span class="st">"2"</span>)),</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>                               <span class="at">color =</span> <span class="st">"black"</span>,</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>                               <span class="at">textsize =</span> sigsize,</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>                               <span class="at">map_signif_level =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test =</span> <span class="st">"t.test"</span>,</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test.args =</span> <span class="fu">list</span>(<span class="at">var.equal =</span> <span class="cn">TRUE</span>)) <span class="sc">+</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">geom_signif</span>(<span class="at">comparisons =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"2"</span>, <span class="st">"3"</span>)),</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>                               <span class="at">color =</span> <span class="st">"black"</span>,</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>                               <span class="at">textsize =</span> sigsize,</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>                               <span class="at">map_signif_level =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test =</span> <span class="st">"t.test"</span>,</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test.args =</span> <span class="fu">list</span>(<span class="at">var.equal =</span> <span class="cn">TRUE</span>)) <span class="sc">+</span></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">geom_signif</span>(<span class="at">comparisons =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"1"</span>, <span class="st">"3"</span>)),</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>                               <span class="at">color=</span><span class="st">"black"</span>,</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>                               <span class="at">y_position =</span> top_sig,</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>                               <span class="at">textsize =</span> sigsize,</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>                               <span class="at">map_signif_level =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test =</span> <span class="st">"t.test"</span>,</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test.args =</span> <span class="fu">list</span>(<span class="at">var.equal =</span> <span class="cn">TRUE</span>)) <span class="sc">+</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">xlab</span>(<span class="st">"Subtype"</span>) <span class="sc">+</span></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">ylab</span>(ylabel)</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(jitter_plot)</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-2 Bar charts for continuous variables - WIP</span></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>cont_bar <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y, <span class="at">ymin=</span><span class="dv">0</span>, <span class="at">ymax=</span><span class="dv">100</span>, ylabel) {</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>    agg_data <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(<span class="fu">get</span>(y, d),</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="fu">list</span>(<span class="at">subtype =</span> <span class="fu">get</span>(<span class="st">"subtype"</span>, d)),</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>    <span class="at">FUN =</span> <span class="cf">function</span>(x) <span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(x), <span class="at">sd =</span> <span class="fu">sd</span>(x), <span class="at">n =</span> <span class="fu">length</span>(x)))</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>    agg_data <span class="ot">&lt;-</span> <span class="fu">do.call</span>(data.frame, agg_data)</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>    agg_data<span class="sc">$</span>se <span class="ot">&lt;-</span> agg_data<span class="sc">$</span>x.sd <span class="sc">/</span> <span class="fu">sqrt</span>(agg_data<span class="sc">$</span>x.n)</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>    <span class="fu">colnames</span>(agg_data) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"subtype"</span>, <span class="st">"mean"</span>, <span class="st">"sd"</span>, <span class="st">"n"</span>, <span class="st">"se"</span>)</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>    dodge <span class="ot">&lt;-</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.9</span>)</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>    limits <span class="ot">&lt;-</span> <span class="fu">aes</span>(<span class="at">ymax =</span> mean <span class="sc">+</span> se,</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>                  <span class="at">ymin =</span> mean <span class="sc">-</span> se)</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>    bar_plot  <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> agg_data, <span class="fu">aes</span>(<span class="at">x =</span> subtype, <span class="at">y =</span> mean,</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">fill =</span> subtype)) <span class="sc">+</span></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>, <span class="at">position =</span> dodge) <span class="sc">+</span></span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">geom_errorbar</span>(limits, <span class="at">position =</span> dodge, <span class="at">width =</span> <span class="fl">0.25</span>) <span class="sc">+</span></span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">coord_cartesian</span>(<span class="at">ylim=</span><span class="fu">c</span>(ymin, ymax)) <span class="sc">+</span></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">25</span>)) <span class="sc">+</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">xlab</span>(<span class="st">"Subtype"</span>) <span class="sc">+</span></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">ylab</span>(ylabel)</span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>    plot_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"~/mnt/wheeler-lab/lab-data/abcd/processed/"</span>,</span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"prashanth-proj/baseline-chronic-mtbi/figures/"</span>)</span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>    plot_name <span class="ot">&lt;-</span> <span class="fu">paste0</span>(y, <span class="st">"_bar_plot.png"</span>)</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(bar_plot)</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-3 Pie charts for categorical variables</span></span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>pie_plot <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y, column_names, group, colour, fontsize) {</span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>    tab <span class="ot">&lt;-</span> d <span class="sc">%&gt;%</span></span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a>        <span class="fu">group_by</span>(<span class="fu">as.character</span>(d[, y])) <span class="sc">%&gt;%</span></span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>        <span class="fu">summarize</span>(<span class="fu">n</span>())</span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>    tab <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(tab)</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>    <span class="fu">colnames</span>(tab) <span class="ot">&lt;-</span> column_names</span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pie</span>(tab<span class="sc">$</span>counts,</span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a>        <span class="at">labels=</span><span class="fu">as.character</span>(d[, y]),</span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span>colour,</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>        <span class="at">cex=</span>fontsize)</span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-4 Bar charts for categorical variables</span></span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a>cat_bar_classic <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y) {</span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a>    g <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(d, <span class="fu">aes_string</span>(<span class="at">x =</span> <span class="st">"subtype"</span>, <span class="at">fill =</span> <span class="st">"sex"</span>)) <span class="sc">+</span></span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a>         <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"fill"</span>) <span class="sc">+</span></span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a>         <span class="fu">ylab</span>(<span class="st">"Proportion"</span>) <span class="sc">+</span></span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a>         <span class="fu">xlab</span>(<span class="st">"Subtype"</span>) <span class="sc">+</span></span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a>         <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a>         <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">25</span>))</span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(g)</span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>cat_bar <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y, <span class="at">scheme=</span><span class="st">"Spectral"</span>) {</span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a>    g <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(d, <span class="fu">aes_string</span>(<span class="at">x =</span> <span class="st">"subtype"</span>, <span class="at">fill =</span> y)) <span class="sc">+</span></span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a>         <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"fill"</span>) <span class="sc">+</span></span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a>         <span class="fu">ylab</span>(<span class="st">"Proportion"</span>) <span class="sc">+</span></span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a>         <span class="fu">xlab</span>(<span class="st">"Subtype"</span>) <span class="sc">+</span></span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a>         <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a>         <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">40</span>)) <span class="sc">+</span></span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a>         <span class="fu">scale_fill_brewer</span>(<span class="at">palette=</span>scheme)</span>
+<span id="cb3-146"><a href="#cb3-146" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(g)</span>
+<span id="cb3-147"><a href="#cb3-147" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-148"><a href="#cb3-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-149"><a href="#cb3-149" aria-hidden="true" tabindex="-1"></a>cat_bar2 <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y) {</span>
+<span id="cb3-150"><a href="#cb3-150" aria-hidden="true" tabindex="-1"></a>    a <span class="ot">&lt;-</span> <span class="fu">group_by</span>(d, subtype)</span>
+<span id="cb3-151"><a href="#cb3-151" aria-hidden="true" tabindex="-1"></a>    b <span class="ot">&lt;-</span> <span class="fu">count</span>(a, <span class="sc">!!</span><span class="fu">sym</span>(y))</span>
+<span id="cb3-152"><a href="#cb3-152" aria-hidden="true" tabindex="-1"></a>    c <span class="ot">&lt;-</span> <span class="fu">mutate</span>(b, <span class="at">proportion =</span> n<span class="sc">/</span><span class="fu">sum</span>(n))</span>
+<span id="cb3-153"><a href="#cb3-153" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(c, <span class="fu">aes_string</span>(<span class="st">"subtype"</span>, <span class="st">"proportion"</span>, <span class="at">fill =</span> y)) <span class="sc">+</span></span>
+<span id="cb3-154"><a href="#cb3-154" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="fu">position_stack</span>()) <span class="sc">+</span></span>
+<span id="cb3-155"><a href="#cb3-155" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> n), <span class="at">position =</span> <span class="fu">position_stack</span>(<span class="at">vjust =</span><span class="fl">0.5</span>), <span class="at">size =</span><span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb3-156"><a href="#cb3-156" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb3-157"><a href="#cb3-157" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">50</span>)) <span class="sc">+</span></span>
+<span id="cb3-158"><a href="#cb3-158" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"Proportion"</span>) <span class="sc">+</span></span>
+<span id="cb3-159"><a href="#cb3-159" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Subtype"</span>)</span>
+<span id="cb3-160"><a href="#cb3-160" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-161"><a href="#cb3-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-162"><a href="#cb3-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-163"><a href="#cb3-163" aria-hidden="true" tabindex="-1"></a>cat_bar3 <span class="ot">&lt;-</span> <span class="cf">function</span>(d, y, <span class="at">scheme=</span><span class="st">"Dark2"</span>) {</span>
+<span id="cb3-164"><a href="#cb3-164" aria-hidden="true" tabindex="-1"></a>    a <span class="ot">&lt;-</span> <span class="fu">group_by</span>(d, subtype)</span>
+<span id="cb3-165"><a href="#cb3-165" aria-hidden="true" tabindex="-1"></a>    b <span class="ot">&lt;-</span> <span class="fu">count</span>(a, <span class="sc">!!</span><span class="fu">sym</span>(y))</span>
+<span id="cb3-166"><a href="#cb3-166" aria-hidden="true" tabindex="-1"></a>    c <span class="ot">&lt;-</span> <span class="fu">mutate</span>(b, <span class="at">proportion =</span> n<span class="sc">/</span><span class="fu">sum</span>(n))</span>
+<span id="cb3-167"><a href="#cb3-167" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(c, <span class="fu">aes_string</span>(<span class="st">"subtype"</span>, <span class="st">"proportion"</span>, <span class="at">fill =</span> y)) <span class="sc">+</span></span>
+<span id="cb3-168"><a href="#cb3-168" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="fu">position_stack</span>()) <span class="sc">+</span></span>
+<span id="cb3-169"><a href="#cb3-169" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> n), <span class="at">position =</span> <span class="fu">position_stack</span>(<span class="at">vjust =</span><span class="fl">0.5</span>), <span class="at">size =</span><span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb3-170"><a href="#cb3-170" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb3-171"><a href="#cb3-171" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">40</span>)) <span class="sc">+</span></span>
+<span id="cb3-172"><a href="#cb3-172" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"Proportion"</span>) <span class="sc">+</span></span>
+<span id="cb3-173"><a href="#cb3-173" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Subtype"</span>) <span class="sc">+</span></span>
+<span id="cb3-174"><a href="#cb3-174" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> scheme)</span>
+<span id="cb3-175"><a href="#cb3-175" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-176"><a href="#cb3-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-177"><a href="#cb3-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-178"><a href="#cb3-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-179"><a href="#cb3-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-180"><a href="#cb3-180" aria-hidden="true" tabindex="-1"></a><span class="do">## Save-plot function</span></span>
+<span id="cb3-181"><a href="#cb3-181" aria-hidden="true" tabindex="-1"></a>plotsave <span class="ot">&lt;-</span> <span class="cf">function</span>(plotname, <span class="at">h=</span><span class="dv">12</span>, <span class="at">w=</span><span class="dv">10</span>) {</span>
+<span id="cb3-182"><a href="#cb3-182" aria-hidden="true" tabindex="-1"></a>    plot_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/"</span>,</span>
+<span id="cb3-183"><a href="#cb3-183" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"prashanth-proj/baseline-chronic-mtbi/figures/"</span>)</span>
+<span id="cb3-184"><a href="#cb3-184" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggsave</span>(<span class="fu">paste0</span>(plot_dir, plotname), <span class="at">height=</span>h, <span class="at">width=</span>w)</span>
+<span id="cb3-185"><a href="#cb3-185" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. IMPORTING DATA =========================================================</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>data_path <span class="ot">&lt;-</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/inputs/"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>acute_symptoms <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">paste0</span>(data_path, <span class="st">"acute_symptoms.csv"</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>brain_str <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">paste0</span>(data_path, <span class="st">"brain_str.csv"</span>))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>demographics <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">paste0</span>(data_path, <span class="st">"demographics.csv"</span>))</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. SPLITTING DATASETS INTO DISTINCT 'DATA TYPES' ==========================</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Mechanism of injury</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>mechanism_pre_dummy <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"latest_mtbi_mechanism"</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>mechanism <span class="ot">&lt;-</span> <span class="fu">dummy_cols</span>(mechanism_pre_dummy,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                        <span class="at">select_columns =</span> <span class="st">"latest_mtbi_mechanism"</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                        <span class="at">remove_selected_columns =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Age at injury</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>injury_age <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"latest_mtbi_age"</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Effects (LOC &amp; "PTA") of mTBI</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>mtbi_effects <span class="ot">&lt;-</span> acute_symptoms <span class="sc">%&gt;%</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"latest_mtbi_loc"</span>, <span class="st">"latest_mtbi_mem_daze"</span>)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(acute_symptoms)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Fractional anisotropy</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>fa <span class="ot">&lt;-</span> brain_str <span class="sc">%&gt;%</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"dmdtifp1_331"</span><span class="sc">:</span><span class="st">"dmdtifp1_401"</span>)</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Mean diffusivity</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> brain_str <span class="sc">%&gt;%</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"dmdtifp1_402"</span><span class="sc">:</span><span class="st">"dmdtifp1_472"</span>)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(brain_str)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="co"># SES</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>ses <span class="ot">&lt;-</span> demographics <span class="sc">%&gt;%</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"acs_raked_propensity_score"</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Age</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>age <span class="ot">&lt;-</span> demographics <span class="sc">%&gt;%</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"interview_age"</span>)</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Sex</span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>sex_pre_dummy <span class="ot">&lt;-</span> demographics <span class="sc">%&gt;%</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"sex"</span>)</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>sex <span class="ot">&lt;-</span> <span class="fu">dummy_cols</span>(sex_pre_dummy, <span class="at">select_columns =</span> <span class="st">"sex"</span>,</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>                  <span class="at">remove_selected_columns =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(sex_pre_dummy)</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Pubertal status</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>puberty <span class="ot">&lt;-</span> demographics <span class="sc">%&gt;%</span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"sex"</span>, <span class="fu">starts_with</span>(<span class="st">"pds"</span>))</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>puberty<span class="sc">$</span>puberty_m <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(puberty[, <span class="fu">c</span>(<span class="st">"pds_p_ss_male_category"</span>,</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>                                          <span class="st">"pds_y_ss_male_category"</span>)],</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>                              <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>puberty<span class="sc">$</span>puberty_f <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(puberty[, <span class="fu">c</span>(<span class="st">"pds_p_ss_female_category"</span>,</span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>                                          <span class="st">"pds_y_ss_female_category"</span>)],</span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>                              <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>puberty <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="fu">starts_with</span>(<span class="st">"puberty"</span>))</span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>puberty<span class="sc">$</span>puberty <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(puberty[, <span class="fu">c</span>(<span class="st">"puberty_m"</span>,</span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>                                       <span class="st">"puberty_f"</span>)],</span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>                           <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>puberty <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"puberty"</span>)</span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a><span class="co"># Race</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>race <span class="ot">&lt;-</span> demographics <span class="sc">%&gt;%</span></span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="st">"subjectkey"</span>, <span class="st">"white"</span><span class="sc">:</span><span class="st">"hispanic"</span>)</span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(demographics)</span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. ENSURE DATAFRAMES ARE PROPERLY ORDERED =================================</span></span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>race <span class="ot">&lt;-</span> <span class="fu">arrange</span>(race, subjectkey)</span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>ses <span class="ot">&lt;-</span> <span class="fu">arrange</span>(ses, subjectkey)</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a>sex <span class="ot">&lt;-</span> <span class="fu">arrange</span>(sex, subjectkey)</span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>puberty <span class="ot">&lt;-</span> <span class="fu">arrange</span>(puberty, subjectkey)</span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>mechanism <span class="ot">&lt;-</span> <span class="fu">arrange</span>(mechanism, subjectkey)</span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a>mtbi_effects <span class="ot">&lt;-</span> <span class="fu">arrange</span>(mtbi_effects, subjectkey)</span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a>injury_age <span class="ot">&lt;-</span> <span class="fu">arrange</span>(injury_age, subjectkey)</span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a>fa <span class="ot">&lt;-</span> <span class="fu">arrange</span>(fa, subjectkey)</span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> <span class="fu">arrange</span>(md, subjectkey)</span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a>age <span class="ot">&lt;-</span> <span class="fu">arrange</span>(age, subjectkey)</span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. REMOVE NAs =============================================================</span></span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a>age <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(age)</span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>fa <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(fa)</span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(md)</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a>injury_age <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(injury_age)</span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>mechanism <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(mechanism)</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a>mtbi_effects <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(mtbi_effects)</span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a>puberty <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(puberty)</span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a>race <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(race)</span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>ses <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(ses)</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>sex <span class="ot">&lt;-</span> <span class="fu">na_removal</span>(sex)</span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a>common_subs <span class="ot">&lt;-</span> <span class="fu">Reduce</span>(intersect, <span class="fu">list</span>(age<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a>                                      fa<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a>                                      md<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a>                                      injury_age<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a>                                      mechanism<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a>                                      mtbi_effects<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a>                                      puberty<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a>                                      race<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a>                                      ses<span class="sc">$</span>subjectkey,</span>
+<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a>                                      sex<span class="sc">$</span>subjectkey))</span>
+<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a>age <span class="ot">&lt;-</span> age[age<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a>fa <span class="ot">&lt;-</span> fa[fa<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> md[md<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a>injury_age <span class="ot">&lt;-</span> injury_age[injury_age<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>mechanism <span class="ot">&lt;-</span> mechanism[mechanism<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a>mtbi_effects <span class="ot">&lt;-</span> mtbi_effects[mtbi_effects<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>puberty <span class="ot">&lt;-</span> puberty[puberty<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a>race <span class="ot">&lt;-</span> race[race<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a>ses <span class="ot">&lt;-</span> ses[ses<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-138"><a href="#cb4-138" aria-hidden="true" tabindex="-1"></a>sex <span class="ot">&lt;-</span> sex[sex<span class="sc">$</span>subjectkey <span class="sc">%in%</span> common_subs, ]</span>
+<span id="cb4-139"><a href="#cb4-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-140"><a href="#cb4-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-141"><a href="#cb4-141" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. ENSURE SUBJECTS ARE IDENTICAL ==========================================</span></span>
+<span id="cb4-142"><a href="#cb4-142" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(age<span class="sc">$</span>subjectkey <span class="sc">==</span> fa<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-143"><a href="#cb4-143" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(fa<span class="sc">$</span>subjectkey <span class="sc">==</span> md<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-144"><a href="#cb4-144" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(md<span class="sc">$</span>subjectkey <span class="sc">==</span> injury_age<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-145"><a href="#cb4-145" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(injury_age<span class="sc">$</span>subjectkey <span class="sc">==</span> mechanism<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-146"><a href="#cb4-146" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(mechanism<span class="sc">$</span>subjectkey <span class="sc">==</span> mtbi_effects<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-147"><a href="#cb4-147" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(mtbi_effects<span class="sc">$</span>subjectkey <span class="sc">==</span> puberty<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-148"><a href="#cb4-148" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(puberty<span class="sc">$</span>subjectkey <span class="sc">==</span> race<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-149"><a href="#cb4-149" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(race<span class="sc">$</span>subjectkey <span class="sc">==</span> ses<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-150"><a href="#cb4-150" aria-hidden="true" tabindex="-1"></a><span class="fu">prod</span>(ses<span class="sc">$</span>subjectkey <span class="sc">==</span> sex<span class="sc">$</span>subjectkey)</span>
+<span id="cb4-151"><a href="#cb4-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-152"><a href="#cb4-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-153"><a href="#cb4-153" aria-hidden="true" tabindex="-1"></a><span class="co"># 7. FORMAT DATAFRAMES FOR SNF ==============================================</span></span>
+<span id="cb4-154"><a href="#cb4-154" aria-hidden="true" tabindex="-1"></a>age <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(age, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-155"><a href="#cb4-155" aria-hidden="true" tabindex="-1"></a>fa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(fa, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-156"><a href="#cb4-156" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(md, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-157"><a href="#cb4-157" aria-hidden="true" tabindex="-1"></a>injury_age <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(injury_age, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-158"><a href="#cb4-158" aria-hidden="true" tabindex="-1"></a>mechanism <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(mechanism, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-159"><a href="#cb4-159" aria-hidden="true" tabindex="-1"></a>mtbi_effects <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(mtbi_effects, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-160"><a href="#cb4-160" aria-hidden="true" tabindex="-1"></a>puberty <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(puberty, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-161"><a href="#cb4-161" aria-hidden="true" tabindex="-1"></a>race <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(race, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-162"><a href="#cb4-162" aria-hidden="true" tabindex="-1"></a>ses <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(ses, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-163"><a href="#cb4-163" aria-hidden="true" tabindex="-1"></a>sex <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(sex, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb4-164"><a href="#cb4-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-165"><a href="#cb4-165" aria-hidden="true" tabindex="-1"></a>age <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(age)</span>
+<span id="cb4-166"><a href="#cb4-166" aria-hidden="true" tabindex="-1"></a>fa <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(fa)</span>
+<span id="cb4-167"><a href="#cb4-167" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(md)</span>
+<span id="cb4-168"><a href="#cb4-168" aria-hidden="true" tabindex="-1"></a>injury_age <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(injury_age)</span>
+<span id="cb4-169"><a href="#cb4-169" aria-hidden="true" tabindex="-1"></a>mechanism <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mechanism)</span>
+<span id="cb4-170"><a href="#cb4-170" aria-hidden="true" tabindex="-1"></a>mtbi_effects <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mtbi_effects)</span>
+<span id="cb4-171"><a href="#cb4-171" aria-hidden="true" tabindex="-1"></a>puberty <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(puberty)</span>
+<span id="cb4-172"><a href="#cb4-172" aria-hidden="true" tabindex="-1"></a>race <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(race)</span>
+<span id="cb4-173"><a href="#cb4-173" aria-hidden="true" tabindex="-1"></a>ses <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(ses)</span>
+<span id="cb4-174"><a href="#cb4-174" aria-hidden="true" tabindex="-1"></a>sex <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(sex)</span>
+<span id="cb4-175"><a href="#cb4-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-176"><a href="#cb4-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-177"><a href="#cb4-177" aria-hidden="true" tabindex="-1"></a><span class="co"># 8. SNF ====================================================================</span></span>
+<span id="cb4-178"><a href="#cb4-178" aria-hidden="true" tabindex="-1"></a><span class="co"># Hyperparameters</span></span>
+<span id="cb4-179"><a href="#cb4-179" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="dv">39</span>             <span class="co"># number of nearest neighbors - suggested as n/10</span></span>
+<span id="cb4-180"><a href="#cb4-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-181"><a href="#cb4-181" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">&lt;-</span> <span class="fl">0.5</span>        <span class="co"># hyperparameter</span></span>
+<span id="cb4-182"><a href="#cb4-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-183"><a href="#cb4-183" aria-hidden="true" tabindex="-1"></a>iterations <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb4-184"><a href="#cb4-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-185"><a href="#cb4-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-186"><a href="#cb4-186" aria-hidden="true" tabindex="-1"></a><span class="co"># Construct distance matrices</span></span>
+<span id="cb4-187"><a href="#cb4-187" aria-hidden="true" tabindex="-1"></a>age_distances <span class="ot">&lt;-</span> <span class="fu">ed</span>(age)</span>
+<span id="cb4-188"><a href="#cb4-188" aria-hidden="true" tabindex="-1"></a>fa_distances <span class="ot">&lt;-</span> <span class="fu">ed</span>(fa)</span>
+<span id="cb4-189"><a href="#cb4-189" aria-hidden="true" tabindex="-1"></a>md_distances <span class="ot">&lt;-</span> <span class="fu">ed</span>(md)</span>
+<span id="cb4-190"><a href="#cb4-190" aria-hidden="true" tabindex="-1"></a>injury_age_distances <span class="ot">&lt;-</span> <span class="fu">ed</span>(injury_age)</span>
+<span id="cb4-191"><a href="#cb4-191" aria-hidden="true" tabindex="-1"></a>puberty_distances <span class="ot">&lt;-</span> <span class="fu">ed</span>(puberty)</span>
+<span id="cb4-192"><a href="#cb4-192" aria-hidden="true" tabindex="-1"></a>ses_distances <span class="ot">&lt;-</span> <span class="fu">ed</span>(ses)</span>
+<span id="cb4-193"><a href="#cb4-193" aria-hidden="true" tabindex="-1"></a>race_distances <span class="ot">&lt;-</span> <span class="fu">bd</span>(race)</span>
+<span id="cb4-194"><a href="#cb4-194" aria-hidden="true" tabindex="-1"></a>mechanism_distances <span class="ot">&lt;-</span> <span class="fu">bd</span>(mechanism)</span>
+<span id="cb4-195"><a href="#cb4-195" aria-hidden="true" tabindex="-1"></a>mtbi_effects_distances <span class="ot">&lt;-</span> <span class="fu">bd</span>(mtbi_effects)</span>
+<span id="cb4-196"><a href="#cb4-196" aria-hidden="true" tabindex="-1"></a>sex_distances <span class="ot">&lt;-</span> <span class="fu">bd</span>(sex)</span>
+<span id="cb4-197"><a href="#cb4-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-198"><a href="#cb4-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-199"><a href="#cb4-199" aria-hidden="true" tabindex="-1"></a><span class="co"># Construct similarity matrices</span></span>
+<span id="cb4-200"><a href="#cb4-200" aria-hidden="true" tabindex="-1"></a>age_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(age_distances, k, alpha)</span>
+<span id="cb4-201"><a href="#cb4-201" aria-hidden="true" tabindex="-1"></a>fa_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(fa_distances, k, alpha)</span>
+<span id="cb4-202"><a href="#cb4-202" aria-hidden="true" tabindex="-1"></a>md_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(md_distances, k, alpha)</span>
+<span id="cb4-203"><a href="#cb4-203" aria-hidden="true" tabindex="-1"></a>injury_age_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(injury_age_distances, k, alpha)</span>
+<span id="cb4-204"><a href="#cb4-204" aria-hidden="true" tabindex="-1"></a>mechanism_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(mechanism_distances, k, alpha)</span>
+<span id="cb4-205"><a href="#cb4-205" aria-hidden="true" tabindex="-1"></a>mtbi_effects_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(mtbi_effects_distances, k, alpha)</span>
+<span id="cb4-206"><a href="#cb4-206" aria-hidden="true" tabindex="-1"></a>puberty_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(puberty_distances, k, alpha)</span>
+<span id="cb4-207"><a href="#cb4-207" aria-hidden="true" tabindex="-1"></a>race_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(race_distances, k, alpha)</span>
+<span id="cb4-208"><a href="#cb4-208" aria-hidden="true" tabindex="-1"></a>ses_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(ses_distances, k, alpha)</span>
+<span id="cb4-209"><a href="#cb4-209" aria-hidden="true" tabindex="-1"></a>sex_similarity_graph <span class="ot">&lt;-</span> <span class="fu">affinityMatrix</span>(sex_distances, k, alpha)</span>
+<span id="cb4-210"><a href="#cb4-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-211"><a href="#cb4-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-212"><a href="#cb4-212" aria-hidden="true" tabindex="-1"></a>fused_graph <span class="ot">&lt;-</span> <span class="fu">SNF</span>(<span class="fu">list</span>(age_similarity_graph,</span>
+<span id="cb4-213"><a href="#cb4-213" aria-hidden="true" tabindex="-1"></a>                           fa_similarity_graph,</span>
+<span id="cb4-214"><a href="#cb4-214" aria-hidden="true" tabindex="-1"></a>                           md_similarity_graph,</span>
+<span id="cb4-215"><a href="#cb4-215" aria-hidden="true" tabindex="-1"></a>                           injury_age_similarity_graph,</span>
+<span id="cb4-216"><a href="#cb4-216" aria-hidden="true" tabindex="-1"></a>                           mechanism_similarity_graph,</span>
+<span id="cb4-217"><a href="#cb4-217" aria-hidden="true" tabindex="-1"></a>                           mtbi_effects_similarity_graph,</span>
+<span id="cb4-218"><a href="#cb4-218" aria-hidden="true" tabindex="-1"></a>                           puberty_similarity_graph,</span>
+<span id="cb4-219"><a href="#cb4-219" aria-hidden="true" tabindex="-1"></a>                           race_similarity_graph,</span>
+<span id="cb4-220"><a href="#cb4-220" aria-hidden="true" tabindex="-1"></a>                           ses_similarity_graph,</span>
+<span id="cb4-221"><a href="#cb4-221" aria-hidden="true" tabindex="-1"></a>                           sex_similarity_graph))</span>
+<span id="cb4-222"><a href="#cb4-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-223"><a href="#cb4-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-224"><a href="#cb4-224" aria-hidden="true" tabindex="-1"></a><span class="co"># CLUSTER FUSED GRAPH =======================================================</span></span>
+<span id="cb4-225"><a href="#cb4-225" aria-hidden="true" tabindex="-1"></a><span class="fu">estimateNumberOfClustersGivenGraph</span>(fused_graph, <span class="dv">2</span><span class="sc">:</span><span class="dv">10</span>) <span class="co"># 2 is best, 3 is next</span></span>
+<span id="cb4-226"><a href="#cb4-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-227"><a href="#cb4-227" aria-hidden="true" tabindex="-1"></a>C <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb4-228"><a href="#cb4-228" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-229"><a href="#cb4-229" aria-hidden="true" tabindex="-1"></a>subtype_membership <span class="ot">&lt;-</span> <span class="fu">spectralClustering</span>(fused_graph, C)</span>
+<span id="cb4-230"><a href="#cb4-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-231"><a href="#cb4-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-232"><a href="#cb4-232" aria-hidden="true" tabindex="-1"></a><span class="co"># Export pilot subtype membership list</span></span>
+<span id="cb4-233"><a href="#cb4-233" aria-hidden="true" tabindex="-1"></a>three_cluster_subtype_list <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(common_subs, subtype_membership)</span>
+<span id="cb4-234"><a href="#cb4-234" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-235"><a href="#cb4-235" aria-hidden="true" tabindex="-1"></a>subtype_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
+<span id="cb4-236"><a href="#cb4-236" aria-hidden="true" tabindex="-1"></a>    <span class="st">"lab-data/abcd/processed/prashanth-proj/snf/subtypes/pilot/"</span>,</span>
+<span id="cb4-237"><a href="#cb4-237" aria-hidden="true" tabindex="-1"></a>    <span class="st">"three_cluster_subtype_list.csv"</span>)</span>
+<span id="cb4-238"><a href="#cb4-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-239"><a href="#cb4-239" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(three_cluster_subtype_list, subtype_path)</span>
+<span id="cb4-240"><a href="#cb4-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-241"><a href="#cb4-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-242"><a href="#cb4-242" aria-hidden="true" tabindex="-1"></a><span class="co"># VISUALIZE CLUSTER RESULTS =================================================</span></span>
+<span id="cb4-243"><a href="#cb4-243" aria-hidden="true" tabindex="-1"></a>fig_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"lab-data/abcd/processed/prashanth-proj/snf/"</span>,</span>
+<span id="cb4-244"><a href="#cb4-244" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"figures-and-tables/pilot/"</span>)</span>
+<span id="cb4-245"><a href="#cb4-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-246"><a href="#cb4-246" aria-hidden="true" tabindex="-1"></a><span class="fu">pdf</span>(<span class="fu">paste0</span>(fig_path,<span class="st">"three_cluster_heatmap.pdf"</span>))</span>
+<span id="cb4-247"><a href="#cb4-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-248"><a href="#cb4-248" aria-hidden="true" tabindex="-1"></a><span class="fu">displayClustersWithHeatmap</span>(fused_graph, subtype_membership)</span>
+<span id="cb4-249"><a href="#cb4-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-250"><a href="#cb4-250" aria-hidden="true" tabindex="-1"></a><span class="fu">dev.off</span>()</span>
+<span id="cb4-251"><a href="#cb4-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-252"><a href="#cb4-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-253"><a href="#cb4-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-254"><a href="#cb4-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-255"><a href="#cb4-255" aria-hidden="true" tabindex="-1"></a><span class="co"># Plots</span></span>
+<span id="cb4-256"><a href="#cb4-256" aria-hidden="true" tabindex="-1"></a>age_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(age, subtype_membership)</span>
+<span id="cb4-257"><a href="#cb4-257" aria-hidden="true" tabindex="-1"></a>fa_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(fa, subtype_membership)</span>
+<span id="cb4-258"><a href="#cb4-258" aria-hidden="true" tabindex="-1"></a>injury_age_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(injury_age, subtype_membership)</span>
+<span id="cb4-259"><a href="#cb4-259" aria-hidden="true" tabindex="-1"></a>md_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(md, subtype_membership)</span>
+<span id="cb4-260"><a href="#cb4-260" aria-hidden="true" tabindex="-1"></a>mechanism_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(mechanism, subtype_membership)</span>
+<span id="cb4-261"><a href="#cb4-261" aria-hidden="true" tabindex="-1"></a>mtbi_effects_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(mtbi_effects, subtype_membership)</span>
+<span id="cb4-262"><a href="#cb4-262" aria-hidden="true" tabindex="-1"></a>puberty_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(puberty, subtype_membership)</span>
+<span id="cb4-263"><a href="#cb4-263" aria-hidden="true" tabindex="-1"></a>race_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(race, subtype_membership)</span>
+<span id="cb4-264"><a href="#cb4-264" aria-hidden="true" tabindex="-1"></a>ses_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(ses, subtype_membership)</span>
+<span id="cb4-265"><a href="#cb4-265" aria-hidden="true" tabindex="-1"></a>sex_post <span class="ot">&lt;-</span> <span class="fu">df_sublabel</span>(sex, subtype_membership)</span>
+<span id="cb4-266"><a href="#cb4-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-267"><a href="#cb4-267" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-268"><a href="#cb4-268" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Generate functions for plotting continuous and categorical data</span></span>
+<span id="cb4-269"><a href="#cb4-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-270"><a href="#cb4-270" aria-hidden="true" tabindex="-1"></a><span class="do">## 2-1 Jitter plots for continuous variables</span></span>
+<span id="cb4-271"><a href="#cb4-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-272"><a href="#cb4-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-273"><a href="#cb4-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-274"><a href="#cb4-274" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Making the plots for input variables</span></span>
+<span id="cb4-275"><a href="#cb4-275" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-276"><a href="#cb4-276" aria-hidden="true" tabindex="-1"></a><span class="co"># VISUALIZATION OF INPUTS ===================================================</span></span>
+<span id="cb4-277"><a href="#cb4-277" aria-hidden="true" tabindex="-1"></a><span class="co"># Interview age in years (agey)</span></span>
+<span id="cb4-278"><a href="#cb4-278" aria-hidden="true" tabindex="-1"></a>agey_post <span class="ot">&lt;-</span> age_post</span>
+<span id="cb4-279"><a href="#cb4-279" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-280"><a href="#cb4-280" aria-hidden="true" tabindex="-1"></a>agey_post<span class="sc">$</span>interview_age <span class="ot">&lt;-</span> agey_post<span class="sc">$</span>interview_age <span class="sc">/</span> <span class="dv">12</span></span>
+<span id="cb4-281"><a href="#cb4-281" aria-hidden="true" tabindex="-1"></a><span class="co"># I AM HERE</span></span>
+<span id="cb4-282"><a href="#cb4-282" aria-hidden="true" tabindex="-1"></a><span class="fu">cont_jitter</span>(<span class="at">d =</span> agey_post,</span>
+<span id="cb4-283"><a href="#cb4-283" aria-hidden="true" tabindex="-1"></a>            <span class="at">y =</span> <span class="st">"interview_age"</span>,</span>
+<span id="cb4-284"><a href="#cb4-284" aria-hidden="true" tabindex="-1"></a>            <span class="at">ylabel =</span> <span class="st">"Age at data collection (y)"</span>,</span>
+<span id="cb4-285"><a href="#cb4-285" aria-hidden="true" tabindex="-1"></a>            <span class="at">top_sig =</span> <span class="fl">11.3</span>)</span>
+<span id="cb4-286"><a href="#cb4-286" aria-hidden="true" tabindex="-1"></a><span class="co">#plotsave("input_agey_jitter_bigfont.png")</span></span>
+<span id="cb4-287"><a href="#cb4-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-288"><a href="#cb4-288" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-289"><a href="#cb4-289" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(agey_post, <span class="fu">aes</span>(interview_age, <span class="at">fill =</span> subtype, <span class="at">color =</span> subtype)) <span class="sc">+</span></span>
+<span id="cb4-290"><a href="#cb4-290" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_density</span>(<span class="at">show.legend =</span> T, <span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="fu">aes</span>(<span class="at">y =</span> ..count..)) <span class="sc">+</span></span>
+<span id="cb4-291"><a href="#cb4-291" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb4-292"><a href="#cb4-292" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">20</span>)) <span class="sc">+</span></span>
+<span id="cb4-293"><a href="#cb4-293" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Age at data collection (y)"</span>) <span class="sc">+</span></span>
+<span id="cb4-294"><a href="#cb4-294" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb4-295"><a href="#cb4-295" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="fu">min</span>(agey_post<span class="sc">$</span>interview_age), <span class="fu">max</span>(agey_post<span class="sc">$</span>interview_age)), <span class="at">expand =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-296"><a href="#cb4-296" aria-hidden="true" tabindex="-1"></a><span class="co"># plotsave("input_agey_density.png")</span></span>
+<span id="cb4-297"><a href="#cb4-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-298"><a href="#cb4-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-299"><a href="#cb4-299" aria-hidden="true" tabindex="-1"></a><span class="co"># 3-2 age on injury</span></span>
+<span id="cb4-300"><a href="#cb4-300" aria-hidden="true" tabindex="-1"></a>injury_agey_post <span class="ot">&lt;-</span> injury_age_post</span>
+<span id="cb4-301"><a href="#cb4-301" aria-hidden="true" tabindex="-1"></a>injury_agey_post<span class="sc">$</span>latest_mtbi_age <span class="ot">&lt;-</span> injury_agey_post<span class="sc">$</span>latest_mtbi_age <span class="sc">/</span> <span class="dv">12</span></span>
+<span id="cb4-302"><a href="#cb4-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-303"><a href="#cb4-303" aria-hidden="true" tabindex="-1"></a><span class="fu">cont_jitter</span>(<span class="at">d =</span> injury_agey_post,</span>
+<span id="cb4-304"><a href="#cb4-304" aria-hidden="true" tabindex="-1"></a>            <span class="at">y =</span> <span class="st">"latest_mtbi_age"</span>,</span>
+<span id="cb4-305"><a href="#cb4-305" aria-hidden="true" tabindex="-1"></a>            <span class="at">ylabel =</span> <span class="st">"Age at injury"</span>,</span>
+<span id="cb4-306"><a href="#cb4-306" aria-hidden="true" tabindex="-1"></a>            <span class="at">ymax =</span> <span class="dv">12</span>,</span>
+<span id="cb4-307"><a href="#cb4-307" aria-hidden="true" tabindex="-1"></a>            <span class="at">top_sig =</span> <span class="fl">11.3</span>)</span>
+<span id="cb4-308"><a href="#cb4-308" aria-hidden="true" tabindex="-1"></a><span class="fu">plotsave4</span>(<span class="st">"input_injury_agey_jitter_bigfont3.png"</span>)</span>
+<span id="cb4-309"><a href="#cb4-309" aria-hidden="true" tabindex="-1"></a><span class="co"># Looks strange because age at injury was provided in years</span></span>
+<span id="cb4-310"><a href="#cb4-310" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-311"><a href="#cb4-311" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-312"><a href="#cb4-312" aria-hidden="true" tabindex="-1"></a><span class="co"># 3-3 ses</span></span>
+<span id="cb4-313"><a href="#cb4-313" aria-hidden="true" tabindex="-1"></a><span class="fu">cont_jitter</span>(<span class="at">d =</span> ses_post,</span>
+<span id="cb4-314"><a href="#cb4-314" aria-hidden="true" tabindex="-1"></a>            <span class="at">y =</span> <span class="st">"acs_raked_propensity_score"</span>,</span>
+<span id="cb4-315"><a href="#cb4-315" aria-hidden="true" tabindex="-1"></a>            <span class="at">ylabel =</span> <span class="st">"Socioeconomic status score"</span>,</span>
+<span id="cb4-316"><a href="#cb4-316" aria-hidden="true" tabindex="-1"></a>            <span class="at">ymax =</span> <span class="dv">2000</span>,</span>
+<span id="cb4-317"><a href="#cb4-317" aria-hidden="true" tabindex="-1"></a>            <span class="at">top_sig =</span> <span class="dv">1900</span>)</span>
+<span id="cb4-318"><a href="#cb4-318" aria-hidden="true" tabindex="-1"></a><span class="fu">plotsave4</span>(<span class="st">"input_ses_jitter_bigfont4.png"</span>)</span>
+<span id="cb4-319"><a href="#cb4-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-320"><a href="#cb4-320" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-4 sex</span></span>
+<span id="cb4-321"><a href="#cb4-321" aria-hidden="true" tabindex="-1"></a>sex_post <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-322"><a href="#cb4-322" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">sex =</span> <span class="fu">case_when</span>(sex_F <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"F"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"M"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-323"><a href="#cb4-323" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">"sex"</span>, <span class="st">"subtype"</span>)</span>
+<span id="cb4-324"><a href="#cb4-324" aria-hidden="true" tabindex="-1"></a>sex_post<span class="sc">$</span>sex <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(sex_post<span class="sc">$</span>sex)</span>
+<span id="cb4-325"><a href="#cb4-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-326"><a href="#cb4-326" aria-hidden="true" tabindex="-1"></a><span class="fu">cat_bar</span>(sex_post, <span class="st">"sex"</span>, <span class="at">scheme=</span><span class="st">"Dark2"</span>)</span>
+<span id="cb4-327"><a href="#cb4-327" aria-hidden="true" tabindex="-1"></a><span class="fu">plotsave2</span>(<span class="st">"input_sex_bar_numbered6.png"</span>)</span>
+<span id="cb4-328"><a href="#cb4-328" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-329"><a href="#cb4-329" aria-hidden="true" tabindex="-1"></a><span class="fu">pie_plot</span>(<span class="at">d =</span> sex_post,</span>
+<span id="cb4-330"><a href="#cb4-330" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="st">"sex"</span>,</span>
+<span id="cb4-331"><a href="#cb4-331" aria-hidden="true" tabindex="-1"></a>         <span class="at">column_names =</span> <span class="fu">c</span>(<span class="st">"sex"</span>, <span class="st">"counts"</span>),</span>
+<span id="cb4-332"><a href="#cb4-332" aria-hidden="true" tabindex="-1"></a>         <span class="at">colour =</span> <span class="fu">c</span>(<span class="st">"red"</span>, <span class="st">"blue"</span>),</span>
+<span id="cb4-333"><a href="#cb4-333" aria-hidden="true" tabindex="-1"></a>         <span class="at">fontsize =</span> <span class="dv">2</span>)</span>
+<span id="cb4-334"><a href="#cb4-334" aria-hidden="true" tabindex="-1"></a><span class="co"># plotsave("input_sex_pie.png")</span></span>
+<span id="cb4-335"><a href="#cb4-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-336"><a href="#cb4-336" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-337"><a href="#cb4-337" aria-hidden="true" tabindex="-1"></a><span class="do">## 3-5 puberty</span></span>
+<span id="cb4-338"><a href="#cb4-338" aria-hidden="true" tabindex="-1"></a><span class="fu">min</span>(puberty_post<span class="sc">$</span>puberty)</span>
+<span id="cb4-339"><a href="#cb4-339" aria-hidden="true" tabindex="-1"></a>puberty_post <span class="ot">&lt;-</span> puberty_post[<span class="fu">which</span>(puberty_post<span class="sc">$</span>puberty <span class="sc">!=</span> <span class="dv">0</span>), ]</span>
+<span id="cb4-340"><a href="#cb4-340" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(puberty_post)</span>
+<span id="cb4-341"><a href="#cb4-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-342"><a href="#cb4-342" aria-hidden="true" tabindex="-1"></a><span class="fu">cont_jitter</span>(<span class="at">d =</span> puberty_post,</span>
+<span id="cb4-343"><a href="#cb4-343" aria-hidden="true" tabindex="-1"></a>            <span class="at">y =</span> <span class="st">"puberty"</span>,</span>
+<span id="cb4-344"><a href="#cb4-344" aria-hidden="true" tabindex="-1"></a>            <span class="at">ylabel =</span> <span class="st">"Pubertal Development Scale Score"</span>,</span>
+<span id="cb4-345"><a href="#cb4-345" aria-hidden="true" tabindex="-1"></a>            <span class="at">ymin =</span> <span class="fl">0.5</span>,</span>
+<span id="cb4-346"><a href="#cb4-346" aria-hidden="true" tabindex="-1"></a>            <span class="at">ymax =</span> <span class="fl">4.5</span>,</span>
+<span id="cb4-347"><a href="#cb4-347" aria-hidden="true" tabindex="-1"></a>            <span class="at">top_sig =</span> <span class="fl">4.3</span>)</span>
+<span id="cb4-348"><a href="#cb4-348" aria-hidden="true" tabindex="-1"></a><span class="co"># plotsave("input_puberty_jitter.png")</span></span>
+<span id="cb4-349"><a href="#cb4-349" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-350"><a href="#cb4-350" aria-hidden="true" tabindex="-1"></a><span class="do">## 4</span></span>
+<span id="cb4-351"><a href="#cb4-351" aria-hidden="true" tabindex="-1"></a>mechanism_undummied <span class="ot">&lt;-</span> mechanism_post <span class="sc">%&gt;%</span></span>
+<span id="cb4-352"><a href="#cb4-352" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">mechanism =</span> <span class="fu">case_when</span>(latest_mtbi_mechanism_fall_hit <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"fall/hit"</span>,</span>
+<span id="cb4-353"><a href="#cb4-353" aria-hidden="true" tabindex="-1"></a>                     latest_mtbi_mechanism_hosp_er <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"hospitalized"</span>,</span>
+<span id="cb4-354"><a href="#cb4-354" aria-hidden="true" tabindex="-1"></a>                     latest_mtbi_mechanism_multi <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"multiple"</span>,</span>
+<span id="cb4-355"><a href="#cb4-355" aria-hidden="true" tabindex="-1"></a>                     latest_mtbi_mechanism_other_loc <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"other_loc"</span>,</span>
+<span id="cb4-356"><a href="#cb4-356" aria-hidden="true" tabindex="-1"></a>                     latest_mtbi_mechanism_vehicle <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"vehicle"</span>,</span>
+<span id="cb4-357"><a href="#cb4-357" aria-hidden="true" tabindex="-1"></a>                     latest_mtbi_mechanism_violent_hit <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"violent"</span>))</span>
+<span id="cb4-358"><a href="#cb4-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-359"><a href="#cb4-359" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-360"><a href="#cb4-360" aria-hidden="true" tabindex="-1"></a><span class="fu">cat_bar</span>(mechanism_undummied, <span class="st">"mechanism"</span>, <span class="at">scheme =</span> <span class="st">"Dark2"</span> )</span>
+<span id="cb4-361"><a href="#cb4-361" aria-hidden="true" tabindex="-1"></a><span class="co"># plotsave("input_mechanism_bar.png")</span></span>
+<span id="cb4-362"><a href="#cb4-362" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-363"><a href="#cb4-363" aria-hidden="true" tabindex="-1"></a>mtbi_effects_post <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-364"><a href="#cb4-364" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">LOC =</span> <span class="fu">case_when</span>(latest_mtbi_loc <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="st">"No"</span>,</span>
+<span id="cb4-365"><a href="#cb4-365" aria-hidden="true" tabindex="-1"></a>                           <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Yes"</span>))</span>
+<span id="cb4-366"><a href="#cb4-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-367"><a href="#cb4-367" aria-hidden="true" tabindex="-1"></a>mtbi_effects_post <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-368"><a href="#cb4-368" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">mem_daze =</span> <span class="fu">case_when</span>(latest_mtbi_mem_daze <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="st">"No"</span>,</span>
+<span id="cb4-369"><a href="#cb4-369" aria-hidden="true" tabindex="-1"></a>                           <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Yes"</span>))</span>
+<span id="cb4-370"><a href="#cb4-370" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-371"><a href="#cb4-371" aria-hidden="true" tabindex="-1"></a>mtbi_effects_post <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-372"><a href="#cb4-372" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="st">`</span><span class="at">Memory loss or dazed</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"mem_daze"</span>)</span>
+<span id="cb4-373"><a href="#cb4-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-374"><a href="#cb4-374" aria-hidden="true" tabindex="-1"></a><span class="fu">cat_bar</span>(mtbi_effects_post, <span class="st">"LOC"</span>, <span class="at">scheme =</span> <span class="st">"Dark2"</span>)</span>
+<span id="cb4-375"><a href="#cb4-375" aria-hidden="true" tabindex="-1"></a><span class="fu">plotsave2</span>(<span class="st">"input_loc2.png"</span>)</span>
+<span id="cb4-376"><a href="#cb4-376" aria-hidden="true" tabindex="-1"></a><span class="co"># plotsave("input_loc.png")</span></span>
+<span id="cb4-377"><a href="#cb4-377" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-378"><a href="#cb4-378" aria-hidden="true" tabindex="-1"></a><span class="fu">cat_bar</span>(mtbi_effects_post, <span class="st">"mem_daze"</span>, <span class="at">scheme =</span> <span class="st">"Dark2"</span>)</span>
+<span id="cb4-379"><a href="#cb4-379" aria-hidden="true" tabindex="-1"></a><span class="fu">plotsave2</span>(<span class="st">"input_mem_daze2.png"</span>)</span>
+<span id="cb4-380"><a href="#cb4-380" aria-hidden="true" tabindex="-1"></a><span class="co">#plotsave("input_mem_daze.png")</span></span>
+<span id="cb4-381"><a href="#cb4-381" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-382"><a href="#cb4-382" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(race_post)</span>
+<span id="cb4-383"><a href="#cb4-383" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-384"><a href="#cb4-384" aria-hidden="true" tabindex="-1"></a>race_post_merged <span class="ot">&lt;-</span> race_post</span>
+<span id="cb4-385"><a href="#cb4-385" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-386"><a href="#cb4-386" aria-hidden="true" tabindex="-1"></a>race_post_merged <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-387"><a href="#cb4-387" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">mixed =</span> <span class="fu">case_when</span>(white <span class="sc">+</span></span>
+<span id="cb4-388"><a href="#cb4-388" aria-hidden="true" tabindex="-1"></a>                             black <span class="sc">+</span></span>
+<span id="cb4-389"><a href="#cb4-389" aria-hidden="true" tabindex="-1"></a>                             native_american <span class="sc">+</span></span>
+<span id="cb4-390"><a href="#cb4-390" aria-hidden="true" tabindex="-1"></a>                             native_alaskan <span class="sc">+</span></span>
+<span id="cb4-391"><a href="#cb4-391" aria-hidden="true" tabindex="-1"></a>                             native_hawaiian <span class="sc">+</span></span>
+<span id="cb4-392"><a href="#cb4-392" aria-hidden="true" tabindex="-1"></a>                             guamanian <span class="sc">+</span></span>
+<span id="cb4-393"><a href="#cb4-393" aria-hidden="true" tabindex="-1"></a>                             samoan <span class="sc">+</span></span>
+<span id="cb4-394"><a href="#cb4-394" aria-hidden="true" tabindex="-1"></a>                             other_pacific_islander <span class="sc">+</span></span>
+<span id="cb4-395"><a href="#cb4-395" aria-hidden="true" tabindex="-1"></a>                             asian <span class="sc">+</span></span>
+<span id="cb4-396"><a href="#cb4-396" aria-hidden="true" tabindex="-1"></a>                             chinese <span class="sc">+</span></span>
+<span id="cb4-397"><a href="#cb4-397" aria-hidden="true" tabindex="-1"></a>                             filipino <span class="sc">+</span></span>
+<span id="cb4-398"><a href="#cb4-398" aria-hidden="true" tabindex="-1"></a>                             japanese <span class="sc">+</span></span>
+<span id="cb4-399"><a href="#cb4-399" aria-hidden="true" tabindex="-1"></a>                             korean <span class="sc">+</span></span>
+<span id="cb4-400"><a href="#cb4-400" aria-hidden="true" tabindex="-1"></a>                             vietnamese <span class="sc">+</span></span>
+<span id="cb4-401"><a href="#cb4-401" aria-hidden="true" tabindex="-1"></a>                             other_asian <span class="sc">+</span></span>
+<span id="cb4-402"><a href="#cb4-402" aria-hidden="true" tabindex="-1"></a>                             other <span class="sc">+</span></span>
+<span id="cb4-403"><a href="#cb4-403" aria-hidden="true" tabindex="-1"></a>                             hispanic <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb4-404"><a href="#cb4-404" aria-hidden="true" tabindex="-1"></a>                         <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">0</span>))</span>
+<span id="cb4-405"><a href="#cb4-405" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-406"><a href="#cb4-406" aria-hidden="true" tabindex="-1"></a>race_post_merged <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-407"><a href="#cb4-407" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">race =</span> <span class="fu">case_when</span>(mixed <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Mixed"</span>,</span>
+<span id="cb4-408"><a href="#cb4-408" aria-hidden="true" tabindex="-1"></a>                            white <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"White"</span>,</span>
+<span id="cb4-409"><a href="#cb4-409" aria-hidden="true" tabindex="-1"></a>                            black <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Black"</span>,</span>
+<span id="cb4-410"><a href="#cb4-410" aria-hidden="true" tabindex="-1"></a>                            native_american <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Native American"</span>,</span>
+<span id="cb4-411"><a href="#cb4-411" aria-hidden="true" tabindex="-1"></a>                            native_alaskan <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Native Alaskan"</span>,</span>
+<span id="cb4-412"><a href="#cb4-412" aria-hidden="true" tabindex="-1"></a>                            native_hawaiian <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Native Hawaiian"</span>,</span>
+<span id="cb4-413"><a href="#cb4-413" aria-hidden="true" tabindex="-1"></a>                            guamanian <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Guamanian"</span>,</span>
+<span id="cb4-414"><a href="#cb4-414" aria-hidden="true" tabindex="-1"></a>                            samoan <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Samoan"</span>,</span>
+<span id="cb4-415"><a href="#cb4-415" aria-hidden="true" tabindex="-1"></a>                            other_pacific_islander <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Other Pacific Islander"</span>,</span>
+<span id="cb4-416"><a href="#cb4-416" aria-hidden="true" tabindex="-1"></a>                            chinese <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Chinese"</span>,</span>
+<span id="cb4-417"><a href="#cb4-417" aria-hidden="true" tabindex="-1"></a>                            filipino <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Filipino"</span>,</span>
+<span id="cb4-418"><a href="#cb4-418" aria-hidden="true" tabindex="-1"></a>                            japanese <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Japanese"</span>,</span>
+<span id="cb4-419"><a href="#cb4-419" aria-hidden="true" tabindex="-1"></a>                            korean <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Korean"</span>,</span>
+<span id="cb4-420"><a href="#cb4-420" aria-hidden="true" tabindex="-1"></a>                            vietnamese <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Vietnamese"</span>,</span>
+<span id="cb4-421"><a href="#cb4-421" aria-hidden="true" tabindex="-1"></a>                            asian <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Other Asian"</span>,</span>
+<span id="cb4-422"><a href="#cb4-422" aria-hidden="true" tabindex="-1"></a>                            other_asian <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Other Asian"</span>,</span>
+<span id="cb4-423"><a href="#cb4-423" aria-hidden="true" tabindex="-1"></a>                            other <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Other or NA"</span>,</span>
+<span id="cb4-424"><a href="#cb4-424" aria-hidden="true" tabindex="-1"></a>                            refuse_to_answer <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Other or NA"</span>,</span>
+<span id="cb4-425"><a href="#cb4-425" aria-hidden="true" tabindex="-1"></a>                            hispanic <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Hispanic"</span>))</span>
+<span id="cb4-426"><a href="#cb4-426" aria-hidden="true" tabindex="-1"></a>race_post_merged <span class="sc">%&lt;&gt;%</span></span>
+<span id="cb4-427"><a href="#cb4-427" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">Race =</span> race)</span>
+<span id="cb4-428"><a href="#cb4-428" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-429"><a href="#cb4-429" aria-hidden="true" tabindex="-1"></a><span class="fu">cat_bar</span>(race_post_merged, <span class="st">"Race"</span>, <span class="at">scheme=</span><span class="st">"Dark2"</span>)</span>
+<span id="cb4-430"><a href="#cb4-430" aria-hidden="true" tabindex="-1"></a><span class="fu">plotsave2</span>(<span class="st">"input_race_bar2.png"</span>)</span>
+<span id="cb4-431"><a href="#cb4-431" aria-hidden="true" tabindex="-1"></a><span class="co"># plotsave("input_race_bar.png")</span></span>
+<span id="cb4-432"><a href="#cb4-432" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-433"><a href="#cb4-433" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-434"><a href="#cb4-434" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-435"><a href="#cb4-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-436"><a href="#cb4-436" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-437"><a href="#cb4-437" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-438"><a href="#cb4-438" aria-hidden="true" tabindex="-1"></a><span class="co"># Quick section to describe the inputs</span></span>
+<span id="cb4-439"><a href="#cb4-439" aria-hidden="true" tabindex="-1"></a>df_list <span class="ot">&lt;-</span> <span class="fu">list</span>(age_post,</span>
+<span id="cb4-440"><a href="#cb4-440" aria-hidden="true" tabindex="-1"></a>                injury_age_post,</span>
+<span id="cb4-441"><a href="#cb4-441" aria-hidden="true" tabindex="-1"></a>                mechanism_undummied,</span>
+<span id="cb4-442"><a href="#cb4-442" aria-hidden="true" tabindex="-1"></a>                mtbi_effects_post,</span>
+<span id="cb4-443"><a href="#cb4-443" aria-hidden="true" tabindex="-1"></a>                puberty_post,</span>
+<span id="cb4-444"><a href="#cb4-444" aria-hidden="true" tabindex="-1"></a>                race_post_merged,</span>
+<span id="cb4-445"><a href="#cb4-445" aria-hidden="true" tabindex="-1"></a>                ses_post,</span>
+<span id="cb4-446"><a href="#cb4-446" aria-hidden="true" tabindex="-1"></a>                sex_post)</span>
+<span id="cb4-447"><a href="#cb4-447" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-448"><a href="#cb4-448" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(df_list, quick)</span>
+<span id="cb4-449"><a href="#cb4-449" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-450"><a href="#cb4-450" aria-hidden="true" tabindex="-1"></a>df_list_named <span class="ot">&lt;-</span> <span class="fu">lapply</span>(df_list, <span class="cf">function</span>(x) <span class="fu">setDT</span>(x, <span class="at">keep.rownames =</span> <span class="cn">TRUE</span>)[])</span>
+<span id="cb4-451"><a href="#cb4-451" aria-hidden="true" tabindex="-1"></a>full_inputs <span class="ot">&lt;-</span> df_list_named <span class="sc">%&gt;%</span> <span class="fu">reduce</span>(full_join, <span class="at">by=</span><span class="fu">c</span>(<span class="st">'rn'</span>, <span class="st">'subtype'</span>))</span>
+<span id="cb4-452"><a href="#cb4-452" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-453"><a href="#cb4-453" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tools)</span>
+<span id="cb4-454"><a href="#cb4-454" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-455"><a href="#cb4-455" aria-hidden="true" tabindex="-1"></a>full_inputs <span class="ot">&lt;-</span> <span class="fu">rename_with</span>(full_inputs, <span class="sc">~</span> <span class="fu">toTitleCase</span>(<span class="fu">gsub</span>(<span class="st">"_"</span>, <span class="st">" "</span>, .x, <span class="at">fixed =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb4-456"><a href="#cb4-456" aria-hidden="true" tabindex="-1"></a>full_inputs <span class="ot">&lt;-</span> <span class="fu">rename_with</span>(full_inputs, <span class="sc">~</span> <span class="fu">gsub</span>(<span class="st">"Acs"</span>, <span class="st">"ACS"</span>, .x, <span class="at">fixed =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-457"><a href="#cb4-457" aria-hidden="true" tabindex="-1"></a>full_inputs <span class="ot">&lt;-</span> <span class="fu">rename_with</span>(full_inputs, <span class="sc">~</span> <span class="fu">gsub</span>(<span class="st">"Mtbi"</span>, <span class="st">"mTBI"</span>, .x, <span class="at">fixed =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-458"><a href="#cb4-458" aria-hidden="true" tabindex="-1"></a>full_inputs <span class="ot">&lt;-</span> <span class="fu">rename_with</span>(full_inputs, <span class="sc">~</span> <span class="fu">gsub</span>(<span class="st">"Loc"</span>, <span class="st">"LOC"</span>, .x, <span class="at">fixed =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-459"><a href="#cb4-459" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-460"><a href="#cb4-460" aria-hidden="true" tabindex="-1"></a>full_inputs_renamed <span class="ot">&lt;-</span> full_inputs <span class="sc">%&gt;%</span></span>
+<span id="cb4-461"><a href="#cb4-461" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Race =</span> <span class="fu">case_when</span>(</span>
+<span id="cb4-462"><a href="#cb4-462" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"white"</span> <span class="sc">~</span> <span class="st">"White"</span>,</span>
+<span id="cb4-463"><a href="#cb4-463" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"mixed"</span> <span class="sc">~</span> <span class="st">"Mixed"</span>,</span>
+<span id="cb4-464"><a href="#cb4-464" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"black"</span> <span class="sc">~</span> <span class="st">"Black"</span>,</span>
+<span id="cb4-465"><a href="#cb4-465" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"other/refuse_to_answer"</span> <span class="sc">~</span> <span class="st">"Other or NA"</span>,</span>
+<span id="cb4-466"><a href="#cb4-466" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"hispanic"</span> <span class="sc">~</span> <span class="st">"Hispanic"</span>,</span>
+<span id="cb4-467"><a href="#cb4-467" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"other_asian"</span> <span class="sc">~</span> <span class="st">"Other or NA"</span>,</span>
+<span id="cb4-468"><a href="#cb4-468" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"chinese"</span> <span class="sc">~</span> <span class="st">"Asian"</span>,</span>
+<span id="cb4-469"><a href="#cb4-469" aria-hidden="true" tabindex="-1"></a>        Race <span class="sc">==</span> <span class="st">"filipino"</span> <span class="sc">~</span> <span class="st">"Asian"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-470"><a href="#cb4-470" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Mechanism =</span> <span class="fu">case_when</span>(</span>
+<span id="cb4-471"><a href="#cb4-471" aria-hidden="true" tabindex="-1"></a>        Mechanism <span class="sc">==</span> <span class="st">"fall/hit"</span> <span class="sc">~</span> <span class="st">"Fall"</span>,</span>
+<span id="cb4-472"><a href="#cb4-472" aria-hidden="true" tabindex="-1"></a>        Mechanism <span class="sc">==</span> <span class="st">"hospitalized"</span> <span class="sc">~</span> <span class="st">"ER visit"</span>,</span>
+<span id="cb4-473"><a href="#cb4-473" aria-hidden="true" tabindex="-1"></a>        Mechanism <span class="sc">==</span> <span class="st">"multiple"</span> <span class="sc">~</span> <span class="st">"Other"</span>,</span>
+<span id="cb4-474"><a href="#cb4-474" aria-hidden="true" tabindex="-1"></a>        Mechanism <span class="sc">==</span> <span class="st">"vehicle"</span> <span class="sc">~</span> <span class="st">"Vehicle accident"</span>,</span>
+<span id="cb4-475"><a href="#cb4-475" aria-hidden="true" tabindex="-1"></a>        Mechanism <span class="sc">==</span> <span class="st">"violent"</span> <span class="sc">~</span> <span class="st">"Other"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-476"><a href="#cb4-476" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="st">`</span><span class="at">Memory loss or feeling dazed</span><span class="st">`</span> <span class="ot">=</span> <span class="st">`</span><span class="at">Mem Daze</span><span class="st">`</span>)</span>
+<span id="cb4-477"><a href="#cb4-477" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-478"><a href="#cb4-478" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-479"><a href="#cb4-479" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(table1)</span>
+<span id="cb4-480"><a href="#cb4-480" aria-hidden="true" tabindex="-1"></a><span class="fu">table1</span>(<span class="sc">~</span><span class="st">`</span><span class="at">Mechanism</span><span class="st">`</span> <span class="sc">+</span></span>
+<span id="cb4-481"><a href="#cb4-481" aria-hidden="true" tabindex="-1"></a>       <span class="st">`</span><span class="at">Race</span><span class="st">`</span>, <span class="at">data =</span> full_inputs_renamed)</span>
+<span id="cb4-482"><a href="#cb4-482" aria-hidden="true" tabindex="-1"></a><span class="fu">table1</span>(<span class="sc">~</span><span class="st">`</span><span class="at">Memory loss or feeling dazed</span><span class="st">`</span> <span class="sc">+</span></span>
+<span id="cb4-483"><a href="#cb4-483" aria-hidden="true" tabindex="-1"></a>       <span class="st">`</span><span class="at">LOC</span><span class="st">`</span> <span class="sc">+</span></span>
+<span id="cb4-484"><a href="#cb4-484" aria-hidden="true" tabindex="-1"></a>       <span class="st">`</span><span class="at">Latest mTBI Age</span><span class="st">`</span> <span class="sc">+</span></span>
+<span id="cb4-485"><a href="#cb4-485" aria-hidden="true" tabindex="-1"></a>       <span class="st">`</span><span class="at">Sex</span><span class="st">`</span>, <span class="at">data =</span> full_inputs_renamed)</span>
+<span id="cb4-486"><a href="#cb4-486" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-487"><a href="#cb4-487" aria-hidden="true" tabindex="-1"></a><span class="fu">table1</span>(<span class="sc">~</span>Sex, <span class="at">data =</span> full_inputs)</span>
+<span id="cb4-488"><a href="#cb4-488" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-489"><a href="#cb4-489" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-490"><a href="#cb4-490" aria-hidden="true" tabindex="-1"></a><span class="co"># 4 SNF graph</span></span>
+<span id="cb4-491"><a href="#cb4-491" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"qgraph"</span>)</span>
+<span id="cb4-492"><a href="#cb4-492" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-493"><a href="#cb4-493" aria-hidden="true" tabindex="-1"></a>subtype1 <span class="ot">&lt;-</span> <span class="fu">which</span>(subtype_membership <span class="sc">==</span> <span class="dv">1</span>)</span>
+<span id="cb4-494"><a href="#cb4-494" aria-hidden="true" tabindex="-1"></a>subtype2 <span class="ot">&lt;-</span> <span class="fu">which</span>(subtype_membership <span class="sc">==</span> <span class="dv">2</span>)</span>
+<span id="cb4-495"><a href="#cb4-495" aria-hidden="true" tabindex="-1"></a>subtype3 <span class="ot">&lt;-</span> <span class="fu">which</span>(subtype_membership <span class="sc">==</span> <span class="dv">3</span>)</span>
+<span id="cb4-496"><a href="#cb4-496" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-497"><a href="#cb4-497" aria-hidden="true" tabindex="-1"></a>graphsize <span class="ot">&lt;-</span> <span class="dv">390</span></span>
+<span id="cb4-498"><a href="#cb4-498" aria-hidden="true" tabindex="-1"></a>minigraph <span class="ot">&lt;-</span> fused_graph[<span class="dv">1</span><span class="sc">:</span>graphsize, <span class="dv">1</span><span class="sc">:</span>graphsize]</span>
+<span id="cb4-499"><a href="#cb4-499" aria-hidden="true" tabindex="-1"></a>minigroup <span class="ot">&lt;-</span> subtype_membership[<span class="dv">1</span><span class="sc">:</span>graphsize]</span>
+<span id="cb4-500"><a href="#cb4-500" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-501"><a href="#cb4-501" aria-hidden="true" tabindex="-1"></a>subtype1 <span class="ot">&lt;-</span> <span class="fu">which</span>(minigroup <span class="sc">==</span> <span class="dv">1</span>)</span>
+<span id="cb4-502"><a href="#cb4-502" aria-hidden="true" tabindex="-1"></a>subtype2 <span class="ot">&lt;-</span> <span class="fu">which</span>(minigroup <span class="sc">==</span> <span class="dv">2</span>)</span>
+<span id="cb4-503"><a href="#cb4-503" aria-hidden="true" tabindex="-1"></a>subtype3 <span class="ot">&lt;-</span> <span class="fu">which</span>(minigroup <span class="sc">==</span> <span class="dv">3</span>)</span>
+<span id="cb4-504"><a href="#cb4-504" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-505"><a href="#cb4-505" aria-hidden="true" tabindex="-1"></a>matrix_vals <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(minigraph)</span>
+<span id="cb4-506"><a href="#cb4-506" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(matrix_vals)</span>
+<span id="cb4-507"><a href="#cb4-507" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-508"><a href="#cb4-508" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-509"><a href="#cb4-509" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-510"><a href="#cb4-510" aria-hidden="true" tabindex="-1"></a><span class="co"># matrix_vals_minimal &lt;- matrix_vals[which(matrix_vals &lt; 0.5)]</span></span>
+<span id="cb4-511"><a href="#cb4-511" aria-hidden="true" tabindex="-1"></a><span class="co"># hist(matrix_vals_minimal)</span></span>
+<span id="cb4-512"><a href="#cb4-512" aria-hidden="true" tabindex="-1"></a><span class="co"># quantile(matrix_vals_minimal, probs = c(.95, .99, .999))</span></span>
+<span id="cb4-513"><a href="#cb4-513" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-514"><a href="#cb4-514" aria-hidden="true" tabindex="-1"></a>plot_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"~/mnt/wheeler-lab/lab-data/abcd/processed/"</span>,</span>
+<span id="cb4-515"><a href="#cb4-515" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"prashanth-proj/baseline-chronic-mtbi/figures/"</span>)</span>
+<span id="cb4-516"><a href="#cb4-516" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-517"><a href="#cb4-517" aria-hidden="true" tabindex="-1"></a><span class="fu">qgraph</span>(minigraph, <span class="at">layout=</span><span class="st">"spring"</span>,</span>
+<span id="cb4-518"><a href="#cb4-518" aria-hidden="true" tabindex="-1"></a>       <span class="at">labels =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb4-519"><a href="#cb4-519" aria-hidden="true" tabindex="-1"></a>       <span class="at">groups =</span> <span class="fu">list</span>(<span class="st">"Subtype 1"</span> <span class="ot">=</span> subtype1,</span>
+<span id="cb4-520"><a href="#cb4-520" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Subtype 2"</span> <span class="ot">=</span> subtype2,</span>
+<span id="cb4-521"><a href="#cb4-521" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Subtype 3"</span> <span class="ot">=</span> subtype3),</span>
+<span id="cb4-522"><a href="#cb4-522" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color =</span> <span class="fu">c</span>(<span class="st">"salmon"</span>,</span>
+<span id="cb4-523"><a href="#cb4-523" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"lightgreen"</span>,</span>
+<span id="cb4-524"><a href="#cb4-524" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"lightblue"</span>),</span>
+<span id="cb4-525"><a href="#cb4-525" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.color =</span> <span class="st">"darkgray"</span>,</span>
+<span id="cb4-526"><a href="#cb4-526" aria-hidden="true" tabindex="-1"></a>       <span class="at">minimum =</span> <span class="fl">0.003</span>,</span>
+<span id="cb4-527"><a href="#cb4-527" aria-hidden="true" tabindex="-1"></a>       <span class="at">vsize =</span> <span class="fl">1.5</span>,</span>
+<span id="cb4-528"><a href="#cb4-528" aria-hidden="true" tabindex="-1"></a>       <span class="at">filename =</span> <span class="fu">paste0</span>(plot_dir,<span class="st">"qgraph_full"</span>),</span>
+<span id="cb4-529"><a href="#cb4-529" aria-hidden="true" tabindex="-1"></a>       <span class="at">filetype =</span> <span class="st">"png"</span>)</span>
+<span id="cb4-530"><a href="#cb4-530" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-531"><a href="#cb4-531" aria-hidden="true" tabindex="-1"></a><span class="fu">qgraph</span>(minigraph,</span>
+<span id="cb4-532"><a href="#cb4-532" aria-hidden="true" tabindex="-1"></a>       <span class="at">labels=</span><span class="cn">FALSE</span>,</span>
+<span id="cb4-533"><a href="#cb4-533" aria-hidden="true" tabindex="-1"></a>       <span class="at">groups =</span> <span class="fu">list</span>(<span class="st">"Subtype 1"</span> <span class="ot">=</span> subtype1,</span>
+<span id="cb4-534"><a href="#cb4-534" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Subtype 2"</span> <span class="ot">=</span> subtype2,</span>
+<span id="cb4-535"><a href="#cb4-535" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Subtype 3"</span> <span class="ot">=</span> subtype3),</span>
+<span id="cb4-536"><a href="#cb4-536" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="fu">c</span>(<span class="st">"salmon"</span>,</span>
+<span id="cb4-537"><a href="#cb4-537" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"lightgreen"</span>,</span>
+<span id="cb4-538"><a href="#cb4-538" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"lightblue"</span>),</span>
+<span id="cb4-539"><a href="#cb4-539" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.color =</span> <span class="st">"darkgray"</span>,</span>
+<span id="cb4-540"><a href="#cb4-540" aria-hidden="true" tabindex="-1"></a>       <span class="at">vsize =</span> <span class="dv">3</span>)</span>
+<span id="cb4-541"><a href="#cb4-541" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(minigraph)</span>
+<span id="cb4-542"><a href="#cb4-542" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-543"><a href="#cb4-543" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-544"><a href="#cb4-544" aria-hidden="true" tabindex="-1"></a><span class="co"># next step: eliminate the low-weight edges</span></span>
+<span id="cb4-545"><a href="#cb4-545" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-546"><a href="#cb4-546" aria-hidden="true" tabindex="-1"></a><span class="fu">qgraph</span>(minigraph, <span class="at">layout=</span><span class="st">"groups"</span>,</span>
+<span id="cb4-547"><a href="#cb4-547" aria-hidden="true" tabindex="-1"></a>       <span class="at">labels=</span><span class="cn">FALSE</span>,</span>
+<span id="cb4-548"><a href="#cb4-548" aria-hidden="true" tabindex="-1"></a>       <span class="at">groups =</span> <span class="fu">list</span>(<span class="st">"Subtype 1"</span> <span class="ot">=</span> subtype1,</span>
+<span id="cb4-549"><a href="#cb4-549" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Subtype 2"</span> <span class="ot">=</span> subtype2,</span>
+<span id="cb4-550"><a href="#cb4-550" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Subtype 3"</span> <span class="ot">=</span> subtype3),</span>
+<span id="cb4-551"><a href="#cb4-551" aria-hidden="true" tabindex="-1"></a>       <span class="at">graph =</span> <span class="st">"factorial"</span>)</span>
+<span id="cb4-552"><a href="#cb4-552" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-553"><a href="#cb4-553" aria-hidden="true" tabindex="-1"></a><span class="fu">qgraph</span>(minigraph, <span class="at">graph=</span><span class="st">"factorial"</span>)</span>
+<span id="cb4-554"><a href="#cb4-554" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-555"><a href="#cb4-555" aria-hidden="true" tabindex="-1"></a><span class="fu">qgraph</span>(a, <span class="at">layout=</span><span class="st">"spring"</span>,</span>
+<span id="cb4-556"><a href="#cb4-556" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-557"><a href="#cb4-557" aria-hidden="true" tabindex="-1"></a>       <span class="at">groups =</span> <span class="fu">list</span>(<span class="at">Depression =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">16</span>,</span>
+<span id="cb4-558"><a href="#cb4-558" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"OCD"</span> <span class="ot">=</span> <span class="dv">17</span><span class="sc">:</span><span class="dv">26</span>),</span>
+<span id="cb4-559"><a href="#cb4-559" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color =</span> <span class="fu">c</span>(<span class="st">"lightblue"</span>,</span>
+<span id="cb4-560"><a href="#cb4-560" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"lightsalmon"</span>))</span>
+<span id="cb4-561"><a href="#cb4-561" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-562"><a href="#cb4-562" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="dv">5</span><span class="sc">+</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./conclusion.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Conclusion</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./evaluate_outcomes.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Evaluating outcome measures</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>
