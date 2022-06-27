@@ -17,6 +17,7 @@ Three major types of imaging data are provided by the NDA:
 Detailed lists of the ROIs are present in Supplementary File 2 of @UD6THTQZ#Hagler_Etal_2019. Below is a list of the different parcellation schemes that have been used for the neuroimaging data in ABCD. Table numbers are referencing tables in Supplementary File 2 of @UD6THTQZ#Hagler_Etal_2019. 
 
 
+
 ### Parcellations containing white matter parcels
 
 1. **ATLASTRACK**: Fiber tracts automatically labeled by AtlasTrack (Hagler; supp. table 6)
@@ -34,6 +35,9 @@ Detailed lists of the ROIs are present in Supplementary File 2 of @UD6THTQZ#Hagl
 
 6. **GORDON**: Cortical parcels defined by resting-state functional connectivity (Gordon; supp. table 5)
 
+@Gord
+
+@2XF56HJP#Gordon_Etal_2016
 
 ## Functional MRI
 
@@ -55,6 +59,11 @@ Detailed lists of the ROIs are present in Supplementary File 2 of @UD6THTQZ#Hagl
 - ABCD rsfMRI Network to Subcortical ROI Correlations (mrirscor02.txt)
 - Resting-State fMRI Survey (restsurv01.txt)
     - A survey following the fMRI asking about the experience
+
+l@Gordon
+
+@Go
+
 
 
 ## Structural MRI
