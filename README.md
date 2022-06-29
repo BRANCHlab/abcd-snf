@@ -1,4 +1,4 @@
-# Clustering and classification for paediatric mTBI
+# Clustering and Classification for Paediatric mTBI
 
 This repository contains a [quarto](https://quarto.org/) book containing all the work I complete over my PhD.
 
