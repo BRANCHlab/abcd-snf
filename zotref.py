@@ -1,1 +1,1 @@
-/home/prashanth/.local/share/nvim/plugged/zotcite/python3/zotref.py
+/home/prashanth/.local/share/nvim/site/pack/packer/start/zotcite/python3/zotref.py
