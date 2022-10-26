@@ -1,38 +1,96 @@
-# Subjects
+# Subtyping
 
-In this chapter, I identify the subjects included for subsequent analyses.
-
-The TBI information of the ABCD dataset is split across a few files:
-
-* `abcd_otbi01.txt`: the raw, modified Ohio State TBI screen given at baseline
-* `abcd_tbi01.txt`: summary scores of abcd_otbi01.txt
-* `abcd_lpohstbi01.txt`: all longitudinal follow-ups of the baseline screen
-* `abcd_lsstbi01.txt`: summary scores of abcd_lpohstbi01.txt
+## Identifying subjects
 
 All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the `abcd_otbi01.txt` file.
-
-
-## Cleaning the baseline TBI dataset
-
-The `abcd_otbi01.txt` file contains difficult to understand column names and does not explicitly indicate if a child has sustained an mTBI according to typical GCS-based definitions.
 
 ```{r eval=FALSE}
 
 library(branchabcd)
 library(readr)
+library(dplyr)
 
 # Import baseline TBI dataset
-otbi01 <- read_delim("abcd/4.0/trauma/abcd_otbi01.txt")
+otbi01 <- read_delim("data/abcd/4.0/trauma/abcd_otbi01.txt")
 
-# Change the otbi01 dataset to have meaningful column names
-otbi01_renamed <- rename_otbi01(otbi01)
+# Give the dataset meaningful column names (e.g., tbi_5 -> blast_inj)
+otbi01_r <- rename_tbi(otbi01)
+
+
+otbi01_r <- otbi01_r |>
+    mutate(across(hosp_er_inj:other_other_multi_effect_end_age, as.numeric))
+
+
+remove_dd <- function(abcd_df) {
+    print(abcd_df)[4:5, ] 
+
+"The NDAR Global Unique Identifier (GUID) for research subject" %in% first_row
+"The event name for which the data was collected" %in% first_row
+"Subject ID how it's defined in lab/project" %in% first_row
+"Sex of subject at birth" %in% first_row
+"dataset_id" %in% first_row
+"collection_id" %in% first_row
+
+}
+
+remove_dd(otbi01_r)
+
+first_row <- as.vector(otbi01_r[1, ])
+
+
+
+assign_tbi <- function(tbi_df) {
+    tbi_df_mtbi <- tbi_df |>
+        dplyr::mutate(mtbi = dplyr::case_when(
+            (hosp_er_loc < 2 & hosp_er_mem_daze == 1) | hosp_er_loc == 1 ~ 1,
+            (vehicle_loc < 2 & vehicle_mem_daze == 1) | vehicle_loc == 1 ~ 1,
+            (fall_hit_loc < 2 & fall_hit_mem_daze == 1) | fall_hit_loc == 1 ~ 1,
+            (violent_hit_loc < 2 & violent_hit_mem_daze == 1) |
+                violent_hit_loc == 1 ~ 1,
+            (blast_loc < 2 & blast_mem_daze == 1) | blast_loc == 1 ~ 1,
+            (other_loc_num - other_loc_num_over_30) > 0 ~ 1,
+            (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ 1,
+            other_multi_inj == 1 ~ 0.5,
+            other_other_multi_inj == 1 ~ 0.5,
+            TRUE ~ 0
+        ))
+    return(tbi_df_mtbi)
+}
+
+assign_tbi(otbi01_r)
+
+otbi01_detailed <- otbi01_r |>
+    mutate(mtbi = case_when(
+        (hosp_er_loc < 2 & hosp_er_mem_daze == 1) | hosp_er_loc == 1 ~ 1,
+        (vehicle_loc < 2 & vehicle_mem_daze == 1) | vehicle_loc == 1 ~ 1,
+        (fall_hit_loc < 2 & fall_hit_mem_daze == 1) | fall_hit_loc == 1 ~ 1,
+        (violent_hit_loc < 2 & violent_hit_mem_daze == 1) | violent_hit_loc ==
+            1 ~ 1,
+        (blast_loc < 2 & blast_mem_daze == 1) | blast_loc == 1 ~ 1,
+        (other_loc_num - other_loc_num_over_30) > 0 ~ 1,
+        (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ 1,
+        other_multi_inj == 1 ~ 0.5,
+        other_other_multi_inj == 1 ~ 0.5,
+        TRUE ~ 0
+    ))
+
+
+str(otbi01_renamed)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```
-
-Note that all variables with the same prefix (or number originally) are referring to the same injury or set of injuries.
-
-
-## Detailing the data
 
 To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
 

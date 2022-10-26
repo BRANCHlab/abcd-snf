@@ -2,7 +2,11 @@
 
 Dr. Wheeler has previously conducted some pilot SNF analyses within the Philadelphia Neurodevelopmental Cohort (PNC) dataset.
 
-Those previous analyses are outlined in this chapter.
+A main qualitative finding from this pilot was that subtype #3 had reduced performance on the line orientation test, higher likelihood of experiencing LOC, and decreased functional connectivity between the brainstem and occipital cortex. 
+
+The code in those previous analyses (with small adjustments) are shown below.
+Only the code outputs relevant to the qualitiative finding above are included.
+
 
 ## Setting up the data
 
@@ -109,21 +113,19 @@ library(SNFtool)
 library(dplyr)
 library(ggplot2)
 
-# source script that loads and checks data -
-# source('ABCD-TBI_SNF_data_setup_script1.R')
-
 # Perform the standard recommended normalisation
 rsfc.norm <- standardNormalization(rsfc)
 clinical.norm <- standardNormalization(clinical)
 demographics.norm <- standardNormalization(demographics)
 
-# For the subsequent analysis we need to transpose the data so the rows become columnns and the columns become rows
+# For the subsequent analysis we need to transpose the data
 rsfc.norm.tr <- t(rsfc.norm)
 clinical.norm.tr <- t(clinical.norm)
 demographics.norm.tr <- t(demographics.norm)
 
-#Now, the idea is to create similarity matrices (these can also be considered as graphs) for each of the data frames. For this it is necessary to set some parameters:
-# 1) the number of neighbours, K (must be greater than 1; normally between 20 and 30)
+# Create silarity matrices for each data frame.
+# Hyperparameters:
+# 1) the number of neighbours, K (normally between 20 - 30)
 # 2) the hyperparameter alpha, which is normally between 0.3 and 0.8
 # 3) the number of iterations, usually between 10 and 50
 
@@ -211,7 +213,7 @@ var <- cbind(rownames.rsfc, rownames.clinical, rownames.demographics)
 ```{r eval = FALSE}
 library(dplyr)
 library(ggplot2)
-library(MASS)
+#library(MASS)
 
 
 clustering.fused.2<-read.csv("data/pnc/pilot-snf/clusters_fused_2.csv")
@@ -737,14 +739,14 @@ geom_boxplot(fill=c('orange','purple', 'light blue')) + ylab('Total Correct') +
 theme_bw() + theme(axis.text.x=element_text(size=20), axis.text.y=element_text(size=20), axis.title.y=element_text(size=28), axis.title.x = element_blank(), plot.title = element_text(size=28, hjust = 0.5, face="bold"),panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + ggtitle("Line Orientation Test") 
 
 # For carbon
-ggsave("data/pnc/pilot-snf/3_cluster_line_orientation_test.png",
-    width = 10,
-    height = 10)
-
-# For this repo
-ggsave("figures/pnc/pilot-snf/3_cluster_line_orientation_test.png",
-    width = 10,
-    height = 10)
+# ggsave("data/pnc/pilot-snf/3_cluster_line_orientation_test.png",
+#     width = 10,
+#     height = 10)
+# 
+# # For this repo
+# ggsave("figures/pnc/pilot-snf/3_cluster_line_orientation_test.png",
+#     width = 10,
+#     height = 10)
 
 ```
 
@@ -1091,43 +1093,30 @@ ggplot(clustering.fused.con, aes(x=cluster.3, y=mean_rsfc)) +
 #compute mean rsFC for each connection within each cluster
 rsfc.by.con<-cbind(clustering.fused.con, rsfc_data_wb.tr)
 
+
 c1.rsfc.by.con<-subset(rsfc.by.con, cluster.3==1)
-c1.rsfc.by.con<-c1.rsfc.by.con[,c(5,7:ncol(c1.rsfc.by.con))]
+c1.rsfc.by.con<-c1.rsfc.by.con[,7:ncol(c1.rsfc.by.con)]
 c1.rsfc.by.con<-t(c1.rsfc.by.con)
 c1.rsfc.by.con<-as.data.frame(c1.rsfc.by.con)
 c1.rsfc.by.con$c1.mean<-rowMeans(c1.rsfc.by.con)
-colnames(c1.rsfc.by.con) <- c1.rsfc.by.con[1, ]
-c1.rsfc.by.con <- c1.rsfc.by.con[-c(1), ]
 
 c2.rsfc.by.con<-subset(rsfc.by.con, cluster.3==2)
-c2.rsfc.by.con<-c2.rsfc.by.con[,c(5,7:ncol(c2.rsfc.by.con))]
+c2.rsfc.by.con<-c2.rsfc.by.con[,7:ncol(c2.rsfc.by.con)]
 c2.rsfc.by.con<-t(c2.rsfc.by.con)
 c2.rsfc.by.con<-as.data.frame(c2.rsfc.by.con)
 c2.rsfc.by.con$c2.mean<-rowMeans(c2.rsfc.by.con)
-colnames(c2.rsfc.by.con)
-colnames(c2.rsfc.by.con) <- c2.rsfc.by.con[1, ]
-c2.rsfc.by.con <- c2.rsfc.by.con[-c(1), ]
 
 c3.rsfc.by.con<-subset(rsfc.by.con, cluster.3==3)
-c3.rsfc.by.con<-c3.rsfc.by.con[,c(5,7:ncol(c3.rsfc.by.con))]
+c3.rsfc.by.con<-c3.rsfc.by.con[,7:ncol(c3.rsfc.by.con)]
 c3.rsfc.by.con<-t(c3.rsfc.by.con)
 c3.rsfc.by.con<-as.data.frame(c3.rsfc.by.con)
 c3.rsfc.by.con$c3.mean<-rowMeans(c3.rsfc.by.con)
-colnames(c3.rsfc.by.con) <- c3.rsfc.by.con[1, ]
-c3.rsfc.by.con <- c3.rsfc.by.con[-c(1), ]
 
-#c2.rsfc.by.con<-subset(rsfc.by.con, cluster.3==2)
-#c2.rsfc.by.con<-c2.rsfc.by.con[,7:ncol(c2.rsfc.by.con)]
-#c2.rsfc.by.con<-t(c2.rsfc.by.con)
-#c2.rsfc.by.con<-as.data.frame(c2.rsfc.by.con)
-#c2.rsfc.by.con$c2.mean<-rowMeans(c2.rsfc.by.con)
-#
-#c3.rsfc.by.con<-subset(rsfc.by.con, cluster.3==3)
-#c3.rsfc.by.con<-c3.rsfc.by.con[,7:ncol(c3.rsfc.by.con)]
-#c3.rsfc.by.con<-t(c3.rsfc.by.con)
-#c3.rsfc.by.con<-as.data.frame(c3.rsfc.by.con)
-#c3.rsfc.by.con$c3.mean<-rowMeans(c3.rsfc.by.con)
-
+c4.rsfc.by.con<-subset(rsfc.by.con, cluster.3==4)
+c4.rsfc.by.con<-c4.rsfc.by.con[,7:ncol(c4.rsfc.by.con)]
+c4.rsfc.by.con<-t(c4.rsfc.by.con)
+c4.rsfc.by.con<-as.data.frame(c4.rsfc.by.con)
+c4.rsfc.by.con$c4.mean<-rowMeans(c4.rsfc.by.con)
 
 # read in Shen Node Info
 nodes<-read.csv("data/pnc/pilot-snf/Shen-node-annotation.csv")
@@ -1515,9 +1504,10 @@ cluster_edges.scn.vis<-subset(cluster_edges, V1.network=="Subcortical" & V2.netw
 boxplot(cluster_edges.scn.vis[,9:12], notch = TRUE, col=c('red','blue', 'green'), main="Subcortical Visual", ylab="rsFC")
 
 ## Compare (RSFC) - connectiviy martrices
-library(dils)
+library(dils) # Package removed from CRAN!
 library(corrplot)
 # create edgelist for each cluster
+
 edgelist_c1<-cluster_edges[c("V1", "V2", "c1.mean")]
 edgelist_c2<-cluster_edges[c("V1", "V2", "c2.mean")]
 edgelist_c3<-cluster_edges[c("V1", "V2", "c3.mean")]
@@ -1557,8 +1547,6 @@ corrplot(adjacency_c4, type = "upper", method = "color", tl.cex = 0.2, title="rs
 
 ## Associations between LOC, brainstem-occipital cortex rsFC, and the line orientation test
 
-One qualitative finding from this pilot was that subtype #3 had reduced performance on the line orientation test, higher likelihood of experiencing LOC, and decreased functional connectivity between the brainstem and occipital cortex. 
-In this subsection, I directly examine those variables to see if the previously mentioned observations describe statistically significant associations.
 
 ```{r eval = FALSE}
 library(dplyr)
@@ -1589,6 +1577,31 @@ lot_data <- clustering.fused |>
 # Identifying the rsFC values of each subject
 # In the original script, subjects were pooled together within clusters before rsFC means were calculated
 # Naming the columns with prefixes so we can easily see the cluster membership post-merge
+c1.rsfc.by.con<-subset(rsfc.by.con, cluster.3==1)
+c1.rsfc.by.con<-c1.rsfc.by.con[,c(5,7:ncol(c1.rsfc.by.con))]
+c1.rsfc.by.con<-t(c1.rsfc.by.con)
+c1.rsfc.by.con<-as.data.frame(c1.rsfc.by.con)
+c1.rsfc.by.con$c1.mean<-rowMeans(c1.rsfc.by.con)
+colnames(c1.rsfc.by.con) <- c1.rsfc.by.con[1, ]
+c1.rsfc.by.con <- c1.rsfc.by.con[-c(1), ]
+
+c2.rsfc.by.con<-subset(rsfc.by.con, cluster.3==2)
+c2.rsfc.by.con<-c2.rsfc.by.con[,c(5,7:ncol(c2.rsfc.by.con))]
+c2.rsfc.by.con<-t(c2.rsfc.by.con)
+c2.rsfc.by.con<-as.data.frame(c2.rsfc.by.con)
+c2.rsfc.by.con$c2.mean<-rowMeans(c2.rsfc.by.con)
+colnames(c2.rsfc.by.con)
+colnames(c2.rsfc.by.con) <- c2.rsfc.by.con[1, ]
+c2.rsfc.by.con <- c2.rsfc.by.con[-c(1), ]
+
+c3.rsfc.by.con<-subset(rsfc.by.con, cluster.3==3)
+c3.rsfc.by.con<-c3.rsfc.by.con[,c(5,7:ncol(c3.rsfc.by.con))]
+c3.rsfc.by.con<-t(c3.rsfc.by.con)
+c3.rsfc.by.con<-as.data.frame(c3.rsfc.by.con)
+c3.rsfc.by.con$c3.mean<-rowMeans(c3.rsfc.by.con)
+colnames(c3.rsfc.by.con) <- c3.rsfc.by.con[1, ]
+c3.rsfc.by.con <- c3.rsfc.by.con[-c(1), ]
+
 c1_rsfc_by_con_cnamed <- c1.rsfc.by.con |> rename_with( ~ paste0("c1_", .x))
 c2_rsfc_by_con_cnamed <- c2.rsfc.by.con |> rename_with( ~ paste0("c2_", .x))
 c3_rsfc_by_con_cnamed <- c3.rsfc.by.con |> rename_with( ~ paste0("c3_", .x))
@@ -1606,11 +1619,8 @@ cluster_edges_full_bs_oct <- subset(cluster_edges_full, V1.lobe=="brainstem" & V
 just_subjects <- cluster_edges_full_bs_oct |>
     dplyr::select(starts_with("c"))
 
-colnames(just_subjects)
-
 rsfc_summaries <- just_subjects |>
     summarise(across(everything(), mean))
-
 
 c1_vals <- rsfc_summaries |>
     dplyr::select(starts_with("c1")) |>
@@ -1668,12 +1678,83 @@ lot_data$cluster.3 <- as.factor(lot_data$cluster.3)
 association_df <- inner_join(rsfc_data, loc_data, by = c("cluster.3", "SUBJID"))
 association_df <- inner_join(association_df, lot_data, by = c("cluster.3", "SUBJID"))
 
-association_df
+colnames(association_df)
 
+# rsfc VS line orientation test
+cor.test(association_df$PLOT_TC, association_df$bs_oct_rsfc, use = "complete.obs")$p.value
+# p-value: 0.47161
 
-cor.test(check_rsfmri_as$CBCL_headaches, check_rsfmri_as$rsfmri_cor_ngd_vs_scs_bs, use = "complete.obs")$p.value
+ggplot(association_df, mapping = aes_string(x = "PLOT_TC", y = "bs_oct_rsfc")) +
+    geom_point() + 
+    geom_smooth(method=lm, se=TRUE)
 
+## For carbon
+#ggsave("data/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png",
+#    width = 10,
+#    height = 10)
+#
+## For this repo
+#ggsave("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png",
+#    width = 10,
+#    height = 10)
 ```
 
 
+![](figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png){width=75%}
 
+
+```{r eval = FALSE}
+# rsfc vs LOC
+noloc <- association_df$bs_oct_rsfc[association_df$TBI_LOC == "no"]
+yloc <- association_df$bs_oct_rsfc[association_df$TBI_LOC == "yes"]
+t.test(noloc, yloc)
+# p-value: 0.5017
+
+ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "bs_oct_rsfc")) +
+    geom_boxplot() +
+    geom_jitter() +
+    theme(text = element_text(size = 20))
+
+## For carbon
+#ggsave("data/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png",
+#    width = 10,
+#    height = 10)
+#
+## For this repo
+#ggsave("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png",
+#    width = 10,
+#    height = 10)
+```
+
+
+![](figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png){width=75%}
+
+
+```{r eval = FALSE}
+# LOC vs LOT
+noloc <- association_df$PLOT_TC[association_df$TBI_LOC == "no"]
+yloc <- association_df$PLOT_TC[association_df$TBI_LOC == "yes"]
+t.test(noloc, yloc)
+# p-value: 0.3283
+
+ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "PLOT_TC")) +
+    geom_boxplot() +
+    geom_jitter() +
+    theme(text = element_text(size = 20))
+
+# For carbon
+#ggsave("data/pnc/pilot-snf/3_cluster_loc_lot_assoc.png",
+#    width = 10,
+#    height = 10)
+#
+## For this repo
+#ggsave("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png",
+#    width = 10,
+#    height = 10)
+```
+
+
+![](figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png){width=75%}
+
+
+No significant associations appear between any pair of LOC, line orientation test performance, and brainstem-occipital cortex functional connectivity.
