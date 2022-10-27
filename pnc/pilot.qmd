@@ -12,18 +12,19 @@ Only the code outputs relevant to the qualitiative finding above are included.
 
 ```{r eval = FALSE}
 library(readr)
+library(here)
 
 # rsFMRI
 ## import
-rsfc_data_wb <- read.csv(paste0("data/pnc/pilot-snf/",
-    "PNC_rsfc_QC_passed_present_in_all_imaging_modalities_whole_brain.csv"),
+rsfc_data_wb <- read.csv(here(paste0("data/pnc/pilot-snf/",
+    "PNC_rsfc_QC_passed_present_in_all_imaging_modalities_whole_brain.csv")),
     check.names = FALSE)
 
 
 # clinical data
 ## import
-clinical <- read.csv("data/pnc/pilot-snf/tbi_pnc_clinical.csv",
-                     check.names = FALSE)
+clinical <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_clinical.csv",
+                     check.names = FALSE))
 clinical <- clinical[, -1]
 
 ## recode factors as numbers 1=yes, 0=no
@@ -44,7 +45,7 @@ clinical_t <- clinical_t[sapply(clinical_t,
     function(clinical_t) !any(is.na(clinical_t)))]
 
 ### 6: Demographic Info for TBI participants
-demographics <- read.csv("data/pnc/pilot-snf/tbi_pnc_dem.csv",
+demographics <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_dem.csv"),
     check.names = FALSE)
 demographics <- demographics[, -1]
 
@@ -216,14 +217,14 @@ library(ggplot2)
 #library(MASS)
 
 
-clustering.fused.2<-read.csv("data/pnc/pilot-snf/clusters_fused_2.csv")
-clustering.fused.3<-read.csv("data/pnc/pilot-snf/clusters_fused_3.csv")
+clustering.fused.2<-read.csv(here("data/pnc/pilot-snf/clusters_fused_2.csv"))
+clustering.fused.3<-read.csv(here("data/pnc/pilot-snf/clusters_fused_3.csv"))
 clustering.fused<-cbind(clustering.fused.2, clustering.fused.3[,3])
 colnames(clustering.fused)[4]<- "cluster.3"
 
 # Bring in outcomes .csv 
 
-outcomes<-read.csv("data/pnc/pilot-snf/tbi_pnc_outcomes.csv", fill = TRUE, header = T)
+outcomes<-read.csv(here("data/pnc/pilot-snf/tbi_pnc_outcomes.csv"), fill = TRUE, header = T)
 
 clustering.fused<-merge(clustering.fused, outcomes, by="SUBJID", all.x=T)
 clustering.fused[c('X.x')]<-NULL
@@ -739,29 +740,38 @@ geom_boxplot(fill=c('orange','purple', 'light blue')) + ylab('Total Correct') +
 theme_bw() + theme(axis.text.x=element_text(size=20), axis.text.y=element_text(size=20), axis.title.y=element_text(size=28), axis.title.x = element_blank(), plot.title = element_text(size=28, hjust = 0.5, face="bold"),panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + ggtitle("Line Orientation Test") 
 
 # For carbon
-# ggsave("data/pnc/pilot-snf/3_cluster_line_orientation_test.png",
+# ggsave(here("data/pnc/pilot-snf/3_cluster_line_orientation_test.png"),
 #     width = 10,
 #     height = 10)
 # 
 # # For this repo
-# ggsave("figures/pnc/pilot-snf/3_cluster_line_orientation_test.png",
+# ggsave(here("figures/pnc/pilot-snf/3_cluster_line_orientation_test.png"),
 #     width = 10,
 #     height = 10)
 
 ```
 
-![](figures/pnc/pilot-snf/3_cluster_line_orientation_test.png){width=75%}
+
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+library(knitr)
+library(here)
+
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_line_orientation_test.png"))
+```
+
+
+
 
 
 ```{r eval = FALSE}
 
-clinical <- read.csv("data/pnc/pilot-snf/tbi_pnc_clinical.csv",check.names=FALSE)
+clinical <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_clinical.csv"),check.names=FALSE)
 clinical<-clinical[,-1]
-demographics <- read.csv("data/pnc/pilot-snf/tbi_pnc_dem.csv",check.names=FALSE)
+demographics <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_dem.csv"),check.names=FALSE)
 demographics<-demographics[,-1]
 
-clustering.fused.2<-read.csv("data/pnc/pilot-snf/clusters_fused_2.csv")
-clustering.fused.3<-read.csv("data/pnc/pilot-snf/clusters_fused_3.csv")
+clustering.fused.2<-read.csv(here("data/pnc/pilot-snf/clusters_fused_2.csv"))
+clustering.fused.3<-read.csv(here("data/pnc/pilot-snf/clusters_fused_3.csv"))
 clustering.fused<-cbind(clustering.fused.2, clustering.fused.3[,3])
 colnames(clustering.fused)[4]<- "cluster.3"
 
@@ -870,18 +880,20 @@ ggplot(tbiloc.cluster, aes(x="", y=Proportion, group=TBI_LOC, fill=TBI_LOC)) +
         legend.text=element_text(size=16))
 
 # For carbon
-# ggsave("data/pnc/pilot-snf/3_cluster_loc.png",
+# ggsave(here("data/pnc/pilot-snf/3_cluster_loc.png"),
 #     width = 10,
 #     height = 10)
 # 
 # # For this repo
-# ggsave("figures/pnc/pilot-snf/3_cluster_loc.png",
+# ggsave(here("figures/pnc/pilot-snf/3_cluster_loc.png"),
 #     width = 10,
 #     height = 10)
 ```
 
 
-![](figures/pnc/pilot-snf/3_cluster_loc.png){width=75%}
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc.png"))
+```
 
 
 ```{r eval = FALSE}
@@ -1061,8 +1073,8 @@ mean_rsfc<-fisherz2r(mean_rsfc.z)
 names(mean_rsfc)[1] <- "mean_rsfc"
 
 # read in clusters
-clustering.fused.2<-read.csv("data/pnc/pilot-snf/clusters_fused_2.csv")
-clustering.fused.3<-read.csv("data/pnc/pilot-snf/clusters_fused_3.csv")
+clustering.fused.2<-read.csv(here("data/pnc/pilot-snf/clusters_fused_2.csv"))
+clustering.fused.3<-read.csv(here("data/pnc/pilot-snf/clusters_fused_3.csv"))
 clustering.fused<-cbind(clustering.fused.2, clustering.fused.3[,3])
 colnames(clustering.fused)[4]<- "cluster.3"
 clustering.fused[1]<- NULL
@@ -1119,9 +1131,9 @@ c4.rsfc.by.con<-as.data.frame(c4.rsfc.by.con)
 c4.rsfc.by.con$c4.mean<-rowMeans(c4.rsfc.by.con)
 
 # read in Shen Node Info
-nodes<-read.csv("data/pnc/pilot-snf/Shen-node-annotation.csv")
+nodes<-read.csv(here("data/pnc/pilot-snf/Shen-node-annotation.csv"))
 # read in Shen edge/connection info
-edgelist<-read.csv("data/pnc/pilot-snf/edgelist-in-vector.csv", sep=".", header=F)
+edgelist<-read.csv(here("data/pnc/pilot-snf/edgelist-in-vector.csv", sep="."), header=F)
 edgelist2<-edgelist
 edgelist2[]<-lapply(edgelist, function(x) nodes$Lobe[match(x, nodes$Node)])
 colnames(edgelist2)<-c("V1.lobe", "V2.lobe")
@@ -1204,12 +1216,16 @@ boxplot(cluster_edges.bs.oct[,9:12], notch = TRUE, col=c('red','blue', 'green'),
 This is the original plot comparing brainstem-occipital rsfc across clusters.
 The figure does not plot one data point per subject, but rather one data point per edge (?) averaged across all subjects within the cluster.
 
-![](figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc.png){width=75%}
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc.png"))
+```
 
 When the values are plotted on a per-subject basis (calculations found later in this chapter), we get the following graph:
 
 
-![](figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png){width=75%}
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png"))
+```
 
 
 ```{r eval = FALSE}
@@ -1551,14 +1567,14 @@ corrplot(adjacency_c4, type = "upper", method = "color", tl.cex = 0.2, title="rs
 ```{r eval = FALSE}
 library(dplyr)
 
-clustering.fused.2<-read.csv("data/pnc/pilot-snf/clusters_fused_2.csv")
-clustering.fused.3<-read.csv("data/pnc/pilot-snf/clusters_fused_3.csv")
+clustering.fused.2<-read.csv(here("data/pnc/pilot-snf/clusters_fused_2.csv"))
+clustering.fused.3<-read.csv(here("data/pnc/pilot-snf/clusters_fused_3.csv"))
 clustering.fused<-cbind(clustering.fused.2, clustering.fused.3[,3])
 colnames(clustering.fused)[4]<- "cluster.3"
 
 # Bring in outcomes .csv 
 
-outcomes<-read.csv("data/pnc/pilot-snf/tbi_pnc_outcomes.csv", fill = TRUE, header = T)
+outcomes<-read.csv(here("data/pnc/pilot-snf/tbi_pnc_outcomes.csv"), fill = TRUE, header = T)
 
 clustering.fused<-merge(clustering.fused, outcomes, by="SUBJID", all.x=T)
 clustering.fused[c('X.x')]<-NULL
@@ -1652,12 +1668,12 @@ ggplot(rsfc_data, aes(x = cluster.3, y = bs_oct_rsfc)) +
     ylim(-0.2, 0.3)
 
 ## For carbon
-#ggsave("data/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png",
+#ggsave(here("data/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png"),
 #    width = 10,
 #    height = 10)
 #
 ## For this repo
-#ggsave("figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png",
+#ggsave(here("figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png"),
 #    width = 10,
 #    height = 10)
 
@@ -1689,18 +1705,19 @@ ggplot(association_df, mapping = aes_string(x = "PLOT_TC", y = "bs_oct_rsfc")) +
     geom_smooth(method=lm, se=TRUE)
 
 ## For carbon
-#ggsave("data/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png",
+#ggsave(here("data/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png"),
 #    width = 10,
 #    height = 10)
 #
 ## For this repo
-#ggsave("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png",
+#ggsave(here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png"),
 #    width = 10,
 #    height = 10)
 ```
 
-
-![](figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png){width=75%}
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png"))
+```
 
 
 ```{r eval = FALSE}
@@ -1716,18 +1733,22 @@ ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "bs_oct_rsfc")) +
     theme(text = element_text(size = 20))
 
 ## For carbon
-#ggsave("data/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png",
+#ggsave(here("data/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png"),
 #    width = 10,
 #    height = 10)
 #
 ## For this repo
-#ggsave("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png",
+#ggsave(here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png"),
 #    width = 10,
 #    height = 10)
 ```
 
 
-![](figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png){width=75%}
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png"))
+```
+
+
 
 
 ```{r eval = FALSE}
@@ -1743,18 +1764,19 @@ ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "PLOT_TC")) +
     theme(text = element_text(size = 20))
 
 # For carbon
-#ggsave("data/pnc/pilot-snf/3_cluster_loc_lot_assoc.png",
+#ggsave(here("data/pnc/pilot-snf/3_cluster_loc_lot_assoc.png"),
 #    width = 10,
 #    height = 10)
 #
 ## For this repo
-#ggsave("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png",
+#ggsave(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png"),
 #    width = 10,
 #    height = 10)
 ```
 
-
-![](figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png){width=75%}
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png"))
+```
 
 
 No significant associations appear between any pair of LOC, line orientation test performance, and brainstem-occipital cortex functional connectivity.

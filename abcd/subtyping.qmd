@@ -3,95 +3,6 @@
 ## Identifying subjects
 
 All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the `abcd_otbi01.txt` file.
-
-```{r eval=FALSE}
-
-library(branchabcd)
-library(readr)
-library(dplyr)
-
-# Import baseline TBI dataset
-otbi01 <- read_delim("data/abcd/4.0/trauma/abcd_otbi01.txt")
-
-# Give the dataset meaningful column names (e.g., tbi_5 -> blast_inj)
-otbi01_r <- rename_tbi(otbi01)
-
-
-otbi01_r <- otbi01_r |>
-    mutate(across(hosp_er_inj:other_other_multi_effect_end_age, as.numeric))
-
-
-remove_dd <- function(abcd_df) {
-    print(abcd_df)[4:5, ] 
-
-"The NDAR Global Unique Identifier (GUID) for research subject" %in% first_row
-"The event name for which the data was collected" %in% first_row
-"Subject ID how it's defined in lab/project" %in% first_row
-"Sex of subject at birth" %in% first_row
-"dataset_id" %in% first_row
-"collection_id" %in% first_row
-
-}
-
-remove_dd(otbi01_r)
-
-first_row <- as.vector(otbi01_r[1, ])
-
-
-
-assign_tbi <- function(tbi_df) {
-    tbi_df_mtbi <- tbi_df |>
-        dplyr::mutate(mtbi = dplyr::case_when(
-            (hosp_er_loc < 2 & hosp_er_mem_daze == 1) | hosp_er_loc == 1 ~ 1,
-            (vehicle_loc < 2 & vehicle_mem_daze == 1) | vehicle_loc == 1 ~ 1,
-            (fall_hit_loc < 2 & fall_hit_mem_daze == 1) | fall_hit_loc == 1 ~ 1,
-            (violent_hit_loc < 2 & violent_hit_mem_daze == 1) |
-                violent_hit_loc == 1 ~ 1,
-            (blast_loc < 2 & blast_mem_daze == 1) | blast_loc == 1 ~ 1,
-            (other_loc_num - other_loc_num_over_30) > 0 ~ 1,
-            (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ 1,
-            other_multi_inj == 1 ~ 0.5,
-            other_other_multi_inj == 1 ~ 0.5,
-            TRUE ~ 0
-        ))
-    return(tbi_df_mtbi)
-}
-
-assign_tbi(otbi01_r)
-
-otbi01_detailed <- otbi01_r |>
-    mutate(mtbi = case_when(
-        (hosp_er_loc < 2 & hosp_er_mem_daze == 1) | hosp_er_loc == 1 ~ 1,
-        (vehicle_loc < 2 & vehicle_mem_daze == 1) | vehicle_loc == 1 ~ 1,
-        (fall_hit_loc < 2 & fall_hit_mem_daze == 1) | fall_hit_loc == 1 ~ 1,
-        (violent_hit_loc < 2 & violent_hit_mem_daze == 1) | violent_hit_loc ==
-            1 ~ 1,
-        (blast_loc < 2 & blast_mem_daze == 1) | blast_loc == 1 ~ 1,
-        (other_loc_num - other_loc_num_over_30) > 0 ~ 1,
-        (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ 1,
-        other_multi_inj == 1 ~ 0.5,
-        other_other_multi_inj == 1 ~ 0.5,
-        TRUE ~ 0
-    ))
-
-
-str(otbi01_renamed)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```
-
 To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
 
 * identifying which head injuries were mTBIs
@@ -126,23 +37,86 @@ Consequently, I defined mTBI as any injury that resulted in **either**:
 The fixed nature of the questionnaire also meant that some information about multiple mTBIs sustained in the same way or about a very large number of mTBIs throughout a child's life could have been lost (see the previous section on identifying children with a history of mTBI).
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
-The code below generates a new file which adds the following columns to the TBI screen data:
+The code below extends the TBI dataset with the following columns:
 
 1. If a subject has experienced an mTBI prior to baseline
 2. Which of the reported head injuries were mTBIs
 3. The time since a subject's most recent mTBI
 
-<div class = "moccasin">
 
----
+```{r eval = FALSE}
+
+library(branchabcd)
+library(readr)
+library(dplyr)
+library(here)
+
+# Import baseline TBI dataset
+tbi <- read_delim(here("data/abcd/4.0/trauma/abcd_otbi01.txt"))
+
+# Remove data dictionary
+tbi_no_dd <- tbi[-1, ]
+
+# Give the dataset meaningful column names (e.g., tbi_5 -> blast_inj)
+tbi_renamed <- rename_tbi(tbi_no_dd)
+
+# Add the following columns:
+# mtbi = did the child previously have an mTBI?
+# moderate_or_severe_tbi = did the child previously have a moderate/severe TBI?
+tbi_labeled <- assign_tbi(tbi_renamed)
+
+# In progress over here!
+tbi_labeled <- tbi_labeled |>
+    mutate(
+        hosp_er_mtbi = case_when((hosp_er_loc < 2 & hosp_er_mem_daze == 1) |
+            hosp_er_loc == 1 ~ TRUE, TRUE ~ FALSE),
+        vehicle_mtbi = case_when((vehicle_loc < 2 & vehicle_mem_daze == 1) |
+            vehicle_loc == 1 ~ TRUE, TRUE ~ FALSE),
+        fall_hit_mtbi = case_when((fall_hit_loc < 2 & fall_hit_mem_daze == 1) |
+            fall_hit_loc == 1 ~ TRUE, TRUE ~ FALSE),
+        violent_hit_mtbi = case_when((violent_hit_loc < 2 & violent_hit_mem_daze == 1) |
+            violent_hit_loc == 1 ~ TRUE, TRUE ~ FALSE),
+        blast_mtbi = case_when((blast_loc < 2 & blast_mem_daze == 1) |
+            blast_loc == 1 ~ TRUE, TRUE ~ FALSE))
+    mutate(other_loc_mtbi = case_when(
+        (other_loc_num - other_loc_num_over_30) > 0 ~ TRUE,
+        TRUE ~ FALSE)) |>
+    mutate(multi_mtbi = case_when(
+        (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ TRUE,
+        TRUE ~ FALSE))
+
+
+
+tbi_labeled <- tbi_labeled |>
+    mutate(hosp_er_mtbi_mpi =
+            case_when(hosp_er_mtbi ~ interview_age - hosp_er_age))
+tbi_labeled <- tbi_labeled |>
+    mutate(vehicle_mtbi_mpi =
+            case_when(vehicle_mtbi ~ interview_age - vehicle_age))
+tbi_labeled <- tbi_labeled |>
+    mutate(fall_hit_mtbi_mpi =
+            case_when(fall_hit_mtbi ~ interview_age - fall_hit_age))
+tbi_labeled <- tbi_labeled |>
+    mutate(violent_hit_mtbi_mpi =
+            case_when(violent_hit_mtbi ~ interview_age - violent_hit_age))
+tbi_labeled <- tbi_labeled |>
+    mutate(blast_mtbi_mpi =
+            case_when(blast_mtbi ~ interview_age - blast_age))
+tbi_labeled <- tbi_labeled |>
+    mutate(other_loc_mtbi_mpi =
+            case_when(other_loc_mtbi ~ interview_age - other_loc_min_age))
+tbi_labeled <- tbi_labeled |>
+    mutate(multi_mtbi_mpi =
+            case_when(multi_mtbi ~ interview_age - multi_effect_end_age))
+
+```
+
+
 
 ```{r child="../subtyping-mtbi/abcd/detail_otbi01.Rmd", eval=TRUE}
 
 ```
 
----
-
-</div>
 
 
 A few types of injuries were handled differently from the rest in the above code:
