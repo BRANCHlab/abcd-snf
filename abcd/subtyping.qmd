@@ -8,16 +8,14 @@ To identify subjects at a chronic stage post-mTBI, two intermediate pieces of in
 * identifying which head injuries were mTBIs
 * identifying the time since the most recent mTBI
 
-The structure of the Ohio State TBI screen as used for ABCD data collection was not completely compatible with the most commonly used definition of mTBI @WYA25C6X#Blennow_Etal_2016:
-
-At least one of the following:
+The structure of the Ohio State TBI screen as used for ABCD data collection was not completely compatible with the most commonly used definition of mTBI @WYA25C6X#Blennow_Etal_2016, which requires at least one of the following:
 
 * Any period of loss of consciousness
 * Any loss of memory
 * Any alteration in mental state
 * Focal neurological deficits
 
-but where the severity does not exceed:
+but none of the following:
 
 * LOC over 30 minutes
 * A Glasgow Coma Scale score below 13
@@ -33,23 +31,19 @@ Consequently, I defined mTBI as any injury that resulted in **either**:
 
 1. LOC for less than 30 minutes (including 0 minutes) **AND** any duration of memory loss / feeling dazed
 2. LOC for less than 30 minutes but greater than 0 minutes
-
+ 
 The fixed nature of the questionnaire also meant that some information about multiple mTBIs sustained in the same way or about a very large number of mTBIs throughout a child's life could have been lost (see the previous section on identifying children with a history of mTBI).
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
-The code below extends the TBI dataset with the following columns:
+```{r eval = TRUE}
 
-1. If a subject has experienced an mTBI prior to baseline
-2. Which of the reported head injuries were mTBIs
-3. The time since a subject's most recent mTBI
-
-
-```{r eval = FALSE}
-
+library(ggplot2)
 library(branchabcd)
 library(readr)
 library(dplyr)
 library(here)
+library(knitr)
+
 
 # Import baseline TBI dataset
 tbi <- read_delim(here("data/abcd/4.0/trauma/abcd_otbi01.txt"))
@@ -60,89 +54,54 @@ tbi_no_dd <- tbi[-1, ]
 # Give the dataset meaningful column names (e.g., tbi_5 -> blast_inj)
 tbi_renamed <- rename_tbi(tbi_no_dd)
 
-# Add the following columns:
-# mtbi = did the child previously have an mTBI?
-# moderate_or_severe_tbi = did the child previously have a moderate/severe TBI?
+# Assigns the following sets of columns:
+# 1. mtbi/moderate_or_severe_tbi: did a child have an mTBI / mod+ injury?
+# 2. (mechanism)_mtbi: did a child sustain a specific type of mTBI?
+# 3. (mechanism)_mtbi_mpi: how long since a child had a specific type of mTBI?
+# 4. latest_mtbi_mpi: how long since a child had their latest mTBI?
+# 5. mtbi_count: best guess of number of mTBIs sustained
 tbi_labeled <- assign_tbi(tbi_renamed)
 
-# In progress over here!
-tbi_labeled <- tbi_labeled |>
-    mutate(
-        hosp_er_mtbi = case_when((hosp_er_loc < 2 & hosp_er_mem_daze == 1) |
-            hosp_er_loc == 1 ~ TRUE, TRUE ~ FALSE),
-        vehicle_mtbi = case_when((vehicle_loc < 2 & vehicle_mem_daze == 1) |
-            vehicle_loc == 1 ~ TRUE, TRUE ~ FALSE),
-        fall_hit_mtbi = case_when((fall_hit_loc < 2 & fall_hit_mem_daze == 1) |
-            fall_hit_loc == 1 ~ TRUE, TRUE ~ FALSE),
-        violent_hit_mtbi = case_when((violent_hit_loc < 2 & violent_hit_mem_daze == 1) |
-            violent_hit_loc == 1 ~ TRUE, TRUE ~ FALSE),
-        blast_mtbi = case_when((blast_loc < 2 & blast_mem_daze == 1) |
-            blast_loc == 1 ~ TRUE, TRUE ~ FALSE))
-    mutate(other_loc_mtbi = case_when(
-        (other_loc_num - other_loc_num_over_30) > 0 ~ TRUE,
-        TRUE ~ FALSE)) |>
-    mutate(multi_mtbi = case_when(
-        (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ TRUE,
-        TRUE ~ FALSE))
+# Breakdown of how many kids had each number of mTBIs
+table(tbi_labeled$mtbi_count)
 
+# Plot of the times since each child had their latest mTBI
+branch_hist(tbi_labeled,
+            xval = "latest_mtbi_mpi",
+            xlabel = "Time since last mTBI")
 
-
-tbi_labeled <- tbi_labeled |>
-    mutate(hosp_er_mtbi_mpi =
-            case_when(hosp_er_mtbi ~ interview_age - hosp_er_age))
-tbi_labeled <- tbi_labeled |>
-    mutate(vehicle_mtbi_mpi =
-            case_when(vehicle_mtbi ~ interview_age - vehicle_age))
-tbi_labeled <- tbi_labeled |>
-    mutate(fall_hit_mtbi_mpi =
-            case_when(fall_hit_mtbi ~ interview_age - fall_hit_age))
-tbi_labeled <- tbi_labeled |>
-    mutate(violent_hit_mtbi_mpi =
-            case_when(violent_hit_mtbi ~ interview_age - violent_hit_age))
-tbi_labeled <- tbi_labeled |>
-    mutate(blast_mtbi_mpi =
-            case_when(blast_mtbi ~ interview_age - blast_age))
-tbi_labeled <- tbi_labeled |>
-    mutate(other_loc_mtbi_mpi =
-            case_when(other_loc_mtbi ~ interview_age - other_loc_min_age))
-tbi_labeled <- tbi_labeled |>
-    mutate(multi_mtbi_mpi =
-            case_when(multi_mtbi ~ interview_age - multi_effect_end_age))
-
+# Export the figure
+# branch_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+#               plotname = "time_since_latest_mtbi_full.png")
 ```
 
 
-
-```{r child="../subtyping-mtbi/abcd/detail_otbi01.Rmd", eval=TRUE}
-
-```
-
-
-
-A few types of injuries were handled differently from the rest in the above code:
-
-* for `other_loc`, the questionnaire asked for a total number of injuries with LOC as well as a total number of injuries with LOC above 30 minutes.
-    * If their difference was above 0, they were labelled as having had an mTBI.
-* for `other_multi` and `other_other_multi`, insufficient information was provided to determine the severity of the associated injuries.
-
-
-## Extracting subjects at a chronic stage post-mTBI
-
+A few types of injuries were handled differently from the rest in the above code.
+For the `other_loc` injury type, the questionnaire asked for a total number of injuries with LOC as well as a total number of injuries with LOC above 30 minutes.
+If their difference was above 0, they were labelled as having had an mTBI.
+For the `other_multi` and `other_other_multi` injury types, insufficient information was provided to determine the severity of the associated injuries.
 
 For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
 
-<div class = "moccasin">
+```{r eval = TRUE}
 
----
+# SUBSET TO CHRONIC STAGE POST-MTBI =========================================
+get_baseline_mtbi_subjects <- function(tbi_df, min_latest_mtbi_mpi) {
+    mtbi_baseline_df <- tbi_df |>
+        filter("mtbi" == 1 & "latest_mtbi_mpi" >= min_latest_mtbi_mpi) |>
+        select("subjectkey")
+    return(mtbi_baseline_df)
+}
 
-```{r child="../subtyping-mtbi/abcd/get_baseline_mtbi_subjects.Rmd", eval=TRUE}
 
+mtbi_baseline <- get_baseline_mtbi_subjects(tbi_labeled)
+
+
+output_path <- "lab-data/abcd/processed/prashanth-proj/data/"
+
+write_csv(
+    baseline_mtbi_subjects,
+    paste0(output_path, "bcm_subjects.csv")
+)
 ```
 
----
-
-</div>
-
-## Handling twins
-
-To do.
