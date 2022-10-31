@@ -63,9 +63,20 @@ mtbi_type_labelled <- identify_mtbi(all_tbi_labelled)
 # Identify time since and age at each mTBI / most recent mTBI
 mtbi_time_labelled <- identify_mtbi_times(mtbi_type_labelled)
 
+# Add columns to a TBI dataframe indicating mechanism of the latest mTBI
+mtbi_df_mechanisms <- identify_latest_mtbi_mechanism(mtbi_time_labelled)
+
+# Add columns to a TBI dataframe indicating a subject's estimated mTBI count
+mtbi_num_df <- identify_num_mtbi(mtbi_df_mechanisms)
+
+# Add columns to a TBI dataframe indicating the LOC of their latest mTBI
+mtbi_loc_df <- identify_latest_mtbi_loc(mtbi_num_df)
+
+# Add columns to a TBI dataframe indicating if their latest mTBI had mem/daze
+mtbi_mem_daze_df <- identify_latest_mtbi_mem_daze(mtbi_loc_df)
+
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
 mtbi_subjects <- get_mtbi_subjects(mtbi_time_labelled, min_latest_mtbi_mpi = 3)
-
 
 
 ```
@@ -102,16 +113,16 @@ A few more intermediate columns need to be added to isolate these variables for 
 ```{r eval = TRUE}
 mtbi_df <- inner_join(mtbi_subjects, mtbi_time_labelled, by = "subjectkey")
 
-# Add columns to a TBI dataframe indicating mechanism of the latest mTBI
+# Add columns indicating mechanism of the latest mTBI
 mtbi_df_mechanisms <- identify_latest_mtbi_mechanism(mtbi_df)
 
-# Add columns to a TBI dataframe indicating a subject's estimated mTBI count
+# Add columns indicating a subject's estimated mTBI count
 mtbi_num_df <- identify_num_mtbi(mtbi_df_mechanisms)
 
-# Add columns to a TBI dataframe indicating the LOC of their latest mTBI
+# Add columns indicating the LOC of their latest mTBI
 mtbi_loc_df <- identify_latest_mtbi_loc(mtbi_num_df)
 
-# Add columns to a TBI dataframe indicating if their latest mTBI had mem/daze
+# Add columns indicating if their latest mTBI had mem/daze
 mtbi_mem_daze_df <- identify_latest_mtbi_mem_daze(mtbi_loc_df)
 
 acute_symptoms <- mtbi_mem_daze_df |>
@@ -122,6 +133,8 @@ acute_symptoms <- mtbi_mem_daze_df |>
         latest_mtbi_loc,
         latest_mtbi_mem_daze
     )
+
+acute_symptoms
 ```
 
 
@@ -144,5 +157,183 @@ scabcd_hist(mtbi_mem_daze_df,
 # Export the figure
 scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
               plotname = "time_since_latest_mtbi_full.png")
+```
+
+
+```{r}
+
+# Style #2
+library(magrittr)
+otbi01_detailed <- tbi_renamed %>%
+    mutate(across(hosp_er_inj:other_other_multi_effect_end_age, as.numeric))
+
+otbi01_detailed %<>%
+    mutate(mtbi = case_when(
+        (hosp_er_loc < 2 & hosp_er_mem_daze == 1) | hosp_er_loc == 1 ~ 1,
+        (vehicle_loc < 2 & vehicle_mem_daze == 1) | vehicle_loc == 1 ~ 1,
+        (fall_hit_loc < 2 & fall_hit_mem_daze == 1) | fall_hit_loc == 1 ~ 1,
+        (violent_loc < 2 & violent_mem_daze == 1) | violent_loc ==
+            1 ~ 1,
+        (blast_loc < 2 & blast_mem_daze == 1) | blast_loc == 1 ~ 1,
+        (other_loc_num - other_loc_num_over_30) > 0 ~ 1,
+        (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ 1,
+        other_multi_inj == 1 ~ 0.5,
+        other_other_multi_inj == 1 ~ 0.5,
+        TRUE ~ 0
+    ))
+
+otbi01_detailed %<>%
+    mutate(moderate_or_severe_tbi = case_when(
+        (hosp_er_loc > 1 |
+            vehicle_loc > 1 |
+            fall_hit_loc > 1 |
+            violent_loc > 1 |
+            blast_loc > 1 |
+            other_loc_num_over_30 > 0 |
+            multi_loc > 1) ~ 1,
+        other_multi_inj == 1 ~ 0.5,
+        other_other_multi_inj == 1 ~ 0.5,
+        TRUE ~ 0
+    ))
+
+otbi01_detailed$blast_age <-
+    otbi01_detailed$blast_age * 12
+otbi01_detailed$hosp_er_age <-
+    otbi01_detailed$hosp_er_age * 12
+otbi01_detailed$vehicle_age <-
+    otbi01_detailed$vehicle_age * 12
+otbi01_detailed$fall_hit_age <-
+    otbi01_detailed$fall_hit_age * 12
+otbi01_detailed$violent_age <-
+    otbi01_detailed$violent_age * 12
+otbi01_detailed$other_loc_min_age <-
+    otbi01_detailed$other_loc_min_age * 12
+otbi01_detailed$multi_effect_end_age <-
+    otbi01_detailed$multi_effect_end_age * 12
+
+otbi01_detailed %<>%
+    mutate(hosp_er_mtbi = case_when(
+        (hosp_er_loc < 2 & hosp_er_mem_daze == 1) | hosp_er_loc == 1 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+otbi01_detailed %<>%
+    mutate(vehicle_mtbi = case_when(
+        (vehicle_loc < 2 & vehicle_mem_daze == 1) | vehicle_loc == 1 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+otbi01_detailed %<>%
+    mutate(fall_hit_mtbi = case_when(
+        (fall_hit_loc < 2 & fall_hit_mem_daze == 1) | fall_hit_loc == 1 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+otbi01_detailed %<>%
+    mutate(violent_mtbi = case_when(
+        (violent_loc < 2 & violent_mem_daze == 1) | violent_loc ==
+            1 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+otbi01_detailed %<>%
+    mutate(blast_mtbi = case_when(
+        (blast_loc < 2 & blast_mem_daze == 1) | blast_loc == 1 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+otbi01_detailed %<>%
+    mutate(other_loc_mtbi = case_when(
+        (other_loc_num - other_loc_num_over_30) > 0 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+otbi01_detailed %<>%
+    mutate(multi_mtbi = case_when(
+        (multi_loc < 2 & multi_mem_daze == 1) | multi_loc == 1 ~ TRUE,
+        TRUE ~ FALSE
+    ))
+
+# time since
+
+otbi01_detailed$"interview_age" <- as.numeric(otbi01_detailed$"interview_age")
+
+otbi01_detailed %<>%
+    mutate(
+        hosp_er_mtbi_mpi =
+            case_when(hosp_er_mtbi ~ interview_age - hosp_er_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(
+        vehicle_mtbi_mpi =
+            case_when(vehicle_mtbi ~ interview_age - vehicle_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(
+        fall_hit_mtbi_mpi =
+            case_when(fall_hit_mtbi ~ interview_age - fall_hit_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(
+        violent_mtbi_mpi =
+            case_when(violent_mtbi ~ interview_age - violent_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(
+        blast_mtbi_mpi =
+            case_when(blast_mtbi ~ interview_age - blast_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(
+        other_loc_mtbi_mpi =
+            case_when(other_loc_mtbi ~ interview_age - other_loc_min_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(
+        multi_mtbi_mpi =
+            case_when(multi_mtbi ~ interview_age - multi_effect_end_age)
+    )
+
+otbi01_detailed %<>%
+    mutate(latest_mtbi_mpi = pmin(hosp_er_mtbi_mpi,
+        vehicle_mtbi_mpi,
+        fall_hit_mtbi_mpi,
+        violent_mtbi_mpi,
+        blast_mtbi_mpi,
+        other_loc_mtbi_mpi,
+        multi_mtbi_mpi,
+        na.rm = TRUE
+    ))
+
+sum(otbi01_detailed$latest_mtbi_mpi < 3, na.rm = TRUE)
+
+dim(otbi01_detailed)
+
+otbi01_detailed$
+    other_loc_num[
+    is.na(otbi01_detailed$other_loc_num)
+] <- 0
+
+otbi01_detailed$
+    other_loc_num_over_30[
+    is.na(otbi01_detailed$other_loc_num_over_30)
+] <- 0
+
+otbi01_detailed <- otbi01_detailed |>
+    mutate(mtbi_count = (hosp_er_mtbi +
+        vehicle_mtbi +
+        fall_hit_mtbi +
+        violent_mtbi +
+        blast_mtbi +
+        (other_loc_num - other_loc_num_over_30) +
+        multi_mtbi))
+
+table(otbi01_detailed$mtbi_count)
 ```
 
