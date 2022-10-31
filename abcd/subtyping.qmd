@@ -38,7 +38,7 @@ For my analyses, I assume these edge cases are not common enough to meaningfully
 ```{r eval = TRUE}
 
 library(ggplot2)
-library(branchabcd)
+library(scabcd)
 library(readr)
 library(dplyr)
 library(here)
@@ -54,25 +54,25 @@ tbi_no_dd <- tbi[-1, ]
 # Give the dataset meaningful column names (e.g., tbi_5 -> blast_inj)
 tbi_renamed <- rename_tbi(tbi_no_dd)
 
-# Assigns the following sets of columns:
-# 1. mtbi/moderate_or_severe_tbi: did a child have an mTBI / mod+ injury?
-# 2. (mechanism)_mtbi: did a child sustain a specific type of mTBI?
-# 3. (mechanism)_mtbi_mpi: how long since a child had a specific type of mTBI?
-# 4. latest_mtbi_mpi: how long since a child had their latest mTBI?
-# 5. mtbi_count: best guess of number of mTBIs sustained
-tbi_labeled <- assign_tbi(tbi_renamed)
+# Add column: did a child have an mTBI / mod+ injury?
+all_tbi_labelled <- identify_all_tbi(tbi_renamed)
 
-# Breakdown of how many kids had each number of mTBIs
-table(tbi_labeled$mtbi_count)
+# Generate columns indicating which injury types were mTBIs
+mtbi_type_labelled <- identify_mtbi(all_tbi_labelled)
 
-# Plot of the times since each child had their latest mTBI
-branch_hist(tbi_labeled,
-            xval = "latest_mtbi_mpi",
-            xlabel = "Time since last mTBI")
+# Identify time since and age at each mTBI / most recent mTBI
+mtbi_time_labelled <- identify_mtbi_times(mtbi_type_labelled)
 
-# Export the figure
-# branch_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-#               plotname = "time_since_latest_mtbi_full.png")
+# Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
+mtbi_subjects <- get_mtbi_subjects(mtbi_time_labelled, min_latest_mtbi_mpi = 3)
+
+
+
+```
+
+```{r eval = FALSE}
+data_path <- "data/abcd/processed/prashanth/data/"
+write_csv(mtbi_subjects, paste0(data_path, "mtbi_subjects.csv"))
 ```
 
 
@@ -83,24 +83,66 @@ For the `other_multi` and `other_other_multi` injury types, insufficient informa
 
 For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
 
-```{r eval = FALSE}
-# Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
-mtbi_subjects <- get_mtbi_subjects(tbi_labeled, min_latest_mtbi_mpi = 3)
-
-# Export the subject list
-# data_path <- "data/abcd/processed/prashanth/data/"
-# write_csv(mtbi_subjects, paste0(data_path, "mtbi_subjects.csv"))
-```
 
 
 ## Extracting input variables
 
+### Acute symptoms
+
+The acute symptom data is found within the TBI dataset.
+We are interesed in the following acute symptoms:
+
+* mechanism of injury
+* age
+* LOC information
+* Feeling dazed or having memory loss
+
+A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
+
+```{r eval = TRUE}
+mtbi_df <- inner_join(mtbi_subjects, mtbi_time_labelled, by = "subjectkey")
+
+# Add columns to a TBI dataframe indicating mechanism of the latest mTBI
+mtbi_df_mechanisms <- identify_latest_mtbi_mechanism(mtbi_df)
+
+# Add columns to a TBI dataframe indicating a subject's estimated mTBI count
+mtbi_num_df <- identify_num_mtbi(mtbi_df_mechanisms)
+
+# Add columns to a TBI dataframe indicating the LOC of their latest mTBI
+mtbi_loc_df <- identify_latest_mtbi_loc(mtbi_num_df)
+
+# Add columns to a TBI dataframe indicating if their latest mTBI had mem/daze
+mtbi_mem_daze_df <- identify_latest_mtbi_mem_daze(mtbi_loc_df)
+
+acute_symptoms <- mtbi_mem_daze_df |>
+    select(
+        subjectkey,
+        latest_mtbi_mechanism,
+        latest_mtbi_age,
+        latest_mtbi_loc,
+        latest_mtbi_mem_daze
+    )
+```
+
 
 ```{r eval = FALSE}
-library(dplyr)
-library(readr)
+write_csv(acute_symptoms, paste0(data_path, "acute_symptoms.csv"))
+```
 
-acute_symptoms
 
+```{r eval = TRUE}
+# Breakdown of how many kids had each number of mTBIs
+table(mtbi_mem_daze_df$mtbi_count)
+
+# Plot of the times since each child had their latest mTBI
+scabcd_hist(mtbi_mem_daze_df,
+            xval = "latest_mtbi_mpi",
+            xlabel = "Time since last mTBI")
+```
+
+```{r eval = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "time_since_latest_mtbi_full.png")
 ```
 
