@@ -1,6 +1,6 @@
-# Subtyping
+# Extract and transform
 
-## Identifying subjects
+## Subjects
 
 All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the `abcd_otbi01.txt` file.
 To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
@@ -35,8 +35,8 @@ Consequently, I defined mTBI as any injury that resulted in **either**:
 The fixed nature of the questionnaire also meant that some information about multiple mTBIs sustained in the same way or about a very large number of mTBIs throughout a child's life could have been lost (see the previous section on identifying children with a history of mTBI).
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
-```{r eval = TRUE}
 
+```{r eval = TRUE}
 library(ggplot2)
 library(scabcd)
 library(readr)
@@ -54,32 +54,16 @@ tbi_no_dd <- tbi[-1, ]
 # Give the dataset meaningful column names (e.g., tbi_5 -> blast_inj)
 tbi_renamed <- rename_tbi(tbi_no_dd)
 
-# Add column: did a child have an mTBI / mod+ injury?
-all_tbi_labelled <- identify_all_tbi(tbi_renamed)
-
-# Generate columns indicating which injury types were mTBIs
-mtbi_type_labelled <- identify_mtbi(all_tbi_labelled)
-
-# Identify time since and age at each mTBI / most recent mTBI
-mtbi_time_labelled <- identify_mtbi_times(mtbi_type_labelled)
-
-# Add columns to a TBI dataframe indicating mechanism of the latest mTBI
-mtbi_df_mechanisms <- identify_latest_mtbi_mechanism(mtbi_time_labelled)
-
-# Add columns to a TBI dataframe indicating a subject's estimated mTBI count
-mtbi_num_df <- identify_num_mtbi(mtbi_df_mechanisms)
-
-# Add columns to a TBI dataframe indicating the LOC of their latest mTBI
-mtbi_loc_df <- identify_latest_mtbi_loc(mtbi_num_df)
-
-# Add columns to a TBI dataframe indicating if their latest mTBI had mem/daze
-mtbi_mem_daze_df <- identify_latest_mtbi_mem_daze(mtbi_loc_df)
+# Add a series of columns required to identify latest mTBI details
+tbi_detailed <- tbi_renamed |>
+    identify_all_tbi() |> # did subject have an mTBI / mod+ injury?
+    identify_mtbi() |> # which injury types were mild?
+    identify_mtbi_times() # time since / age at each / latest mTBI
 
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
-mtbi_subjects <- get_mtbi_subjects(mtbi_time_labelled, min_latest_mtbi_mpi = 3)
-
-
+mtbi_subjects <- get_mtbi_subjects(tbi_detailed, min_latest_mtbi_mpi = 3)
 ```
+
 
 ```{r eval = FALSE}
 data_path <- "data/abcd/processed/prashanth/data/"
@@ -95,8 +79,7 @@ For the `other_multi` and `other_other_multi` injury types, insufficient informa
 For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
 
 
-
-## Extracting input variables
+## Input variables
 
 ### Acute symptoms
 
@@ -111,50 +94,109 @@ We are interesed in the following acute symptoms:
 A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
 
 ```{r eval = TRUE}
-mtbi_df <- inner_join(mtbi_subjects, mtbi_time_labelled, by = "subjectkey")
+# Subset to just mTBI subjects to be included in analyses
+mtbi_df <- inner_join(mtbi_subjects, tbi_detailed, by = "subjectkey")
 
-# Add columns indicating mechanism of the latest mTBI
-mtbi_df_mechanisms <- identify_latest_mtbi_mechanism(mtbi_df)
+# Additional columns to aid in extracting acute symptoms
+mtbi_detailed <- mtbi_df |>
+    identify_latest_mtbi_mechanism() |> # mechanism of latest mTBI
+    identify_num_mtbi() |> # number of mTBIs sustained
+    identify_latest_mtbi_loc() |> # LOC information for latest mTBI
+    identify_latest_mtbi_mem_daze() # mem/daze information for latest mTBI
 
-# Add columns indicating a subject's estimated mTBI count
-mtbi_num_df <- identify_num_mtbi(mtbi_df_mechanisms)
-
-# Add columns indicating the LOC of their latest mTBI
-mtbi_loc_df <- identify_latest_mtbi_loc(mtbi_num_df)
-
-# Add columns indicating if their latest mTBI had mem/daze
-mtbi_mem_daze_df <- identify_latest_mtbi_mem_daze(mtbi_loc_df)
-
-acute_symptoms <- mtbi_mem_daze_df |>
-    select(
-        subjectkey,
-        latest_mtbi_mechanism,
-        latest_mtbi_age,
-        latest_mtbi_loc,
-        latest_mtbi_mem_daze
-    )
-
-acute_symptoms
 ```
 
+Some details about the children within the chronic stage mTBI subject list:
+
+```{r eval = TRUE}
+# Breakdown of how many kids had each number of mTBIs
+table(mtbi_detailed$mtbi_count)
+
+# Plot of the times since each child had their latest mTBI
+scabcd_hist(mtbi_detailed,
+            title = "Histogram of times since latest mTBI",
+            xval = "latest_mtbi_mpi",
+            xlabel = "Time since last mTBI")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "time_since_latest_mtbi_full.png")
+```
+
+Subset and export the acute symptoms:
+
+```{r eval = TRUE}
+acute_symptoms <- get_acute_symptoms(mtbi_detailed)
+```
 
 ```{r eval = FALSE}
 write_csv(acute_symptoms, paste0(data_path, "acute_symptoms.csv"))
 ```
 
 
-```{r eval = TRUE}
-# Breakdown of how many kids had each number of mTBIs
-table(mtbi_mem_daze_df$mtbi_count)
+### Demographics
 
-# Plot of the times since each child had their latest mTBI
-scabcd_hist(mtbi_mem_daze_df,
-            xval = "latest_mtbi_mpi",
-            xlabel = "Time since last mTBI")
+```{r}
+# Pubertal status
+parent_pubertal_df <-
+    read_delim("data/abcd/4.0/med-history/abcd_ssphp01.txt") |>
+    remove_dd() |>
+    filter_baseline() |>
+    filter_subjects(mtbi_subjects)
+
+youth_pubertal_df <-
+    read_delim("data/abcd/4.0/med-history/abcd_ssphy01.txt") |>
+    remove_dd() |>
+    filter_baseline() |>
+    filter_subjects(mtbi_subjects)
+
+puberty <- get_pubertal_status(youth_pubertal_df, parent_pubertal_df)
+
+scabcd_hist(df = pubertal_status,
+            xval = "pubertal_status",
+            xlabel = "Pubertal status",
+            title = "Distribution of pubertal status reports")
+
+colnames(youth_pubertal_df)
+
+# Age
+age <- youth_pubertal_df |> select("subjectkey", "interview_age")
+
+# Sex
+sex <- youth_pubertal_df |> select("subjectkey", "sex")
+
+# Parent demographics (income, race)
+parent_demographics <-
+    read_delim("data/abcd/4.0/demographics/pdem02.txt") |>
+    remove_dd() |>
+    filter_baseline() |>
+    filter_subjects(mtbi_subjects)
+
+# Income
+income <- get_income(parent_demographics)
+
+scabcd_hist(income,
+            xval = "household_income",
+            title = "Household incomes of mTBI subjects",
+            xlabel = "Income tier (1 = 0-50k, 2 = 50-100k, 3 = 100k+)")
+
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "income_distributions.png")
+
+# Race
+race <- get_race(parent_demographics)
+count(race_df, race_df$"race")
+
+# Generate main demographic df
+demographic_df <- generate_demographic(puberty, age, sex, income, race)
+demographic_df
 ```
+
+Subset and export the demographic input variables:
 
 ```{r eval = FALSE}
-# Export the figure
-scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-              plotname = "time_since_latest_mtbi_full.png")
+write_csv(acute_symptoms, paste0(data_path, "acute_symptoms.csv"))
 ```
+
