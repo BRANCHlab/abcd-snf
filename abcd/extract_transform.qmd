@@ -104,30 +104,6 @@ mtbi_detailed <- mtbi_df |>
     identify_latest_mtbi_loc() |> # LOC information for latest mTBI
     identify_latest_mtbi_mem_daze() # mem/daze information for latest mTBI
 
-```
-
-Some details about the children within the chronic stage mTBI subject list:
-
-```{r eval = TRUE}
-# Breakdown of how many kids had each number of mTBIs
-table(mtbi_detailed$mtbi_count)
-
-# Plot of the times since each child had their latest mTBI
-scabcd_hist(mtbi_detailed,
-            title = "Histogram of times since latest mTBI",
-            xval = "latest_mtbi_mpi",
-            xlabel = "Time since last mTBI")
-```
-
-```{r eval = FALSE, echo = FALSE}
-# Export the figure
-scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-              plotname = "time_since_latest_mtbi_full.png")
-```
-
-Subset and export the acute symptoms:
-
-```{r eval = TRUE}
 acute_symptoms <- get_acute_symptoms(mtbi_detailed)
 ```
 
@@ -152,20 +128,15 @@ youth_pubertal_df <-
     filter_baseline() |>
     filter_subjects(mtbi_subjects)
 
-puberty <- get_pubertal_status(youth_pubertal_df, parent_pubertal_df)
+puberty_df <- get_pubertal_status(youth_pubertal_df, parent_pubertal_df)
 
-scabcd_hist(df = pubertal_status,
-            xval = "pubertal_status",
-            xlabel = "Pubertal status",
-            title = "Distribution of pubertal status reports")
-
-colnames(youth_pubertal_df)
 
 # Age
-age <- youth_pubertal_df |> select("subjectkey", "interview_age")
+age_df <- youth_pubertal_df |> select("subjectkey", "interview_age")
+
 
 # Sex
-sex <- youth_pubertal_df |> select("subjectkey", "sex")
+sex_df <- youth_pubertal_df |> select("subjectkey", "sex")
 
 # Parent demographics (income, race)
 parent_demographics <-
@@ -175,28 +146,170 @@ parent_demographics <-
     filter_subjects(mtbi_subjects)
 
 # Income
-income <- get_income(parent_demographics)
+income_df <- get_income(parent_demographics)
 
-scabcd_hist(income,
-            xval = "household_income",
-            title = "Household incomes of mTBI subjects",
-            xlabel = "Income tier (1 = 0-50k, 2 = 50-100k, 3 = 100k+)")
-
-scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-              plotname = "income_distributions.png")
 
 # Race
-race <- get_race(parent_demographics)
-count(race_df, race_df$"race")
+race_df <- get_race(parent_demographics)
+
 
 # Generate main demographic df
-demographic_df <- generate_demographic(puberty, age, sex, income, race)
-demographic_df
+demographic_df <- generate_demographic(
+    puberty_df,
+    age_df,
+    sex_df,
+    income_df,
+    race_df)
 ```
 
 Subset and export the demographic input variables:
 
 ```{r eval = FALSE}
-write_csv(acute_symptoms, paste0(data_path, "acute_symptoms.csv"))
+write_csv(demographic_df, paste0(data_path, "demographics.csv"))
+```
+
+### Medical history
+
+```{r eval = TRUE}
+
+medical_df <-
+    read_delim("data/abcd/4.0/med-history/abcd_mx01.txt") |>
+    remove_dd() |>
+    filter_baseline() |>
+    filter_subjects(mtbi_subjects)
+
+# Medical history
+med_history_df <- get_med_history(medical_df, mtbi_detailed)
+```
+
+Subset and export the medical history variables:
+
+```{r eval = FALSE}
+write_csv(med_history_df, paste0(data_path, "med_history.csv"))
+```
+
+### Neuroimaging
+
+#### Structural MRI
+
+The sMRI variables of interest include subcortical volumes, and cortical thicknesses, and cortical surface areas.
+
+
+```{r eval = TRUE}
+# Subcortical volumes
+subc_v_df <- get_subc_v("data/abcd/4.0/evaluated-data/abcd_smrip10201.txt",
+                        mtbi_subjects)
+
+# Cortical thickness
+cort_t_df <- get_cort_t("data/abcd/4.0/evaluated-data/abcd_mrisdp10201.txt",
+                        mtbi_subjects_df)
+
+# Cortical volumes
+cort_sa_df <- get_cort_sa("data/abcd/4.0/evaluated-data/abcd_mrisdp10201.txt",
+                        mtbi_subjects)
+```
+
+
+#### Diffusion MRI
+
+We are interested in the neurite density measures of white matter regions in the brain.
+Previously, these measures were found in variables containing the string "rsindwm_cdk" within the file `mri_rsi_p102.txt`.
+A change anounced in the ABCD 4.0 MRI release notes indicates that neurite density is now referred to as "restricted normalized directional" and that the relevant white matter variables contain the string "rsirndwm" within the file `abcd_drsip201.txt`.
+
+```{r}
+# White matter neurite densities
+wmnd_df <- get_wmnd("data/abcd/4.0/evaluated-data/abcd_drsip201.txt",
+                    mtbi_subjects)
+```
+
+
+#### Resting-state functional MRI
+
+We are interested in the following rs-fMRI measures:
+
+- Gordon network (cortical) correlations 
+- Subcortical correlations
+- Gordon and subcortical temporal variances
+
+```{r}
+
+# CONTINUE FROM HERE!
+# Network correlations (cortical parcellations)
+gord_cor <- get_gord_cor("", mtbi_subjects)
+
+# Network correlations - subcortical parcellations
+subc_cor <- get_subc_cor("", mtbi_subjects)
+
+# Temporal variances
+temp_var <-
+    read_delim(paste0(input_path, "rsfmri-temp-var/abcd_mrirstv02.txt"),
+        col_select = "subjectkey" |
+                     "eventname" |
+                     contains("rsfmri_var_cortgordon_") |
+                     contains("rsfmri_var_scs_"))[-1, ]
+
+# Temporal variances - cortical parcellations
+gord_temp_var <- temp_var |>
+    select(subjectkey,
+           eventname,
+           contains("rsfmri_var_cortgordon"))
+
+# Temporal variances - subcortical parcellations
+subc_temp_var <- temp_var |>
+    select(subjectkey,
+           eventname,
+           contains("rsfmri_var_scs_"))
+
+```
+
+
+Some visualizations of the extracted data:
+
+```{r eval = TRUE}
+# Breakdown of how many kids had each number of mTBIs
+table(mtbi_detailed$mtbi_count)
+
+# Plot of the times since each child had their latest mTBI
+scabcd_hist(mtbi_detailed,
+            title = "Histogram of times since latest mTBI",
+            xval = "latest_mtbi_mpi",
+            xlabel = "Time since last mTBI")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "time_since_latest_mtbi_full.png")
+```
+
+```{r eval = TRUE}
+scabcd_hist(df = puberty_df,
+            xval = "pubertal_status",
+            xlabel = "Pubertal status",
+            title = "Distribution of pubertal status reports")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "puberty_distributions.png")
+```
+
+```{r eval = TRUE}
+scabcd_hist(income_df,
+            xval = "household_income",
+            title = "Household incomes of mTBI subjects",
+            xlabel = "Income tier (1 = 0-50k, 2 = 50-100k, 3 = 100k+)")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "income_distributions.png")
+```
+
+```{r}
+# Distribution of subjects by race
+count(race_df, race_df$"race")
 ```
 
