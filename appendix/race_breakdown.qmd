@@ -1,0 +1,144 @@
+# Race breakdown {#sec-racebreakdown}
+
+Race/ethnicity is a bit confusing to deal with.
+A huge fraction of subjects identify with multiple categories.
+While that is no issue for constructing similarity matrices, it is an issue for comparing clusters by race/ethnicity post-subtyping.
+Different publications have handled this differently.
+I am currently categorizing all subjects as either white, black, or 'mixed/other'.
+
+
+```{r}
+
+mtbi_subjects <- read_csv(here("data/abcd/processed/prashanth/data/subjects/mtbi_subjects.csv"))
+
+pdem02 <- read_delim(here("data/abcd/4.0/demographics/pdem02.txt"))
+
+full_race_df <- abcd_import(pdem02, mtbi_subjects) |>
+    dplyr::rename("white" = "demo_race_a_p___10",
+           "black" = "demo_race_a_p___11",
+           "native_american" = "demo_race_a_p___12",
+           "native_alaskan" = "demo_race_a_p___13",
+           "native_hawaiian" = "demo_race_a_p___14",
+           "guamanian" = "demo_race_a_p___15",
+           "samoan" = "demo_race_a_p___16",
+           "other_pacific_islander" = "demo_race_a_p___17",
+           "asian" = "demo_race_a_p___18",
+           "chinese" = "demo_race_a_p___19",
+           "filipino" = "demo_race_a_p___20",
+           "japanese" = "demo_race_a_p___21",
+           "korean" = "demo_race_a_p___22",
+           "vietnamese" = "demo_race_a_p___23",
+           "other_asian" = "demo_race_a_p___24",
+           "other" = "demo_race_a_p___25",
+           "refuse_to_answer" = "demo_race_a_p___77",
+           "dont_know" = "demo_race_a_p___99",
+           "hispanic" = "demo_ethn_v2") |>
+    dplyr::select("subjectkey",
+                  "white":"hispanic",
+                  -"demo_race_notes_v2") |>
+    dplyr::mutate(
+        dplyr::across(
+            "white":"hispanic", as.numeric))
+    full_race_df <- full_race_df |>
+        dplyr::mutate(hispanic =
+            dplyr::case_when(full_race_df$"hispanic" == 1 ~ 1, TRUE ~ 0))
+
+colSums(full_race_df |> select(-"subjectkey"))
+```
+
+Several categories have less than 10 subjects in them(native alaskan, native hawaiian, guamanian, samoan, other pacific islander, asian, chinese, filipino, japanese, korean, vietnamese, other asian).
+
+In the next chunk, I pool some of them together:
+
+```{r}
+full_race_df2 <- full_race_df |>
+    dplyr::mutate(asian_other_pi = pmax(
+        full_race_df$"asian",
+        full_race_df$"filipino",
+        full_race_df$"korean",
+        full_race_df$"other_asian",
+        full_race_df$"chinese",
+        full_race_df$"japanese",
+        full_race_df$"vietnamese",
+        full_race_df$"other_pacific_islander",
+        full_race_df$"samoan",
+        full_race_df$"guamanian",
+        full_race_df$"native_hawaiian",
+        full_race_df$"native_alaskan"),
+    na = pmax(
+        full_race_df$"dont_know",
+        full_race_df$"refuse_to_answer")) |>
+    dplyr::select("subjectkey",
+           "asian_other_pi",
+           "native_american",
+           "other",
+           "na",
+           "white",
+           "black",
+           "hispanic")
+
+colSums(full_race_df2 |> select(-"subjectkey"))
+```
+
+These seems like a sensible breakdown, but the main issue is that many subjects belong to more than one of these categories.
+
+```{r}
+# How many subjects belong to more than one race category?
+sum(rowSums(full_race_df2 |> select(-"subjectkey")) > 1)
+```
+
+Quite a large number of subjects are mixed.
+In the next chunk, I assign those subjects to their own 'mixed' category and remove them from the individual race categories they previously belonged to.
+
+```{r}
+full_race_df3 <- full_race_df2 |>
+    dplyr::mutate(mixed = dplyr::case_when(
+        full_race_df2$"white" +
+        full_race_df2$"black" +
+        full_race_df2$"asian_other_pi" +
+        full_race_df2$"native_american" +
+        full_race_df2$"other" +
+        full_race_df2$"hispanic" > 1 ~ 1,
+        TRUE ~ 0
+        ))
+# Remove original race category for those who are mixed
+full_race_df4 <- full_race_df3 |>
+    dplyr::mutate(
+        black = dplyr::case_when(
+            full_race_df3$"black" == 1 &
+                full_race_df3$"mixed" == 0 ~ 1,
+            TRUE ~ 0),
+        white = dplyr::case_when(
+            full_race_df3$"white" == 1 &
+                full_race_df3$"mixed" == 0 ~ 1,
+            TRUE ~ 0),
+        asian_other_pi = dplyr::case_when(
+            full_race_df3$"asian_other_pi" == 1 &
+                full_race_df3$"mixed" == 0 ~ 1,
+            TRUE ~ 0),
+        hispanic = dplyr::case_when(
+            full_race_df3$"hispanic" == 1 &
+                full_race_df3$"mixed" == 0 ~ 1,
+            TRUE ~ 0),
+        native_american = dplyr::case_when(
+            full_race_df3$"native_american" == 1 &
+                full_race_df3$"mixed" == 0 ~ 1,
+            TRUE ~ 0))
+
+colSums(full_race_df4 |> select(-"subjectkey"))
+```
+
+Now the only categories with more than 5 people are other, white, black, and mixed.
+
+Moving forward, I see two sensible options:
+
+1. Assign one race category per subject, where that category is either white, black, or other/mixed
+2. Allow multiple race categories per subject, where those categories are white, black, hispanic, asian/other pacific islander, native american, and other
+
+Easier post-hoc analyses are provided by option 1, but more accurate similarity matrices will be constructed with option 2.
+I unfortunately can't think of any concrete reason as to why one of these two options will give better SNF results, so switching between these two types will need to be one of the free parameters in my upcoming SNF iterations.
+The function `get_race()` shown below is written to allow the user to specify which format they want their dataframe in:
+
+1. Option #1 dummied ('condensed_dummied'): three columns of white, black, mixed/other
+2. Option #1 undummied ('condensed_undummied'): one race column with categories white, black, mixed/other
+2. Option #2 dummied ('expanded_dummied'): multiple race columns including asian/other pacific islander, native american, other, white, black, hispanic
