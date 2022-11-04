@@ -23,8 +23,8 @@ rsfc_data_wb <- read.csv(here(paste0("data/pnc/pilot-snf/",
 
 # clinical data
 ## import
-clinical <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_clinical.csv",
-                     check.names = FALSE))
+clinical <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_clinical.csv"),
+                     check.names = FALSE)
 clinical <- clinical[, -1]
 
 ## recode factors as numbers 1=yes, 0=no
@@ -1133,7 +1133,7 @@ c4.rsfc.by.con$c4.mean<-rowMeans(c4.rsfc.by.con)
 # read in Shen Node Info
 nodes<-read.csv(here("data/pnc/pilot-snf/Shen-node-annotation.csv"))
 # read in Shen edge/connection info
-edgelist<-read.csv(here("data/pnc/pilot-snf/edgelist-in-vector.csv", sep="."), header=F)
+edgelist<-read.csv(here("data/pnc/pilot-snf/edgelist-in-vector.csv"), sep=".", header=F)
 edgelist2<-edgelist
 edgelist2[]<-lapply(edgelist, function(x) nodes$Lobe[match(x, nodes$Node)])
 colnames(edgelist2)<-c("V1.lobe", "V2.lobe")
@@ -1667,6 +1667,10 @@ ggplot(rsfc_data, aes(x = cluster.3, y = bs_oct_rsfc)) +
     geom_point() +
     ylim(-0.2, 0.3)
 
+# 1. Is bs_oct_rsfc significantly lower in cluster 3?
+summary(aov(bs_oct_rsfc ~ cluster.3, data = rsfc_data)) # p = 0.146
+
+
 ## For carbon
 #ggsave(here("data/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png"),
 #    width = 10,
@@ -1677,8 +1681,7 @@ ggplot(rsfc_data, aes(x = cluster.3, y = bs_oct_rsfc)) +
 #    width = 10,
 #    height = 10)
 
-# Association checks
-
+# Association checks - Across all subjects
 head(rsfc_data)
 head(loc_data)
 head(lot_data)
@@ -1691,8 +1694,11 @@ rsfc_data$cluster.3 <- as.factor(rsfc_data$cluster.3)
 loc_data$cluster.3 <- as.factor(loc_data$cluster.3)
 lot_data$cluster.3 <- as.factor(lot_data$cluster.3)
 
-association_df <- inner_join(rsfc_data, loc_data, by = c("cluster.3", "SUBJID"))
-association_df <- inner_join(association_df, lot_data, by = c("cluster.3", "SUBJID"))
+
+association_df <-
+    inner_join(rsfc_data, loc_data, by = c("cluster.3", "SUBJID"))
+association_df <-
+    inner_join(association_df, lot_data, by = c("cluster.3", "SUBJID"))
 
 colnames(association_df)
 
@@ -1748,9 +1754,6 @@ ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "bs_oct_rsfc")) +
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png"))
 ```
 
-
-
-
 ```{r eval = FALSE}
 # LOC vs LOT
 noloc <- association_df$PLOT_TC[association_df$TBI_LOC == "no"]
@@ -1780,3 +1783,98 @@ knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png"
 
 
 No significant associations appear between any pair of LOC, line orientation test performance, and brainstem-occipital cortex functional connectivity.
+Now checking just within cluster 3:
+
+```{r eval = FALSE}
+association_df2 <- association_df |>
+    filter(cluster.3 == 3)
+
+
+# rsfc VS line orientation test
+cor.test(association_df2$PLOT_TC, association_df2$bs_oct_rsfc, use = "complete.obs")$p.value
+# p-value: 0.443917
+
+ggplot(association_df2, mapping = aes_string(x = "PLOT_TC", y = "bs_oct_rsfc")) +
+    geom_point() + 
+    geom_smooth(method=lm, se=TRUE)
+```
+
+
+```{r eval = FALSE, echo = FALSE}
+# For carbon
+ggsave(here("data/pnc/pilot-snf/3_cluster_lot_rsfc_assoc_just_c3.png"),
+    width = 10,
+    height = 10)
+
+# For this repo
+ggsave(here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc_just_c3.png"),
+    width = 10,
+    height = 10)
+```
+
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(
+    here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc_just_c3.png"))
+```
+
+
+```{r eval = FALSE}
+# rsfc vs LOC
+noloc <- association_df2$bs_oct_rsfc[association_df2$TBI_LOC == "no"]
+yloc <- association_df2$bs_oct_rsfc[association_df2$TBI_LOC == "yes"]
+t.test(noloc, yloc)
+# p-value: 0.4896
+
+ggplot(association_df2, mapping = aes_string(x = "TBI_LOC", y = "bs_oct_rsfc")) +
+    geom_boxplot() +
+    geom_jitter() +
+    theme(text = element_text(size = 20))
+```
+
+```{r eval = FALSE, echo = FALSE}
+# For carbon
+ggsave(here("data/pnc/pilot-snf/3_cluster_loc_rsfc_assoc_just_c3.png"),
+    width = 10,
+    height = 10)
+
+# For this repo
+ggsave(here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc_just_c3.png"),
+    width = 10,
+    height = 10)
+```
+
+
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(
+    here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc_just_c3.png"))
+```
+
+```{r eval = FALSE}
+# LOC vs LOT
+noloc <- association_df2$PLOT_TC[association_df2$TBI_LOC == "no"]
+yloc <- association_df2$PLOT_TC[association_df2$TBI_LOC == "yes"]
+t.test(noloc, yloc)
+# p-value: 0.5474
+
+ggplot(association_df2, mapping = aes_string(x = "TBI_LOC", y = "PLOT_TC")) +
+    geom_boxplot() +
+    geom_jitter() +
+    theme(text = element_text(size = 20))
+```
+
+```{r eval = FALSE, echo = FALSE}
+# For carbon
+ggsave(here("data/pnc/pilot-snf/3_cluster_loc_lot_assoc_just_c3.png"),
+    width = 10,
+    height = 10)
+
+# For this repo
+ggsave(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc_just_c3.png"),
+    width = 10,
+    height = 10)
+```
+
+```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc_just_c3.png"))
+```
+
