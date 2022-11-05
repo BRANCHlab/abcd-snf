@@ -53,6 +53,10 @@ otbi01 <- read_delim(here("data/abcd/4.0/trauma/abcd_otbi01.txt"))
 
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
 mtbi_subjects <- get_mtbi_subjects(otbi01, min_latest_mtbi_mpi = 3)
+
+# Alternatively:
+mtbi_subjects <- read_delim(
+    here("data/abcd/processed/prashanth/data/subjects/mtbi_subjects.csv"))
 ```
 
 
@@ -98,6 +102,14 @@ write_csv(as_mtbi_age, paste0(input_path, "as_mtbi_age.csv"))
 
 ## Demographics
 
+Demographic variables included in the analyses are:
+
+* Age
+* Sex
+* Race
+* Household income
+* Pubertal development status
+
 ```{r}
 # Demographic dataframes
 ssphp01 <- read_delim(here("data/abcd/4.0/med-history/abcd_ssphp01.txt"))
@@ -130,9 +142,8 @@ The rationale for this decision can be found at (@sec-racebreakdown).
 
 # Race
 ```{r}
-
-# CONTINUE FROM HERE!
-d_race <- get_race(pdem02, mtbi_subjects, "condensed_undummied")
+d_race_condensed <- get_race(pdem02, mtbi_subjects, "condensed_dummied")
+d_race_expanded <- get_race(pdem02, mtbi_subjects, "expanded_dummied")
 ```
 
 Subset and export the demographic input variables:
@@ -143,10 +154,21 @@ write_csv(d_interview_age, paste0(input_path, "d_interview_age.csv"))
 write_csv(d_mtbi_age, paste0(input_path, "d_mtbi_age.csv"))
 write_csv(d_sex, paste0(input_path, "d_sex.csv"))
 write_csv(d_income, paste0(input_path, "d_income.csv"))
-write_csv(d_race, paste0(input_path, "d_race.csv"))
+write_csv(d_race_condensed, paste0(input_path, "d_race.csv"))
+write_csv(d_race_expanded, paste0(input_path, "d_race.csv"))
 ```
 
 ## Medical history
+
+Medical history variables of interest include:
+
+1. Number of previous head injuries
+    * discrete variable `mtbi_count` from the processed file `abcd_otbi01_detailed.csv`
+2. History of headaches 
+    * binary variable `medhx_2q` from the file ABCD Parent Medical History Questionnaire (`abcd_mx01.txt`; category Med History; release 2.0)
+        * checks if subject has ever gone to doctor for bad headaches
+
+Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL#Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
 
 ```{r eval = TRUE}
 mx01 <- read_delim(here("data/abcd/4.0/med-history/abcd_mx01.txt"))
@@ -166,6 +188,15 @@ write_csv(mh_mtbi_count, paste0(input_path, "mh_mtbi_count.csv"))
 ```
 
 ## Neuroimaging
+
+Variables of interest related to brain structure and function include:
+
+* Structural: T1-weighted multishell diffusion-weighted MRI data
+* Diffusion: Neurite density (restricted spectrum imaging)
+* Functional: resting-state functional MRI data
+
+The 2019 publication by Hagler et al. @UD6THTQZ#Hagler_Etal_2019 outlines the neuroimaging data present in the ABCD dataset in detail.
+
 
 ### Structural MRI
 
@@ -259,9 +290,21 @@ write_csv(rm_gord_var, paste0(input_path, "rm_gord_var.csv"))
 ## Psychosocial resilience
 
 
+Psychosocial factors of interest include:
+
+* family function
+* prosocial behaviour
+* loneliness
+* healthy behaviours
+* parent psychopathology
+
+```{r eval = TRUE}
+
+```
 
 
-Some visualizations of the extracted data:
+
+(Move to appendix) Some visualizations of the extracted data:
 
 ```{r eval = TRUE}
 # Breakdown of how many kids had each number of mTBIs
