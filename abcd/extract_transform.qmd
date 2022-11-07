@@ -36,7 +36,7 @@ The fixed nature of the questionnaire also meant that some information about mul
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
 
-```{r eval = TRUE}
+```{r eval = FALSE}
 library(ggplot2)
 library(scabcd)
 library(readr)
@@ -47,17 +47,22 @@ library(knitr)
 # Location of processed data
 input_path <- "data/abcd/processed/prashanth/data/inputs/"
 subject_path <- "data/abcd/processed/prashanth/data/subjects/"
+misc_path <- "data/abcd/processed/prashanth/data/misc/"
 
 # Import baseline TBI dataset
 otbi01 <- read_delim(here("data/abcd/4.0/trauma/abcd_otbi01.txt"))
 
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
 mtbi_subjects <- get_mtbi_subjects(otbi01, min_latest_mtbi_mpi = 3)
+
+# Export a useful intermediate df (not explicility needed for this script)
+mtbi_detailed <- detail_mtbi(otbi01, mtbi_subjects)
 ```
 
 
 ```{r eval = FALSE}
 write_csv(mtbi_subjects, paste0(subject_path, "mtbi_subjects.csv"))
+write_csv(mtbi_detailed, paste0(misc_path, "mtbi_detailed.csv"))
 ```
 
 
@@ -81,7 +86,7 @@ We are interesed in the following acute symptoms:
 
 A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
 
-```{r eval = TRUE}
+```{r eval = FALSE}
 as_mtbi_mem_daze <- get_mtbi_mem_daze(otbi01, mtbi_subjects)
 as_mtbi_mechanism <- get_mtbi_mechanism(otbi01, mtbi_subjects)
 as_mtbi_loc <- get_mtbi_loc(otbi01, mtbi_subjects)
@@ -106,7 +111,7 @@ Demographic variables included in the analyses are:
 * Household income
 * Pubertal development status
 
-```{r}
+```{r eval = FALSE}
 # Demographic dataframes
 ssphp01 <- read_delim(here("data/abcd/4.0/med-history/abcd_ssphp01.txt"))
 ssphy01 <- read_delim(here("data/abcd/4.0/med-history/abcd_ssphy01.txt"))
@@ -136,8 +141,8 @@ I will be trying two separate categorizations:
 The rationale for this decision can be found at (@sec-racebreakdown).
 
 
-# Race
-```{r}
+### Race
+```{r eval = FALSE}
 d_race_condensed <- get_race(pdem02, mtbi_subjects, "condensed_dummied")
 d_race_expanded <- get_race(pdem02, mtbi_subjects, "expanded_dummied")
 ```
@@ -166,7 +171,7 @@ Medical history variables of interest include:
 
 Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL#Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
 
-```{r eval = TRUE}
+```{r eval = FALSE}
 mx01 <- read_delim(here("data/abcd/4.0/med-history/abcd_mx01.txt"))
 
 # History of headaches
@@ -199,7 +204,7 @@ The 2019 publication by Hagler et al. @UD6THTQZ#Hagler_Etal_2019 outlines the ne
 The sMRI variables of interest include subcortical volumes, and cortical thicknesses, and cortical surface areas.
 
 
-```{r eval = TRUE}
+```{r eval = FALSE}
 # SMRI dataframes
 smrip10201 <-
     read_delim(here("data/abcd/4.0/evaluated-data/abcd_smrip10201.txt"))
@@ -228,7 +233,7 @@ We are interested in the neurite density measures of white matter regions in the
 Previously, these measures were found in variables containing the string "rsindwm_cdk" within the file `mri_rsi_p102.txt`.
 A change anounced in the ABCD 4.0 MRI release notes indicates that neurite density is now referred to as "restricted normalized directional" and that the relevant white matter variables contain the string "rsirndwm" within the file `abcd_drsip201.txt`.
 
-```{r}
+```{r eval = FALSE}
 # DMRI dataframe
 drsip201 <-
     read_delim(here("data/abcd/4.0/evaluated-data/abcd_drsip201.txt"))
@@ -250,7 +255,7 @@ We are interested in the following rs-fMRI measures:
 - Subcortical correlations
 - Gordon and subcortical temporal variances
 
-```{r}
+```{r eval = FALSE}
 betnet02 <-
     read_delim(here(paste0("data/abcd/2.0/tabular-MRI/rsfMRI-data/",
                            "rsfmri-gord-cor/abcd_betnet02.txt")))
@@ -285,7 +290,6 @@ write_csv(rm_gord_var, paste0(input_path, "rm_gord_var.csv"))
 
 ## Psychosocial resilience
 
-
 Psychosocial factors of interest include:
 
 * family function
@@ -294,7 +298,7 @@ Psychosocial factors of interest include:
 * healthy behaviours
 * parent psychopathology
 
-```{r eval = TRUE}
+```{r eval = FALSE}
 fes02 <- read_delim(here("data/abcd/4.0/parenting/fes02.txt"))
 abcd_fes01 <- read_delim(here("data/abcd/4.0/parenting/abcd_fes01.txt"))
 psb01 <- read_delim(here("data/abcd/4.0/behaviour/psb01.txt"))
@@ -304,59 +308,3 @@ stq01 <- read_delim(here("data/abcd/4.0/questionnaire/stq01.txt"))
 abcd_stq01 <- read_delim(here("data/abcd/4.0/questionnaire/abcd_stq01.txt"))
 abcd_asrs01 <- read_delim(here("data/abcd/4.0/questionnaire/abcd_asrs01.txt"))
 ```
-
-
-
-(Move to appendix) Some visualizations of the extracted data:
-
-```{r eval = TRUE}
-# Breakdown of how many kids had each number of mTBIs
-table(mh_mtbi_count$mtbi_count)
-
-
-# Plot of the times since each child had their latest mTBI
-mtbi_detailed <- detail_mtbi(otbi01, mtbi_subjects)
-scabcd_hist(mtbi_detailed,
-            title = "Histogram of times since latest mTBI",
-            xval = "latest_mtbi_mpi",
-            xlabel = "Time since last mTBI")
-```
-
-```{r eval = FALSE, echo = FALSE}
-# Export the figure
-scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-              plotname = "time_since_latest_mtbi_full.png")
-```
-
-```{r eval = TRUE}
-scabcd_hist(df = d_pubertal_status,
-            xval = "pubertal_status",
-            xlabel = "Pubertal status",
-            title = "Distribution of pubertal status reports")
-```
-
-```{r eval = FALSE, echo = FALSE}
-# Export the figure
-scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-              plotname = "puberty_distributions.png")
-```
-
-```{r eval = TRUE}
-scabcd_hist(d_income,
-            xval = "household_income",
-            title = "Household incomes of mTBI subjects",
-            xlabel = "Income tier (1 = 0-50k, 2 = 50-100k, 3 = 100k+)")
-```
-
-```{r eval = FALSE, echo = FALSE}
-# Export the figure
-scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
-              plotname = "income_distributions.png")
-```
-
-```{r}
-# Distribution of subjects by race
-count(d_race_condensed, d_race_condensed$"race")
-count(d_race_expanded, d_race_expanded$"race")
-```
-

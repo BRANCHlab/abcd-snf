@@ -1,0 +1,67 @@
+# Raw summaries {#sec-rawsummaries}
+
+(Move to appendix) Some visualizations of the extracted data:
+
+```{r eval = TRUE}
+library(scabcd)
+library(readr)
+library(here)
+library(dplyr)
+
+input_path <- "data/abcd/processed/prashanth/data/inputs/"
+misc_path <- "data/abcd/processed/prashanth/data/misc/"
+
+
+# Breakdown of how many kids had each number of mTBIs
+mh_mtbi_count <- read_csv(here(paste0(input_path, "mh_mtbi_count.csv")))
+table(mh_mtbi_count$mtbi_count)
+
+# Plot of the times since each child had their latest mTBI
+mtbi_detailed <- read_csv(here(paste0(misc_path, "mtbi_detailed.csv")))
+scabcd_hist(mtbi_detailed,
+            title = "Histogram of times since latest mTBI",
+            xval = "latest_mtbi_mpi",
+            xlabel = "Time since last mTBI")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "time_since_latest_mtbi_full.png")
+```
+
+```{r eval = TRUE}
+d_pubertal_status <- read_csv(here(paste0(input_path, "d_pubertal_status.csv")))
+scabcd_hist(df = d_pubertal_status,
+            xval = "pubertal_status",
+            xlabel = "Pubertal status",
+            title = "Distribution of pubertal status reports")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "puberty_distributions.png")
+```
+
+```{r eval = TRUE}
+d_income <- read_csv(here(paste0(input_path, "d_income.csv")))
+scabcd_hist(d_income,
+            xval = "household_income",
+            title = "Household incomes of mTBI subjects",
+            xlabel = "Income tier (1 = 0-50k, 2 = 50-100k, 3 = 100k+)")
+```
+
+```{r eval = FALSE, echo = FALSE}
+# Export the figure
+scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
+              plotname = "income_distributions.png")
+```
+
+```{r}
+# Distribution of subjects by race
+d_race_condensed <- read_csv(here(paste0(input_path, "d_race_cd.csv")))
+d_race_expanded <- read_csv(here(paste0(input_path, "d_race_ed.csv")))
+format_race(d_race_condensed, "dummied")
+format_race(d_race_expanded, "dummied")
+```
