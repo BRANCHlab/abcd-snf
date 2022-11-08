@@ -1,24 +1,78 @@
 # Similarity network fusion
 
-In this chapter I run through the SNF pipeline, which consists of:
+```{r eval = FALSE}
+library(here)
+library(readr)
+library(scabcd)
 
-1. Preprocessing data
-2. Generating similarity matrices
-3. Applying SNF
-4. Clustering the SNF results into individual subtypes
+# Import input variables
+input_path <- "data/abcd/processed/prashanth/data/inputs/"
 
-## Preprocessing data
+as_mtbi_age <- read_csv(here(paste0(input_path, "as_mtbi_age.csv")))
+as_mtbi_loc <- read_csv(here(paste0(input_path, "as_mtbi_loc.csv")))
+as_mtbi_mechanism <- read_csv(here(paste0(input_path, "as_mtbi_mechanism.csv")))
+as_mtbi_mem_daze <- read_csv(here(paste0(input_path, "as_mtbi_mem_daze.csv")))
+d_income <- read_csv(here(paste0(input_path, "d_income.csv")))
+d_interview_age <- read_csv(here(paste0(input_path, "d_interview_age.csv")))
+d_mtbi_age <- read_csv(here(paste0(input_path, "d_mtbi_age.csv")))
+d_pubertal_status <- read_csv(here(paste0(input_path, "d_pubertal_status.csv")))
+d_race_cd <- read_csv(here(paste0(input_path, "d_race_cd.csv")))
+d_race_ed <- read_csv(here(paste0(input_path, "d_race_ed.csv")))
+d_sex <- read_csv(here(paste0(input_path, "d_sex.csv")))
+dm_wmndf <- read_csv(here(paste0(input_path, "dm_wmndf.csv")))
+mh_headaches <- read_csv(here(paste0(input_path, "mh_headaches.csv")))
+mh_mtbi_count <- read_csv(here(paste0(input_path, "mh_mtbi_count.csv")))
+rm_gord_cor <- read_csv(here(paste0(input_path, "rm_gord_cor.csv")))
+rm_gord_var <- read_csv(here(paste0(input_path, "rm_gord_var.csv")))
+rm_subc_cor <- read_csv(here(paste0(input_path, "rm_subc_cor.csv")))
+rm_subc_var <- read_csv(here(paste0(input_path, "rm_subc_var.csv")))
+sm_cort_sa <- read_csv(here(paste0(input_path, "sm_cort_sa.csv")))
+sm_cort_t <- read_csv(here(paste0(input_path, "sm_cort_t.csv")))
+sm_subc_v <- read_csv(here(paste0(input_path, "sm_subc_v.csv")))
 
-The data collected in the previous sections span a wide range of diverse data types. Ensuring that those data types are preprocessed sensibly is likely an important aspect of ensuring that the SNF pipeline yields meaningful and valid results. 
+acute_symptoms <- list(
+    as_mtbi_age,
+    as_mtbi_mech,
+    as_mtbi_mem_daze)
 
-In the original SNF paper@W9Z4CA2R#Wang_Etal_2014, the authors outline three preprocessing steps for their demonstration dataset:
+demographics <- list(
+    d_income,
+    d_interview_age,
+    d_mtbi_age,
+    d_pubertal_status,
+    d_race_cd,
+    d_race_ed,
+    d_sex)
 
-1. Outlier removal
-2. Missing-data imputation
-3. Normalization
+dmri <- list(
+    dm_wmndf)
 
-The following normalization method was used:
+smri <- list(
+    sm_cort_sa,
+    sm_cort_t,
+    sm_subc_v)
 
-$$
-\widetilde{f} = \frac{f - E(f)}{\sqrt{Var(f)}}
-$$
+rsfmri <- list(
+    rm_gord_cor,
+    rm_gord_var,
+    rm_subc_cor,
+    rm_subc_var)
+
+med_history <- list(
+    mh_headaches,
+    mh_mtbi_count)
+
+# Can visualize with table(rands)
+# Can visualize with hist(rands, breaks=22)
+
+a <- build_design_matrix_base()
+
+rowSums(add_design_matrix_rows(a, 10))
+
+
+med_history
+
+demographics
+
+```
+
