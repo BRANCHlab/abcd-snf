@@ -3,12 +3,12 @@
 ```{r eval = FALSE}
 library(here)
 library(readr)
+library(dplyr)
 library(scabcd)
 
 # Import input variables
 input_path <- "data/abcd/processed/prashanth/data/inputs/"
 
-as_mtbi_age <- read_csv(here(paste0(input_path, "as_mtbi_age.csv")))
 as_mtbi_loc <- read_csv(here(paste0(input_path, "as_mtbi_loc.csv")))
 as_mtbi_mechanism <- read_csv(here(paste0(input_path, "as_mtbi_mechanism.csv")))
 as_mtbi_mem_daze <- read_csv(here(paste0(input_path, "as_mtbi_mem_daze.csv")))
@@ -31,8 +31,8 @@ sm_cort_t <- read_csv(here(paste0(input_path, "sm_cort_t.csv")))
 sm_subc_v <- read_csv(here(paste0(input_path, "sm_subc_v.csv")))
 
 acute_symptoms <- list(
-    as_mtbi_age,
-    as_mtbi_mech,
+    as_mtbi_loc,
+    as_mtbi_mechanism,
     as_mtbi_mem_daze)
 
 demographics <- list(
@@ -62,17 +62,23 @@ med_history <- list(
     mh_headaches,
     mh_mtbi_count)
 
-# Can visualize with table(rands)
-# Can visualize with hist(rands, breaks=22)
+# SNF-preprocessing
 
-a <- build_design_matrix_base()
-
-rowSums(add_design_matrix_rows(a, 10))
+execute_design_matrix("cheese", subc_v = sm_subc_v)
 
 
-med_history
 
-demographics
+# Design matrix
+
+design_matrix_base <- build_design_matrix_base()
+
+design_matrix_base
+
+design_matrix <- add_design_matrix_rows(design_matrix_base, 5000)
+
+design_matrix
+
+hist(rowSums(design_matrix))
 
 ```
 
