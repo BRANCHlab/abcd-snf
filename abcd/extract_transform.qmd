@@ -45,18 +45,14 @@ library(here)
 library(knitr)
 
 # Location of processed data
-input_path <- "data/abcd/processed/prashanth/data/inputs/"
-subject_path <- "data/abcd/processed/prashanth/data/subjects/"
-misc_path <- "data/abcd/processed/prashanth/data/misc/"
+subject_path <- "proc-abcd/data/subjects/"
+misc_path <- "proc-abcd/data/misc/"
 
 # Import baseline TBI dataset
-otbi01 <- read_delim(here("data/abcd/4.0/trauma/abcd_otbi01.txt"))
+otbi01 <- read_delim(here("data/abcd/raw/abcd_otbi01.txt"))
 
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
 mtbi_subjects <- get_mtbi_subjects(otbi01, min_latest_mtbi_mpi = 3)
-
-?get_mtbi_subjects
-
 
 # Export a useful intermediate df (not explicility needed for this script)
 mtbi_detailed <- detail_mtbi(otbi01, mtbi_subjects)
@@ -64,8 +60,8 @@ mtbi_detailed <- detail_mtbi(otbi01, mtbi_subjects)
 
 
 ```{r eval = FALSE}
-write_csv(mtbi_subjects, paste0(subject_path, "mtbi_subjects.csv"))
-write_csv(mtbi_detailed, paste0(misc_path, "mtbi_detailed.csv"))
+write_csv(mtbi_subjects, here("data/abcd/subjects/mtbi_subjects.csv"))
+write_csv(mtbi_detailed, here("data/abcd/misc/mtbi_detailed.csv"))
 ```
 
 
@@ -96,9 +92,9 @@ as_mtbi_loc <- get_mtbi_loc(otbi01, mtbi_subjects)
 ```
 
 ```{r eval = FALSE}
-write_csv(as_mtbi_mem_daze, paste0(input_path, "as_mtbi_mem_daze.csv"))
-write_csv(as_mtbi_mechanism, paste0(input_path, "as_mtbi_mechanism.csv"))
-write_csv(as_mtbi_loc, paste0(input_path, "as_mtbi_loc.csv"))
+write_csv(as_mtbi_mem_daze, here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
+write_csv(as_mtbi_mechanism, here("data/abcd/inputs/as_mtbi_mechanism.csv"))
+write_csv(as_mtbi_loc, here("data/abcd/inputs/as_mtbi_loc.csv"))
 ```
 
 
@@ -114,9 +110,9 @@ Demographic variables included in the analyses are:
 
 ```{r eval = FALSE}
 # Demographic dataframes
-ssphp01 <- read_delim(here("data/abcd/4.0/med-history/abcd_ssphp01.txt"))
-ssphy01 <- read_delim(here("data/abcd/4.0/med-history/abcd_ssphy01.txt"))
-pdem02 <- read_delim(here("data/abcd/4.0/demographics/pdem02.txt"))
+ssphp01 <- read_delim(here("data/abcd/raw/abcd_ssphp01.txt"))
+ssphy01 <- read_delim(here("data/abcd/raw/abcd_ssphy01.txt"))
+pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
 
 # Pubertal status
 d_pubertal_status <- get_pubertal_status(ssphp01, ssphy01, mtbi_subjects)
@@ -151,13 +147,13 @@ d_race_expanded <- get_race(pdem02, mtbi_subjects, "expanded_dummied")
 Subset and export the demographic input variables:
 
 ```{r eval = FALSE}
-write_csv(d_pubertal_status, paste0(input_path, "d_pubertal_status.csv"))
-write_csv(d_interview_age, paste0(input_path, "d_interview_age.csv"))
-write_csv(d_mtbi_age, paste0(input_path, "d_mtbi_age.csv"))
-write_csv(d_sex, paste0(input_path, "d_sex.csv"))
-write_csv(d_income, paste0(input_path, "d_income.csv"))
-write_csv(d_race_condensed, paste0(input_path, "d_race_cd.csv"))
-write_csv(d_race_expanded, paste0(input_path, "d_race_ed.csv"))
+write_csv(d_pubertal_status, here("data/abcd/inputs/d_pubertal_status.csv"))
+write_csv(d_interview_age, here("data/abcd/inputs/d_interview_age.csv"))
+write_csv(d_mtbi_age, here("data/abcd/inputs/d_mtbi_age.csv"))
+write_csv(d_sex, here("data/abcd/inputs/d_sex.csv"))
+write_csv(d_income, here("data/abcd/inputs/d_income.csv"))
+write_csv(d_race_condensed, here("data/abcd/inputs/d_race_cd.csv"))
+write_csv(d_race_expanded, here("data/abcd/inputs/d_race_ed.csv"))
 ```
 
 ## Medical history
@@ -173,7 +169,7 @@ Medical history variables of interest include:
 Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL#Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
 
 ```{r eval = FALSE}
-mx01 <- read_delim(here("data/abcd/4.0/med-history/abcd_mx01.txt"))
+mx01 <- read_delim(here("data/abcd/raw/abcd_mx01.txt"))
 
 # History of headaches
 mh_headaches <- get_headaches(mx01, mtbi_subjects)
@@ -185,8 +181,8 @@ mh_mtbi_count <- get_mtbi_count(otbi01, mtbi_subjects)
 Subset and export the medical history variables:
 
 ```{r eval = FALSE}
-write_csv(mh_headaches, paste0(input_path, "mh_headaches.csv"))
-write_csv(mh_mtbi_count, paste0(input_path, "mh_mtbi_count.csv"))
+write_csv(mh_headaches, here("data/abcd/inputs/mh_headaches.csv"))
+write_csv(mh_mtbi_count, here("data/abcd/inputs/mh_mtbi_count.csv"))
 ```
 
 ## Neuroimaging
@@ -207,10 +203,8 @@ The sMRI variables of interest include subcortical volumes, and cortical thickne
 
 ```{r eval = FALSE}
 # SMRI dataframes
-smrip10201 <-
-    read_delim(here("data/abcd/4.0/evaluated-data/abcd_smrip10201.txt"))
-mrisdp10201 <-
-    read_delim(here("data/abcd/4.0/evaluated-data/abcd_mrisdp10201.txt"))
+smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
+mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
 
 # Subcortical volumes
 sm_subc_v <- get_subc_v(smrip10201, mtbi_subjects)
@@ -223,9 +217,9 @@ sm_cort_sa <- get_cort_sa(mrisdp10201, mtbi_subjects)
 ```
 
 ```{r eval = FALSE}
-write_csv(sm_subc_v, paste0(input_path, "sm_subc_v.csv"))
-write_csv(sm_cort_t, paste0(input_path, "sm_cort_t.csv"))
-write_csv(sm_cort_sa, paste0(input_path, "sm_cort_sa.csv"))
+write_csv(sm_subc_v, here("data/abcd/inputs/sm_subc_v.csv"))
+write_csv(sm_cort_t, here("data/abcd/inputs/sm_cort_t.csv"))
+write_csv(sm_cort_sa, here("data/abcd/inputs/sm_cort_sa.csv"))
 ```
 
 ### Diffusion MRI
@@ -236,15 +230,14 @@ A change anounced in the ABCD 4.0 MRI release notes indicates that neurite densi
 
 ```{r eval = FALSE}
 # DMRI dataframe
-drsip201 <-
-    read_delim(here("data/abcd/4.0/evaluated-data/abcd_drsip201.txt"))
+drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 
 # White matter neurite densities
 dm_wmndf <- get_wmnd(drsip201, mtbi_subjects)
 ```
 
 ```{r eval = FALSE}
-write_csv(dm_wmndf, paste0(input_path, "dm_wmndf.csv"))
+write_csv(dm_wmndf, here("data/abcd/inputs/dm_wmndf.csv"))
 ```
 
 
@@ -257,9 +250,9 @@ We are interested in the following rs-fMRI measures:
 - Gordon and subcortical temporal variances
 
 ```{r eval = FALSE}
-betnet02 <- read_delim(here("raw-data/abcd_betnet02.txt"))
-mrirscor02 <- read_delim(here("raw-data/mrirscor02.txt")))
-mrirstv02 <- read_delim(here("raw-data/abcd_mrirstv02.txt")))
+betnet03 <- read_delim(here("data/abcd/raw/abcd_betnet02.txt"))
+mrirscor02 <- read_delim(here("data/abcd/raw/mrirscor02.txt"))
+mrirstv02 <- read_delim(here("data/abcd/raw/abcd_mrirstv02.txt"))
 
 
 # Cortical parcellation network correlations
@@ -276,10 +269,10 @@ rm_subc_var <- get_subc_var(mrirstv02, mtbi_subjects)
 ```
 
 ```{r eval = FALSE}
-write_csv(rm_gord_cor, paste0(input_path, "rm_gord_cor.csv"))
-write_csv(rm_subc_cor, paste0(input_path, "rm_subc_cor.csv"))
-write_csv(rm_subc_var, paste0(input_path, "rm_subc_var.csv"))
-write_csv(rm_gord_var, paste0(input_path, "rm_gord_var.csv"))
+write_csv(rm_gord_cor, here("data/abcd/inputs/rm_gord_cor.csv"))
+write_csv(rm_subc_cor, here("data/abcd/inputs/rm_subc_cor.csv"))
+write_csv(rm_subc_var, here("data/abcd/inputs/rm_subc_var.csv"))
+write_csv(rm_gord_var, here("data/abcd/inputs/rm_gord_var.csv"))
 ```
 
 
@@ -294,12 +287,12 @@ Psychosocial factors of interest include:
 * parent psychopathology
 
 ```{r eval = FALSE}
-fes02 <- read_delim(here("data/abcd/4.0/parenting/fes02.txt"))
-abcd_fes01 <- read_delim(here("data/abcd/4.0/parenting/abcd_fes01.txt"))
-psb01 <- read_delim(here("data/abcd/4.0/behaviour/psb01.txt"))
-abcd_psb01 <- read_delim(here("data/abcd/4.0/behaviour/abcd_psb01.txt"))
-abcd_ysr01 <- read_delim(here("data/abcd/4.0/social-adjustment/abcd_ysr01.txt"))
-stq01 <- read_delim(here("data/abcd/4.0/questionnaire/stq01.txt"))
-abcd_stq01 <- read_delim(here("data/abcd/4.0/questionnaire/abcd_stq01.txt"))
-abcd_asrs01 <- read_delim(here("data/abcd/4.0/questionnaire/abcd_asrs01.txt"))
+fes02 <- read_delim(here("data/abcd/raw/fes02.txt"))
+abcd_fes01 <- read_delim(here("data/abcd/raw/abcd_fes01.txt"))
+psb01 <- read_delim(here("data/abcd/raw/psb01.txt"))
+abcd_psb01 <- read_delim(here("data/abcd/raw/abcd_psb01.txt"))
+abcd_ysr01 <- read_delim(here("data/abcd/raw/abcd_ysr01.txt"))
+stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
+abcd_stq01 <- read_delim(here("data/abcd/raw/abcd_stq01.txt"))
+abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
 ```
