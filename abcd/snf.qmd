@@ -28,65 +28,53 @@ sm_cort_sa <- read_csv(here("data/abcd/inputs/sm_cort_sa.csv"))
 sm_cort_t <- read_csv(here("data/abcd/inputs/sm_cort_t.csv"))
 sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 
-acute_symptoms <- list(
-    as_mtbi_loc,
-    as_mtbi_mechanism,
-    as_mtbi_mem_daze)
-
-demographics <- list(
-    d_income,
-    d_interview_age,
-    d_mtbi_age,
-    d_pubertal_status,
-    d_race_cd,
-    d_race_ed,
-    d_sex)
-
-dmri <- list(
-    dm_wmndf)
-
-smri <- list(
-    sm_cort_sa,
-    sm_cort_t,
-    sm_subc_v)
-
-rsfmri <- list(
-    rm_gord_cor,
-    rm_gord_var,
-    rm_subc_cor,
-    rm_subc_var)
-
-med_history <- list(
-    mh_headaches,
-    mh_mtbi_count)
+# as_mtbi_loc
+# as_mtbi_mechanism
+# as_mtbi_mem_daze
+# d_income
+# d_interview_age
+# d_mtbi_age
+# d_pubertal_status
+# d_race_cd
+# d_race_ed
+# d_sex
+# dm_wmndf
+# sm_cort_sa
+# sm_cort_t
+# sm_subc_v
+# rm_gord_cor
+# rm_gord_var
+# rm_subc_cor
+# rm_subc_var
+# mh_headaches
+# mh_mtbi_count
 
 # SNF-preprocessing
 
-a <- execute_design_matrix("cheese", subc_v = sm_subc_v)
+# The sequence below achieves the desired result:
+
+data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
+                                mtbi_mem_daze = as_mtbi_mem_daze)
 
 
-
-# Design matrix
-
-design_matrix_base <- build_design_matrix_base()
-
-design_matrix <- add_design_matrix_rows(design_matrix_base, 1)
-
-design_matrix
-
-hist(rowSums(design_matrix))
+# List of the subjects in each input type
+subjects <- lapply(data_list, function(x) x[[1]]$"subjectkey")
 
 
-a <- list(5, 4, 3)
+# Shared subjects in each input type
+a <- Reduce(intersect, subjects)
 
-names(a) <- c("cheese", "toast", "crunch")
+
+just_dfs <- lapply(data_list, function(x) x[[1]])
 
 
-a[[1]]
+filtered_dfs <-
+    lapply(just_dfs, function(x) dplyr::filter(x, subjectkey %in% a))
 
-a[[3]]
 
-names(a)[3]
+for (i in seq_along(data_list)) {
+    data_list[[i]][[1]] <- filtered_dfs[[i]]
+}
 
 ```
 
