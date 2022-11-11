@@ -48,33 +48,64 @@ sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 # rm_subc_var
 # mh_headaches
 # mh_mtbi_count
+system("clear")
 
 # SNF-preprocessing
 
-# The sequence below achieves the desired result:
+sm_subc_v <- sm_subc_v |>
+    dplyr::arrange(desc(subjectkey))
 
+# The essential data structure
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
-                                mtbi_mem_daze = as_mtbi_mem_daze)
+                                mtbi_mem_daze = as_mtbi_mem_daze,
+                                subc_v = sm_subc_v)
+
+data_list
+
+system("clear")
+
+data_list[[1]]
+
+print_data_list_dims(data_list)
+
+# Reduce the subject lists to common subjects only
+reduced_data_list <- reduce_dl_to_common(data_list)
+
+print_data_list_dims(reduced_data_list)
+
+reduced_data_list[[1]][[1]]$"subjectkey"
+
+reduced_data_list[[2]][[1]]$"subjectkey"
+
+reduced_data_list[[3]][[1]]$"subjectkey"
+
+# Sort the data lists by subjectkey
+arranged_data_list <- arrange_dl(reduced_data_list)
+
+arranged_data_list[[1]][[1]]$"subjectkey"
+
+arranged_data_list[[2]][[1]]$"subjectkey"
+
+arranged_data_list[[3]][[1]]$"subjectkey"
+
+# Never any NAs to begin with
+a <- rapply(arranged_data_list, function(x) is.na(x))
+sum(a)
 
 
-# List of the subjects in each input type
-subjects <- lapply(data_list, function(x) x[[1]]$"subjectkey")
+# SNF
+lapply(arranged_data_list,
+       function(x) get_dist_matrix(df = x[[1]], input_type = x[[5]]))
 
 
-# Shared subjects in each input type
-a <- Reduce(intersect, subjects)
 
 
-just_dfs <- lapply(data_list, function(x) x[[1]])
+arranged_data_list[[1]][[5]]
 
 
-filtered_dfs <-
-    lapply(just_dfs, function(x) dplyr::filter(x, subjectkey %in% a))
 
 
-for (i in seq_along(data_list)) {
-    data_list[[i]][[1]] <- filtered_dfs[[i]]
-}
-
+dim(as_mtbi_loc)
+dim(as_mtbi_mem_daze)
 ```
 
