@@ -40,5 +40,35 @@ data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
 
 # SNF
 a <- snf_step(data_list, "individual")
-```
 
+
+set.seed(42)
+design_matrix_base <- build_design_matrix_base_t()
+design_matrix <- add_design_matrix_rows(design_matrix_base, 1)
+design_matrix
+
+
+execute_inclusion(data_list, design_matrix)
+
+# Just iterate this through rows
+# Dataframe just of the inclusion variables
+inc_df <- design_matrix |>
+    select(starts_with("inc"))
+
+# The subset of columns that are in 'keep' (1) mode
+keepcols <- colnames(inc_df)[inc_df[1, ] == 1]
+
+# The list of data_list elements that are to be selected
+in_keeps_list <- lapply(data_list,
+    function(x) {
+        paste0("inc_", x$"name") %in% keepcols
+    })
+
+# Converting to a logical type to do the selection
+in_keeps_log <- c(unlist(in_keeps_list))
+
+# The selection
+selected_df <- data_list[in_keeps_log]
+lapply(selected_df, function(x) x$"name")
+
+```
