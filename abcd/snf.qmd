@@ -28,84 +28,17 @@ sm_cort_sa <- read_csv(here("data/abcd/inputs/sm_cort_sa.csv"))
 sm_cort_t <- read_csv(here("data/abcd/inputs/sm_cort_t.csv"))
 sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 
-# as_mtbi_loc
-# as_mtbi_mechanism
-# as_mtbi_mem_daze
-# d_income
-# d_interview_age
-# d_mtbi_age
-# d_pubertal_status
-# d_race_cd
-# d_race_ed
-# d_sex
-# dm_wmndf
-# sm_cort_sa
-# sm_cort_t
-# sm_subc_v
-# rm_gord_cor
-# rm_gord_var
-# rm_subc_cor
-# rm_subc_var
-# mh_headaches
-# mh_mtbi_count
-system("clear")
 
-# SNF-preprocessing
-
-sm_subc_v <- sm_subc_v |>
-    dplyr::arrange(desc(subjectkey))
+as_mtbi_loc <- read_csv(here("data/abcd/inputs/as_mtbi_loc.csv"))
+as_mtbi_mem_daze <- read_csv(here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
+sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 
 # The essential data structure
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mem_daze = as_mtbi_mem_daze,
                                 subc_v = sm_subc_v)
 
-data_list
-
-system("clear")
-
-data_list[[1]]
-
-print_data_list_dims(data_list)
-
-# Reduce the subject lists to common subjects only
-reduced_data_list <- reduce_dl_to_common(data_list)
-
-print_data_list_dims(reduced_data_list)
-
-reduced_data_list[[1]][[1]]$"subjectkey"
-
-reduced_data_list[[2]][[1]]$"subjectkey"
-
-reduced_data_list[[3]][[1]]$"subjectkey"
-
-# Sort the data lists by subjectkey
-arranged_data_list <- arrange_dl(reduced_data_list)
-
-arranged_data_list[[1]][[1]]$"subjectkey"
-
-arranged_data_list[[2]][[1]]$"subjectkey"
-
-arranged_data_list[[3]][[1]]$"subjectkey"
-
-# Never any NAs to begin with
-a <- rapply(arranged_data_list, function(x) is.na(x))
-sum(a)
-
-
 # SNF
-lapply(arranged_data_list,
-       function(x) get_dist_matrix(df = x[[1]], input_type = x[[5]]))
-
-
-
-
-arranged_data_list[[1]][[5]]
-
-
-
-
-dim(as_mtbi_loc)
-dim(as_mtbi_mem_daze)
+a <- snf_step(data_list, "individual")
 ```
 
