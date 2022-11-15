@@ -38,6 +38,9 @@ sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mem_daze = as_mtbi_mem_daze,
                                 subc_v = sm_subc_v)
+data_list <- data_list |>
+    reduce_dl_to_common() |>
+    arrange_dl()
 
 # SNF
 a <- snf_step(data_list, "individual")
@@ -48,53 +51,13 @@ design_matrix <- add_design_matrix_rows(design_matrix_base, 1)
 design_matrix
 
 
-data_list
 
-sdl(data_list)
+fused_net1 <- snf_step(data_list, "individual")
 
-data_list[[1]]$"domain"
-data_list[[2]]$"domain"
-data_list[[3]]$"domain"
+identical(fused_net1, fused_net1b)
 
-lapply(data_list,
-       function(x) {
-
-       })
-
-
-
-domains(data_list)
-
-
-data_list[[1]]$"domain" %in% domains(domain_dl)
-
-domains(domain_dl)
-
-
-domain_dl <- list()
-for (i in seq_along(data_list)) {
-    current_input <- data_list[[i]]
-    current_domain <- data_list[[i]]$"domain"
-    if (length(domain_dl) == 0) {
-        domain_dl <- append(domain_dl, list(current_input))
-        print(paste0("adding domain #", i, ": ", current_domain))
-    } else if (current_domain %in% domains(domain_dl)) {
-        print(paste0("not adding domain #", i, ": ", current_domain))
-        print("But can we merge it!")
-        print()
-    } else {
-        domain_dl <- append(domain_dl, list(current_input))
-        print(paste0("adding domain #", i, ": ", current_domain))
-    }
-}
-
-
-
-
-domain_dl
-
-domains(domain_dl)
-
-
+# Make an individual similarity matrix for each thing
+# Then do one round of fusion based on your domain
+# Then do another round of fusion based on everything
 
 ```
