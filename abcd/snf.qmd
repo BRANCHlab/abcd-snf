@@ -1,6 +1,7 @@
 # Similarity network fusion
 
 ```{r eval = FALSE}
+try(detach("package:scabcd", unload = TRUE), silent = TRUE)
 library(here)
 library(readr)
 library(dplyr)
@@ -41,34 +42,59 @@ data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
 # SNF
 a <- snf_step(data_list, "individual")
 
-
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 1)
 design_matrix
 
 
-execute_inclusion(data_list, design_matrix)
+data_list
 
-# Just iterate this through rows
-# Dataframe just of the inclusion variables
-inc_df <- design_matrix |>
-    select(starts_with("inc"))
+sdl(data_list)
 
-# The subset of columns that are in 'keep' (1) mode
-keepcols <- colnames(inc_df)[inc_df[1, ] == 1]
+data_list[[1]]$"domain"
+data_list[[2]]$"domain"
+data_list[[3]]$"domain"
 
-# The list of data_list elements that are to be selected
-in_keeps_list <- lapply(data_list,
-    function(x) {
-        paste0("inc_", x$"name") %in% keepcols
-    })
+lapply(data_list,
+       function(x) {
 
-# Converting to a logical type to do the selection
-in_keeps_log <- c(unlist(in_keeps_list))
+       })
 
-# The selection
-selected_df <- data_list[in_keeps_log]
-lapply(selected_df, function(x) x$"name")
+
+
+domains(data_list)
+
+
+data_list[[1]]$"domain" %in% domains(domain_dl)
+
+domains(domain_dl)
+
+
+domain_dl <- list()
+for (i in seq_along(data_list)) {
+    current_input <- data_list[[i]]
+    current_domain <- data_list[[i]]$"domain"
+    if (length(domain_dl) == 0) {
+        domain_dl <- append(domain_dl, list(current_input))
+        print(paste0("adding domain #", i, ": ", current_domain))
+    } else if (current_domain %in% domains(domain_dl)) {
+        print(paste0("not adding domain #", i, ": ", current_domain))
+        print("But can we merge it!")
+        print()
+    } else {
+        domain_dl <- append(domain_dl, list(current_input))
+        print(paste0("adding domain #", i, ": ", current_domain))
+    }
+}
+
+
+
+
+domain_dl
+
+domains(domain_dl)
+
+
 
 ```
