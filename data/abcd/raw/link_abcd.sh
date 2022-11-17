@@ -15,6 +15,8 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/parenting/fes02.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/parenting/abcd_fes01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/behaviour/psb01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/behaviour/abcd_psb01.txt .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/behaviour/abcd_cbcls01.txt .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/behaviour/abcd_cbcl01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/social-adjustment/abcd_ysr01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/stq01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/abcd_stq01.txt .

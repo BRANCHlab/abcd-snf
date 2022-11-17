@@ -1,7 +1,6 @@
 # Similarity network fusion
 
 ```{r eval = FALSE}
-try(detach("package:scabcd", unload = TRUE), silent = TRUE)
 library(here)
 library(readr)
 library(dplyr)
@@ -38,95 +37,45 @@ sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mem_daze = as_mtbi_mem_daze,
                                 subc_v = sm_subc_v)
-data_list <- data_list |>
-    reduce_dl_to_common() |>
-    arrange_dl()
 
 # SNF
 a <- snf_step(data_list, "individual")
 
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 1)
+design_matrix <- add_design_matrix_rows(design_matrix_base, 3)
 design_matrix
 
-#  ============================================================================
-data_list
+om <- build_output_matrix(data_list, design_matrix)
+om
+
+
+a <- snf_step(data_list, "individual")
+
+b <- snf_step(data_list, "domain")
+
+c <- snf_step(data_list, "twostep")
+
+dim(c)
 
 sdl(data_list)
 
-dist_list <- lapply(data_list,
-    function(x) {
-        get_dist_matrix(df = x$"data", input_type = x$"type")
-    })
-sim_list <- lapply(dist_list,
-    function(x) {
-        SNFtool::affinityMatrix(x)
-    })
+SNFtool::estimateNumberOfClustersGivenGraph(a)
 
-sim_list
+SNFtool::estimateNumberOfClustersGivenGraph(b)
 
-affinity_list <- data_list
-
-for (i in seq_along(affinity_list)) {
-    affinity_list[[i]]$"data" <- sim_list[[i]]
-}
-
-sdl(affinity_list)
-
-affinity_unique_dl <- list()
-
-affinity_unique_dl
-
-unique_domains <- unique(unlist(domains(affinity_list)))
-
-unique_domains
-
-for (i in seq_along(unique_domains)) {
-    affinity_unique_dl <- append(affinity_unique_dl, list(list()))
-}
-
-affinity_unique_dl
-
-names(affinity_unique_dl) <- unique_domains
-
-affinity_unique_dl
-
-adl_pos <- 2
-
-a <- data.frame(b = 1:5, c = 2:6)
-
-b <- data.frame(b = 3:4, c = 2:3)
-
-a
-
-affinity_unique_dl$"as" <- append(affinity_unique_dl$"as", list(a))
-
-affinity_unique_dl$"as" <- append(affinity_unique_dl$"as", list(b))
-
-dn <- "n"
-
-pos <- which(names(affinity_unique_dl) == dn)
-
-affinity_unique_dl[pos][[1]] <- append(affinity_unique_dl[pos][[1]], list(b))
-
-affinity_unique_dl[pos][[1]] <- append(affinity_unique_dl[pos][[1]], list(b))
-
-class(affinity_unique_dl[pos][[1]][[1]])
-
-data.frame(affinity_unique_dl[[1]][[1]])
+SNFtool::estimateNumberOfClustersGivenGraph(c)
 
 
 
-affinity_unique_dl[adl_pos][[1]] <- append(affinity_unique_dl[adl_pos][[1]], a)
+a <- lapply(data_list,
+       function(x) {
+           x[[1]]$"subjectkey"
+       })
 
-affinity_unique_dl
-
-append(affinity_unique_dl[adl_pos], 5)
+a[[3]]
 
 
-for (i in seq_along(affinity_list)) {
-    adl_pos <- which(names(affinity_unique_dl) == affinity_list$"domain")
-}
+
 
 ```
