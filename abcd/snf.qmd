@@ -37,45 +37,43 @@ sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mem_daze = as_mtbi_mem_daze,
                                 subc_v = sm_subc_v)
+r_data_list <- reduce_dl_to_common(data_list)
 
-# SNF
-a <- snf_step(data_list, "individual")
 
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 3)
+
 design_matrix
 
+
 om <- build_output_matrix(data_list, design_matrix)
+
 om
 
+design_matrix
 
-a <- snf_step(data_list, "individual")
+data_list
 
-b <- snf_step(data_list, "domain")
+sdl(execute_inclusion(data_list, design_matrix[1, ]))
 
-c <- snf_step(data_list, "twostep")
+sdl(execute_inclusion(data_list, design_matrix[2, ]))
 
-dim(c)
+sdl(execute_inclusion(data_list, design_matrix[3, ]))
 
-sdl(data_list)
-
-SNFtool::estimateNumberOfClustersGivenGraph(a)
-
-SNFtool::estimateNumberOfClustersGivenGraph(b)
-
-SNFtool::estimateNumberOfClustersGivenGraph(c)
+execute_design_matrix(data_list, design_matrix)
 
 
+om
 
-a <- lapply(data_list,
-       function(x) {
-           x[[1]]$"subjectkey"
-       })
-
-a[[3]]
+add <- data.frame(t(data.frame(c("hi", "bye"))))
+colnames(add) <- add[1, ]
+add[1, ] <- 0
 
 
 
+add
+
+inner_join(om, add, by = character())
 
 ```

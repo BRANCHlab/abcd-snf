@@ -72,8 +72,9 @@ For the `other_multi` and `other_other_multi` injury types, insufficient informa
 
 For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
 
+## Input variables
 
-## Acute symptoms
+### Acute symptoms
 
 The acute symptom data is found within the TBI dataset.
 We are interesed in the following acute symptoms:
@@ -98,7 +99,7 @@ write_csv(as_mtbi_loc, here("data/abcd/inputs/as_mtbi_loc.csv"))
 ```
 
 
-## Demographics
+### Demographics
 
 Demographic variables included in the analyses are:
 
@@ -109,24 +110,24 @@ Demographic variables included in the analyses are:
 * Pubertal development status
 
 ```{r eval = FALSE}
-# Demographic dataframes
+## Demographic dataframes
 ssphp01 <- read_delim(here("data/abcd/raw/abcd_ssphp01.txt"))
 ssphy01 <- read_delim(here("data/abcd/raw/abcd_ssphy01.txt"))
 pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
 
-# Pubertal status
+## Pubertal status
 d_pubertal_status <- get_pubertal_status(ssphp01, ssphy01, mtbi_subjects)
 
-# Age on interview
+## Age on interview
 d_interview_age <- get_interview_age(otbi01, mtbi_subjects)
 
-# Age on injury
+## Age on injury
 d_mtbi_age <- get_mtbi_age(otbi01, mtbi_subjects)
 
-# Sex
+## Sex
 d_sex <- get_sex(otbi01, mtbi_subjects)
 
-# Household income
+## Household income
 d_income <- get_income(pdem02, mtbi_subjects)
 ```
 
@@ -138,7 +139,7 @@ I will be trying two separate categorizations:
 The rationale for this decision can be found at (@sec-racebreakdown).
 
 
-### Race
+#### Race
 ```{r eval = FALSE}
 d_race_condensed <- get_race(pdem02, mtbi_subjects, "condensed_dummied")
 d_race_expanded <- get_race(pdem02, mtbi_subjects, "expanded_dummied")
@@ -156,7 +157,7 @@ write_csv(d_race_condensed, here("data/abcd/inputs/d_race_cd.csv"))
 write_csv(d_race_expanded, here("data/abcd/inputs/d_race_ed.csv"))
 ```
 
-## Medical history
+### Medical history
 
 Medical history variables of interest include:
 
@@ -166,15 +167,15 @@ Medical history variables of interest include:
     * binary variable `medhx_2q` from the file ABCD Parent Medical History Questionnaire (`abcd_mx01.txt`; category Med History; release 2.0)
         * checks if subject has ever gone to doctor for bad headaches
 
-Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL#Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
+Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL##Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
 
 ```{r eval = FALSE}
 mx01 <- read_delim(here("data/abcd/raw/abcd_mx01.txt"))
 
-# History of headaches
+## History of headaches
 mh_headaches <- get_headaches(mx01, mtbi_subjects)
 
-# Number of previous mTBIs
+## Number of previous mTBIs
 mh_mtbi_count <- get_mtbi_count(otbi01, mtbi_subjects)
 ```
 
@@ -185,7 +186,7 @@ write_csv(mh_headaches, here("data/abcd/inputs/mh_headaches.csv"))
 write_csv(mh_mtbi_count, here("data/abcd/inputs/mh_mtbi_count.csv"))
 ```
 
-## Neuroimaging
+### Neuroimaging
 
 Variables of interest related to brain structure and function include:
 
@@ -193,26 +194,26 @@ Variables of interest related to brain structure and function include:
 * Diffusion: Neurite density (restricted spectrum imaging)
 * Functional: resting-state functional MRI data
 
-The 2019 publication by Hagler et al. @UD6THTQZ#Hagler_Etal_2019 outlines the neuroimaging data present in the ABCD dataset in detail.
+The 2019 publication by Hagler et al. @UD6THTQZ##Hagler_Etal_2019 outlines the neuroimaging data present in the ABCD dataset in detail.
 
 
-### Structural MRI
+#### Structural MRI
 
 The sMRI variables of interest include subcortical volumes, and cortical thicknesses, and cortical surface areas.
 
 
 ```{r eval = FALSE}
-# SMRI dataframes
+## SMRI dataframes
 smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
 mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
 
-# Subcortical volumes
+## Subcortical volumes
 sm_subc_v <- get_subc_v(smrip10201, mtbi_subjects)
 
-# Cortical thickness
+## Cortical thickness
 sm_cort_t <- get_cort_t(mrisdp10201, mtbi_subjects)
 
-# Cortical volumes
+## Cortical volumes
 sm_cort_sa <- get_cort_sa(mrisdp10201, mtbi_subjects)
 ```
 
@@ -222,17 +223,17 @@ write_csv(sm_cort_t, here("data/abcd/inputs/sm_cort_t.csv"))
 write_csv(sm_cort_sa, here("data/abcd/inputs/sm_cort_sa.csv"))
 ```
 
-### Diffusion MRI
+#### Diffusion MRI
 
 We are interested in the neurite density measures of white matter regions in the brain.
 Previously, these measures were found in variables containing the string "rsindwm_cdk" within the file `mri_rsi_p102.txt`.
 A change anounced in the ABCD 4.0 MRI release notes indicates that neurite density is now referred to as "restricted normalized directional" and that the relevant white matter variables contain the string "rsirndwm" within the file `abcd_drsip201.txt`.
 
 ```{r eval = FALSE}
-# DMRI dataframe
+## DMRI dataframe
 drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 
-# White matter neurite densities
+## White matter neurite densities
 dm_wmndf <- get_wmnd(drsip201, mtbi_subjects)
 ```
 
@@ -241,7 +242,7 @@ write_csv(dm_wmndf, here("data/abcd/inputs/dm_wmndf.csv"))
 ```
 
 
-### Resting-state functional MRI
+#### Resting-state functional MRI
 
 We are interested in the following rs-fMRI measures:
 
@@ -255,16 +256,16 @@ mrirscor02 <- read_delim(here("data/abcd/raw/mrirscor02.txt"))
 mrirstv02 <- read_delim(here("data/abcd/raw/abcd_mrirstv02.txt"))
 
 
-# Cortical parcellation network correlations
+## Cortical parcellation network correlations
 rm_gord_cor <- get_gord_cor(betnet02, mtbi_subjects)
 
-# Subcortical parcellation network correlations
+## Subcortical parcellation network correlations
 rm_subc_cor <- get_subc_cor(mrirscor02, mtbi_subjects)
 
-# Temporal variances - cortical parcellations
+## Temporal variances - cortical parcellations
 rm_gord_var <- get_gord_var(mrirstv02, mtbi_subjects)
 
-# Subcortical temporal variances
+## Subcortical temporal variances
 rm_subc_var <- get_subc_var(mrirstv02, mtbi_subjects)
 ```
 
@@ -276,7 +277,7 @@ write_csv(rm_gord_var, here("data/abcd/inputs/rm_gord_var.csv"))
 ```
 
 
-## Psychosocial resilience
+### Psychosocial resilience
 
 Psychosocial factors of interest include:
 
@@ -296,3 +297,62 @@ stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
 abcd_stq01 <- read_delim(here("data/abcd/raw/abcd_stq01.txt"))
 abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
 ```
+
+## Output variables
+
+### Child behaviour checklist
+
+```{r eval = FALSE}
+abcd_cbcl01 <- read_delim(here("data/abcd/raw/abcd_cbcl01.txt"))
+abcd_cbcls01 <- read_delim(here("data/abcd/raw/abcd_cbcls01.txt"))
+
+cbcl_headaches <- get_cbcl_headaches(abcd_cbcl01, mtbi_subjects)
+cbcl_nausea <- get_cbcl_nausea(abcd_cbcl01, mtbi_subjects)
+cbcl_vomiting <- get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects)
+cbcl_dizzy <- get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects)
+cbcl_overtired <- get_cbcl_overtired(abcd_cbcl01, mtbi_subjects)
+cbcl_sleeping_more <- get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects)
+cbcl_sleeping_less <- get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects)
+cbcl_depress_r <- get_cbcl_depress_r(abcd_cbcls01, mtbi_subjects)
+cbcl_anxiety_r <- get_cbcl_anxiety_r(abcd_cbcls01, mtbi_subjects)
+cbcl_attention_r <- get_cbcl_attention_r(abcd_cbcls01, mtbi_subjects)
+cbcl_aggressive_r <- get_cbcl_aggressive_r(abcd_cbcls01, mtbi_subjects)
+```
+
+```{r eval = FALSE}
+write_csv(cbcl_headaches, here("data/abcd/outputs/cbcl_headaches.csv"))
+write_csv(cbcl_nausea, here("data/abcd/outputs/cbcl_nausea.csv"))
+write_csv(cbcl_vomiting, here("data/abcd/outputs/cbcl_vomiting.csv"))
+write_csv(cbcl_dizzy, here("data/abcd/outputs/cbcl_dizzy.csv"))
+write_csv(cbcl_overtired, here("data/abcd/outputs/cbcl_overtired.csv"))
+write_csv(cbcl_sleeping_more, here("data/abcd/outputs/cbcl_sleeping_more.csv"))
+write_csv(cbcl_sleeping_less, here("data/abcd/outputs/cbcl_sleeping_less.csv"))
+write_csv(cbcl_depress_r, here("data/abcd/outputs/cbcl_depress_r.csv"))
+write_csv(cbcl_anxiety_r, here("data/abcd/outputs/cbcl_anxiety_r.csv"))
+write_csv(cbcl_attention_r, here("data/abcd/outputs/cbcl_attention_r.csv"))
+write_csv(cbcl_aggressive_r, here("data/abcd/outputs/cbcl_aggressive_r.csv"))
+```
+
+
+
+### NIH Toolbox
+
+```{r}
+abcd_tbss01 <- read_delim(here("data/abcd/raw/abcd_tbss01.txt"))
+
+```
+
+
+### Sleep disturbance scale
+
+```{r}
+abcd_sds01 <- read_delim(here("data/abcd/raw/abcd_sds01.txt"))
+
+sds_sleep_df <- get_full_sleep_df(abcd_sds01, mtbi_subjects)
+```
+
+```{r eval = FALSE}
+write_csv(full_sleep_df, here("data/abcd/outputs/sds_sleep_df.csv"))
+```
+
+
