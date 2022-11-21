@@ -33,47 +33,39 @@ as_mtbi_loc <- read_csv(here("data/abcd/inputs/as_mtbi_loc.csv"))
 as_mtbi_mem_daze <- read_csv(here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
 sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
 
+as_mtbi_loc <- as_mtbi_loc[1:100, ]
+as_mtbi_mem_daze <- as_mtbi_mem_daze[1:100, ]
+sm_subc_v <- sm_subc_v[1:100, ]
+
 # The essential data structure
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mem_daze = as_mtbi_mem_daze,
                                 subc_v = sm_subc_v)
-r_data_list <- reduce_dl_to_common(data_list)
+
+
+outcome_list <- list()
+cbcl_vomiting_component <- list(cbcl_vomiting, "cbcl_vomiting", "ordinal")
+names(cbcl_vomiting_component) <- c("data", "name", "type")
+outcome_list <- append(outcome_list, list(cbcl_vomiting_component))
 
 
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 3)
+design_matrix <- add_design_matrix_rows(design_matrix_base, 2)
 
 design_matrix
 
-
-om <- build_output_matrix(data_list, design_matrix)
-
-om
-
-design_matrix
-
-data_list
-
-sdl(execute_inclusion(data_list, design_matrix[1, ]))
-
-sdl(execute_inclusion(data_list, design_matrix[2, ]))
-
-sdl(execute_inclusion(data_list, design_matrix[3, ]))
 
 execute_design_matrix(data_list, design_matrix)
 
 
-om
-
-add <- data.frame(t(data.frame(c("hi", "bye"))))
-colnames(add) <- add[1, ]
-add[1, ] <- 0
+# Assess clustering minimum p-value for an ordinal dependent variable
+cbcl_vomiting <- read_csv(here("data/abcd/outputs/cbcl_vomiting.csv"))
 
 
+ord_reg_min_p(clustered_subs, cbcl_vomiting, "cbcl_vomiting")
 
-add
 
-inner_join(om, add, by = character())
 
+execute_design_matrix(data_list, design_matrix, outcome_list)
 ```
