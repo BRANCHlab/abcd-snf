@@ -75,39 +75,115 @@ design_matrix <- add_design_matrix_rows(design_matrix_base, 2)
 # Assess clustering minimum p-value for an ordinal dependent variable
 a <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
-b <- no_subs(a)
+clust_membership <- a[[1]]
+outcome_df <- a[[2]]
+outcome_var <- a[[3]]
+merged_df <-
+    dplyr::inner_join(clust_membership, outcome_df, by = "subjectkey")
+merged_df2 <- merged_df |> dplyr::mutate(
+    cluster = case_when(
+                        cluster == 3 ~ 6,
+                        cluster == 2 ~ 7,
+                        cluster == 1 ~ 8))
+merged_df$"cluster" <- as.factor(merged_df$"cluster")
+merged_df2$"cluster" <- as.factor(merged_df2$"cluster")
 
-b
+merged_df[, outcome_var] <- as.ordered(merged_df[, outcome_var])
+olr_model <- MASS::polr(
+    merged_df[, outcome_var] ~ merged_df[, "cluster"],
+    Hess = TRUE)
+ctable <- stats::coef(summary(olr_model))
+p <- stats::pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+p_df <- data.frame(names = row.names(ctable), ctable) |>
+    dplyr::filter(grepl("cluster", row.names(ctable), fixed = TRUE))
+p_val <- min(p_df$"p.value")
 
-outcome_list[[1]]
 
-outcome_list[[2]]
+merged_df2[, outcome_var] <- as.ordered(merged_df2[, outcome_var])
+olr_model <- MASS::polr(
+    merged_df2[, outcome_var] ~ merged_df2[, "cluster"],
+    Hess = TRUE)
+ctable <- stats::coef(summary(olr_model))
+p <- stats::pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+p_df <- data.frame(names = row.names(ctable), ctable) |>
+    dplyr::filter(grepl("cluster", row.names(ctable), fixed = TRUE))
+p_val <- min(p_df$"p.value")
 
 
-b[, grep("vomiting", colnames(b))] <- "cheese"
-
-clustered_subs
-
-b
-
-rnorm(mean = 184, sd = 8)
-
-?rnorm
- 
-
-nba <- data.frame(heights = rnorm(100, mean = 184, sd = 8), class = "nba")
-man <- data.frame(heights = rnorm(100, mean = 170, sd = 8), class = "man")
-heights_df <- rbind(nba, man)
-heights_df
-summary(lm(heights ~ class, data = heights_df))
+library(ordinal)
+library(MASS)
+library(rms)
 
 set.seed(42)
-nba <- data.frame(heights = rnorm(100, mean = 184, sd = 8), class = "nba")
-tall <- data.frame(heights = rnorm(100, mean = 182.5, sd = 8), class = "tall")
-heights_df <- rbind(nba, tall)
-heights_df
-summary(lm(heights ~ class, data = heights_df))
+options <- c("agrumpy", "bneutral", "chappy")
+unweighted <- c(3, 1, 1)
+weighted_happy <- c(3, 1, 1)
+weighted_unhappy <- c(3, 1, 1)
+big <- sample(options, size = 1000, replace = TRUE, prob = unweighted)
+med <- sample(options, size = 1000, replace = TRUE, prob = weighted_happy)
+small <- sample(options, size = 1000, replace = TRUE, prob = weighted_unhappy)
+big_df <- data.frame(class = "big", scores = big)
+med_df <- data.frame(class = "med", scores = med)
+small_df <- data.frame(class = "small", scores = small)
+size_df <- rbind(big_df, med_df, small_df)
+size_df$"scores" <- as.ordered(size_df$"scores")
+modelnull <- ordinal::clm(scores ~ 1, data = size_df, link = "logit")
+model1 <- ordinal::clm(scores ~ class, data = size_df, link = "logit")
+anova(modelnull, model1)
+m1 <- polr(scores ~ class, data = size_df)
+m2 <- polr(scores ~ 1, data = size_df)
+anova(m2, m1)
+orm(scores ~ class, data = size_df)
 
-t.test(nba$heights, tall$heights)
+
+olr_model <- MASS::polr(scores ~ class, size_df, Hess = TRUE)
+ctable <- stats::coef(summary(olr_model))
+p <- stats::pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+
+
+ord_reg_p <- function(clust_membership, outcome_df, outcome_var) {
+    merged_df <-
+        dplyr::inner_join(clust_membership, outcome_df, by = "subjectkey")
+    merged_df$"cluster" <- as.factor(merged_df$"cluster")
+    merged_df[, outcome_var] <- as.ordered(merged_df[, outcome_var])
+    olr_model <- MASS::polr(
+        merged_df[, outcome_var] ~ merged_df[, "cluster"],
+        Hess = TRUE)
+    ctable <- stats::coef(summary(olr_model))
+    p <- stats::pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+    ctable <- cbind(ctable, "p value" = p)
+    p_df <- data.frame(names = row.names(ctable), ctable) |>
+        dplyr::filter(grepl("cluster", row.names(ctable), fixed = TRUE))
+    p_val <- min(p_df$"p.value")
+    return(p_val)
+}
+
+
+
+b <- no_subs(a)
+b
+
+clust_membership <- a[[1]]
+outcome_df <- a[[2]]$"data" |> dplyr::select(subjectkey, sleep_total_problems)
+
+
+# Spits out overall p value
+merged_df <-
+    dplyr::inner_join(clust_membership, outcome_df, by = "subjectkey")
+merged_df$"cluster" <- as.factor(merged_df$"cluster")
+model <- lm(merged_df[, "sleep_total_problems"] ~ merged_df[, "cluster"])
+fstat <- summary(model)$"fstatistic"
+p <- pf(fstat[1], fstat[2], fstat[3], lower.tail = FALSE)
+attributes(p) <- NULL
+print(p)
+
+
+
 
 ```
