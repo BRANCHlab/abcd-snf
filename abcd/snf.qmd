@@ -47,24 +47,42 @@ as_mtbi_loc <- as_mtbi_loc[1:100, ]
 as_mtbi_mechanism <- as_mtbi_mechanism[1:100, ]
 as_mtbi_mem_daze <- as_mtbi_mem_daze[1:100, ]
 d_income <- d_income[1:100, ]
+d_interview_age <- d_interview_age[1:100, ]
+d_mtbi_age <- d_mtbi_age[1:100, ]
+d_pubertal_status <- d_pubertal_status[1:100, ]
+d_race_cd <- d_race_cd[1:100, ]
+d_race_ed <- d_race_ed[1:100, ]
+d_sex <- d_sex[1:100, ]
+dm_wmndf <- dm_wmndf[1:100, ]
+mh_headaches <- mh_headaches[1:100, ]
+mh_mtbi_count <- mh_mtbi_count[1:100, ]
 rm_gord_cor <- rm_gord_cor[1:100, ]
 rm_gord_var <- rm_gord_var[1:100, ]
 rm_subc_cor <- rm_subc_cor[1:100, ]
 rm_subc_var <- rm_subc_var[1:100, ]
+sm_cort_sa <- sm_cort_sa[1:100, ]
+sm_cort_t <- sm_cort_t[1:100, ]
 sm_subc_v <- sm_subc_v[1:100, ]
-#cbcl_vomiting <- cbcl_vomiting[1:100, ]
-#sds_sleep <- sds_sleep[1:100, ]
 
-start <- Sys.time()
 # Structure containing all input data
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mechanism = as_mtbi_mechanism,
                                 mtbi_mem_daze = as_mtbi_mem_daze,
                                 income = d_income,
-                                gord_cor <- rm_gord_cor,
-                                gord_var <- rm_gord_var,
-                                subc_cor <- rm_subc_cor,
+                                interview_age = d_interview_age,
+                                mtbi_age = d_mtbi_age,
+                                pubertal_status = d_pubertal_status,
+                                race = d_race_cd,
+                                sex = d_sex,
+                                wmndf = dm_wmndf,
+                                headaches = mh_headaches,
+                                mtbi_count = mh_mtbi_count,
+                                gord_cor = rm_gord_cor,
+                                gord_var = rm_gord_var,
+                                subc_cor = rm_subc_cor,
                                 subc_var = rm_subc_var,
+                                cort_sa = sm_cort_sa,
+                                cort_t = sm_cort_t,
                                 subc_v = sm_subc_v)
 # Structure containing all outcome data
 outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
@@ -79,9 +97,10 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_attention_r = cbcl_attention_r,
                                       cbcl_aggressive_r = cbcl_aggressive_r,
                                       sds_sleep = sds_sleep)
+start <- Sys.time()
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 10)
+design_matrix <- add_design_matrix_rows(design_matrix_base, 30)
 # Assess clustering minimum p-value for an ordinal dependent variable
 a <- execute_design_matrix(data_list, design_matrix, outcome_list)
 b <- no_subs(a)
@@ -92,15 +111,77 @@ final <- b[, 2: length(b)] |>
         .keep = "unused") |>
     unique()
 final_heat <- final |>
-    dplyr::select(contains("_p")) |>
+    dplyr::select(ends_with("_p"), -c("min_p_val", "mean_p_val")) |>
     sapply(as.numeric) |>
     as.matrix()
 end <- Sys.time()
 end - start
 my_colors <- colorRampPalette(c("cyan", "deeppink3"))
 heatmap(final_heat, col = rev(my_colors(100)))
-final_heat
 
-# The next step is to use build_design_matrix_base, not the test version!
+# Why do these give the same p values?
+final[9, ] == final[12, ]
+
+get_dist_matrix(rm_gord_var, "numeric")
+
+
+
+# Structure containing all input data
+data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
+                                mtbi_mechanism = as_mtbi_mechanism,
+                                mtbi_mem_daze = as_mtbi_mem_daze,
+                                #income = d_income, # Problematic!
+                                #interview_age = d_interview_age, # Problematic!
+                                #mtbi_age = d_mtbi_age, # Problematic!
+                                #pubertal_status = d_pubertal_status, # Problematic!
+                                race = d_race_cd,
+                                sex = d_sex,
+                                wmndf = dm_wmndf,
+                                #headaches = mh_headaches, # Problematic!
+                                mtbi_count = mh_mtbi_count,
+                                gord_cor = rm_gord_cor,
+                                gord_var = rm_gord_var,
+                                #subc_cor = rm_subc_cor, # Problematic!
+                                subc_var = rm_subc_var,
+                                cort_sa = sm_cort_sa,
+                                cort_t = sm_cort_t,
+                                subc_v = sm_subc_v)
+# Structure containing all outcome data
+outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
+                                      cbcl_nausea = cbcl_nausea,
+                                      cbcl_vomiting = cbcl_vomiting,
+                                      cbcl_dizzy = cbcl_dizzy,
+                                      cbcl_overtired = cbcl_overtired,
+                                      cbcl_sleeping_more = cbcl_sleeping_more,
+                                      cbcl_sleeping_less = cbcl_sleeping_less,
+                                      cbcl_depress_r = cbcl_depress_r,
+                                      cbcl_anxiety_r = cbcl_anxiety_r,
+                                      cbcl_attention_r = cbcl_attention_r,
+                                      cbcl_aggressive_r = cbcl_aggressive_r,
+                                      sds_sleep = sds_sleep)
+start <- Sys.time()
+set.seed(42)
+design_matrix_base <- build_design_matrix_base_t()
+design_matrix <- add_design_matrix_rows(design_matrix_base, 3)
+# Assess clustering minimum p-value for an ordinal dependent variable
+a <- execute_design_matrix(data_list, design_matrix, outcome_list)
+b <- no_subs(a)
+final <- b[, 2: length(b)] |>
+    dplyr::mutate(nclust = case_when(
+        eigen_or_rot == 1 ~ eigen_best,
+        eigen_or_rot == 2 ~ rot_best),
+        .keep = "unused") |>
+    unique()
+final_heat <- final |>
+    dplyr::select(ends_with("_p"), -c("min_p_val", "mean_p_val")) |>
+    sapply(as.numeric) |>
+    as.matrix()
+end <- Sys.time()
+end - start
+my_colors <- colorRampPalette(c("cyan", "deeppink3"))
+heatmap(final_heat, col = rev(my_colors(100)))
+
+# Ah, shoot. I did it again. It's okay everybody, the problem is right here!:
+head(rm_subc_cor)
 
 ```
