@@ -77,10 +77,10 @@ data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 wmndf = dm_wmndf,
                                 headaches = mh_headaches,
                                 mtbi_count = mh_mtbi_count,
-                                #gord_cor = rm_gord_cor,
-                                #gord_var = rm_gord_var,
-                                #subc_cor = rm_subc_cor,
-                                #subc_var = rm_subc_var,
+                                gord_cor = rm_gord_cor,
+                                gord_var = rm_gord_var,
+                                subc_cor = rm_subc_cor,
+                                subc_var = rm_subc_var,
                                 cort_sa = sm_cort_sa,
                                 cort_t = sm_cort_t,
                                 subc_v = sm_subc_v)
@@ -97,6 +97,7 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_attention_r = cbcl_attention_r,
                                       cbcl_aggressive_r = cbcl_aggressive_r,
                                       sds_sleep = sds_sleep)
+
 start <- Sys.time()
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
@@ -120,76 +121,107 @@ my_colors <- colorRampPalette(c("cyan", "deeppink3"))
 heatmap(final_heat, col = rev(my_colors(100)))
 
 
-
-png(file="pilot_snf_pval_heatmap.png", width = 500, height = 700)
+png(file = "pilot_snf_pval_heatmap.png", width = 500, height = 700)
 heatmap(final_heat, col = rev(my_colors(100)))
 dev.off()
 
+# The minimum p-value obtained:
 min(final_heat)
 
-# Why do these give the same p values?
-final[9, ] == final[12, ]
 
-get_dist_matrix(rm_gord_var, "numeric")
+mix_df <- inner_join(d_race_cd, sm_subc_v, by = "subjectkey")
+
+mix_df_prep <- data.frame(mix_df, row.names = 1)
+
+mix_df_prep
+
+sdl(data_list)
+
+as_mtbi_mechanism
+
+vars <- as.matrix(daisy(mix_df_prep, metric = "gower"))
+
+mix_df_prep2 <- mix_df_prep
+mix_df_prep2$white <- as.factor(mix_df_prep2$white)
+mix_df_prep2$black <- as.factor(mix_df_prep2$black)
+mix_df_prep2$mixed_or_other <- as.factor(mix_df_prep2$mixed_or_other)
+
+
+vars2 <- as.matrix(daisy(mix_df_prep2, metric = "gower"))
+
+identical(vars2, vars)
+
+pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
+
+d_race_dummied <- get_race(pdem02, mtbi_subjects, "condensed_dummied")
+d_race_undummied <- get_race(pdem02, mtbi_subjects, "condensed_undummied")
+d_race_undummied$race <- as.factor(d_race_undummied$race)
+d_race_undummied <- data.frame(d_race_undummied, row.names = 1)
+d_race_dummied <- data.frame(d_race_dummied, row.names = 1)
+
+
+undummied_matrix <- daisy(d_race_undummied, metric = "gower")
+dummied_matrix <- daisy(d_race_dummied, metric = "gower")
+
+identical(undummied_matrix, dummied_matrix)
+
+demo_df <- data.frame(sex = as.factor(c("man", "woman", "man")),
+                      h = as.factor(c("tall", "short", "medium")))
+str(demo_df)
+
+demo_df2 <- data.frame(man = c(1, 0, 1), tall = c(1, 0, 0), medium = c(0, 0, 1))
+str(demo_df2)
+
+
+demo_df
+as.matrix(daisy(demo_df, metric = "gower"))
+
+demo_df2
+as.matrix(daisy(demo_df2, metric = "gower"))
+
+demo_df
+
+sdl(data_list)
+
+# 1, 2, 3, 8, 9, 10
+
+
+as_mtbi_loc
+
+a1 <- get_mtbi_mechanism(otbi01, mtbi_subjects, format = "undummied")
+a1$latest_mtbi_mechanism <- as.factor(a1$latest_mtbi_mechanism)
+
+a2 <- as_mtbi_mechanism
+
+a1
+
+a2
+
+d1 <- get_dist_matrix(a1, "mixed")
+
+d2 <- get_dist_matrix(a2, "mixed")
+
+d3 <- get_dist_matrix(a2, "categorical")
+
+str(d1)
+
+str(d2)
+
+str(d3)
+
+a1
+
+a2
 
 
 
-# Structure containing all input data
-data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
-                                mtbi_mechanism = as_mtbi_mechanism,
-                                mtbi_mem_daze = as_mtbi_mem_daze,
-                                #income = d_income, # Problematic!
-                                #interview_age = d_interview_age, # Problematic!
-                                #mtbi_age = d_mtbi_age, # Problematic!
-                                #pubertal_status = d_pubertal_status, # Problematic!
-                                race = d_race_cd,
-                                sex = d_sex,
-                                wmndf = dm_wmndf,
-                                #headaches = mh_headaches, # Problematic!
-                                mtbi_count = mh_mtbi_count,
-                                gord_cor = rm_gord_cor,
-                                gord_var = rm_gord_var,
-                                #subc_cor = rm_subc_cor, # Problematic!
-                                subc_var = rm_subc_var,
-                                cort_sa = sm_cort_sa,
-                                cort_t = sm_cort_t,
-                                subc_v = sm_subc_v)
-# Structure containing all outcome data
-outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
-                                      cbcl_nausea = cbcl_nausea,
-                                      cbcl_vomiting = cbcl_vomiting,
-                                      cbcl_dizzy = cbcl_dizzy,
-                                      cbcl_overtired = cbcl_overtired,
-                                      cbcl_sleeping_more = cbcl_sleeping_more,
-                                      cbcl_sleeping_less = cbcl_sleeping_less,
-                                      cbcl_depress_r = cbcl_depress_r,
-                                      cbcl_anxiety_r = cbcl_anxiety_r,
-                                      cbcl_attention_r = cbcl_attention_r,
-                                      cbcl_aggressive_r = cbcl_aggressive_r,
-                                      sds_sleep = sds_sleep)
-start <- Sys.time()
-set.seed(42)
-design_matrix_base <- build_design_matrix_base_t()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 3)
-# Assess clustering minimum p-value for an ordinal dependent variable
-a <- execute_design_matrix(data_list, design_matrix, outcome_list)
-b <- no_subs(a)
-final <- b[, 2: length(b)] |>
-    dplyr::mutate(nclust = case_when(
-        eigen_or_rot == 1 ~ eigen_best,
-        eigen_or_rot == 2 ~ rot_best),
-        .keep = "unused") |>
-    unique()
-final_heat <- final |>
-    dplyr::select(ends_with("_p"), -c("min_p_val", "mean_p_val")) |>
-    sapply(as.numeric) |>
-    as.matrix()
-end <- Sys.time()
-end - start
-my_colors <- colorRampPalette(c("cyan", "deeppink3"))
-heatmap(final_heat, col = rev(my_colors(100)))
 
-# Ah, shoot. I did it again. It's okay everybody, the problem is right here!:
-head(rm_subc_cor)
+identical(d1, d2)
+
+identical(d1, d3)
+
+identical(d1, d4)
+
+identical(d6, d7)
 
 ```
