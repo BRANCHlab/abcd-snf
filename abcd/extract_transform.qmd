@@ -53,15 +53,11 @@ otbi01 <- read_delim(here("data/abcd/raw/abcd_otbi01.txt"))
 
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
 mtbi_subjects <- get_mtbi_subjects(otbi01, min_latest_mtbi_mpi = 3)
-
-# Export a useful intermediate df (not explicility needed for this script)
-mtbi_detailed <- detail_mtbi(otbi01, mtbi_subjects)
 ```
 
 
 ```{r eval = FALSE}
 write_csv(mtbi_subjects, here("data/abcd/subjects/mtbi_subjects.csv"))
-write_csv(mtbi_detailed, here("data/abcd/misc/mtbi_detailed.csv"))
 ```
 
 
@@ -88,7 +84,8 @@ A few more intermediate columns need to be added to isolate these variables for 
 
 ```{r eval = FALSE}
 as_mtbi_mem_daze <- get_mtbi_mem_daze(otbi01, mtbi_subjects)
-as_mtbi_mechanism <- get_mtbi_mechanism(otbi01, mtbi_subjects)
+as_mtbi_mechanism <- get_mtbi_mechanism(otbi01, mtbi_subjects,
+    format = "undummied")
 as_mtbi_loc <- get_mtbi_loc(otbi01, mtbi_subjects)
 ```
 
@@ -139,10 +136,11 @@ I will be trying two separate categorizations:
 The rationale for this decision can be found at (@sec-racebreakdown).
 
 
-#### Race
+### Race
 ```{r eval = FALSE}
 d_race_condensed <- get_race(pdem02, mtbi_subjects, "condensed_dummied")
 d_race_expanded <- get_race(pdem02, mtbi_subjects, "expanded_dummied")
+d_race_undummied <- get_race(pdem02, mtbi_subjects, "condensed_undummied")
 ```
 
 Subset and export the demographic input variables:
@@ -155,7 +153,9 @@ write_csv(d_sex, here("data/abcd/inputs/d_sex.csv"))
 write_csv(d_income, here("data/abcd/inputs/d_income.csv"))
 write_csv(d_race_condensed, here("data/abcd/inputs/d_race_cd.csv"))
 write_csv(d_race_expanded, here("data/abcd/inputs/d_race_ed.csv"))
+write_csv(d_race_undummied, here("data/abcd/inputs/d_race_cu.csv"))
 ```
+
 
 ### Medical history
 
@@ -185,6 +185,7 @@ Subset and export the medical history variables:
 write_csv(mh_headaches, here("data/abcd/inputs/mh_headaches.csv"))
 write_csv(mh_mtbi_count, here("data/abcd/inputs/mh_mtbi_count.csv"))
 ```
+
 
 ### Neuroimaging
 
@@ -222,6 +223,7 @@ write_csv(sm_subc_v, here("data/abcd/inputs/sm_subc_v.csv"))
 write_csv(sm_cort_t, here("data/abcd/inputs/sm_cort_t.csv"))
 write_csv(sm_cort_sa, here("data/abcd/inputs/sm_cort_sa.csv"))
 ```
+
 
 #### Diffusion MRI
 
@@ -296,7 +298,11 @@ abcd_ysr01 <- read_delim(here("data/abcd/raw/abcd_ysr01.txt"))
 stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
 abcd_stq01 <- read_delim(here("data/abcd/raw/abcd_stq01.txt"))
 abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
+
+# Loneliness
+
 ```
+
 
 ## Output variables
 
