@@ -21,3 +21,5 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/social-adjustment/abcd_y
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/stq01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/abcd_stq01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/abcd_asrs01.txt .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/activity/abcd_yrb01.txt .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/activity/abcd_saiq02.txt .
