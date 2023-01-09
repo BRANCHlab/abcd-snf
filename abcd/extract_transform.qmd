@@ -290,161 +290,51 @@ Psychosocial factors of interest include:
 * parent psychopathology
 
 ```{r eval = FALSE}
-# Done
 abcd_ysr01 <- read_delim(here("data/abcd/raw/abcd_ysr01.txt"))
 stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
 fes02 <- read_delim(here("data/abcd/raw/fes02.txt"))
 abcd_fes01 <- read_delim(here("data/abcd/raw/abcd_fes01.txt"))
-
-# In-progress
 abcd_saiq02 <- read_delim(here("data/abcd/raw/abcd_saiq02.txt"))
-
-# To-do
 psb01 <- read_delim(here("data/abcd/raw/psb01.txt"))
 abcd_psb01 <- read_delim(here("data/abcd/raw/abcd_psb01.txt"))
 abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
 abcd_yrb01 <- read_delim(here("data/abcd/raw/abcd_yrb01.txt"))
 
 
-# Loneliness
-loneliness <- get_loneliness(abcd_ysr01, mtbi_subjects)
-loneliness
+p_loneliness <- get_loneliness(abcd_ysr01, mtbi_subjects)
+p_loneliness
 
+p_screen_time <- get_screen_time(stq01, mtbi_subjects)
+p_screen_time
 
-screen_time <- get_screen_time(stq01, mtbi_subjects)
-screen_time
+p_family_function <- get_family_function(fes02, abcd_fes01, mtbi_subjects)
+p_family_function
 
-family_function <- get_family_function(fes02, abcd_fes01, mtbi_subjects)
-family_function
+p_sports <- get_sports_and_activities(abcd_saiq02, mtbi_subjects)
+p_sports
 
+p_prosocial <- get_prosocial_behaviour(psb01, abcd_psb01, mtbi_subjects)
+p_prosocial
 
-#' @export
-get_sports_and_activities <- function(abcd_saiq02, subjects = NULL) {
-    sports_and_activities <- abcd_import(abcd_saiq02, subjects)
-    #return(stats::na.omit(sports_and_activities))
-    return(sports_and_activities)
-}
+p_parent_psych <- get_parent_psychopathology(abcd_asrs01, mtbi_subjects)
+p_parent_psych
 
-
-sports <- get_sports_and_activities(abcd_saiq02, mtbi_subjects)
-sports <- sports |>
-    dplyr::select("subjectkey", starts_with("sai")) |>
-    dplyr::rename("dance_over_4_mo" = "sai_p_activities___0",
-                  "baseball_over_4_mo" = "sai_p_activities___1",
-                  "basketball_over_4_mo" = "sai_p_activities___2",
-                  "climbing_over_4_mo" = "sai_p_activities___3",
-                  "field_hockey_over_4_mo" = "sai_p_activities___4",
-                  "football_over_4_mo" = "sai_p_activities___5",
-                  "gymnastics_over_4_mo" = "sai_p_activities___6",
-                  "ice_hockey_over_4_mo" = "sai_p_activities___7",
-                  "horseback_riding_over_4_mo" = "sai_p_activities___8",
-                  "skating_over_4_mo" = "sai_p_activities___9",
-                  "martial_arts_over_4_mo" = "sai_p_activities___10",
-                  "lacrosse_over_4_mo" = "sai_p_activities___11",
-                  "rugby_over_4_mo" = "sai_p_activities___12",
-                  "skateboarding_over_4_mo" = "sai_p_activities___13",
-                  "skiing_snowboarding_over_4_mo" = "sai_p_activities___14",
-                  "soccer_over_4_mo" = "sai_p_activities___15",
-                  "surfing_over_4_mo" = "sai_p_activities___16",
-                  "swimming_over_4_mo" = "sai_p_activities___17",
-                  "tennis_over_4_mo" = "sai_p_activities___18",
-                  "running_over_4_mo" = "sai_p_activities___19",
-                  "wrestling_mma_over_4_mo" = "sai_p_activities___20",
-                  "volleyball_over_4_mo" = "sai_p_activities___21",
-                  "yoga_over_4_mo" = "sai_p_activities___22",
-                  "music_over_4_mo" = "sai_p_activities___23",
-                  "art_over_4_mo" = "sai_p_activities___24",
-                  "acting_over_4_mo" = "sai_p_activities___25",
-                  "crafts_over_4_mo" = "sai_p_activities___26",
-                  "competitive_games_over_4_mo" = "sai_p_activities___27",
-                  "collecting_hobbies_over_4_mo" = "sai_p_activities___28",
-                  "nothing_over_4_mo" = "sai_p_activities___29")
-sports <- col_to_num(sports, 2:length(sports))
-sports$"organized_school_activity" <-
-    rowSums(sports[, c(
-                "sai_p_dance_school",
-                "sai_p_base_school",
-                "sai_p_basket_school",
-                "sai_p_climb_school",
-                "sai_p_fhock_school",
-                "sai_p_fball_school",
-                "sai_p_gym_school",
-                "sai_p_ihock_school",
-                "sai_p_polo_school",
-                "sai_p_iskate_school",
-                "sai_p_m_arts_school",
-                "sai_p_lax_school",
-                "sai_p_rugby_school",
-                "sai_p_skate_school",
-                "sai_p_sboard_school",
-                "sai_p_soc_school",
-                "sai_p_surf_school",
-                "sai_p_wpolo_school",
-                "sai_p_tennis_school",
-                "sai_p_run_school",
-                "sai_p_mma_school",
-                "sai_p_vball_school",
-                "sai_p_yoga_school",
-                "sai_p_music_school",
-                "sai_p_art_school",
-                "sai_p_drama_school",
-                "sai_p_crafts_school",
-                "sai_p_chess_school",
-                "sai_p_collect_school")], na.rm = TRUE)
-sports$"organized_outside_activity" <-
-    rowSums(sports[, c(
-                "sai_p_dance_outside",
-                "sai_p_base_outside",
-                "sai_p_basket_outside",
-                "sai_p_climb_outside",
-                "sai_p_fhock_outside",
-                "sai_p_fball_outside",
-                "sai_p_gym_outside",
-                "sai_p_ihock_outside",
-                "sai_p_polo_outside",
-                "sai_p_iskate_outside",
-                "sai_p_m_arts_outside",
-                "sai_p_lax_outside",
-                "sai_p_rugby_outside",
-                "sai_p_skate_outside",
-                "sai_p_sboard_outside",
-                "sai_p_soc_outside",
-                "sai_p_surf_outside",
-                "sai_p_wpolo_outside",
-                "sai_p_tennis_outside",
-                "sai_p_run_outside",
-                "sai_p_mma_outside",
-                "sai_p_vball_outside",
-                "sai_p_yoga_outside",
-                "sai_p_music_outside",
-                "sai_p_art_outside",
-                "sai_p_drama_outside",
-                "sai_p_crafts_outside",
-                "sai_p_chess_outside",
-                "sai_p_collect_outside")], na.rm = TRUE)
-sports$
-sports
-
-df = data.frame(a = c(1, NA, 2), b = c(2, 3, 4), c = c(3, 3, 3))
-
-rowMax <- function(data) sapply(data, max, na.rm = TRUE)
-colMax(df)
-
-df
-
-# Find the maximum value within each row
-do.call(pmax, c(df, na.rm = TRUE))
+p_exercise <- get_exercise(abcd_yrb01, mtbi_subjects)
+p_exercise
 
 ```
 
+Subset and export the psychosocial resilience variables:
 
-key components are to know if:
-
-- the child participated in an activity for at least 4 months (DONE)
-- the child ever participated in an organized school activity for at least 4 months (DONE)
-- the child ever participated in an organized non-school activity for at least 4 months (DONE)
-- the child ever received private instruction
-- the child participated in an activity ongoing for over 4 months in the last year
+```{r eval = FALSE}
+write_csv(p_loneliness, here("data/abcd/inputs/p_loneliness.csv"))
+write_csv(p_screen_time, here("data/abcd/inputs/p_screen_time.csv"))
+write_csv(p_family_function, here("data/abcd/inputs/p_family_function.csv"))
+write_csv(p_sports, here("data/abcd/inputs/p_sports.csv"))
+write_csv(p_prosocial, here("data/abcd/inputs/p_prosocial.csv"))
+write_csv(p_parent_psych, here("data/abcd/inputs/p_parent_psych.csv"))
+write_csv(p_exercise, here("data/abcd/inputs/p_exercise.csv"))
+```
 
 
 ## Output variables
