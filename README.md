@@ -10,3 +10,9 @@ To read the book, you can either open a pre-rendered version (the .pdf file or o
 2. Establish a symbolic link to `lab-data` (from our lab carbon folder) in the `research/` directory
 3. Establish a symbolic link to `subtyping-mtbi` (from the [subtyping-mtbi repository](https://github.com/psvelayudhan/subtyping-mtbi)) in the `research/` directory
 4. `cd` to this project folder and run the command `quarto render .`
+
+
+## To-do
+
+1. Integrate psychosocial variables into meta-clustering
+2. Adjusted rand index calculations to see link between clustering similarity
