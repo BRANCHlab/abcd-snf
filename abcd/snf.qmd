@@ -16,9 +16,9 @@ d_mtbi_age <- read_csv(here("data/abcd/inputs/d_mtbi_age.csv"))
 d_pubertal_status <- read_csv(here("data/abcd/inputs/d_pubertal_status.csv"))
 d_race <- read_csv(here("data/abcd/inputs/d_race_cu.csv"))
 d_sex <- read_csv(here("data/abcd/inputs/d_sex.csv"))
-dm_wmndf <- read_csv(here("data/abcd/inputs/dm_wmndf.csv"))
 mh_headaches <- read_csv(here("data/abcd/inputs/mh_headaches.csv"))
 mh_mtbi_count <- read_csv(here("data/abcd/inputs/mh_mtbi_count.csv"))
+dm_wmndf <- read_csv(here("data/abcd/inputs/dm_wmndf.csv"))
 rm_gord_cor <- read_csv(here("data/abcd/inputs/rm_gord_cor.csv"))
 rm_gord_var <- read_csv(here("data/abcd/inputs/rm_gord_var.csv"))
 rm_subc_cor <- read_csv(here("data/abcd/inputs/rm_subc_cor.csv"))
@@ -26,6 +26,14 @@ rm_subc_var <- read_csv(here("data/abcd/inputs/rm_subc_var.csv"))
 sm_cort_sa <- read_csv(here("data/abcd/inputs/sm_cort_sa.csv"))
 sm_cort_t <- read_csv(here("data/abcd/inputs/sm_cort_t.csv"))
 sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
+p_loneliness <- read_csv(here("data/abcd/inputs/p_loneliness.csv"))
+p_screen_time <- read_csv(here("data/abcd/inputs/p_screen_time.csv"))
+p_family_function <- read_csv(here("data/abcd/inputs/p_family_function.csv"))
+p_sports <- read_csv(here("data/abcd/inputs/p_sports.csv"))
+p_prosocial <- read_csv(here("data/abcd/inputs/p_prosocial.csv"))
+p_parent_psych <- read_csv(here("data/abcd/inputs/p_parent_psych.csv"))
+p_exercise <- read_csv(here("data/abcd/inputs/p_exercise.csv"))
+
 
 # Import outcome measures
 cbcl_headaches <- read_csv(here("data/abcd/outputs/cbcl_headaches.csv"))
@@ -61,6 +69,14 @@ rm_subc_var <- rm_subc_var[1:100, ]
 sm_cort_sa <- sm_cort_sa[1:100, ]
 sm_cort_t <- sm_cort_t[1:100, ]
 sm_subc_v <- sm_subc_v[1:100, ]
+p_loneliness <-  p_loneliness[1:100, ]
+p_screen_time <-  p_screen_time[1:100, ]
+p_family_function <-  p_family_function[1:100, ]
+p_sports <-  p_sports[1:100, ]
+p_prosocial <-  p_prosocial[1:100, ]
+p_parent_psych <-  p_parent_psych[1:100, ]
+p_exercise <-  p_exercise[1:100, ]
+
 
 # Structure containing all input data
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
@@ -82,6 +98,38 @@ data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 cort_sa = sm_cort_sa,
                                 cort_t = sm_cort_t,
                                 subc_v = sm_subc_v)
+
+length(data_list[[1]]) # 5
+length(data_list) # 5
+
+data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
+                                mtbi_mechanism = as_mtbi_mechanism,
+                                mtbi_mem_daze = as_mtbi_mem_daze,
+                                income = d_income,
+                                interview_age = d_interview_age,
+                                mtbi_age = d_mtbi_age,
+                                pubertal_status = d_pubertal_status,
+                                race = d_race,
+                                sex = d_sex,
+                                wmndf = dm_wmndf,
+                                headaches = mh_headaches,
+                                mtbi_count = mh_mtbi_count,
+                                gord_cor = rm_gord_cor,
+                                gord_var = rm_gord_var,
+                                subc_cor = rm_subc_cor,
+                                subc_var = rm_subc_var,
+                                cort_sa = sm_cort_sa,
+                                cort_t = sm_cort_t,
+                                subc_v = sm_subc_v,
+                                loneliness = p_loneliness,
+                                screen_time = p_screen_time,
+                                family_function = p_family_function,
+                                sports = p_sports,
+                                prosocial = p_prosocial,
+                                parent_psych = p_parent_psych,
+                                exercise = p_exercise)
+
+
 # Structure containing all outcome data
 outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_nausea = cbcl_nausea,
@@ -100,8 +148,83 @@ start <- Sys.time()
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 30)
+
 # Assess clustering minimum p-value for an ordinal dependent variable
 a <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
+
+execute_design_matrix <- function(data_list, design_matrix, outcome_list) {
+    output_matrix <- build_output_matrix(data_list, design_matrix)
+    # Iterate through the rows of the design matrix
+    remaining_seconds_vector <- vector()
+    for (i in seq_len(nrow(design_matrix))) {
+        start_time <- Sys.time()
+        dm_row <- design_matrix[i, ]
+        current_data_list <- execute_inclusion(data_list, dm_row)
+        # Execute the current row's SNF scheme
+        current_snf_scheme <- dplyr::case_when(
+            dm_row$"snf_scheme" == 1 ~ "individual",
+            dm_row$"snf_scheme" == 2 ~ "domain",
+            dm_row$"snf_scheme" == 3 ~ "twostep",
+        )
+        fused_network <- snf_step(current_data_list, current_snf_scheme)
+        all_clust <- SNFtool::estimateNumberOfClustersGivenGraph(fused_network)
+        eigen_best <- all_clust$`Eigen-gap best`
+        rot_best <- all_clust$`Rotation cost best`
+        output_matrix[i, ]$"eigen_best" <- eigen_best
+        output_matrix[i, ]$"rot_best" <- rot_best
+        # Execute the current row's clustering
+        if (dm_row$"eigen_or_rot" == 1) {
+            nclust <- eigen_best
+        } else if (dm_row$"eigen_or_rot" == 2) {
+            nclust <- rot_best
+        } else {
+            rlang::abort(
+                paste0(
+                    "The eigen_or_rot value ", dm_row$"eigen_or_rot", " is not",
+                    "a valid input type."), class = "invalid_input")
+        }
+        cluster_results <- SNFtool::spectralClustering(fused_network, nclust)
+        # Assign subtype membership
+        output_matrix[i, rownames(fused_network)] <- cluster_results
+        # Pull clustered subjects in a useful way for outcome evaluation
+        clustered_subs <- get_clustered_subs(output_matrix[i, ])
+        assigned_subs <- clustered_subs |>
+            dplyr::filter(clustered_subs$"cluster" != 0)
+        # Assign p-values
+        for (j in seq_along(outcome_list)) {
+            current_outcome_component <- outcome_list[[j]]
+            current_outcome_name <- current_outcome_component$"name"
+            p_value <- get_p(assigned_subs, current_outcome_component)
+            target_col <- grep(current_outcome_name, colnames(output_matrix))
+            output_matrix[i, target_col] <- p_value
+        }
+        min_p <- get_min_p(output_matrix[i, ])
+        mean_p <- get_mean_p(output_matrix[i, ])
+        output_matrix[i, "min_p_val"] <- min_p
+        output_matrix[i, "mean_p_val"] <- mean_p
+        # Indicating which rows were not filled by this iteration (last step)
+        #output_matrix[0, which(output_matrix[1, ] == 0 &
+        #    startsWith(colnames(output_matrix), "NDAR"))] <- NA
+        end_time <- Sys.time()
+        seconds_per_row <- as.numeric(end_time - start_time)
+        rows_remaining <- nrow(design_matrix) - i
+        remaining_seconds_vector <- c(remaining_seconds_vector, seconds_per_row)
+        remaining_seconds <-
+            round(mean(remaining_seconds_vector) * rows_remaining, 0)
+        print(
+            paste0(
+                "Row: ", i, "/", nrow(design_matrix),
+                " | ",
+                "Time remaining: ",
+                remaining_seconds,
+                " seconds"))
+    }
+    return(output_matrix)
+}
+
+
+
 b <- no_subs(a)
 final <- b[, 2: length(b)] |>
     dplyr::mutate(nclust = case_when(
