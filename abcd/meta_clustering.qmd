@@ -5,31 +5,14 @@ library(here)
 library(readr)
 library(dplyr)
 library(scabcd)
-
 library(mclust)
 library(qgraph)
 
 # Import SNF meta-clustering output matrix results
 snf_om <- read_csv(here("data/abcd/results/raw/snf_mc_output_matrix.csv"))
 
-# Subset to just the cluster labels of subjects across each iteration
-snf_om_subs <- subs(snf_om)
+snf_mc_sm <- meta_cluster(snf_om)
 
-# Calculate pairwise cluster similarities using ARI
-snf_mc_sm <- matrix(0, nrow(snf_om_subs), nrow(snf_om_subs))
-snf_mc_sm
-snf_om_no_id <- snf_om_subs[, 2:length(snf_om_subs)]
-calc_ari <- function(i, j, df) {
-    v1 <- as.numeric(df[i, ])
-    v2 <- as.numeric(df[j, ])
-    ari <- adjustedRandIndex(v1, v2)
-    return(ari)
-}
-for (i in 1:nrow(snf_mc_sm)) {
-    for (j in 1:ncol(snf_mc_sm)) {
-        snf_mc_sm[i, j] <- calc_ari(i, j, snf_om_no_id)
-    }
-}
 
 # Heatmap visualization of the similarities matrix
 pheatmap::pheatmap(snf_mc_sm)
