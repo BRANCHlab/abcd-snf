@@ -2,34 +2,148 @@
 
 Missing value imputation.
 
-```{r}
+First, load all the data and join into a single dataframe.
 
-as_mtbi_loc <- read_csv(here("data/abcd/inputs/as_mtbi_loc.csv"))
-as_mtbi_mechanism <- read_csv(here("data/abcd/inputs/as_mtbi_mechanism.csv"))
-as_mtbi_mem_daze <- read_csv(here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
-d_income <- read_csv(here("data/abcd/inputs/d_income.csv"))
-d_interview_age <- read_csv(here("data/abcd/inputs/d_interview_age.csv"))
-d_mtbi_age <- read_csv(here("data/abcd/inputs/d_mtbi_age.csv"))
-d_pubertal_status <- read_csv(here("data/abcd/inputs/d_pubertal_status.csv"))
-d_race <- read_csv(here("data/abcd/inputs/d_race_cu.csv"))
-d_sex <- read_csv(here("data/abcd/inputs/d_sex.csv"))
-mh_headaches <- read_csv(here("data/abcd/inputs/mh_headaches.csv"))
-mh_mtbi_count <- read_csv(here("data/abcd/inputs/mh_mtbi_count.csv"))
-dm_wmndf <- read_csv(here("data/abcd/inputs/dm_wmndf.csv"))
-rm_gord_cor <- read_csv(here("data/abcd/inputs/rm_gord_cor.csv"))
-rm_gord_var <- read_csv(here("data/abcd/inputs/rm_gord_var.csv"))
-rm_subc_cor <- read_csv(here("data/abcd/inputs/rm_subc_cor.csv"))
-rm_subc_var <- read_csv(here("data/abcd/inputs/rm_subc_var.csv"))
-sm_cort_sa <- read_csv(here("data/abcd/inputs/sm_cort_sa.csv"))
-sm_cort_t <- read_csv(here("data/abcd/inputs/sm_cort_t.csv"))
-sm_subc_v <- read_csv(here("data/abcd/inputs/sm_subc_v.csv"))
-p_loneliness <- read_csv(here("data/abcd/inputs/p_loneliness.csv"))
-p_screen_time <- read_csv(here("data/abcd/inputs/p_screen_time.csv"))
-p_family_function <- read_csv(here("data/abcd/inputs/p_family_function.csv"))
-p_sports <- read_csv(here("data/abcd/inputs/p_sports.csv"))
-p_prosocial <- read_csv(here("data/abcd/inputs/p_prosocial.csv"))
-p_parent_psych <- read_csv(here("data/abcd/inputs/p_parent_psych.csv"))
-p_exercise <- read_csv(here("data/abcd/inputs/p_exercise.csv"))
+```{r}
+# Inputs
+as_mtbi_loc <-
+    read_csv(here("data/abcd/inputs/pre-imputation/as_mtbi_loc.csv"))
+as_mtbi_mechanism <-
+    read_csv(here("data/abcd/inputs/pre-imputation/as_mtbi_mechanism.csv"))
+as_mtbi_mem_daze <-
+    read_csv(here("data/abcd/inputs/pre-imputation/as_mtbi_mem_daze.csv"))
+d_income <-
+    read_csv(here("data/abcd/inputs/pre-imputation/d_income.csv"))
+d_interview_age <-
+    read_csv(here("data/abcd/inputs/pre-imputation/d_interview_age.csv"))
+d_mtbi_age <-
+    read_csv(here("data/abcd/inputs/pre-imputation/d_mtbi_age.csv"))
+d_pubertal_status <-
+    read_csv(here("data/abcd/inputs/pre-imputation/d_pubertal_status.csv"))
+d_race <-
+    read_csv(here("data/abcd/inputs/pre-imputation/d_race_cu.csv"))
+d_sex <-
+    read_csv(here("data/abcd/inputs/pre-imputation/d_sex.csv"))
+mh_headaches <-
+    read_csv(here("data/abcd/inputs/pre-imputation/mh_headaches.csv"))
+mh_mtbi_count <-
+    read_csv(here("data/abcd/inputs/pre-imputation/mh_mtbi_count.csv"))
+dm_wmndf <-
+    read_csv(here("data/abcd/inputs/pre-imputation/dm_wmndf.csv"))
+rm_gord_cor <-
+    read_csv(here("data/abcd/inputs/pre-imputation/rm_gord_cor.csv"))
+rm_gord_var <-
+    read_csv(here("data/abcd/inputs/pre-imputation/rm_gord_var.csv"))
+rm_subc_cor <-
+    read_csv(here("data/abcd/inputs/pre-imputation/rm_subc_cor.csv"))
+rm_subc_var <-
+    read_csv(here("data/abcd/inputs/pre-imputation/rm_subc_var.csv"))
+sm_cort_sa <-
+    read_csv(here("data/abcd/inputs/pre-imputation/sm_cort_sa.csv"))
+sm_cort_t <-
+    read_csv(here("data/abcd/inputs/pre-imputation/sm_cort_t.csv"))
+sm_subc_v <-
+    read_csv(here("data/abcd/inputs/pre-imputation/sm_subc_v.csv"))
+p_loneliness <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_loneliness.csv"))
+p_screen_time <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_screen_time.csv"))
+p_family_function <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_family_function.csv"))
+p_sports <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_sports.csv"))
+p_prosocial <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_prosocial.csv"))
+p_parent_psych <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_parent_psych.csv"))
+p_exercise <-
+    read_csv(here("data/abcd/inputs/pre-imputation/p_exercise.csv"))
+
+# Outcomes
+cbcl_headaches <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_headaches.csv"))
+cbcl_nausea <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_nausea.csv"))
+cbcl_vomiting <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_vomiting.csv"))
+cbcl_dizzy <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_dizzy.csv"))
+cbcl_overtired <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_overtired.csv"))
+cbcl_sleeping_more <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_sleeping_more.csv"))
+cbcl_sleeping_less <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_sleeping_less.csv"))
+cbcl_depress_r <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_depress_r.csv"))
+cbcl_anxiety_r <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_anxiety_r.csv"))
+cbcl_attention_r <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_attention_r.csv"))
+cbcl_aggressive_r <-
+    read_csv(here("data/abcd/outputs/pre-imputation/cbcl_aggressive_r.csv"))
+sds_sleep <-
+    read_csv(here("data/abcd/outputs/pre-imputation/sds_sleep_df.csv"))
+nihtbx_list_fc <-
+    read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_list_fc.csv"))
+nihtbx_pattern_fc <-
+    read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_pattern_fc.csv"))
+nihtbx_cardsort_fc <-
+    read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_cardsort_fc.csv"))
+
+library(purrr)
+
+#put all data frames into list
+df_list <- list(
+    as_mtbi_loc,
+    as_mtbi_mechanism,
+    as_mtbi_mem_daze,
+    d_income,
+    d_interview_age,
+    d_mtbi_age,
+    d_pubertal_status,
+    d_race,
+    d_sex,
+    mh_headaches,
+    mh_mtbi_count,
+    dm_wmndf,
+    rm_gord_cor,
+    rm_gord_var,
+    rm_subc_cor,
+    rm_subc_var,
+    sm_cort_sa,
+    sm_cort_t,
+    sm_subc_v,
+    p_loneliness,
+    p_screen_time,
+    p_family_function,
+    p_sports,
+    p_prosocial,
+    p_parent_psych,
+    p_exercise,
+    cbcl_headaches,
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress_r,
+    cbcl_anxiety_r,
+    cbcl_attention_r,
+    cbcl_aggressive_r,
+    sds_sleep,
+    nihtbx_list_fc,
+    nihtbx_pattern_fc,
+    nihtbx_cardsort_fc)
+
+
+#merge all data frames in list
+merged_df <- df_list |> reduce(full_join, by='subjectkey')
+
+which(is.na(merged_df))
+
+merged_df
 
 ```
 
