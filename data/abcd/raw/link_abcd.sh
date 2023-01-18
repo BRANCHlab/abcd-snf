@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/trauma/abcd_otbi01.txt .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/trauma/abcd_tbi01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/med-history/abcd_ssphy01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/med-history/abcd_ssphp01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/demographics/pdem02.txt .
