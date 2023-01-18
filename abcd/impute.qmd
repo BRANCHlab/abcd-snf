@@ -2,9 +2,14 @@
 
 Missing value imputation.
 
-First, load all the data and join into a single dataframe.
+1. Load all the data and join into a single dataframe.
 
 ```{r}
+library(dplyr)
+library(readr)
+library(purrr)
+library(here)
+
 # Inputs
 as_mtbi_loc <-
     read_csv(here("data/abcd/inputs/pre-imputation/as_mtbi_loc.csv"))
@@ -91,9 +96,8 @@ nihtbx_pattern_fc <-
 nihtbx_cardsort_fc <-
     read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_cardsort_fc.csv"))
 
-library(purrr)
 
-#put all data frames into list
+# put all data frames into list
 df_list <- list(
     as_mtbi_loc,
     as_mtbi_mechanism,
@@ -135,15 +139,17 @@ df_list <- list(
     sds_sleep,
     nihtbx_list_fc,
     nihtbx_pattern_fc,
-    nihtbx_cardsort_fc)
+    nihtbx_cardsort_fc
+)
 
 
-#merge all data frames in list
-merged_df <- df_list |> reduce(full_join, by='subjectkey')
+# merge all data frames in list
+merged_df <- df_list |> purrr::reduce(full_join, by = "subjectkey")
 
 which(is.na(merged_df))
 
 merged_df
+
 
 ```
 
