@@ -11,15 +11,13 @@ I am currently categorizing all subjects as either white, black, or 'mixed/other
 library(readr)
 library(here)
 library(dplyr)
-library(scabcd)
+library(abcdutils)
 
-mtbi_subjects <-
-    read_csv(here(
-        "data/abcd/processed/prashanth/data/subjects/mtbi_subjects.csv"))
+mtbi_subjects <- read_csv(here("data/abcd/subjects/mtbi_subjects.csv"))
 
-pdem02 <- read_delim(here("data/abcd/4.0/demographics/pdem02.txt"))
+pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
 
-full_race_df <- abcd_import(pdem02, mtbi_subjects) |>
+full_race_df <- abcd_import(pdem02, mtbi_subjects, t = 0) |>
     dplyr::rename("white" = "demo_race_a_p___10",
            "black" = "demo_race_a_p___11",
            "native_american" = "demo_race_a_p___12",
