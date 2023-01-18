@@ -1,0 +1,85 @@
+# MTBI Subject Breakdown
+
+```{r}
+library(readr)
+library(abcdutils)
+
+# Change carbon path here
+load_carbon <- function(path) {
+    carbon_path <- "/home/prashanth/mnt/wheeler-lab/lab-data/abcd/"
+    read_delim(paste0(carbon_path, path))
+}
+
+# NDA summary TBI dataset for baseline
+abcd_tbi01 <- load_carbon("4.0/trauma/abcd_tbi01.txt") |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1")
+
+# Non summary dataset
+abcd_otbi01 <- load_carbon("4.0/trauma/abcd_otbi01.txt") |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1")
+
+# Our TBI info assignment for all subjects at baseline
+# The relevant columns are "mtbi" (did the person have an mTBI) and
+#  "moderate_or_severe_tbi" (did the person have a moderate+ injury)
+our_tbi_summary <- abcd_otbi01 |>
+    scabcd::remove_dd() |>
+    scabcd::rename_tbi() |>
+    scabcd::identify_all_tbi()
+
+# Merging dataframes and replacing NA (for no worst TBI) with 0
+joint_tbi_summary <-
+    dplyr::inner_join(our_tbi_summary, abcd_tbi01, by = "subjectkey")
+joint_tbi_summary$tbi_ss_worst_overall[
+    is.na(joint_tbi_summary$tbi_ss_worst_overall)] <- 0
+
+# Dataframe of subjects that were flagged as having an injury by either approach
+any_injured <- joint_tbi_summary[
+    joint_tbi_summary$mtbi > 0 |
+    joint_tbi_summary$moderate_or_severe_tbi > 0 |
+    joint_tbi_summary$tbi_ss_worst_overall > 1, ]
+
+# MODERATE TO SEVERE TBI ASSIGNMENT DIFFERENCES ===============================
+# Which subjects were flagged as moderate / severe mTBI by either approach?
+mod_sev_differences <- any_injured |>
+    dplyr::filter(tbi_ss_worst_overall > 3 | moderate_or_severe_tbi > 1) |>
+    dplyr::select(subjectkey, moderate_or_severe_tbi, tbi_ss_worst_overall)
+
+mod_sev_differences
+
+# 7 Subjects at baseline had a moderate or severe TBI. Both methods agreed.
+
+# MTBI ASSIGNMENT DIFFERENCES =================================================
+only_our_mtbis <- any_injured |>
+    dplyr::filter(mtbi > 0 & tbi_ss_worst_overall < 2)
+only_our_mtbis
+# Nobody was flagged as having an mTBI by just us
+
+only_their_mtbis <- any_injured |>
+    dplyr::filter(mtbi == 0 &
+    (tbi_ss_worst_overall == 2 | tbi_ss_worst_overall == 3))
+only_their_mtbis
+# One person was flagged as having an mTBI by just them.
+
+only_their_mtbis$subjectkey
+
+# "NDAR_INV7XUV8V0N" has no raw mTBI data, but is assigned as having had a
+#  worst mTBI of BOTH 1 (no TBI) AND 3 (mTBI), and subsequently assigned as 3
+
+our_mtbis <- any_injured |>
+    dplyr::filter(mtbi == 1)
+
+their_mtbis <- any_injured |>
+    dplyr::filter(tbi_ss_worst_overall == 2 | tbi_ss_worst_overall == 3)
+
+
+which(!(our_mtbis$subjectkey %in% their_mtbis$subjectkey))
+which(!(their_mtbis$subjectkey %in% our_mtbis$subjectkey))
+
+mismatches <- their_mtbis[c(347, 429), ]
+
+mismatches
+
+# First subject was addressed above.
+# Second subject I assigned as more than mild due to the many unknown repeat
+#  injuries.
+```
