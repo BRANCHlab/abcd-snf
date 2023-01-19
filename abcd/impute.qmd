@@ -6,6 +6,7 @@ Missing value imputation.
 
 ```{r}
 library(dplyr)
+library(abcdutils)
 library(readr)
 library(purrr)
 library(here)
@@ -97,59 +98,56 @@ nihtbx_cardsort_fc <-
     read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_cardsort_fc.csv"))
 
 
-# put all data frames into list
+# put all data frames into a named list
+
 df_list <- list(
-    as_mtbi_loc,
-    as_mtbi_mechanism,
-    as_mtbi_mem_daze,
-    d_income,
-    d_interview_age,
-    d_mtbi_age,
-    d_pubertal_status,
-    d_race,
-    d_sex,
-    mh_headaches,
-    mh_mtbi_count,
-    dm_wmndf,
-    rm_gord_cor,
-    rm_gord_var,
-    rm_subc_cor,
-    rm_subc_var,
-    sm_cort_sa,
-    sm_cort_t,
-    sm_subc_v,
-    p_loneliness,
-    p_screen_time,
-    p_family_function,
-    p_sports,
-    p_prosocial,
-    p_parent_psych,
-    p_exercise,
-    cbcl_headaches,
-    cbcl_nausea,
-    cbcl_vomiting,
-    cbcl_dizzy,
-    cbcl_overtired,
-    cbcl_sleeping_more,
-    cbcl_sleeping_less,
-    cbcl_depress_r,
-    cbcl_anxiety_r,
-    cbcl_attention_r,
-    cbcl_aggressive_r,
-    sds_sleep,
-    nihtbx_list_fc,
-    nihtbx_pattern_fc,
-    nihtbx_cardsort_fc
-)
-
-
-# merge all data frames in list
-merged_df <- df_list |> purrr::reduce(full_join, by = "subjectkey")
-
-which(is.na(merged_df))
-
-merged_df
-
+    "loss of consciousness" = as_mtbi_loc,
+    "mechanism of injury" = as_mtbi_mechanism,
+    "memory loss / dazed" = as_mtbi_mem_daze,
+    "income" = d_income,
+    "interview_age" = d_interview_age,
+    "mtbi_age" = d_mtbi_age,
+    "pubertal_status" = d_pubertal_status,
+    "race" = d_race,
+    "sex" = d_sex,
+    "headaches" = mh_headaches,
+    "mtbi_count" = mh_mtbi_count,
+    "wmndf" = dm_wmndf,
+    "gord correlations" = rm_gord_cor,
+    "gord variances" = rm_gord_var,
+    "subc corrrelations" = rm_subc_cor,
+    "subc variances" = rm_subc_var,
+    "cortical surface area" = sm_cort_sa,
+    "cortical thickness" = sm_cort_t,
+    "subcortical volume" = sm_subc_v,
+    "loneliness" = p_loneliness,
+    "screen time" = p_screen_time,
+    "family function" = p_family_function,
+    "sports" = p_sports,
+    "prosocial" = p_prosocial,
+    "parent psych" = p_parent_psych,
+    "exercise" = p_exercise,
+    "cbcl headaches" = cbcl_headaches,
+    "cbcl nausea" = cbcl_nausea,
+    "cbcl vomiting" = cbcl_vomiting,
+    "cbcl dizzy" = cbcl_dizzy,
+    "cbcl overtired" = cbcl_overtired,
+    "cbcl sleeping more" = cbcl_sleeping_more,
+    "cbcl sleeping less" = cbcl_sleeping_less,
+    "cbcl depress r" = cbcl_depress_r,
+    "cbcl anxiety r" = cbcl_anxiety_r,
+    "cbcl attention r" = cbcl_attention_r,
+    "cbcl aggressive r" = cbcl_aggressive_r,
+    "sds sleep" = sds_sleep,
+    "nihtbx list fc" = nihtbx_list_fc,
+    "nihtbx pattern fc" = nihtbx_pattern_fc,
+    "nihtbx cardsort fc" = nihtbx_cardsort_fc)
 
 ```
 
+
+Missing data visualizations:
+
+```{r eval = FALSE}
+vis_missing_by_df(df_list)
+```
