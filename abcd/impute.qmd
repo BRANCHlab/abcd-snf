@@ -96,10 +96,13 @@ nihtbx_pattern_fc <-
     read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_pattern_fc.csv"))
 nihtbx_cardsort_fc <-
     read_csv(here("data/abcd/outputs/pre-imputation/nihtbx_cardsort_fc.csv"))
+```
 
 
+## Missing data
+
+```{r eval = FALSE}
 # put all data frames into a named list
-
 df_list <- list(
     "loss of consciousness" = as_mtbi_loc,
     "mechanism of injury" = as_mtbi_mechanism,
@@ -143,11 +146,32 @@ df_list <- list(
     "nihtbx pattern fc" = nihtbx_pattern_fc,
     "nihtbx cardsort fc" = nihtbx_cardsort_fc)
 
-```
-
-
-Missing data visualizations:
-
-```{r eval = FALSE}
 vis_missing_by_df(df_list)
 ```
+
+## Quality control
+
+```{r eval = FALSE}
+
+mriqcrp10301 <-
+    read_delim(here("data/abcd/raw/mriqcrp10301.txt"))
+
+abcd_dd("mriqcrp10301")
+
+
+
+mri_qc <- mriqcrp10301 |>
+    dplyr::select("subjectkey",
+                  dplyr::contains(c("qc_score", "pc_score")),
+                  -dplyr::contains("mid"))
+
+Filter(function(x) !all(is.na(x)), mri_qc)
+
+mri_qc
+
+
+
+
+
+```
+

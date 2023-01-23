@@ -24,3 +24,4 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/abcd_stq01
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/questionnaire/abcd_asrs01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/activity/abcd_yrb01.txt .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/activity/abcd_saiq02.txt .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/neurosignal-recordings/mriqcrp10301.txt .
