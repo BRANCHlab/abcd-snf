@@ -1,0 +1,53 @@
+```{r}
+library(readr)
+library(here)
+library(abcdutils)
+
+# Replication of abcd_dmdtifp101
+abcd_dd("abcd_dmdtifp101")
+
+abcd_dmdtifp101 <-
+    read_delim(paste0("~/mnt/wheeler-lab/lab-data/abcd/4.0/evaluated-data/",
+                      "abcd_dmdtifp101.txt"))
+
+set.seed(42)
+
+abcd_randomizer <- function(df, n = NULL) {
+    data_dictionary <- df[1, ]
+    df <- df[-1, ]
+    # Select a random subset of rows to begin with
+    if (is.null(n)) {
+        n <- nrow(df)
+    }
+    random_rows <- sample(nrow(df), size = n)
+    df <- df[random_rows, ]
+    # Shuffle all the rows
+    for (i in seq_along(df)) {
+        df[, i] <- df[sample(nrow(df)), i]
+    }
+    # Generate fake subject keys and assign them
+    subjectchars <- c(toupper(letters), as.character(0:9))
+    for (i in seq_len(nrow(df))) {
+        subjectkey <- paste(c("NDAR_INV",
+                            sample(subjectchars, size = 8)),
+                          collapse = "")
+        df[i, c("subjectkey", "src_subject_id")] <- subjectkey
+    }
+    df <- rbind(data_dictionary, df)
+    return(df)
+}
+
+mock_abcd_dmdtifp101 <- abcd_randomizer(abcd_dmdtifp101, 2000)
+
+# Export data
+write_csv(mock_abcd_dmdtifp101,
+          here("data/abcd/mock-data/mock_abcd_dmdtifp101.csv"))
+
+# Test the export
+mock_abcd_dmdtifp101 <-
+    read_delim(here("data/abcd/mock-data/mock_abcd_dmdtifp101.csv"))
+
+mock_abcd_dmdtifp101
+
+```
+
