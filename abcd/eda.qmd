@@ -2,7 +2,7 @@
 
 ## Searching for PNC pilot associations in the ABCD dataset
 
-Dr. Wheeler's previous SNF analyses in the PNC) identified three subtypes.
+Anne's previous SNF analyses in the PNC dataset identified three subtypes.
 Subtype #3 was found to have a significantly higher proportion of children that experienced LOC following their injuries, significantly poorer outcomes on the line orientation test (a measure of visuospatial processing), and significantly lower functional connectivity between the brainstem and occipital cortex.
 
 
@@ -22,12 +22,30 @@ The variable of interest is `rsfmri_cor_ngd_vs_scs_bs` (the average correlation 
 
 ```{r eval=FALSE}
 
-library(scabcd)
+library(abcdutils)
 library(readr)
+library(ggplot2)
 
 # Import baseline TBI data
-otbi01 <- read_delim(here("data/abcd/raw/abcd_otbi01.txt"))
+mtbi_detailed <- read_delim(here("data/abcd/misc/mtbi_detailed.csv"))
 
-# Change column names to human-readable
-otbi01_renamed <- rename_tbi(otbi01)
+# Import rsfmri data
+rm_subc_cor <-
+    read_delim(here("data/abcd/inputs/pre-imputation/rm_subc_cor.csv"))
+
+association_df <-
+    dplyr::inner_join(mtbi_detailed, rm_subc_cor, by = "subjectkey") |>
+    dplyr::select("subjectkey",
+                  "latest_mtbi_loc",
+                  "rsfmri_cor_ngd_vs_scs_bs")
+
+association_df$latest_mtbi_loc <- as.factor(association_df$latest_mtbi_loc)
+
+ggplot(association_df,
+       mapping = aes(x = latest_mtbi_loc,
+                     y = rsfmri_cor_ngd_vs_scs_bs,
+                     color = latest_mtbi_loc)) +
+    geom_boxplot() +
+    geom_jitter()
+
 ```
