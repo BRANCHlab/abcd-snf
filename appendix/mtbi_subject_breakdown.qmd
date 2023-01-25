@@ -22,9 +22,9 @@ abcd_otbi01 <- load_carbon("4.0/trauma/abcd_otbi01.txt") |>
 # The relevant columns are "mtbi" (did the person have an mTBI) and
 #  "moderate_or_severe_tbi" (did the person have a moderate+ injury)
 our_tbi_summary <- abcd_otbi01 |>
-    scabcd::remove_dd() |>
-    scabcd::rename_tbi() |>
-    scabcd::identify_all_tbi()
+    abcdutils::remove_dd() |>
+    abcdutils::rename_tbi() |>
+    abcdutils::identify_all_tbi()
 
 # Merging dataframes and replacing NA (for no worst TBI) with 0
 joint_tbi_summary <-
@@ -83,3 +83,44 @@ mismatches
 # Second subject I assigned as more than mild due to the many unknown repeat
 #  injuries.
 ```
+
+## Examining Eman's mysterious bonus subjects
+
+```{r}
+
+eman_tbi <- read_delim("/home/prashanth/downloads/TBI_FORQUALANALYSIS.csv")
+
+# Which subjects are in Eman's list that are not present in raw abcd_otbi01
+eman_only <- which(!(eman_tbi$TBI2 %in% abcd_otbi01$subjectkey))
+eman_tbi$TBI2[eman_only]
+
+
+# Which subjects are in Eman's list that are not present in my list
+mine_only <- which(!(our_mtbis$subjectkey %in% eman_tbi$TBI2))
+our_mtbis$subjectkey[mine_only]
+
+length(mine_only) # 16 people
+length(eman_only) # 17 people
+
+```
+
+## Differences between version 2.0 and 4.0
+
+```{r}
+v2 <- load_carbon("2.0/trauma/abcd_otbi01.txt")
+v4 <- load_carbon("4.0/trauma/abcd_otbi01.txt")
+
+mtbi_2 <- get_mtbi_subjects(v2, min_latest_mtbi_mpi = 0, t = 0) # 446 rows
+mtbi_4 <- get_mtbi_subjects(v4, min_latest_mtbi_mpi = 0, t = 0) # 430 rows
+
+
+# Differences in all subjects
+length(which(!(v2$subjectkey %in% v4$subjectkey))) # 391 missing in 4.0
+length(which(!(v4$subjectkey %in% v2$subjectkey))) # 4 missing in 2.0
+
+
+# Differences in mTBI subjects
+length(which(!(mtbi_2$subjectkey %in% mtbi_4$subjectkey))) # 17 missing in 4.0
+length(which(!(mtbi_4$subjectkey %in% mtbi_2$subjectkey))) # 1 missing in 2.0
+```
+
