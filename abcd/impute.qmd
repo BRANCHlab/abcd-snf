@@ -156,17 +156,65 @@ vis_missing_by_df(df_list)
 mriqcrp10301 <-
     read_delim(here("data/abcd/raw/mriqcrp10301.txt"))
 
-abcd_dd("mriqcrp10301")
+rm_gord_cor_qc <- qc_rsfmri(rm_gord_cor, mriqcrp10301, t = 0)[[1]]
+rm_gord_var_qc <- qc_rsfmri(rm_gord_var, mriqcrp10301, t = 0)[[1]]
+rm_subc_cor_qc <- qc_rsfmri(rm_subc_cor, mriqcrp10301, t = 0)[[1]]
+rm_subc_var_qc <- qc_rsfmri(rm_subc_var, mriqcrp10301, t = 0)[[1]]
+dm_wmndf_qc <- qc_dmri(dm_wmndf, mriqcrp10301, t = 0)[[1]]
+sm_cort_sa_qc <- qc_smri(sm_cort_sa, mriqcrp10301, t = 0)[[1]]
+sm_cort_t_qc <- qc_smri(sm_cort_t, mriqcrp10301, t = 0)[[1]]
+sm_subc_v_qc <- qc_smri(sm_subc_v, mriqcrp10301, t = 0)[[1]]
+```
+
+## Imputation
+
+```{r eval = FALSE}
+
+df_list_post_qc <- list(
+    "loss of consciousness" = as_mtbi_loc,
+    "mechanism of injury" = as_mtbi_mechanism,
+    "memory loss / dazed" = as_mtbi_mem_daze,
+    "income" = d_income,
+    "interview_age" = d_interview_age,
+    "mtbi_age" = d_mtbi_age,
+    "pubertal_status" = d_pubertal_status,
+    "race" = d_race,
+    "sex" = d_sex,
+    "headaches" = mh_headaches,
+    "mtbi_count" = mh_mtbi_count,
+    "wmndf" = dm_wmndf,
+    "gord correlations" = rm_gord_cor_qc,
+    "gord variances" = rm_gord_var_qc,
+    "subc corrrelations" = rm_subc_cor_qc,
+    "subc variances" = rm_subc_var_qc,
+    "cortical surface area" = sm_cort_sa_qc,
+    "cortical thickness" = sm_cort_t_qc,
+    "subcortical volume" = sm_subc_v_qc,
+    "loneliness" = p_loneliness,
+    "screen time" = p_screen_time,
+    "family function" = p_family_function,
+    "sports" = p_sports,
+    "prosocial" = p_prosocial,
+    "parent psych" = p_parent_psych,
+    "exercise" = p_exercise,
+    "cbcl headaches" = cbcl_headaches,
+    "cbcl nausea" = cbcl_nausea,
+    "cbcl vomiting" = cbcl_vomiting,
+    "cbcl dizzy" = cbcl_dizzy,
+    "cbcl overtired" = cbcl_overtired,
+    "cbcl sleeping more" = cbcl_sleeping_more,
+    "cbcl sleeping less" = cbcl_sleeping_less,
+    "cbcl depress r" = cbcl_depress_r,
+    "cbcl anxiety r" = cbcl_anxiety_r,
+    "cbcl attention r" = cbcl_attention_r,
+    "cbcl aggressive r" = cbcl_aggressive_r,
+    "sds sleep" = sds_sleep,
+    "nihtbx list fc" = nihtbx_list_fc,
+    "nihtbx pattern fc" = nihtbx_pattern_fc,
+    "nihtbx cardsort fc" = nihtbx_cardsort_fc)
+
+all_data <- 
 
 
-
-mri_qc <- mriqcrp10301 |>
-    dplyr::select("subjectkey",
-                  dplyr::contains(c("qc_score", "pc_score")),
-                  -dplyr::contains("mid"))
-
-Filter(function(x) !all(is.na(x)), mri_qc)
-
-mri_qc
 ```
 
