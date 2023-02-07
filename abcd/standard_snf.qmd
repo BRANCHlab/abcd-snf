@@ -1,0 +1,209 @@
+# Standard SNF
+
+In this chapter I work through a typical SNF study pipeline.
+
+
+## Data imports
+
+```{r eval = FALSE}
+library(dplyr)
+library(abcdutils)
+library(scabcd)
+library(readr)
+library(here)
+library(digest) # For generating hash functions
+
+# Inputs
+as_mtbi_loc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_loc_imp.csv")))
+as_mtbi_mechanism <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_mechanism_imp.csv")))
+as_mtbi_mem_daze <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_mem_daze_imp.csv")))
+d_income <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_income_imp.csv")))
+d_interview_age <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_interview_age_imp.csv")))
+d_mtbi_age <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_mtbi_age_imp.csv")))
+d_pubertal_status <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_pubertal_status_imp.csv")))
+d_race <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_race_imp.csv")))
+d_sex <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_sex_imp.csv")))
+mh_headaches <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/mh_headaches_imp.csv")))
+mh_mtbi_count <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/mh_mtbi_count_imp.csv")))
+dm_wmndf_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/dm_wmndf_qc.csv")))
+rm_gord_cor_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_gord_cor_qc.csv")))
+rm_gord_var_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_gord_var_qc.csv")))
+rm_subc_cor_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_subc_cor_qc.csv")))
+rm_subc_var_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_subc_var_qc.csv")))
+sm_cort_sa_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/sm_cort_sa_qc.csv")))
+sm_cort_t_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/sm_cort_t_qc.csv")))
+sm_subc_v_qc <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/sm_subc_v_qc.csv")))
+p_loneliness <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_loneliness_imp.csv")))
+p_screen_time <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_screen_time_imp.csv")))
+p_family_function <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_family_function_imp.csv")))
+p_sports <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_sports_imp.csv")))
+p_prosocial <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_prosocial_imp.csv")))
+p_parent_psych <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_parent_psych_imp.csv")))
+p_exercise <-
+    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_exercise_imp.csv")))
+# Outcomes
+cbcl_headaches <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_headaches_imp.csv")))
+cbcl_nausea <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_nausea_imp.csv")))
+cbcl_vomiting <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_vomiting_imp.csv")))
+cbcl_dizzy <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_dizzy_imp.csv")))
+cbcl_overtired <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_overtired_imp.csv")))
+cbcl_sleeping_more <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_sleeping_more_imp.csv")))
+cbcl_sleeping_less <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_sleeping_less_imp.csv")))
+cbcl_depress_r <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_depress_r_imp.csv")))
+cbcl_anxiety_r <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_anxiety_r_imp.csv")))
+cbcl_attention_r <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_attention_r_imp.csv")))
+cbcl_aggressive_r <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_aggressive_r_imp.csv")))
+sds_sleep <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/sds_sleep_imp.csv")))
+nihtbx_list_fc <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_list_fc_imp.csv")))
+nihtbx_pattern_fc <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_pattern_fc_imp.csv")))
+nihtbx_cardsort_fc <-
+    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_cardsort_fc_imp.csv")))
+```
+
+## Prepping data for Similarity Network Fusion
+```{r eval = FALSE}
+
+# Just keep common subjects:
+common_df <- dplyr::inner_join("")
+
+
+full_df_list <- list(mtbi_loc = as_mtbi_loc,
+                                mtbi_mechanism = as_mtbi_mechanism,
+                                mtbi_mem_daze = as_mtbi_mem_daze,
+                                income = d_income,
+                                interview_age = d_interview_age,
+                                mtbi_age = d_mtbi_age,
+                                pubertal_status = d_pubertal_status,
+                                race = d_race,
+                                sex = d_sex,
+                                headaches = mh_headaches,
+                                mtbi_count = mh_mtbi_count,
+                                wmndf = dm_wmndf_qc,
+                                gord_cor = rm_gord_cor_qc,
+                                gord_var = rm_gord_var_qc,
+                                subc_cor = rm_subc_cor_qc,
+                                subc_var = rm_subc_var_qc,
+                                cort_sa = sm_cort_sa_qc,
+                                cort_t = sm_cort_t_qc,
+                                subc_v = sm_subc_v_qc,
+                                loneliness = p_loneliness,
+                                screen_time = p_screen_time,
+                                family_function = p_family_function,
+                                sports = p_sports,
+                                prosocial = p_prosocial,
+                                parent_psych = p_parent_psych,
+                                exercise = p_exercise)
+                                cbcl_headaches = cbcl_headaches,
+                                      cbcl_nausea = cbcl_nausea,
+                                      cbcl_vomiting = cbcl_vomiting,
+                                      cbcl_dizzy = cbcl_dizzy,
+                                      cbcl_overtired = cbcl_overtired,
+                                      cbcl_sleeping_more = cbcl_sleeping_more,
+                                      cbcl_sleeping_less = cbcl_sleeping_less,
+                                      cbcl_depress_r = cbcl_depress_r,
+                                      cbcl_anxiety_r = cbcl_anxiety_r,
+                                      cbcl_attention_r = cbcl_attention_r,
+                                      cbcl_aggressive_r = cbcl_aggressive_r,
+                                      sds_sleep = sds_sleep)
+
+
+
+
+# Structure containing all input data
+# These data should not contain any NAs, but need not have the same subjects
+data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
+                                mtbi_mechanism = as_mtbi_mechanism,
+                                mtbi_mem_daze = as_mtbi_mem_daze,
+                                income = d_income,
+                                interview_age = d_interview_age,
+                                mtbi_age = d_mtbi_age,
+                                pubertal_status = d_pubertal_status,
+                                race = d_race,
+                                sex = d_sex,
+                                headaches = mh_headaches,
+                                mtbi_count = mh_mtbi_count,
+                                wmndf = dm_wmndf_qc,
+                                gord_cor = rm_gord_cor_qc,
+                                gord_var = rm_gord_var_qc,
+                                subc_cor = rm_subc_cor_qc,
+                                subc_var = rm_subc_var_qc,
+                                cort_sa = sm_cort_sa_qc,
+                                cort_t = sm_cort_t_qc,
+                                subc_v = sm_subc_v_qc,
+                                loneliness = p_loneliness,
+                                screen_time = p_screen_time,
+                                family_function = p_family_function,
+                                sports = p_sports,
+                                prosocial = p_prosocial,
+                                parent_psych = p_parent_psych,
+                                exercise = p_exercise)
+    
+
+# Structure containing all outcome data
+outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
+                                      cbcl_nausea = cbcl_nausea,
+                                      cbcl_vomiting = cbcl_vomiting,
+                                      cbcl_dizzy = cbcl_dizzy,
+                                      cbcl_overtired = cbcl_overtired,
+                                      cbcl_sleeping_more = cbcl_sleeping_more,
+                                      cbcl_sleeping_less = cbcl_sleeping_less,
+                                      cbcl_depress_r = cbcl_depress_r,
+                                      cbcl_anxiety_r = cbcl_anxiety_r,
+                                      cbcl_attention_r = cbcl_attention_r,
+                                      cbcl_aggressive_r = cbcl_aggressive_r,
+                                      sds_sleep = sds_sleep)
+
+
+
+set.seed(42)
+design_matrix <- build_design_matrix_base_t()
+design_matrix[1, ] <- 1 # Have one "default" row
+design_matrix[1, ] <- 1
+
+# Assess clustering minimum p-value for an ordinal dependent variable
+output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
+output_matrix
+
+colnames(output_matrix)
+```
+
