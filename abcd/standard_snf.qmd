@@ -275,18 +275,80 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       sds_sleep = sds_sleep)
 
 
-
-set.seed(42)
-design_matrix <- build_design_matrix_base_t()
-design_matrix[1, ] <- 1 # Have one "default" row
-
-# design_matrix <- add_design_matrix_rows(design_matrix, 100, retry_limit = 10)
+# Builds a standard design matrix only exploring SNF hyperparameters
+design_matrix <- build_design_matrix_s()
 
 # Assess clustering minimum p-value for an ordinal dependent variable
 output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
-output_matrix
+output_matrix$mean_p_val <- as.numeric(output_matrix$mean_p_val)
+output_matrix$min_p_val <- as.numeric(output_matrix$min_p_val)
+
+write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om.csv"))
+
+min(output_matrix$min_p_val)
+min(output_matrix$mean_p_val)
+
+library(ggplot2)
+
+ggplot(output_matrix, mapping = aes(x = K, y = mean_p_val)) +
+    geom_point()
+
+ggplot(output_matrix, mapping = aes(x = K, y = mean_p_val, color = alpha)) +
+    geom_point()
+
+# The boring NOOBs way
+ggplot(output_matrix, mapping = aes(x = min_p_val, y = mean_p_val, color = alpha)) +
+    geom_point()
+
+ggplot(output_matrix, mapping = aes(x = K, y = alpha, size = min_p_val)) +
+    geom_point()
+
 
 colnames(output_matrix)
+
+set.seed(42)
+design_matrix_base <- build_design_matrix_base_t()
+design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
+
+design_matrix
+
+
+
+
+output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
+output_matrix_full
+
+# My cool dude way
+output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
+output_matrix_full$min_p_val <- as.numeric(output_matrix_full$min_p_val)
+
+write_csv(output_matrix_full, here("data/abcd/results/processed/full_scan_om.csv"))
+
+min(output_matrix_full$min_p_val)
+min(output_matrix_full$mean_p_val)
+
+library(ggplot2)
+
+ggplot(output_matrix_full, mapping = aes(x = K, y = mean_p_val)) +
+    geom_point()
+
+ggplot(output_matrix_full, mapping = aes(x = alpha, y = mean_p_val)) +
+    geom_point()
+
+ggplot(output_matrix_full, mapping = aes(x = K, y = mean_p_val, color = alpha)) +
+    geom_point()
+
+ggplot(output_matrix_full, mapping = aes(x = min_p_val, y = mean_p_val, color = alpha)) +
+    geom_point()
+
+ggplot(output_matrix_full, mapping = aes(x = K, y = alpha, size = min_p_val)) +
+    geom_point()
+
+which(output_matrix_full$min_p_val == min(output_matrix_full$min_p_val))
+
+output_matrix_full[33, ]
+
 ```
 
