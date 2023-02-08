@@ -3,7 +3,7 @@
 In this chapter I work through a typical SNF study pipeline.
 
 
-## Data imports
+## Loading data
 
 ```{r eval = FALSE}
 library(dplyr)
@@ -99,55 +99,137 @@ nihtbx_cardsort_fc <-
     stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_cardsort_fc_imp.csv")))
 ```
 
-## Prepping data for Similarity Network Fusion
+## Filtering to common subjects and separating training/testing splits
+
+This block is used to only keep subjects with complete data (post-imputation)
+
 ```{r eval = FALSE}
-
-# Just keep common subjects:
-common_df <- dplyr::inner_join("")
-
-
 full_df_list <- list(mtbi_loc = as_mtbi_loc,
-                                mtbi_mechanism = as_mtbi_mechanism,
-                                mtbi_mem_daze = as_mtbi_mem_daze,
-                                income = d_income,
-                                interview_age = d_interview_age,
-                                mtbi_age = d_mtbi_age,
-                                pubertal_status = d_pubertal_status,
-                                race = d_race,
-                                sex = d_sex,
-                                headaches = mh_headaches,
-                                mtbi_count = mh_mtbi_count,
-                                wmndf = dm_wmndf_qc,
-                                gord_cor = rm_gord_cor_qc,
-                                gord_var = rm_gord_var_qc,
-                                subc_cor = rm_subc_cor_qc,
-                                subc_var = rm_subc_var_qc,
-                                cort_sa = sm_cort_sa_qc,
-                                cort_t = sm_cort_t_qc,
-                                subc_v = sm_subc_v_qc,
-                                loneliness = p_loneliness,
-                                screen_time = p_screen_time,
-                                family_function = p_family_function,
-                                sports = p_sports,
-                                prosocial = p_prosocial,
-                                parent_psych = p_parent_psych,
-                                exercise = p_exercise)
-                                cbcl_headaches = cbcl_headaches,
-                                      cbcl_nausea = cbcl_nausea,
-                                      cbcl_vomiting = cbcl_vomiting,
-                                      cbcl_dizzy = cbcl_dizzy,
-                                      cbcl_overtired = cbcl_overtired,
-                                      cbcl_sleeping_more = cbcl_sleeping_more,
-                                      cbcl_sleeping_less = cbcl_sleeping_less,
-                                      cbcl_depress_r = cbcl_depress_r,
-                                      cbcl_anxiety_r = cbcl_anxiety_r,
-                                      cbcl_attention_r = cbcl_attention_r,
-                                      cbcl_aggressive_r = cbcl_aggressive_r,
-                                      sds_sleep = sds_sleep)
+    as_mtbi_mechanism,
+    as_mtbi_mem_daze,
+    d_income,
+    d_interview_age,
+    d_mtbi_age,
+    d_pubertal_status,
+    d_race,
+    d_sex,
+    mh_headaches,
+    mh_mtbi_count,
+    dm_wmndf_qc,
+    rm_gord_cor_qc,
+    rm_gord_var_qc,
+    rm_subc_cor_qc,
+    rm_subc_var_qc,
+    sm_cort_sa_qc,
+    sm_cort_t_qc,
+    sm_subc_v_qc,
+    p_loneliness,
+    p_screen_time,
+    p_family_function,
+    p_sports,
+    p_prosocial,
+    p_parent_psych,
+    p_exercise,
+    cbcl_headaches,
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress_r,
+    cbcl_anxiety_r,
+    cbcl_attention_r,
+    cbcl_aggressive_r,
+    sds_sleep)
+
+shared_df <- full_df_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
+
+common_subs <- shared_df$subjectkey
+
+training_subs <- train_test_split(0.8, common_subs)$training_set
+testing_subs <- train_test_split(0.8, common_subs)$testing_set
+
+as_mtbi_loc <-
+    as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
+as_mtbi_mechanism <-
+    as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% training_subs, ]
+as_mtbi_mem_daze <-
+    as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% training_subs, ]
+d_income <-
+    d_income[d_income$subjectkey %in% training_subs, ]
+d_interview_age <-
+    d_interview_age[d_interview_age$subjectkey %in% training_subs, ]
+d_mtbi_age <-
+    d_mtbi_age[d_mtbi_age$subjectkey %in% training_subs, ]
+d_pubertal_status <-
+    d_pubertal_status[d_pubertal_status$subjectkey %in% training_subs, ]
+d_race <-
+    d_race[d_race$subjectkey %in% training_subs, ]
+d_sex <-
+    d_sex[d_sex$subjectkey %in% training_subs, ]
+mh_headaches <-
+    mh_headaches[mh_headaches$subjectkey %in% training_subs, ]
+mh_mtbi_count <-
+    mh_mtbi_count[mh_mtbi_count$subjectkey %in% training_subs, ]
+dm_wmndf_qc <-
+    dm_wmndf_qc[dm_wmndf_qc$subjectkey %in% training_subs, ]
+rm_gord_cor_qc <-
+    rm_gord_cor_qc[rm_gord_cor_qc$subjectkey %in% training_subs, ]
+rm_gord_var_qc <-
+    rm_gord_var_qc[rm_gord_var_qc$subjectkey %in% training_subs, ]
+rm_subc_cor_qc <-
+    rm_subc_cor_qc[rm_subc_cor_qc$subjectkey %in% training_subs, ]
+rm_subc_var_qc <-
+    rm_subc_var_qc[rm_subc_var_qc$subjectkey %in% training_subs, ]
+sm_cort_sa_qc <-
+    sm_cort_sa_qc[sm_cort_sa_qc$subjectkey %in% training_subs, ]
+sm_cort_t_qc <-
+    sm_cort_t_qc[sm_cort_t_qc$subjectkey %in% training_subs, ]
+sm_subc_v_qc <-
+    sm_subc_v_qc[sm_subc_v_qc$subjectkey %in% training_subs, ]
+p_loneliness <-
+    p_loneliness[p_loneliness$subjectkey %in% training_subs, ]
+p_screen_time <-
+    p_screen_time[p_screen_time$subjectkey %in% training_subs, ]
+p_family_function <-
+    p_family_function[p_family_function$subjectkey %in% training_subs, ]
+p_sports <-
+    p_sports[p_sports$subjectkey %in% training_subs, ]
+p_prosocial <-
+    p_prosocial[p_prosocial$subjectkey %in% training_subs, ]
+p_parent_psych <-
+    p_parent_psych[p_parent_psych$subjectkey %in% training_subs, ]
+p_exercise <-
+    p_exercise[p_exercise$subjectkey %in% training_subs, ]
+cbcl_headaches <-
+    cbcl_headaches[cbcl_headaches$subjectkey %in% training_subs, ]
+cbcl_nausea <-
+    cbcl_nausea[cbcl_nausea$subjectkey %in% training_subs, ]
+cbcl_vomiting <-
+    cbcl_vomiting[cbcl_vomiting$subjectkey %in% training_subs, ]
+cbcl_dizzy <-
+    cbcl_dizzy[cbcl_dizzy$subjectkey %in% training_subs, ]
+cbcl_overtired <-
+    cbcl_overtired[cbcl_overtired$subjectkey %in% training_subs, ]
+cbcl_sleeping_more <-
+    cbcl_sleeping_more[cbcl_sleeping_more$subjectkey %in% training_subs, ]
+cbcl_sleeping_less <-
+    cbcl_sleeping_less[cbcl_sleeping_less$subjectkey %in% training_subs, ]
+cbcl_depress_r <-
+    cbcl_depress_r[cbcl_depress_r$subjectkey %in% training_subs, ]
+cbcl_anxiety_r <-
+    cbcl_anxiety_r[cbcl_anxiety_r$subjectkey %in% training_subs, ]
+cbcl_attention_r <-
+    cbcl_attention_r[cbcl_attention_r$subjectkey %in% training_subs, ]
+cbcl_aggressive_r <-
+    cbcl_aggressive_r[cbcl_aggressive_r$subjectkey %in% training_subs, ]
+sds_sleep <-
+    sds_sleep[sds_sleep$subjectkey %in% training_subs, ]
+```
 
 
-
-
+```{r}
 # Structure containing all input data
 # These data should not contain any NAs, but need not have the same subjects
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
@@ -197,7 +279,8 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
 set.seed(42)
 design_matrix <- build_design_matrix_base_t()
 design_matrix[1, ] <- 1 # Have one "default" row
-design_matrix[1, ] <- 1
+
+# design_matrix <- add_design_matrix_rows(design_matrix, 100, retry_limit = 10)
 
 # Assess clustering minimum p-value for an ordinal dependent variable
 output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
