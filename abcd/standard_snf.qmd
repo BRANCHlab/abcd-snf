@@ -535,6 +535,7 @@ design_matrix
 outcome_list
 
 output_matrix_full2 <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
 #output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
 
@@ -601,7 +602,7 @@ rownames(mc_results) <- as.character(1:nrow(mc_results))
 
 write_csv(data.frame(mc_results), here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))
 
-mc_results2<- as.matrix(read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
+mc_results <- as.matrix(read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
 
 
 identical(mc_results2, mc_results)
@@ -662,26 +663,30 @@ comparison_df$cluster <- as.factor(comparison_df$cluster)
 
 colnames(comparison_df)
 
+dim(comparison_df)
+
 # Using ordinal regression, the p-values are very low
 9 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
-
-
-head(clusters)
-
-cbcl_nausea
-
 9 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy")
 9 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired")
 9 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
 9 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
-
-format(9 * ord_reg_p(clusters, cbcl_depress, "cbcl_depress"), scientific = FALSE)
-
 9 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety")
-
 9 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention")
-
 9 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive")
+
+
+pval_vec <- c(
+    9 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea"), # 0.0001365547 uncorrected
+    9 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy"),
+    9 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired"),
+    9 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more"),
+    9 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less"),
+    9 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety"),
+    9 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention"),
+    9 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive"))
+
+mean(pval_vec)
 
 c1_df <- comparison_df |> dplyr::filter(cluster == 1)
 c2_df <- comparison_df |> dplyr::filter(cluster == 2)
@@ -739,30 +744,6 @@ length(which(c2_df$cbcl_aggressive > 0)) / nrow(c2_df) * 100
 ## Label propagation
 ```{r}
 library(SNFtool)
-
-# Create the training and test data
-n = floor(0.8*length(label)) # number of training cases
-trainSample = sample.int(length(label), n)
-train = lapply(dataL, function(x) x[trainSample, ]) # Use the first 150 samples for training
-test = lapply(dataL, function(x) x[-trainSample, ]) # Test the rest of the data set
-groups = label[trainSample]
-
-# Set the other
-K = 20
-alpha = 0.5
-t = 20
-method = TRUE
-
-# Apply the prediction function to the data
-newLabel = groupPredict(train,test,groups,K,alpha,t,method)
-
-head(train[[2]])
-
-label
-
-# Compare the prediction accuracy
-accuracy = sum(label[-trainSample] == newLabel[-c(1:n)])/(length(label) - n)
-accuracy
 
 # Now for my demo version lol
 as_mtbi_loc <-
@@ -1045,7 +1026,7 @@ for (i in 1:length(groups)){
   return(Y);
 }
 ### End of their internal function
-Y <- .csPrediction(W = full_fused_network,Y0,method)
+Y <- .csPrediction(W = full_fused_network,Y0,method = TRUE)
 
 newgroups <- rep(0,nrow(full_fused_network))
 for (i in 1:nrow(Y)){
@@ -1146,6 +1127,163 @@ length(which(c2_test_df$cbcl_anxiety > 0)) / nrow(c2_test_df) * 100
 length(which(c2_test_df$cbcl_attention > 0)) / nrow(c2_test_df) * 100
 length(which(c2_test_df$cbcl_aggressive > 0)) / nrow(c2_test_df) * 100
 # THIS IS WHERE I LEFT OFF ON THURSDAY AT 3 AM
+
+
+# More rigorous random simulation based testing
+c1_test_df
+c2_test_df
+
+c1_test_df$cbcl_total <- c1_test_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+c2_test_df$cbcl_total <- c2_test_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+c1_impaired_frac <- length(which(c1_test_df$cbcl_total > 0)) / nrow(c1_test_df)
+c2_impaired_frac <- length(which(c2_test_df$cbcl_total > 0)) / nrow(c2_test_df)
+
+true_diff <- c1_impaired_frac - c2_impaired_frac
+
+true_diff
+
+test_evaluation_df$cbcl_total <- test_evaluation_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+test_evaluation_df
+
+# Trying to pull out random splits of the testing data
+vector <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- sample.int(66, 1)
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "cbcl_total")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "cbcl_total")]
+    c1_impaired_frac <- length(which(mock_c1_df$cbcl_total > 0)) / nrow(mock_c1_df)
+    c2_impaired_frac <- length(which(mock_c2_df$cbcl_total > 0)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    vector <- c(vector, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector)
+1 - percentile(true_diff) # The p-value
+# This is an essential plot
+hist(vector,col="gray",las=1,main="", breaks=30)
+abline(v=true_diff,col="red")
+
+
+true_diff
+
+
+data=rnorm(1000)
+
+# Get the density estimate
+dens=density(vector)
+
+
+# Plot y-values scaled by number of observations against x values
+plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate")
+
+
+```
+
+## Input variable characterization
+
+```{r}
+
+d_sex_train <- d_sex[d_sex$subjectkey %in% training_subs, ]
+
+train_input_char <- list(clusters,
+    as_mtbi_loc_train,
+    as_mtbi_mechanism_train,
+    as_mtbi_mem_daze_train,
+    d_income_train,
+    d_interview_age_train,
+    d_mtbi_age_train,
+    d_pubertal_status_train,
+    d_race_train,
+    d_sex_train,
+    mh_headaches_train,
+    mh_mtbi_count_train,
+    p_loneliness_train,
+    p_screen_time_train,
+    p_family_function_train,
+    p_sports_train,
+    p_prosocial_train,
+    p_parent_psych_train,
+    p_exercise_train)
+
+
+
+input_df <- train_input_char |>
+    purrr::reduce(dplyr::inner_join, by = "subjectkey")
+
+colnames(input_df)
+
+c1in <- input_df[input_df$cluster == 1, ]
+c2in <- input_df[input_df$cluster == 2, ]
+
+# More females in c1
+length(which(c1in$M == 0)) / length(c1in$M) # 46% F
+length(which(c2in$M == 0)) / length(c2in$M) # 37% F
+
+# NS
+t.test(c1in$interview_age, c2in$interview_age)
+
+# NS
+t.test(c1in$latest_mtbi_age, c2in$latest_mtbi_age)
+
+# More LOC in c1
+length(which(c1in$latest_mtbi_loc == 1)) / length(c1in$latest_mtbi_loc) # 30%
+length(which(c2in$latest_mtbi_loc == 1)) / length(c2in$latest_mtbi_loc) # 19%
+
+# p = 2.06e-07; significantly higher pubertal status in c1
+t.test(c1in$pubertal_status, c2in$pubertal_status)
+# Note that age is not significantly different, but pubertal status is
+# Expected given females go through puberty earlier?
+
+# More concussions in C2? strange
+t.test(c1in$mtbi_count, c2in$mtbi_count)
+
+
+t.test(c1in$mtbi_count, c2in$mtbi_count)
+
+# This is actually fire emoji
+pvals <- c(
+    t.test(c1in$asr_scr_perstr_r, c2in$asr_scr_perstr_r)$p.value,
+    t.test(c1in$asr_scr_anxdep_r, c2in$asr_scr_anxdep_r)$p.value,
+    t.test(c1in$asr_scr_withdrawn_r, c2in$asr_scr_withdrawn_r)$p.value,
+    t.test(c1in$asr_scr_somatic_r, c2in$asr_scr_somatic_r)$p.value,
+    t.test(c1in$asr_scr_thought_r, c2in$asr_scr_thought_r)$p.value,
+    t.test(c1in$asr_scr_attention_r, c2in$asr_scr_attention_r)$p.value,
+    t.test(c1in$asr_scr_aggressive_r, c2in$asr_scr_aggressive_r)$p.value,
+    t.test(c1in$asr_scr_rulebreak_r, c2in$asr_scr_rulebreak_r)$p.value,
+    t.test(c1in$asr_scr_intrusive_r, c2in$asr_scr_intrusive_r)$p.value,
+    t.test(c1in$asr_scr_internal_r, c2in$asr_scr_internal_r)$p.value,
+    t.test(c1in$asr_scr_external_r, c2in$asr_scr_external_r)$p.value,
+    t.test(c1in$asr_scr_totprob_r, c2in$asr_scr_totprob_r)$p.value,
+    t.test(c1in$asr_scr_depress_r, c2in$asr_scr_depress_r)$p.value,
+    t.test(c1in$asr_scr_anxdisord_r, c2in$asr_scr_anxdisord_r)$p.value,
+    t.test(c1in$asr_scr_somaticpr_r, c2in$asr_scr_somaticpr_r)$p.value,
+    t.test(c1in$asr_scr_avoidant_r, c2in$asr_scr_avoidant_r)$p.value,
+    t.test(c1in$asr_scr_adhd_r, c2in$asr_scr_adhd_r)$p.value,
+    t.test(c1in$asr_scr_antisocial_r, c2in$asr_scr_antisocial_r)$p.value,
+    t.test(c1in$asr_scr_inattention_r, c2in$asr_scr_inattention_r)$p.value,
+    t.test(c1in$asr_scr_hyperactive_r, c2in$asr_scr_hyperactive_r)$p.value)
+
+mean(pvals)
+
+physical_activity1_y
+physical_activity2_y
+
 ```
 
 
