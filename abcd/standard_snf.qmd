@@ -285,7 +285,7 @@ output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
 output_matrix$mean_p_val <- as.numeric(output_matrix$mean_p_val)
 output_matrix$min_p_val <- as.numeric(output_matrix$min_p_val)
 
-write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om.csv"))
+# write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om.csv"))
 
 min(output_matrix$min_p_val)
 min(output_matrix$mean_p_val)
@@ -395,26 +395,30 @@ cbcl_depress <- cbcl_depress_r |>
     dplyr::mutate(cbcl_depress = dplyr::case_when(
         cbcl_depress_r < depress_threshold_borderline ~ 0,
         cbcl_depress_r < depress_threshold_clinical ~ 1,
-        TRUE ~ 2))
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_depress")
 
 cbcl_anxiety <- cbcl_anxiety_r |>
     dplyr::mutate(cbcl_anxiety = dplyr::case_when(
         cbcl_anxiety_r < anxiety_threshold_borderline ~ 0,
         cbcl_anxiety_r < anxiety_threshold_clinical ~ 1,
-        TRUE ~ 2))
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_anxiety")
 
 cbcl_attention <- cbcl_attention_r |>
     dplyr::mutate(cbcl_attention = dplyr::case_when(
         cbcl_attention_r < attention_threshold_borderline ~ 0,
         cbcl_attention_r < attention_threshold_clinical ~ 1,
-        TRUE ~ 2))
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_attention")
+
 
 cbcl_aggressive <- cbcl_aggressive_r |>
     dplyr::mutate(cbcl_aggressive = dplyr::case_when(
         cbcl_aggressive_r < aggressive_threshold_borderline ~ 0,
         cbcl_aggressive_r < aggressive_threshold_clinical ~ 1,
-        TRUE ~ 2))
-
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_aggressive")
 
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mechanism = as_mtbi_mechanism,
@@ -452,10 +456,10 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_overtired = cbcl_overtired,
                                       cbcl_sleeping_more = cbcl_sleeping_more,
                                       cbcl_sleeping_less = cbcl_sleeping_less,
-                                      cbcl_depress_r = cbcl_depress,
-                                      cbcl_anxiety_r = cbcl_anxiety,
-                                      cbcl_attention_r = cbcl_attention,
-                                      cbcl_aggressive_r = cbcl_aggressive,
+                                      cbcl_depress = cbcl_depress,
+                                      cbcl_anxiety = cbcl_anxiety,
+                                      cbcl_attention = cbcl_attention,
+                                      cbcl_aggressive = cbcl_aggressive,
                                       sds_sleep = sds_sleep)
 
 
@@ -522,16 +526,16 @@ output_matrix_full[best, ]
 # Try the base given the psychosocial vars
 
 ```{r}
-
-b <- data_list
-
 set.seed(42)
 design_matrix_base <- build_design_matrix_base_t2()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
 design_matrix
 
-output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
+outcome_list
+
+output_matrix_full2 <- execute_design_matrix(data_list, design_matrix, outcome_list)
+#output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
 
 output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
@@ -543,7 +547,7 @@ min(output_matrix_full$min_p_val)
 min(output_matrix_full$mean_p_val)
 # These are outstanding p-values
 
-write_csv(output_matrix_full, here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
+# write_csv(output_matrix_full, here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
 mc_pvals <- p_val_select(output_matrix_full)
 
@@ -551,6 +555,9 @@ mc_pvals <- p_val_select(output_matrix_full)
 heatmap_pvals(mc_pvals)
 
 mc_results <- meta_cluster(output_matrix_full)
+
+mc_results
+
 
 # That is extremely well-separated
 pheatmap::pheatmap(mc_results)
@@ -569,13 +576,11 @@ Make sure to remove headaches from the final list of examined outcomes, as it is
 
 library(pheatmap)
 
-pheatmap::pheatmap(mc_results, border_color = FALSE)
+pheatmap(mc_results, border_color = FALSE)
 
 mc_results
 
-?pheatmap
-
-pheatmap::pheatmap(design_matrix)
+pheatmap(design_matrix)
 
 dm_scaled <- design_matrix
 
@@ -590,14 +595,24 @@ pheatmap(dm_scaled, cluster_rows = FALSE, cluster_columns = FALSE)
 
 mc_results
 
-mc_prac <- mc_results[1:5, 1:5]
-
 colnames(mc_results) <- as.character(1:nrow(mc_results))
 rownames(mc_results) <- as.character(1:nrow(mc_results))
+
+
+write_csv(data.frame(mc_results), here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))
+
+mc_results2<- as.matrix(read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
+
+
+identical(mc_results2, mc_results)
 
 out <- pheatmap(mc_results)
 
 dm_scaled_reordered <- dm_scaled[out$tree_row[["order"]], ]
+
+dm_reordered <- design_matrix[out$tree_row[["order"]], ]
+
+dm_reordered
 
 pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
 
@@ -608,15 +623,148 @@ pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
 
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 
-om_reordered
+om_row1 <- om_reordered[1, ]
+
+om_row1
 ```
 
-
-## Try to replicate this with some dummy data
-
-### Positive control to begin with
+## Are the p-values calculated properly?
 
 ```{r}
+library(ggplot2)
+
+clustered_subjects <- subs(om_reordered[1, ])
+clusters <- data.frame(t(clustered_subjects))
+clusters$id <- rownames(clusters)
+rownames(clusters) <- NULL
+colnames(clusters) <- c("cluster", "subjectkey")
+clusters <- clusters[2:nrow(clusters), ]
+clusters
+
+outcome_list <- list(
+    clusters,
+    cbcl_headaches,
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive,
+    sds_sleep)
+
+comparison_df <- outcome_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
+
+comparison_df$cluster <- as.factor(comparison_df$cluster)
+
+colnames(comparison_df)
+
+# Using ordinal regression, the p-values are very low
+9 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
+
+
+head(clusters)
+
+cbcl_nausea
+
+9 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy")
+9 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired")
+9 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
+9 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
+
+format(9 * ord_reg_p(clusters, cbcl_depress, "cbcl_depress"), scientific = FALSE)
+
+9 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety")
+
+9 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention")
+
+9 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive")
+
+c1_df <- comparison_df |> dplyr::filter(cluster == 1)
+c2_df <- comparison_df |> dplyr::filter(cluster == 2)
+
+colnames(c1_df)
+
+nrow(c1_df) # 114
+nrow(c2_df) # 139
+
+# How many borderline/clinical patients in each cluster?
+length(which(c1_df$cbcl_nausea > 0))
+length(which(c1_df$cbcl_dizzy > 0))
+length(which(c1_df$cbcl_overtired > 0))
+length(which(c1_df$cbcl_sleeping_more > 0))
+length(which(c1_df$cbcl_sleeping_less > 0))
+length(which(c1_df$cbcl_depress > 0))
+length(which(c1_df$cbcl_anxiety > 0))
+length(which(c1_df$cbcl_attention > 0))
+length(which(c1_df$cbcl_aggressive > 0))
+
+length(which(c2_df$cbcl_nausea > 0))
+length(which(c2_df$cbcl_dizzy > 0))
+length(which(c2_df$cbcl_overtired > 0))
+length(which(c2_df$cbcl_sleeping_more > 0))
+length(which(c2_df$cbcl_sleeping_less > 0))
+length(which(c2_df$cbcl_depress > 0))
+length(which(c2_df$cbcl_anxiety > 0))
+length(which(c2_df$cbcl_attention > 0))
+length(which(c2_df$cbcl_aggressive > 0))
+
+# Proportions:
+length(which(c1_df$cbcl_nausea > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_dizzy > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_overtired > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_sleeping_more > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_sleeping_less > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_depress > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_anxiety > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_attention > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_aggressive > 0)) / nrow(c1_df) * 100
+
+length(which(c2_df$cbcl_nausea > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_dizzy > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_overtired > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_sleeping_more > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_sleeping_less > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_depress > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_anxiety > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_attention > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_aggressive > 0)) / nrow(c2_df) * 100
+
+
+```
+
+## Label propagation
+```{r}
+library(SNFtool)
+
+# Create the training and test data
+n = floor(0.8*length(label)) # number of training cases
+trainSample = sample.int(length(label), n)
+train = lapply(dataL, function(x) x[trainSample, ]) # Use the first 150 samples for training
+test = lapply(dataL, function(x) x[-trainSample, ]) # Test the rest of the data set
+groups = label[trainSample]
+
+# Set the other
+K = 20
+alpha = 0.5
+t = 20
+method = TRUE
+
+# Apply the prediction function to the data
+newLabel = groupPredict(train,test,groups,K,alpha,t,method)
+
+head(train[[2]])
+
+label
+
+# Compare the prediction accuracy
+accuracy = sum(label[-trainSample] == newLabel[-c(1:n)])/(length(label) - n)
+accuracy
+
+# Now for my demo version lol
 as_mtbi_loc <-
     stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_loc_imp.csv")))
 as_mtbi_mechanism <-
@@ -701,142 +849,415 @@ nihtbx_pattern_fc <-
 nihtbx_cardsort_fc <-
     stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_cardsort_fc_imp.csv")))
 
-full_df_list <- list(mtbi_loc = as_mtbi_loc,
-    as_mtbi_mechanism,
-    as_mtbi_mem_daze,
-    d_income,
-    d_interview_age,
-    d_mtbi_age,
-    d_pubertal_status,
-    d_race,
-    d_sex,
-    mh_headaches,
-    mh_mtbi_count,
-    dm_wmndf_qc,
-    rm_gord_cor_qc,
-    rm_gord_var_qc,
-    rm_subc_cor_qc,
-    rm_subc_var_qc,
-    sm_cort_sa_qc,
-    sm_cort_t_qc,
-    sm_subc_v_qc,
-    p_loneliness,
-    p_screen_time,
-    p_family_function,
-    p_sports,
-    p_prosocial,
-    p_parent_psych,
-    p_exercise,
-    cbcl_headaches,
+cbcl_depress <- cbcl_depress_r |>
+    dplyr::mutate(cbcl_depress = dplyr::case_when(
+        cbcl_depress_r < depress_threshold_borderline ~ 0,
+        cbcl_depress_r < depress_threshold_clinical ~ 1,
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_depress")
+cbcl_anxiety <- cbcl_anxiety_r |>
+    dplyr::mutate(cbcl_anxiety = dplyr::case_when(
+        cbcl_anxiety_r < anxiety_threshold_borderline ~ 0,
+        cbcl_anxiety_r < anxiety_threshold_clinical ~ 1,
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_anxiety")
+cbcl_attention <- cbcl_attention_r |>
+    dplyr::mutate(cbcl_attention = dplyr::case_when(
+        cbcl_attention_r < attention_threshold_borderline ~ 0,
+        cbcl_attention_r < attention_threshold_clinical ~ 1,
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_attention")
+cbcl_aggressive <- cbcl_aggressive_r |>
+    dplyr::mutate(cbcl_aggressive = dplyr::case_when(
+        cbcl_aggressive_r < aggressive_threshold_borderline ~ 0,
+        cbcl_aggressive_r < aggressive_threshold_clinical ~ 1,
+        TRUE ~ 2)) |>
+    dplyr::select("subjectkey", "cbcl_aggressive")
+
+as_mtbi_loc_test <- as_mtbi_loc[as_mtbi_loc$subjectkey %in% testing_subs, ]
+as_mtbi_mechanism_test <- as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% testing_subs, ]
+as_mtbi_mem_daze_test <- as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% testing_subs, ]
+d_income_test <- d_income[d_income$subjectkey %in% testing_subs, ]
+d_interview_age_test <- d_interview_age[d_interview_age$subjectkey %in% testing_subs, ]
+d_mtbi_age_test <- d_mtbi_age[d_mtbi_age$subjectkey %in% testing_subs, ]
+d_pubertal_status_test <- d_pubertal_status[d_pubertal_status$subjectkey %in% testing_subs, ]
+d_race_test <- d_race[d_race$subjectkey %in% testing_subs, ]
+mh_headaches_test <- mh_headaches[mh_headaches$subjectkey %in% testing_subs, ]
+mh_mtbi_count_test <- mh_mtbi_count[mh_mtbi_count$subjectkey %in% testing_subs, ]
+rm_gord_cor_qc_test <- rm_gord_cor_qc[rm_gord_cor_qc$subjectkey %in% testing_subs, ]
+rm_gord_var_qc_test <- rm_gord_var_qc[rm_gord_var_qc$subjectkey %in% testing_subs, ]
+rm_subc_cor_qc_test <- rm_subc_cor_qc[rm_subc_cor_qc$subjectkey %in% testing_subs, ]
+rm_subc_var_qc_test <- rm_subc_var_qc[rm_subc_var_qc$subjectkey %in% testing_subs, ]
+sm_cort_sa_qc_test <- sm_cort_sa_qc[sm_cort_sa_qc$subjectkey %in% testing_subs, ]
+sm_cort_t_qc_test <- sm_cort_t_qc[sm_cort_t_qc$subjectkey %in% testing_subs, ]
+sm_subc_v_qc_test <- sm_subc_v_qc[sm_subc_v_qc$subjectkey %in% testing_subs, ]
+p_loneliness_test <- p_loneliness[p_loneliness$subjectkey %in% testing_subs, ]
+p_screen_time_test <- p_screen_time[p_screen_time$subjectkey %in% testing_subs, ]
+p_family_function_test <- p_family_function[p_family_function$subjectkey %in% testing_subs, ]
+p_sports_test <- p_sports[p_sports$subjectkey %in% testing_subs, ]
+p_prosocial_test <- p_prosocial[p_prosocial$subjectkey %in% testing_subs, ]
+p_parent_psych_test <- p_parent_psych[p_parent_psych$subjectkey %in% testing_subs, ]
+p_exercise_test <- p_exercise[p_exercise$subjectkey %in% testing_subs, ]
+cbcl_headaches_test <- cbcl_headaches[cbcl_headaches$subjectkey %in% testing_subs, ]
+cbcl_nausea_test <- cbcl_nausea[cbcl_nausea$subjectkey %in% testing_subs, ]
+cbcl_vomiting_test <- cbcl_vomiting[cbcl_vomiting$subjectkey %in% testing_subs, ]
+cbcl_dizzy_test <- cbcl_dizzy[cbcl_dizzy$subjectkey %in% testing_subs, ]
+cbcl_overtired_test <- cbcl_overtired[cbcl_overtired$subjectkey %in% testing_subs, ]
+cbcl_sleeping_more_test <- cbcl_sleeping_more[cbcl_sleeping_more$subjectkey %in% testing_subs, ]
+cbcl_sleeping_less_test <- cbcl_sleeping_less[cbcl_sleeping_less$subjectkey %in% testing_subs, ]
+cbcl_depress_r_test <- cbcl_depress_r[cbcl_depress_r$subjectkey %in% testing_subs, ]
+cbcl_anxiety_r_test <- cbcl_anxiety_r[cbcl_anxiety_r$subjectkey %in% testing_subs, ]
+cbcl_attention_r_test <- cbcl_attention_r[cbcl_attention_r$subjectkey %in% testing_subs, ]
+cbcl_aggressive_r_test <- cbcl_aggressive_r[cbcl_aggressive_r$subjectkey %in% testing_subs, ]
+sds_sleep_test <- sds_sleep[sds_sleep$subjectkey %in% testing_subs, ]
+
+as_mtbi_loc_train <- as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
+as_mtbi_mechanism_train <- as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% training_subs, ]
+as_mtbi_mem_daze_train <- as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% training_subs, ]
+d_income_train <- d_income[d_income$subjectkey %in% training_subs, ]
+d_interview_age_train <- d_interview_age[d_interview_age$subjectkey %in% training_subs, ]
+d_mtbi_age_train <- d_mtbi_age[d_mtbi_age$subjectkey %in% training_subs, ]
+d_pubertal_status_train <- d_pubertal_status[d_pubertal_status$subjectkey %in% training_subs, ]
+d_race_train <- d_race[d_race$subjectkey %in% training_subs, ]
+mh_headaches_train <- mh_headaches[mh_headaches$subjectkey %in% training_subs, ]
+mh_mtbi_count_train <- mh_mtbi_count[mh_mtbi_count$subjectkey %in% training_subs, ]
+rm_gord_cor_qc_train <- rm_gord_cor_qc[rm_gord_cor_qc$subjectkey %in% training_subs, ]
+rm_gord_var_qc_train <- rm_gord_var_qc[rm_gord_var_qc$subjectkey %in% training_subs, ]
+rm_subc_cor_qc_train <- rm_subc_cor_qc[rm_subc_cor_qc$subjectkey %in% training_subs, ]
+rm_subc_var_qc_train <- rm_subc_var_qc[rm_subc_var_qc$subjectkey %in% training_subs, ]
+sm_cort_sa_qc_train <- sm_cort_sa_qc[sm_cort_sa_qc$subjectkey %in% training_subs, ]
+sm_cort_t_qc_train <- sm_cort_t_qc[sm_cort_t_qc$subjectkey %in% training_subs, ]
+sm_subc_v_qc_train <- sm_subc_v_qc[sm_subc_v_qc$subjectkey %in% training_subs, ]
+p_loneliness_train <- p_loneliness[p_loneliness$subjectkey %in% training_subs, ]
+p_screen_time_train <- p_screen_time[p_screen_time$subjectkey %in% training_subs, ]
+p_family_function_train <- p_family_function[p_family_function$subjectkey %in% training_subs, ]
+p_sports_train <- p_sports[p_sports$subjectkey %in% training_subs, ]
+p_prosocial_train <- p_prosocial[p_prosocial$subjectkey %in% training_subs, ]
+p_parent_psych_train <- p_parent_psych[p_parent_psych$subjectkey %in% training_subs, ]
+p_exercise_train <- p_exercise[p_exercise$subjectkey %in% training_subs, ]
+cbcl_headaches_train <- cbcl_headaches[cbcl_headaches$subjectkey %in% training_subs, ]
+cbcl_nausea_train <- cbcl_nausea[cbcl_nausea$subjectkey %in% training_subs, ]
+cbcl_vomiting_train <- cbcl_vomiting[cbcl_vomiting$subjectkey %in% training_subs, ]
+cbcl_dizzy_train <- cbcl_dizzy[cbcl_dizzy$subjectkey %in% training_subs, ]
+cbcl_overtired_train <- cbcl_overtired[cbcl_overtired$subjectkey %in% training_subs, ]
+cbcl_sleeping_more_train <- cbcl_sleeping_more[cbcl_sleeping_more$subjectkey %in% training_subs, ]
+cbcl_sleeping_less_train <- cbcl_sleeping_less[cbcl_sleeping_less$subjectkey %in% training_subs, ]
+cbcl_depress_r_train <- cbcl_depress_r[cbcl_depress_r$subjectkey %in% training_subs, ]
+cbcl_anxiety_r_train <- cbcl_anxiety_r[cbcl_anxiety_r$subjectkey %in% training_subs, ]
+cbcl_attention_r_train <- cbcl_attention_r[cbcl_attention_r$subjectkey %in% training_subs, ]
+cbcl_aggressive_r_train <- cbcl_aggressive_r[cbcl_aggressive_r$subjectkey %in% training_subs, ]
+sds_sleep_train <- sds_sleep[sds_sleep$subjectkey %in% training_subs, ]
+
+# Begin label propagation: https://rdrr.io/cran/SNFtool/src/R/groupPredict.r
+groups <- clusters$cluster
+
+as_mtbi_loc_full <- rbind(as_mtbi_loc_train, as_mtbi_loc_test)
+as_mtbi_mechanism_full <- rbind(as_mtbi_mechanism_train, as_mtbi_mechanism_test)
+as_mtbi_mem_daze_full <- rbind(as_mtbi_mem_daze_train, as_mtbi_mem_daze_test)
+d_income_full <- rbind(d_income_train, d_income_test)
+d_interview_age_full <- rbind(d_interview_age_train, d_interview_age_test)
+d_mtbi_age_full <- rbind(d_mtbi_age_train, d_mtbi_age_test)
+d_pubertal_status_full <- rbind(d_pubertal_status_train, d_pubertal_status_test)
+d_race_full <- rbind(d_race_train, d_race_test)
+mh_headaches_full <- rbind(mh_headaches_train, mh_headaches_test)
+mh_mtbi_count_full <- rbind(mh_mtbi_count_train, mh_mtbi_count_test)
+rm_gord_cor_qc_full <- rbind(rm_gord_cor_qc_train, rm_gord_cor_qc_test)
+rm_gord_var_qc_full <- rbind(rm_gord_var_qc_train, rm_gord_var_qc_test)
+rm_subc_cor_qc_full <- rbind(rm_subc_cor_qc_train, rm_subc_cor_qc_test)
+rm_subc_var_qc_full <- rbind(rm_subc_var_qc_train, rm_subc_var_qc_test)
+sm_cort_sa_qc_full <- rbind(sm_cort_sa_qc_train, sm_cort_sa_qc_test)
+sm_cort_t_qc_full <- rbind(sm_cort_t_qc_train, sm_cort_t_qc_test)
+sm_subc_v_qc_full <- rbind(sm_subc_v_qc_train, sm_subc_v_qc_test)
+p_loneliness_full <- rbind(p_loneliness_train, p_loneliness_test)
+p_screen_time_full <- rbind(p_screen_time_train, p_screen_time_test)
+p_family_function_full <- rbind(p_family_function_train, p_family_function_test)
+p_sports_full <- rbind(p_sports_train, p_sports_test)
+p_prosocial_full <- rbind(p_prosocial_train, p_prosocial_test)
+p_parent_psych_full <- rbind(p_parent_psych_train, p_parent_psych_test)
+p_exercise_full <- rbind(p_exercise_train, p_exercise_test)
+
+full_data_list <- generate_data_list(
+                                mtbi_loc = as_mtbi_loc_full,
+                                mtbi_mechanism = as_mtbi_mechanism_full,
+                                mtbi_mem_daze = as_mtbi_mem_daze_full,
+                                income = d_income_full,
+                                interview_age = d_interview_age_full,
+                                mtbi_age = d_mtbi_age_full,
+                                pubertal_status = d_pubertal_status_full,
+                                race = d_race_full,
+                                headaches = mh_headaches_full,
+                                mtbi_count = mh_mtbi_count_full,
+                                gord_cor = rm_gord_cor_qc_full,
+                                gord_var = rm_gord_var_qc_full,
+                                subc_cor = rm_subc_cor_qc_full,
+                                subc_var = rm_subc_var_qc_full,
+                                cort_sa = sm_cort_sa_qc_full,
+                                cort_t = sm_cort_t_qc_full,
+                                subc_v = sm_subc_v_qc_full,
+                                loneliness = p_loneliness_full,
+                                screen_time = p_screen_time_full,
+                                family_function = p_family_function_full,
+                                sports = p_sports_full,
+                                prosocial = p_prosocial_full,
+                                parent_psych = p_parent_psych_full,
+                                exercise = p_exercise_full)
+    
+
+sdl(full_data_list)
+
+full_dist_list <- lapply(full_data_list,
+    function(x) {
+        get_dist_matrix(df = x$"data", input_type = x$"type")
+    })
+
+full_sim_list <- lapply(full_dist_list,
+    function(x) {
+        SNFtool::affinityMatrix(x, K = 19, sigma = 0.8)
+    })
+
+full_fused_network <- SNFtool::SNF(full_sim_list, K = 19)
+
+Y0 <- matrix(0, nrow(full_fused_network), max(groups))
+
+for (i in 1:length(groups)){
+    Y0[i,groups[i]] <- 1
+}
+
+
+## Need their internal prediction function:
+.csPrediction <- function(W,Y0,method){
+  ###This function implements the label propagation to predict the label(subtype) for new patients.	
+  ### note method is an indicator of which semi-supervised method to use
+  # method == 0 indicates to use the local and global consistency method
+  # method >0 indicates to use label propagation method.
+  alpha=0.9;
+  P= W/rowSums(W)
+  if(method==0){
+    Y= (1-alpha)* solve( diag(dim(P)[1])- alpha*P)%*%Y0;
+  } else {
+    NLabel=which(rowSums(Y0)==0)[1]-1;
+    Y=Y0;
+    for (i in 1:1000){
+      Y=P%*%Y;
+      Y[1:NLabel,]=Y0[1:NLabel,];
+    }
+  }
+  return(Y);
+}
+### End of their internal function
+Y <- .csPrediction(W = full_fused_network,Y0,method)
+
+newgroups <- rep(0,nrow(full_fused_network))
+for (i in 1:nrow(Y)){
+    newgroups[i] <- which(Y[i,] == max(Y[i,]))
+}
+
+newgroups
+
+full_clusters <- as_mtbi_loc_full[, "subjectkey"]
+full_clusters$cluster <- newgroups
+
+full_clusters
+
+labeled_test <- full_clusters[full_clusters$subjectkey %in% testing_subs, ]
+
+test_evaluation_list <- list(
+    labeled_test,
     cbcl_nausea,
     cbcl_vomiting,
     cbcl_dizzy,
     cbcl_overtired,
     cbcl_sleeping_more,
     cbcl_sleeping_less,
-    cbcl_depress_r,
-    cbcl_anxiety_r,
-    cbcl_attention_r,
-    cbcl_aggressive_r,
-    sds_sleep)
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive)
 
-shared_df <- full_df_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
+test_evaluation_df <- test_evaluation_list |>
+    purrr::reduce(dplyr::inner_join, by = "subjectkey")
 
-common_subs <- shared_df$subjectkey
+test_evaluation_df$cluster <- as.numeric(test_evaluation_df$cluster)
 
-training_subs <- train_test_split(0.8, common_subs)$training_set
-testing_subs <- train_test_split(0.8, common_subs)$testing_set
+test_clusters <- test_evaluation_df |>
+    dplyr::select("subjectkey", "cluster") |>
+    data.frame()
 
-as_mtbi_loc <-
-    as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
-as_mtbi_mechanism <-
-    as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% training_subs, ]
-as_mtbi_mem_daze <-
-    as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% training_subs, ]
-d_income <-
-    d_income[d_income$subjectkey %in% training_subs, ]
-d_interview_age <-
-    d_interview_age[d_interview_age$subjectkey %in% training_subs, ]
-d_mtbi_age <-
-    d_mtbi_age[d_mtbi_age$subjectkey %in% training_subs, ]
-d_pubertal_status <-
-    d_pubertal_status[d_pubertal_status$subjectkey %in% training_subs, ]
-d_race <-
-    d_race[d_race$subjectkey %in% training_subs, ]
-d_sex <-
-    d_sex[d_sex$subjectkey %in% training_subs, ]
-mh_headaches <-
-    mh_headaches[mh_headaches$subjectkey %in% training_subs, ]
-mh_mtbi_count <-
-    mh_mtbi_count[mh_mtbi_count$subjectkey %in% training_subs, ]
-dm_wmndf_qc <-
-    dm_wmndf_qc[dm_wmndf_qc$subjectkey %in% training_subs, ]
-rm_gord_cor_qc <-
-    rm_gord_cor_qc[rm_gord_cor_qc$subjectkey %in% training_subs, ]
-rm_gord_var_qc <-
-    rm_gord_var_qc[rm_gord_var_qc$subjectkey %in% training_subs, ]
-rm_subc_cor_qc <-
-    rm_subc_cor_qc[rm_subc_cor_qc$subjectkey %in% training_subs, ]
-rm_subc_var_qc <-
-    rm_subc_var_qc[rm_subc_var_qc$subjectkey %in% training_subs, ]
-sm_cort_sa_qc <-
-    sm_cort_sa_qc[sm_cort_sa_qc$subjectkey %in% training_subs, ]
-sm_cort_t_qc <-
-    sm_cort_t_qc[sm_cort_t_qc$subjectkey %in% training_subs, ]
-sm_subc_v_qc <-
-    sm_subc_v_qc[sm_subc_v_qc$subjectkey %in% training_subs, ]
-p_loneliness <-
-    p_loneliness[p_loneliness$subjectkey %in% training_subs, ]
-p_screen_time <-
-    p_screen_time[p_screen_time$subjectkey %in% training_subs, ]
-p_family_function <-
-    p_family_function[p_family_function$subjectkey %in% training_subs, ]
-p_sports <-
-    p_sports[p_sports$subjectkey %in% training_subs, ]
-p_prosocial <-
-    p_prosocial[p_prosocial$subjectkey %in% training_subs, ]
-p_parent_psych <-
-    p_parent_psych[p_parent_psych$subjectkey %in% training_subs, ]
-p_exercise <-
-    p_exercise[p_exercise$subjectkey %in% training_subs, ]
-cbcl_headaches <-
-    cbcl_headaches[cbcl_headaches$subjectkey %in% training_subs, ]
-cbcl_nausea <-
-    cbcl_nausea[cbcl_nausea$subjectkey %in% training_subs, ]
-cbcl_vomiting <-
-    cbcl_vomiting[cbcl_vomiting$subjectkey %in% training_subs, ]
-cbcl_dizzy <-
-    cbcl_dizzy[cbcl_dizzy$subjectkey %in% training_subs, ]
-cbcl_overtired <-
-    cbcl_overtired[cbcl_overtired$subjectkey %in% training_subs, ]
-cbcl_sleeping_more <-
-    cbcl_sleeping_more[cbcl_sleeping_more$subjectkey %in% training_subs, ]
-cbcl_sleeping_less <-
-    cbcl_sleeping_less[cbcl_sleeping_less$subjectkey %in% training_subs, ]
-cbcl_depress_r <-
-    cbcl_depress_r[cbcl_depress_r$subjectkey %in% training_subs, ]
-cbcl_anxiety_r <-
-    cbcl_anxiety_r[cbcl_anxiety_r$subjectkey %in% training_subs, ]
-cbcl_attention_r <-
-    cbcl_attention_r[cbcl_attention_r$subjectkey %in% training_subs, ]
-cbcl_aggressive_r <-
-    cbcl_aggressive_r[cbcl_aggressive_r$subjectkey %in% training_subs, ]
-sds_sleep <-
-    sds_sleep[sds_sleep$subjectkey %in% training_subs, ]
 
-dm_wmndf_qc
+
+# Using ordinal regression, the p-values are very low
+ord_reg_p(test_clusters, cbcl_dizzy, "cbcl_dizzy") # 0.0001365547
+ord_reg_p(test_clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
+ord_reg_p(test_clusters, cbcl_overtired, "cbcl_overtired")
+ord_reg_p(test_clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
+ord_reg_p(test_clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
+ord_reg_p(test_clusters, cbcl_anxiety, "cbcl_anxiety")
+ord_reg_p(test_clusters, cbcl_attention, "cbcl_attention")
+ord_reg_p(test_clusters, cbcl_aggressive, "cbcl_aggressive")
+
+c1_test_df <- test_evaluation_df |> dplyr::filter(cluster == 1)
+c2_test_df <- test_evaluation_df |> dplyr::filter(cluster == 2)
+
+colnames(c1_test_df)
+
+nrow(c1_test_df) # 4
+nrow(c2_test_df) # 63
+
+# How many borderline/clinical patients in each cluster?
+length(which(c1_test_df$cbcl_nausea > 0))
+length(which(c1_test_df$cbcl_dizzy > 0))
+length(which(c1_test_df$cbcl_overtired > 0))
+length(which(c1_test_df$cbcl_sleeping_more > 0))
+length(which(c1_test_df$cbcl_sleeping_less > 0))
+length(which(c1_test_df$cbcl_depress > 0))
+length(which(c1_test_df$cbcl_anxiety > 0))
+length(which(c1_test_df$cbcl_attention > 0))
+length(which(c1_test_df$cbcl_aggressive > 0))
+
+length(which(c2_test_df$cbcl_nausea > 0))
+length(which(c2_test_df$cbcl_dizzy > 0))
+length(which(c2_test_df$cbcl_overtired > 0))
+length(which(c2_test_df$cbcl_sleeping_more > 0))
+length(which(c2_test_df$cbcl_sleeping_less > 0))
+length(which(c2_test_df$cbcl_depress > 0))
+length(which(c2_test_df$cbcl_anxiety > 0))
+length(which(c2_test_df$cbcl_attention > 0))
+length(which(c2_test_df$cbcl_aggressive > 0))
+
+# Hm... I believe it is on to something.
+
+length(which(c1_test_df$cbcl_nausea > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_dizzy > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_overtired > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_sleeping_more > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_sleeping_less > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_depress > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_anxiety > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_attention > 0)) / nrow(c1_test_df) * 100
+length(which(c1_test_df$cbcl_aggressive > 0)) / nrow(c1_test_df) * 100
+
+length(which(c2_test_df$cbcl_nausea > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_dizzy > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_overtired > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_sleeping_more > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_sleeping_less > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_depress > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_anxiety > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_attention > 0)) / nrow(c2_test_df) * 100
+length(which(c2_test_df$cbcl_aggressive > 0)) / nrow(c2_test_df) * 100
+# THIS IS WHERE I LEFT OFF ON THURSDAY AT 3 AM
+```
 
 
 
 
-set.seed(42)
-design_matrix_base <- build_design_matrix_base_t2()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
-design_matrix
+## NMI
+```{r}
+# Below is the NMI function I previously redefined
+# full_cluster: the spectral clustering results of the full post-SNF graph
+# inputs: a list of each dataframe (not affinity or distance matrix) used
+# distance measures: a list of distance functions that map to inputs
+rankFeaturesByNMI <- function(
+    total_clustering, input_list, distance_measure_list, num_clusters,
+    k_val, a_val) {
+    # Dataframe to store the NMI of each feature from each input
+    results_df <- data.frame(
+        input = integer(),
+        feature = integer(),
+        nmi = double(),
+        stringsAsFactors=FALSE)
+    # Iterate through each feature of each input and calculate NMI
+    for (input_num in seq_along(input_list)) {
+        for (feature_num in seq_along(input_list[[input_num]])) {
+            # Some pretty printing
+            cat(paste0(
+                "\nCalculating ", "input ", input_num, "/" ,
+                length(input_list), ", ", "feature ", feature_num, "/",
+                length(input_list[[input_num]]), "..."))
+            # NMI calculation
+            distance_measure <- distance_measure_list[[input_num]]
+            input <- inputs[[input_num]]
+            feature <- input[[feature_num]]
+            d_matrix <- distance_measure(feature)
+            a_matrix <- affinityMatrix(d_matrix, k_val, a_val)
+            feature_clustering <- spectralClustering(a_matrix, num_clusters)
+            nmi <- calNMI(total_clustering, feature_clustering)
+            # Add the results to the output dataframe
+            feature_name <- colnames(input_list[[input_num]])[feature_num]
+            results_df[nrow(results_df) + 1,] =
+                list(
+                    input_num,
+                    feature_name,
+                    nmi)
+        }
+    }
+    ordered_results_df <- results_df |>
+        arrange(desc(nmi))
+    return(ordered_results_df)
+}
 
-output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
 
 ```
+
+
+
+
+## Manual sanity check of clustering results
+
+```{r}
+
+dm_reordered[1, ] # A row that should work very effectively
+
+om_reordered[1, ]$mean_p_val
+om_reordered[1, ]$min_p_val
+
+sdl(data_list)
+
+# No sex or wmndf
+as_mtbi_loc
+as_mtbi_mechanism
+as_mtbi_mem_daze
+d_income
+d_interview_age
+d_mtbi_age
+d_pubertal_status
+d_race
+mh_headaches
+mh_mtbi_count
+rm_gord_cor_qc
+rm_gord_var_qc
+rm_subc_cor_qc
+rm_subc_var_qc
+sm_cort_sa_qc
+sm_cort_t_qc
+sm_subc_v_qc
+p_loneliness
+p_screen_time
+p_family_function
+p_sports
+p_prosocial
+p_parent_psych
+p_exercise
+    
+
+# Structure containing all outcome data
+outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
+                                      cbcl_nausea = cbcl_nausea,
+                                      cbcl_vomiting = cbcl_vomiting,
+                                      cbcl_dizzy = cbcl_dizzy,
+                                      cbcl_overtired = cbcl_overtired,
+                                      cbcl_sleeping_more = cbcl_sleeping_more,
+                                      cbcl_sleeping_less = cbcl_sleeping_less,
+                                      cbcl_depress_r = cbcl_depress,
+                                      cbcl_anxiety_r = cbcl_anxiety,
+                                      cbcl_attention_r = cbcl_attention,
+                                      cbcl_aggressive_r = cbcl_aggressive,
+                                      sds_sleep = sds_sleep)
+
+
+```
+
+
 
