@@ -1,4 +1,4 @@
-# Extract and transform
+# Data extraction
 
 ## Subjects
 
@@ -36,7 +36,7 @@ The fixed nature of the questionnaire also meant that some information about mul
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
 
-```{r eval = FALSE}
+```{r}
 library(ggplot2)
 library(readr)
 library(dplyr)
@@ -52,7 +52,7 @@ mtbi_subjects <- get_mtbi_subjects(abcd_otbi01, min_latest_mtbi_mpi = 3, t = 0)
 ```
 
 
-```{r eval = FALSE}
+```{r}
 write_csv(mtbi_subjects, here("data/abcd/subjects/mtbi_subjects.csv"))
 ```
 
@@ -78,7 +78,7 @@ We are interesed in the following acute symptoms:
 
 A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
 
-```{r eval = FALSE}
+```{r}
 as_mtbi_mem_daze <-
     get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects, t = 0)
 as_mtbi_mechanism <-
@@ -87,7 +87,7 @@ as_mtbi_loc <-
     get_mtbi_loc(abcd_otbi01, mtbi_subjects, t = 0)
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(as_mtbi_mem_daze,
     here("data/abcd/inputs/pre-imputation/as_mtbi_mem_daze.csv"))
 write_csv(as_mtbi_mechanism,
@@ -107,7 +107,7 @@ Demographic variables included in the analyses are:
 * Household income
 * Pubertal development status
 
-```{r eval = FALSE}
+```{r}
 ## Demographic dataframes
 ssphp01 <- read_delim(here("data/abcd/raw/abcd_ssphp01.txt"))
 ssphy01 <- read_delim(here("data/abcd/raw/abcd_ssphy01.txt"))
@@ -138,7 +138,7 @@ The rationale for this decision can be found at (@sec-racebreakdown).
 
 
 ### Race
-```{r eval = FALSE}
+```{r}
 d_race_condensed <-
     get_race(pdem02, mtbi_subjects, "condensed_dummied", t = 0)
 d_race_expanded <-
@@ -149,7 +149,7 @@ d_race_undummied <-
 
 Subset and export the demographic input variables:
 
-```{r eval = FALSE}
+```{r}
 write_csv(d_pubertal_status,
     here("data/abcd/inputs/pre-imputation/d_pubertal_status.csv"))
 write_csv(d_interview_age,
@@ -181,7 +181,7 @@ Medical history variables of interest include:
 
 Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL##Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
 
-```{r eval = FALSE}
+```{r}
 mx01 <- read_delim(here("data/abcd/raw/abcd_mx01.txt"))
 
 ## History of headaches
@@ -193,7 +193,7 @@ mh_mtbi_count <- get_mtbi_count(abcd_otbi01, mtbi_subjects, t = 0)
 
 Subset and export the medical history variables:
 
-```{r eval = FALSE}
+```{r}
 write_csv(mh_headaches,
     here("data/abcd/inputs/pre-imputation/mh_headaches.csv"))
 write_csv(mh_mtbi_count,
@@ -217,7 +217,7 @@ The 2019 publication by Hagler et al. @UD6THTQZ##Hagler_Etal_2019 outlines the n
 The sMRI variables of interest include subcortical volumes, and cortical thicknesses, and cortical surface areas.
 
 
-```{r eval = FALSE}
+```{r}
 ## SMRI dataframes
 smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
 mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
@@ -239,7 +239,7 @@ mtbi_subjects$subjectkey[c(24, 327)]
 
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(sm_subc_v,
     here("data/abcd/inputs/pre-imputation/sm_subc_v.csv"))
 write_csv(sm_cort_t,
@@ -255,7 +255,7 @@ We are interested in the neurite density measures of white matter regions in the
 Previously, these measures were found in variables containing the string "rsindwm_cdk" within the file `mri_rsi_p102.txt`.
 A change anounced in the ABCD 4.0 MRI release notes indicates that neurite density is now referred to as "restricted normalized directional" and that the relevant white matter variables contain the string "rsirndwm" within the file `abcd_drsip201.txt`.
 
-```{r eval = FALSE}
+```{r}
 ## DMRI dataframe
 drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 
@@ -263,7 +263,7 @@ drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 dm_wmndf <- get_wmnd(drsip201, mtbi_subjects, t = 0)
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(dm_wmndf,
     here("data/abcd/inputs/pre-imputation/dm_wmndf.csv"))
 ```
@@ -277,7 +277,7 @@ We are interested in the following rs-fMRI measures:
 - Subcortical correlations
 - Gordon and subcortical temporal variances
 
-```{r eval = FALSE}
+```{r}
 betnet02 <- read_delim(here("data/abcd/raw/abcd_betnet02.txt"))
 mrirscor02 <- read_delim(here("data/abcd/raw/mrirscor02.txt"))
 mrirstv02 <- read_delim(here("data/abcd/raw/abcd_mrirstv02.txt"))
@@ -296,7 +296,7 @@ rm_gord_var <- get_gord_var(mrirstv02, mtbi_subjects, t = 0)
 rm_subc_var <- get_subc_var(mrirstv02, mtbi_subjects, t = 0)
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(rm_gord_cor,
     here("data/abcd/inputs/pre-imputation/rm_gord_cor.csv"))
 write_csv(rm_subc_cor,
@@ -318,7 +318,7 @@ Psychosocial factors of interest include:
 * prosocial behaviour
 * parent psychopathology
 
-```{r eval = FALSE}
+```{r}
 abcd_ysr01 <- read_delim(here("data/abcd/raw/abcd_ysr01.txt"))
 stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
 fes02 <- read_delim(here("data/abcd/raw/fes02.txt"))
@@ -355,7 +355,7 @@ p_exercise
 
 Subset and export the psychosocial resilience variables:
 
-```{r eval = FALSE}
+```{r}
 write_csv(p_loneliness,
     here("data/abcd/inputs/pre-imputation/p_loneliness.csv"))
 write_csv(p_screen_time,
@@ -377,7 +377,7 @@ write_csv(p_exercise,
 
 ### Child behaviour checklist
 
-```{r eval = FALSE}
+```{r}
 abcd_cbcl01 <- read_delim(here("data/abcd/raw/abcd_cbcl01.txt"))
 abcd_cbcls01 <- read_delim(here("data/abcd/raw/abcd_cbcls01.txt"))
 
@@ -394,7 +394,7 @@ cbcl_attention_r <- get_cbcl_attention_r(abcd_cbcls01, mtbi_subjects, t = 0)
 cbcl_aggressive_r <- get_cbcl_aggressive_r(abcd_cbcls01, mtbi_subjects, t = 0)
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(cbcl_headaches,
     here("data/abcd/outputs/pre-imputation/cbcl_headaches.csv"))
 write_csv(cbcl_nausea,
@@ -419,8 +419,6 @@ write_csv(cbcl_aggressive_r,
     here("data/abcd/outputs/pre-imputation/cbcl_aggressive_r.csv"))
 ```
 
-
-
 ### NIH Toolbox
 
 ```{r}
@@ -431,7 +429,7 @@ nihtbx_pattern_fc <- get_nihtbx_pattern_fc(abcd_tbss01, mtbi_subjects, t = 0)
 nihtbx_cardsort_fc <- get_nihtbx_cardsort_fc(abcd_tbss01, mtbi_subjects, t = 0)
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(nihtbx_list_fc,
     here("data/abcd/outputs/pre-imputation/nihtbx_list_fc.csv"))
 write_csv(nihtbx_pattern_fc,
@@ -439,7 +437,6 @@ write_csv(nihtbx_pattern_fc,
 write_csv(nihtbx_cardsort_fc,
     here("data/abcd/outputs/pre-imputation/nihtbx_cardsort_fc.csv"))
 ```
-
 
 ### Sleep disturbance scale
 
@@ -449,7 +446,7 @@ abcd_sds01 <- read_delim(here("data/abcd/raw/abcd_sds01.txt"))
 sds_sleep_df <- get_full_sleep_df(abcd_sds01, mtbi_subjects, t = 0)
 ```
 
-```{r eval = FALSE}
+```{r}
 write_csv(sds_sleep_df,
     here("data/abcd/outputs/pre-imputation/sds_sleep_df.csv"))
 ```

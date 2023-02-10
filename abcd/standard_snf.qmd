@@ -9,102 +9,64 @@ library(scabcd)
 library(readr)
 library(here)
 
-# Inputs
-load_inputs <- function(filename) {
-    df <- read_csv(here(paste0("data/abcd/inputs/post-imputation/", filename)))
+# Function to import data from carbon
+load_inputs <- function(filename, imputed = TRUE) {
+    if (imputed) {
+        impute_str <- "post-imputation/"
+    } else {
+        impute_str <- "pre-imputation/"
+    }
+    df <- read_csv(here(paste0("data/abcd/inputs/", impute_str, filename)),
+        show_col_types = FALSE)
+    return(stats::na.omit(df))
 }
 
-as_mtbi_loc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_loc_imp.csv")))
-as_mtbi_mechanism <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_mechanism_imp.csv")))
-as_mtbi_mem_daze <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/as_mtbi_mem_daze_imp.csv")))
-d_income <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_income_imp.csv")))
-d_interview_age <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_interview_age_imp.csv")))
-d_mtbi_age <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_mtbi_age_imp.csv")))
-d_pubertal_status <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_pubertal_status_imp.csv")))
-d_race <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_race_imp.csv")))
-d_sex <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/d_sex_imp.csv")))
-mh_headaches <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/mh_headaches_imp.csv")))
-mh_mtbi_count <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/mh_mtbi_count_imp.csv")))
-dm_wmndf_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/dm_wmndf_qc.csv")))
-rm_gord_cor_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_gord_cor_qc.csv")))
-rm_gord_var_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_gord_var_qc.csv")))
-rm_subc_cor_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_subc_cor_qc.csv")))
-rm_subc_var_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/rm_subc_var_qc.csv")))
-sm_cort_sa_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/sm_cort_sa_qc.csv")))
-sm_cort_t_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/sm_cort_t_qc.csv")))
-sm_subc_v_qc <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/pre-imputation/sm_subc_v_qc.csv")))
-p_loneliness <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_loneliness_imp.csv")))
-p_screen_time <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_screen_time_imp.csv")))
-p_family_function <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_family_function_imp.csv")))
-p_sports <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_sports_imp.csv")))
-p_prosocial <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_prosocial_imp.csv")))
-p_parent_psych <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_parent_psych_imp.csv")))
-p_exercise <-
-    stats::na.omit(read_csv(here("data/abcd/inputs/post-imputation/p_exercise_imp.csv")))
+# Importing data
+as_mtbi_loc <- load_inputs("as_mtbi_loc_imp.csv")
+as_mtbi_mechanism <- load_inputs("as_mtbi_mechanism_imp.csv")
+as_mtbi_mem_daze <- load_inputs("as_mtbi_mem_daze_imp.csv")
+d_income <- load_inputs("d_income_imp.csv")
+d_interview_age <- load_inputs("d_interview_age_imp.csv")
+d_mtbi_age <- load_inputs("d_mtbi_age_imp.csv")
+d_pubertal_status <- load_inputs("d_pubertal_status_imp.csv")
+d_race <- load_inputs("d_race_imp.csv")
+d_sex <- load_inputs("d_sex_imp.csv")
+mh_headaches <- load_inputs("mh_headaches_imp.csv")
+mh_mtbi_count <- load_inputs("mh_mtbi_count_imp.csv")
+dm_wmndf_qc <- load_inputs("dm_wmndf_qc.csv", imputed = FALSE)
+rm_gord_cor_qc <- load_inputs("rm_gord_cor_qc.csv", imputed = FALSE)
+rm_gord_var_qc <- load_inputs("rm_gord_var_qc.csv", imputed = FALSE)
+rm_subc_cor_qc <- load_inputs("rm_subc_cor_qc.csv", imputed = FALSE)
+rm_subc_var_qc <- load_inputs("rm_subc_var_qc.csv", imputed = FALSE)
+sm_cort_sa_qc <- load_inputs("sm_cort_sa_qc.csv", imputed = FALSE)
+sm_cort_t_qc <- load_inputs("sm_cort_t_qc.csv", imputed = FALSE)
+sm_subc_v_qc <- load_inputs("sm_subc_v_qc.csv", imputed = FALSE)
+p_loneliness <- load_inputs("p_loneliness_imp.csv")
+p_screen_time <- load_inputs("p_screen_time_imp.csv")
+p_family_function <- load_inputs("p_family_function_imp.csv")
+p_sports <- load_inputs("p_sports_imp.csv")
+p_prosocial <- load_inputs("p_prosocial_imp.csv")
+p_parent_psych <- load_inputs("p_parent_psych_imp.csv")
+p_exercise <- load_inputs("p_exercise_imp.csv")
 # Outcomes
-cbcl_headaches <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_headaches_imp.csv")))
-cbcl_nausea <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_nausea_imp.csv")))
-cbcl_vomiting <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_vomiting_imp.csv")))
-cbcl_dizzy <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_dizzy_imp.csv")))
-cbcl_overtired <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_overtired_imp.csv")))
-cbcl_sleeping_more <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_sleeping_more_imp.csv")))
-cbcl_sleeping_less <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_sleeping_less_imp.csv")))
-cbcl_depress_r <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_depress_r_imp.csv")))
-cbcl_anxiety_r <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_anxiety_r_imp.csv")))
-cbcl_attention_r <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_attention_r_imp.csv")))
-cbcl_aggressive_r <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/cbcl_aggressive_r_imp.csv")))
-sds_sleep <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/sds_sleep_imp.csv")))
-nihtbx_list_fc <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_list_fc_imp.csv")))
-nihtbx_pattern_fc <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_pattern_fc_imp.csv")))
-nihtbx_cardsort_fc <-
-    stats::na.omit(read_csv(here("data/abcd/outputs/post-imputation/nihtbx_cardsort_fc_imp.csv")))
-```
+cbcl_headaches <- load_inputs("cbcl_headaches_imp.csv")
+cbcl_nausea <- load_inputs("cbcl_nausea_imp.csv")
+cbcl_vomiting <- load_inputs("cbcl_vomiting_imp.csv")
+cbcl_dizzy <- load_inputs("cbcl_dizzy_imp.csv")
+cbcl_overtired <- load_inputs("cbcl_overtired_imp.csv")
+cbcl_sleeping_more <- load_inputs("cbcl_sleeping_more_imp.csv")
+cbcl_sleeping_less <- load_inputs("cbcl_sleeping_less_imp.csv")
+cbcl_depress_r <- load_inputs("cbcl_depress_r_imp.csv")
+cbcl_anxiety_r <- load_inputs("cbcl_anxiety_r_imp.csv")
+cbcl_attention_r <- load_inputs("cbcl_attention_r_imp.csv")
+cbcl_aggressive_r <- load_inputs("cbcl_aggressive_r_imp.csv")
+sds_sleep <- load_inputs("sds_sleep_imp.csv")
+nihtbx_list_fc <- load_inputs("nihtbx_list_fc_imp.csv")
+nihtbx_pattern_fc <- load_inputs("nihtbx_pattern_fc_imp.csv")
+nihtbx_cardsort_fc <- load_inputs("nihtbx_cardsort_fc_imp.csv")
 
 
-## Filtering to common subjects and separating training/testing splits
-
-This block is used to only keep subjects with complete data (post-imputation)
-
-```{r eval = FALSE}
+# Filtering to common subjects
 full_df_list <- list(mtbi_loc = as_mtbi_loc,
     as_mtbi_mechanism,
     as_mtbi_mem_daze,
@@ -148,85 +110,80 @@ shared_df <- full_df_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
 
 common_subs <- shared_df$subjectkey
 
+# Splitting into training and testing sets
 training_subs <- train_test_split(0.8, common_subs)$training_set
 testing_subs <- train_test_split(0.8, common_subs)$testing_set
 
-as_mtbi_loc <-
-    as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
-as_mtbi_mechanism <-
-    as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% training_subs, ]
-as_mtbi_mem_daze <-
-    as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% training_subs, ]
-d_income <-
-    d_income[d_income$subjectkey %in% training_subs, ]
-d_interview_age <-
-    d_interview_age[d_interview_age$subjectkey %in% training_subs, ]
-d_mtbi_age <-
-    d_mtbi_age[d_mtbi_age$subjectkey %in% training_subs, ]
-d_pubertal_status <-
-    d_pubertal_status[d_pubertal_status$subjectkey %in% training_subs, ]
-d_race <-
-    d_race[d_race$subjectkey %in% training_subs, ]
-d_sex <-
-    d_sex[d_sex$subjectkey %in% training_subs, ]
-mh_headaches <-
-    mh_headaches[mh_headaches$subjectkey %in% training_subs, ]
-mh_mtbi_count <-
-    mh_mtbi_count[mh_mtbi_count$subjectkey %in% training_subs, ]
-dm_wmndf_qc <-
-    dm_wmndf_qc[dm_wmndf_qc$subjectkey %in% training_subs, ]
-rm_gord_cor_qc <-
-    rm_gord_cor_qc[rm_gord_cor_qc$subjectkey %in% training_subs, ]
-rm_gord_var_qc <-
-    rm_gord_var_qc[rm_gord_var_qc$subjectkey %in% training_subs, ]
-rm_subc_cor_qc <-
-    rm_subc_cor_qc[rm_subc_cor_qc$subjectkey %in% training_subs, ]
-rm_subc_var_qc <-
-    rm_subc_var_qc[rm_subc_var_qc$subjectkey %in% training_subs, ]
-sm_cort_sa_qc <-
-    sm_cort_sa_qc[sm_cort_sa_qc$subjectkey %in% training_subs, ]
-sm_cort_t_qc <-
-    sm_cort_t_qc[sm_cort_t_qc$subjectkey %in% training_subs, ]
-sm_subc_v_qc <-
-    sm_subc_v_qc[sm_subc_v_qc$subjectkey %in% training_subs, ]
-p_loneliness <-
-    p_loneliness[p_loneliness$subjectkey %in% training_subs, ]
-p_screen_time <-
-    p_screen_time[p_screen_time$subjectkey %in% training_subs, ]
-p_family_function <-
-    p_family_function[p_family_function$subjectkey %in% training_subs, ]
-p_sports <-
-    p_sports[p_sports$subjectkey %in% training_subs, ]
-p_prosocial <-
-    p_prosocial[p_prosocial$subjectkey %in% training_subs, ]
-p_parent_psych <-
-    p_parent_psych[p_parent_psych$subjectkey %in% training_subs, ]
-p_exercise <-
-    p_exercise[p_exercise$subjectkey %in% training_subs, ]
-cbcl_headaches <-
-    cbcl_headaches[cbcl_headaches$subjectkey %in% training_subs, ]
-cbcl_nausea <-
-    cbcl_nausea[cbcl_nausea$subjectkey %in% training_subs, ]
-cbcl_vomiting <-
-    cbcl_vomiting[cbcl_vomiting$subjectkey %in% training_subs, ]
-cbcl_dizzy <-
-    cbcl_dizzy[cbcl_dizzy$subjectkey %in% training_subs, ]
-cbcl_overtired <-
-    cbcl_overtired[cbcl_overtired$subjectkey %in% training_subs, ]
-cbcl_sleeping_more <-
-    cbcl_sleeping_more[cbcl_sleeping_more$subjectkey %in% training_subs, ]
-cbcl_sleeping_less <-
-    cbcl_sleeping_less[cbcl_sleeping_less$subjectkey %in% training_subs, ]
-cbcl_depress_r <-
-    cbcl_depress_r[cbcl_depress_r$subjectkey %in% training_subs, ]
-cbcl_anxiety_r <-
-    cbcl_anxiety_r[cbcl_anxiety_r$subjectkey %in% training_subs, ]
-cbcl_attention_r <-
-    cbcl_attention_r[cbcl_attention_r$subjectkey %in% training_subs, ]
-cbcl_aggressive_r <-
-    cbcl_aggressive_r[cbcl_aggressive_r$subjectkey %in% training_subs, ]
-sds_sleep <-
-    sds_sleep[sds_sleep$subjectkey %in% training_subs, ]
+# Isolating training subjects for clustering
+textvar <- function(var) {
+    return(deparse(substitute(var)))
+}
+
+
+
+keep_split <- function(df, split_subs) {
+    split_df <- df[df$subjectkey %in% split_subs, ]
+    return(split_df)
+}
+
+keep_split(as_mtbi_loc, training_subs)
+
+as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
+
+dog <- "subjectkey"
+
+eval(dog)
+
+a <- c(as_mtbi_loc[, eval(dog)])[[1]]
+
+b <- as_mtbi_loc$subjectkey
+
+b
+
+identical(a, b)
+
+# Rename these to "train" later
+
+
+as_mtbi_mechanism <- as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% training_subs, ]
+as_mtbi_mem_daze <- as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% training_subs, ]
+d_income <- d_income[d_income$subjectkey %in% training_subs, ]
+d_interview_age <- d_interview_age[d_interview_age$subjectkey %in% training_subs, ]
+d_mtbi_age <- d_mtbi_age[d_mtbi_age$subjectkey %in% training_subs, ]
+d_pubertal_status <- d_pubertal_status[d_pubertal_status$subjectkey %in% training_subs, ]
+d_race <- d_race[d_race$subjectkey %in% training_subs, ]
+d_sex <- d_sex[d_sex$subjectkey %in% training_subs, ]
+mh_headaches <- mh_headaches[mh_headaches$subjectkey %in% training_subs, ]
+mh_mtbi_count <- mh_mtbi_count[mh_mtbi_count$subjectkey %in% training_subs, ]
+dm_wmndf_qc <- dm_wmndf_qc[dm_wmndf_qc$subjectkey %in% training_subs, ]
+rm_gord_cor_qc <- rm_gord_cor_qc[rm_gord_cor_qc$subjectkey %in% training_subs, ]
+rm_gord_var_qc <- rm_gord_var_qc[rm_gord_var_qc$subjectkey %in% training_subs, ]
+rm_subc_cor_qc <- rm_subc_cor_qc[rm_subc_cor_qc$subjectkey %in% training_subs, ]
+rm_subc_var_qc <- rm_subc_var_qc[rm_subc_var_qc$subjectkey %in% training_subs, ]
+sm_cort_sa_qc <- sm_cort_sa_qc[sm_cort_sa_qc$subjectkey %in% training_subs, ]
+sm_cort_t_qc <- sm_cort_t_qc[sm_cort_t_qc$subjectkey %in% training_subs, ]
+sm_subc_v_qc <- sm_subc_v_qc[sm_subc_v_qc$subjectkey %in% training_subs, ]
+p_loneliness <- p_loneliness[p_loneliness$subjectkey %in% training_subs, ]
+p_screen_time <- p_screen_time[p_screen_time$subjectkey %in% training_subs, ]
+p_family_function <- p_family_function[p_family_function$subjectkey %in% training_subs, ]
+p_sports <- p_sports[p_sports$subjectkey %in% training_subs, ]
+p_prosocial <- p_prosocial[p_prosocial$subjectkey %in% training_subs, ]
+p_parent_psych <- p_parent_psych[p_parent_psych$subjectkey %in% training_subs, ]
+p_exercise <- p_exercise[p_exercise$subjectkey %in% training_subs, ]
+cbcl_headaches <- cbcl_headaches[cbcl_headaches$subjectkey %in% training_subs, ]
+cbcl_nausea <- cbcl_nausea[cbcl_nausea$subjectkey %in% training_subs, ]
+cbcl_vomiting <- cbcl_vomiting[cbcl_vomiting$subjectkey %in% training_subs, ]
+cbcl_dizzy <- cbcl_dizzy[cbcl_dizzy$subjectkey %in% training_subs, ]
+cbcl_overtired <- cbcl_overtired[cbcl_overtired$subjectkey %in% training_subs, ]
+cbcl_sleeping_more <- cbcl_sleeping_more[cbcl_sleeping_more$subjectkey %in% training_subs, ]
+cbcl_sleeping_less <- cbcl_sleeping_less[cbcl_sleeping_less$subjectkey %in% training_subs, ]
+cbcl_depress_r <- cbcl_depress_r[cbcl_depress_r$subjectkey %in% training_subs, ]
+cbcl_anxiety_r <- cbcl_anxiety_r[cbcl_anxiety_r$subjectkey %in% training_subs, ]
+cbcl_attention_r <- cbcl_attention_r[cbcl_attention_r$subjectkey %in% training_subs, ]
+cbcl_aggressive_r <- cbcl_aggressive_r[cbcl_aggressive_r$subjectkey %in% training_subs, ]
+sds_sleep <- sds_sleep[sds_sleep$subjectkey %in% training_subs, ]
+
+
 ```
 
 
@@ -661,6 +618,7 @@ comparison_df <- outcome_list |> purrr::reduce(dplyr::inner_join, by = "subjectk
 
 comparison_df$cluster <- as.factor(comparison_df$cluster)
 
+
 colnames(comparison_df)
 
 dim(comparison_df)
@@ -738,6 +696,54 @@ length(which(c2_df$cbcl_anxiety > 0)) / nrow(c2_df) * 100
 length(which(c2_df$cbcl_attention > 0)) / nrow(c2_df) * 100
 length(which(c2_df$cbcl_aggressive > 0)) / nrow(c2_df) * 100
 
+
+c1_df$cbcl_total <- c1_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+c2_df$cbcl_total <- c2_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+c1_df$cbcl_total[c1_df$cbcl_total > 0] <- 1
+c2_df$cbcl_total[c2_df$cbcl_total > 0] <- 1
+
+c1_df
+
+# Odds ratio calcs
+c1_bad <- length(which(c1_df$cbcl_total > 0))
+c1_good <- length(which(c1_df$cbcl_total == 0))
+c2_bad <- length(which(c2_df$cbcl_total > 0))
+c2_good <- length(which(c2_df$cbcl_total == 0))
+
+# C2 ~ Not exposed
+# C1 ~ Exposed
+# good ~ Healthy
+# bad ~ Diseased
+
+odds_ratio <- function(DE, HE, DN, HN) {
+    numerator <- DE / HE
+    denominator <- DN / HN
+    return(numerator / denominator)
+}
+
+odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
+
+ors <- vector()
+for (i in 1:1000) {
+    bootstrap_c1 <- sample(c1_df$cbcl_total, replace = TRUE)
+    bootstrap_c2 <- sample(c2_df$cbcl_total, replace = TRUE)
+    c1_bad <- length(which(bootstrap_c1 > 0))
+    c1_good <- length(which(bootstrap_c1 == 0))
+    c2_bad <- length(which(bootstrap_c2 > 0))
+    c2_good <- length(which(bootstrap_c2 == 0))
+    ors <- c(ors,
+             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
+}
+
+quantile(ors, probs = c(0.05, 0.95))
+
+sample(c1_df$cbcl_total)
 
 ```
 
@@ -1065,10 +1071,8 @@ test_clusters <- test_evaluation_df |>
     data.frame()
 
 
-
-# Using ordinal regression, the p-values are very low
-ord_reg_p(test_clusters, cbcl_dizzy, "cbcl_dizzy") # 0.0001365547
-ord_reg_p(test_clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
+ord_reg_p(test_clusters, cbcl_dizzy, "cbcl_dizzy")
+ord_reg_p(test_clusters, cbcl_nausea, "cbcl_nausea")
 ord_reg_p(test_clusters, cbcl_overtired, "cbcl_overtired")
 ord_reg_p(test_clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
 ord_reg_p(test_clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
@@ -1179,7 +1183,6 @@ percentile <- ecdf(vector)
 hist(vector,col="gray",las=1,main="", breaks=30)
 abline(v=true_diff,col="red")
 
-
 true_diff
 
 
@@ -1191,6 +1194,47 @@ dens=density(vector)
 
 # Plot y-values scaled by number of observations against x values
 plot(dens$x,length(data)*dens$y,type="l",xlab="Value",ylab="Count estimate")
+
+nrow(test_evaluation_df)
+
+c1_bt <- test_evaluation_df[test_evaluation_df$cluster == 1, ]$cbcl_total
+c2_bt <- test_evaluation_df[test_evaluation_df$cluster == 2, ]$cbcl_total
+
+c1_bt
+c2_bt
+
+
+# Odds ratio calcs
+c1_bad <- length(which(c1_bt > 0))
+c1_good <- length(which(c1_bt == 0))
+c2_bad <- length(which(c2_bt > 0))
+c2_good <- length(which(c2_bt == 0))
+
+# C2 ~ Not exposed
+# C1 ~ Exposed
+# good ~ Healthy
+# bad ~ Diseased
+
+# 4.56
+odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
+
+ors <- vector()
+for (i in 1:1000) {
+    bootstrap_c1 <- sample(c1_bt, replace = TRUE)
+    bootstrap_c2 <- sample(c2_bt, replace = TRUE)
+    c1_bad <- length(which(bootstrap_c1 > 0))
+    c1_good <- length(which(bootstrap_c1 == 0))
+    c2_bad <- length(which(bootstrap_c2 > 0))
+    c2_good <- length(which(bootstrap_c2 == 0))
+    ors <- c(ors,
+             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
+}
+
+quantile(ors, probs = c(0.05, 0.95))
+
+
+sample(c1_df$cbcl_total)
+
 
 
 ```
@@ -1245,8 +1289,119 @@ t.test(c1in$latest_mtbi_age, c2in$latest_mtbi_age)
 length(which(c1in$latest_mtbi_loc == 1)) / length(c1in$latest_mtbi_loc) # 30%
 length(which(c2in$latest_mtbi_loc == 1)) / length(c2in$latest_mtbi_loc) # 19%
 
+
+
 # p = 2.06e-07; significantly higher pubertal status in c1
 t.test(c1in$pubertal_status, c2in$pubertal_status)
+
+m1 <- mean(c1in$pubertal_status)
+m2 <- mean(c2in$pubertal_status)
+sd1 <- sd(c1in$pubertal_status)
+sd2 <- sd(c2in$pubertal_status)
+n1 <- length(c1in$pubertal_status)
+n2 <- length(c2in$pubertal_status)
+
+sdp <- sqrt((sd1^2 + sd2^2)/2)
+
+(m1 - m2)/sdp
+
+
+unique(c1in$pubertal_status)
+
+unique(c2in$pubertal_status)
+
+# Bit of a strange way to do pubertal status. Anne suggested OR for a pre/post-pubertal cutoff
+
+# Odds ratio calcs
+
+
+# C2 ~ Not exposed
+# C1 ~ Exposed
+# good ~ Healthy
+# bad ~ Diseased
+
+odds_ratio <- function(DE, HE, DN, HN) {
+    numerator <- DE / HE
+    denominator <- DN / HN
+    return(numerator / denominator)
+}
+
+c1_bad <- length(which(c1in$pubertal_status > 1))
+c1_good <- length(which(c1in$pubertal_status <= 1))
+c2_bad <- length(which(c2in$pubertal_status > 1))
+c2_good <- length(which(c2in$pubertal_status <= 1))
+
+odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
+
+ors <- vector()
+for (i in 1:1000) {
+    bootstrap_c1 <- sample(c1in$pubertal_status, replace = TRUE)
+    bootstrap_c2 <- sample(c2in$pubertal_status, replace = TRUE)
+    c1_bad <- length(which(bootstrap_c1 > 1))
+    c1_good <- length(which(bootstrap_c1 <= 1))
+    c2_bad <- length(which(bootstrap_c2 > 1))
+    c2_good <- length(which(bootstrap_c2 <= 1))
+    ors <- c(ors,
+             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
+}
+
+quantile(ors, probs = c(0.05, 0.95))
+
+sample(c1_df$cbcl_total)
+
+
+# For LOC:
+c1_bad <- length(which(c1in$latest_mtbi_loc > 0))
+c1_good <- length(which(c1in$latest_mtbi_loc == 0))
+c2_bad <- length(which(c2in$latest_mtbi_loc > 0))
+c2_good <- length(which(c2in$latest_mtbi_loc == 0))
+
+odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good) # 1.87
+
+ors <- vector()
+for (i in 1:1000) {
+    bootstrap_c1 <- sample(c1in$latest_mtbi_loc, replace = TRUE)
+    bootstrap_c2 <- sample(c2in$latest_mtbi_loc, replace = TRUE)
+    c1_bad <- length(which(bootstrap_c1 > 0))
+    c1_good <- length(which(bootstrap_c1 <= 0))
+    c2_bad <- length(which(bootstrap_c2 > 0))
+    c2_good <- length(which(bootstrap_c2 <= 0))
+    ors <- c(ors,
+             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
+}
+
+quantile(ors, probs = c(0.05, 0.95))
+
+sample(c1_df$cbcl_total)
+
+
+# For being female
+c1_bad <- length(which(c1in$M == 0))
+c1_good <- length(which(c1in$M > 0))
+c2_bad <- length(which(c2in$M == 0))
+c2_good <- length(which(c2in$M > 0))
+
+odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good) # 1.87
+
+ors <- vector()
+for (i in 1:1000) {
+    bootstrap_c1 <- sample(c1in$M, replace = TRUE)
+    bootstrap_c2 <- sample(c2in$M, replace = TRUE)
+    c1_bad <- length(which(bootstrap_c1 == 0))
+    c1_good <- length(which(bootstrap_c1 > 0))
+    c2_bad <- length(which(bootstrap_c2 == 0))
+    c2_good <- length(which(bootstrap_c2 > 0))
+    ors <- c(ors,
+             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
+}
+quantile(ors, probs = c(0.05, 0.95))
+
+sample(c1_df$cbcl_total)
+
+
+
+
+
 # Note that age is not significantly different, but pubertal status is
 # Expected given females go through puberty earlier?
 
@@ -1284,13 +1439,59 @@ mean(pvals)
 physical_activity1_y
 physical_activity2_y
 
+
+
+c1in$asr_scr_perstr_r
+c1in$asr_scr_anxdep_r
+c1in$asr_scr_withdrawn_r
+c1in$asr_scr_somatic_r
+c1in$asr_scr_thought_r
+c1in$asr_scr_attention_r
+c1in$asr_scr_aggressive_r
+c1in$asr_scr_rulebreak_r
+c1in$asr_scr_intrusive_r
+c1in$asr_scr_internal_r
+c1in$asr_scr_external_r
+c1in$asr_scr_totprob_r
+c1in$asr_scr_depress_r
+c1in$asr_scr_anxdisord_r
+c1in$asr_scr_somaticpr_r
+c1in$asr_scr_avoidant_r
+c1in$asr_scr_adhd_r
+c1in$asr_scr_antisocial_r
+c1in$asr_scr_inattention_r
+c1in$asr_scr_hyperactive_r
+
+
+c1in$total_parent <- c1in |>
+    dplyr::select(dplyr::contains("asr_scr")) |>
+    rowSums()
+
+c2in$total_parent <- c2in |>
+    dplyr::select(dplyr::contains("asr_scr")) |>
+    rowSums()
+
+t.test(c1in$total_parent, c2in$total_parent)
+
+t.test(c1in$total_parent, c2in$total_parent)
+
+
+m1 <- mean(c1in$total_parent)
+m2 <- mean(c2in$total_parent)
+sd1 <- sd(c1in$total_parent)
+sd2 <- sd(c2in$total_parent)
+
+sdp <- sqrt((sd1^2 + sd2^2)/2)
+
+(m1 - m2)/sdp
+
 ```
 
 
 
 
 
-## NMI
+## Normalized mutual information calculations
 ```{r}
 # Below is the NMI function I previously redefined
 # full_cluster: the spectral clustering results of the full post-SNF graph
@@ -1334,67 +1535,18 @@ rankFeaturesByNMI <- function(
         arrange(desc(nmi))
     return(ordered_results_df)
 }
-
-
-
 ```
 
 
 
 
-## Manual sanity check of clustering results
+## Manual check of clustering results
+
+Here, I go through the SNF process for one of the design matrix rows "by hand" instead of through the design matrix function.
 
 ```{r}
-
-dm_reordered[1, ] # A row that should work very effectively
-
-om_reordered[1, ]$mean_p_val
-om_reordered[1, ]$min_p_val
-
-sdl(data_list)
-
-# No sex or wmndf
-as_mtbi_loc
-as_mtbi_mechanism
-as_mtbi_mem_daze
-d_income
-d_interview_age
-d_mtbi_age
-d_pubertal_status
-d_race
-mh_headaches
-mh_mtbi_count
-rm_gord_cor_qc
-rm_gord_var_qc
-rm_subc_cor_qc
-rm_subc_var_qc
-sm_cort_sa_qc
-sm_cort_t_qc
-sm_subc_v_qc
-p_loneliness
-p_screen_time
-p_family_function
-p_sports
-p_prosocial
-p_parent_psych
-p_exercise
-    
-
-# Structure containing all outcome data
-outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
-                                      cbcl_nausea = cbcl_nausea,
-                                      cbcl_vomiting = cbcl_vomiting,
-                                      cbcl_dizzy = cbcl_dizzy,
-                                      cbcl_overtired = cbcl_overtired,
-                                      cbcl_sleeping_more = cbcl_sleeping_more,
-                                      cbcl_sleeping_less = cbcl_sleeping_less,
-                                      cbcl_depress_r = cbcl_depress,
-                                      cbcl_anxiety_r = cbcl_anxiety,
-                                      cbcl_attention_r = cbcl_attention,
-                                      cbcl_aggressive_r = cbcl_aggressive,
-                                      sds_sleep = sds_sleep)
-
-
+# To-do
+dm_reordered[1, ]
 ```
 
 
