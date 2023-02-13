@@ -1,0 +1,58 @@
+# Assigning borderline and clinical cases to raw CBCL scores
+
+
+Borderline is 93-97th percentile, clinical is 97th percentile or higher
+
+```{r}
+
+abcd_cbcl01 <- read_delim(here("data/abcd/raw/abcd_cbcl01.txt"))
+abcd_cbcls01 <- read_delim(here("data/abcd/raw/abcd_cbcls01.txt"))
+
+# The raw scores of all children
+cbcl_depress_r_all <- get_cbcl_depress_r(abcd_cbcls01, t = 0)
+cbcl_anxiety_r_all <- get_cbcl_anxiety_r(abcd_cbcls01, t = 0)
+cbcl_attention_r_all <- get_cbcl_attention_r(abcd_cbcls01, t = 0)
+cbcl_aggressive_r_all <- get_cbcl_aggressive_r(abcd_cbcls01, t = 0)
+
+# Converting relevant columns to numeric
+cbcl_depress_r_all$cbcl_depress_r <- as.numeric(cbcl_depress_r_all$cbcl_depress_r)
+cbcl_anxiety_r_all$cbcl_anxiety_r <- as.numeric(cbcl_anxiety_r_all$cbcl_anxiety_r)
+cbcl_attention_r_all$cbcl_attention_r <- as.numeric(cbcl_attention_r_all$cbcl_attention_r)
+cbcl_aggressive_r_all$cbcl_aggressive_r <- as.numeric(cbcl_aggressive_r_all$cbcl_aggressive_r)
+
+depress_threshold_borderline <-
+    quantile(cbcl_depress_r_all$cbcl_depress_r,
+             probs = c(0.93, 0.97), na.rm = TRUE)[[1]]
+depress_threshold_clinical <-
+    quantile(cbcl_depress_r_all$cbcl_depress_r,
+             probs = c(0.93, 0.97), na.rm = TRUE)[[2]]
+anxiety_threshold_borderline <-
+    quantile(cbcl_anxiety_r_all$cbcl_anxiety_r,
+            probs = c(0.93, 0.97), na.rm = TRUE)[[1]]
+anxiety_threshold_clinical <-
+    quantile(cbcl_anxiety_r_all$cbcl_anxiety_r,
+            probs = c(0.93, 0.97), na.rm = TRUE)[[2]]
+attention_threshold_borderline <-
+    quantile(cbcl_attention_r_all$cbcl_attention_r,
+            probs = c(0.93, 0.97), na.rm = TRUE)[[1]]
+attention_threshold_clinical <-
+    quantile(cbcl_attention_r_all$cbcl_attention_r,
+            probs = c(0.93, 0.97), na.rm = TRUE)[[2]]
+aggressive_threshold_borderline <-
+    quantile(cbcl_aggressive_r_all$cbcl_aggressive_r,
+            probs = c(0.93, 0.97), na.rm = TRUE)[[1]]
+aggressive_threshold_clinical <-
+    quantile(cbcl_aggressive_r_all$cbcl_aggressive_r,
+            probs = c(0.93, 0.97), na.rm = TRUE)[[2]]
+
+depress_threshold_borderline # 5
+depress_threshold_clinical # 7
+anxiety_threshold_borderline # 6
+anxiety_threshold_clinical # 8
+attention_threshold_borderline # 9
+attention_threshold_clinical # 12
+aggressive_threshold_borderline # 11
+aggressive_threshold_clinical # 15
+```
+
+These thresholds correspond to the 93rd and 97th percentiles of behavioural impairments across all ABCD children, which define the borderline and clinical categories of impairment respectively.

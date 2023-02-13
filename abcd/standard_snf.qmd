@@ -126,19 +126,11 @@ keep_split <- function(df, split_subs) {
 
 keep_split(as_mtbi_loc, training_subs)
 
-as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
+a <- as_mtbi_loc[as_mtbi_loc$subjectkey %in% training_subs, ]
 
-dog <- "subjectkey"
 
-eval(dog)
+a
 
-a <- c(as_mtbi_loc[, eval(dog)])[[1]]
-
-b <- as_mtbi_loc$subjectkey
-
-b
-
-identical(a, b)
 
 # Rename these to "train" later
 
@@ -215,6 +207,18 @@ data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 exercise = p_exercise)
     
 
+#colnames(cbcl_depress_r) <- c("subjectkey", "cbcl_depress")
+#colnames(cbcl_anxiety_r) <- c("subjectkey", "cbcl_anxiety")
+#colnames(cbcl_attention_r) <- c("subjectkey", "cbcl_attention")
+#colnames(cbcl_aggressive_r) <- c("subjectkey", "cbcl_aggressive")
+#
+#
+#cbcl_depress <- cbcl_depress_r
+#cbcl_anxiety <- cbcl_anxiety_r
+#cbcl_attention <- cbcl_attention_r
+#cbcl_aggressive <- cbcl_aggressive_r
+
+
 # Structure containing all outcome data
 outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_nausea = cbcl_nausea,
@@ -223,15 +227,23 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_overtired = cbcl_overtired,
                                       cbcl_sleeping_more = cbcl_sleeping_more,
                                       cbcl_sleeping_less = cbcl_sleeping_less,
-                                      cbcl_depress_r = cbcl_depress_r,
-                                      cbcl_anxiety_r = cbcl_anxiety_r,
-                                      cbcl_attention_r = cbcl_attention_r,
-                                      cbcl_aggressive_r = cbcl_aggressive_r,
+                                      cbcl_depress = cbcl_depress,
+                                      cbcl_anxiety = cbcl_anxiety,
+                                      cbcl_attention = cbcl_attention,
+                                      cbcl_aggressive = cbcl_aggressive,
                                       sds_sleep = sds_sleep)
+
 
 
 # Builds a standard design matrix only exploring SNF hyperparameters
 design_matrix <- build_design_matrix_s()
+
+
+a <- "subjectkey"
+
+class(data.frame(cbcl_dizzy))
+
+b <- data.frame(cbcl_dizzy)
 
 # Assess clustering minimum p-value for an ordinal dependent variable
 output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
@@ -322,6 +334,8 @@ cbcl_anxiety_r_all <- get_cbcl_anxiety_r(abcd_cbcls01, t = 0)
 cbcl_attention_r_all <- get_cbcl_attention_r(abcd_cbcls01, t = 0)
 cbcl_aggressive_r_all <- get_cbcl_aggressive_r(abcd_cbcls01, t = 0)
 
+
+
 # Converting relevant columns to numeric
 cbcl_depress_r_all$cbcl_depress_r <- as.numeric(cbcl_depress_r_all$cbcl_depress_r)
 cbcl_anxiety_r_all$cbcl_anxiety_r <- as.numeric(cbcl_anxiety_r_all$cbcl_anxiety_r)
@@ -345,6 +359,7 @@ aggressive_threshold_borderline <-
 aggressive_threshold_clinical <-
     quantile(cbcl_aggressive_r_all$cbcl_aggressive_r, probs = c(0.93, 0.97), na.rm = TRUE)[[2]]
 
+
 cbcl_depress <- cbcl_depress_r |>
     dplyr::mutate(cbcl_depress = dplyr::case_when(
         cbcl_depress_r < depress_threshold_borderline ~ 0,
@@ -352,19 +367,14 @@ cbcl_depress <- cbcl_depress_r |>
         TRUE ~ 2)) |>
     dplyr::select("subjectkey", "cbcl_depress")
 
-cbcl_anxiety <- cbcl_anxiety_r |>
-    dplyr::mutate(cbcl_anxiety = dplyr::case_when(
-        cbcl_anxiety_r < anxiety_threshold_borderline ~ 0,
-        cbcl_anxiety_r < anxiety_threshold_clinical ~ 1,
-        TRUE ~ 2)) |>
-    dplyr::select("subjectkey", "cbcl_anxiety")
 
-cbcl_attention <- cbcl_attention_r |>
-    dplyr::mutate(cbcl_attention = dplyr::case_when(
-        cbcl_attention_r < attention_threshold_borderline ~ 0,
-        cbcl_attention_r < attention_threshold_clinical ~ 1,
-        TRUE ~ 2)) |>
-    dplyr::select("subjectkey", "cbcl_attention")
+cbcl_depress
+
+# replace subjects = a with some sort of training set
+cbcl_depress <- get_cbcl_depress(abcd_cbcls01, t = 0, raw = FALSE, subjects = a)
+cbcl_anxiety <- get_cbcl_anxiety(abcd_cbcls01, t = 0, raw = FALSE, subjects = a)
+cbcl_aggressive <- get_cbcl_aggressive(abcd_cbcls01, t = 0, raw = FALSE, subjects = a)
+cbcl_attention <- get_cbcl_attention(abcd_cbcls01, t = 0, raw = FALSE, subjects = a)
 
 
 cbcl_aggressive <- cbcl_aggressive_r |>
