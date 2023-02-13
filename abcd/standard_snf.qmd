@@ -119,8 +119,6 @@ textvar <- function(var) {
     return(deparse(substitute(var)))
 }
 
-
-
 keep_split <- function(df, split_subs) {
     split_df <- df[df$subjectkey %in% split_subs, ]
     return(split_df)
@@ -143,7 +141,6 @@ b
 identical(a, b)
 
 # Rename these to "train" later
-
 
 as_mtbi_mechanism <- as_mtbi_mechanism[as_mtbi_mechanism$subjectkey %in% training_subs, ]
 as_mtbi_mem_daze <- as_mtbi_mem_daze[as_mtbi_mem_daze$subjectkey %in% training_subs, ]
@@ -435,18 +432,29 @@ min(output_matrix$mean_p_val) # 0.2236012
 
 write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om_adjusted_cbcl.csv"))
 
-ggplot(output_matrix, mapping = aes(x = K, y = mean_p_val)) +
-    geom_point()
+std_scan_om_adj_cbcl <- read_delim(
+    here("data/abcd/results/processed/standard_scan_om_adjusted_cbcl.csv"))
 
-ggplot(output_matrix, mapping = aes(x = K, y = mean_p_val, color = alpha)) +
+
+library(ggplot2)
+
+ggplot(std_scan_om_adj_cbcl, mapping = aes(x = K, y = mean_p_val)) +
     geom_point()
+ggsave(filename = here("figures/abcd/alpha_k_scan_k_vs_meanp.png"))
+
+
+ggplot(std_scan_om_adj_cbcl, mapping = aes(x = K, y = mean_p_val, color = alpha)) +
+    geom_point()
+ggsave(filename = here("figures/abcd/alpha_k_scan_k_vs_meanp_colour.png"))
 
 # The boring NOOBs way
-ggplot(output_matrix, mapping = aes(x = min_p_val, y = mean_p_val, color = alpha)) +
+ggplot(std_scan_om_adj_cbcl, mapping = aes(x = min_p_val, y = mean_p_val, color = alpha)) +
     geom_point()
+ggsave(filename = here("figures/abcd/alpha_k_scan_minp_vs_meanp_colour.png"))
 
-ggplot(output_matrix, mapping = aes(x = K, y = alpha, size = min_p_val)) +
+ggplot(std_scan_om_adj_cbcl, mapping = aes(x = K, y = alpha, size = min_p_val)) +
     geom_point()
+ggsave(filename = here("figures/abcd/alpha_k_scan_k_vs_alpha.png"))
 
 output_matrix
 
@@ -564,7 +572,9 @@ mc_results <- as.matrix(read_delim(here("data/abcd/results/processed/full_scan_o
 
 identical(mc_results2, mc_results)
 
-out <- pheatmap(mc_results)
+library(pheatmap)
+out <- pheatmap(mc_results,
+    filename = here("figures/abcd/mc_heatmap_inc_psych.png"))
 
 dm_scaled_reordered <- dm_scaled[out$tree_row[["order"]], ]
 
@@ -572,12 +582,14 @@ dm_reordered <- design_matrix[out$tree_row[["order"]], ]
 
 dm_reordered
 
-pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
+pheatmap(dm_scaled_reordered, cluster_rows = FALSE,
+    filename = here("figures/abcd/dm_scaled_reordered_inc_psych.png"))
 
 mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 
 
-pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
+pheatmap(mc_pvals_reordered, cluster_rows = FALSE,
+    filename = here("figures/abcd/om_reordered_pvals.png"))
 
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 
