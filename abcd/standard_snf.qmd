@@ -36,13 +36,20 @@ d_sex <- load_data("d_sex_imp.csv", type = "inputs")
 mh_headaches <- load_data("mh_headaches_imp.csv", type = "inputs")
 mh_mtbi_count <- load_data("mh_mtbi_count_imp.csv", type = "inputs")
 dm_wmndf_qc <- load_data("dm_wmndf_qc.csv", imputed = FALSE, type = "inputs")
-rm_gord_cor_qc <- load_data("rm_gord_cor_qc.csv", imputed = FALSE, type = "inputs")
-rm_gord_var_qc <- load_data("rm_gord_var_qc.csv", imputed = FALSE, type = "inputs")
-rm_subc_cor_qc <- load_data("rm_subc_cor_qc.csv", imputed = FALSE, type = "inputs")
-rm_subc_var_qc <- load_data("rm_subc_var_qc.csv", imputed = FALSE, type = "inputs")
-sm_cort_sa_qc <- load_data("sm_cort_sa_qc.csv", imputed = FALSE, type = "inputs")
-sm_cort_t_qc <- load_data("sm_cort_t_qc.csv", imputed = FALSE, type = "inputs")
-sm_subc_v_qc <- load_data("sm_subc_v_qc.csv", imputed = FALSE, type = "inputs")
+rm_gord_cor_qc <-
+    load_data("rm_gord_cor_qc.csv", imputed = FALSE, type = "inputs")
+rm_gord_var_qc <-
+    load_data("rm_gord_var_qc.csv", imputed = FALSE, type = "inputs")
+rm_subc_cor_qc <-
+    load_data("rm_subc_cor_qc.csv", imputed = FALSE, type = "inputs")
+rm_subc_var_qc <-
+    load_data("rm_subc_var_qc.csv", imputed = FALSE, type = "inputs")
+sm_cort_sa_qc <-
+    load_data("sm_cort_sa_qc.csv", imputed = FALSE, type = "inputs")
+sm_cort_t_qc <-
+    load_data("sm_cort_t_qc.csv", imputed = FALSE, type = "inputs")
+sm_subc_v_qc <-
+    load_data("sm_subc_v_qc.csv", imputed = FALSE, type = "inputs")
 p_loneliness <- load_data("p_loneliness_imp.csv", type = "inputs")
 p_screen_time <- load_data("p_screen_time_imp.csv", type = "inputs")
 p_family_function <- load_data("p_family_function_imp.csv", type = "inputs")
@@ -66,7 +73,6 @@ sds_sleep <- load_data("sds_sleep_imp.csv", type = "outputs")
 nihtbx_list_fc <- load_data("nihtbx_list_fc_imp.csv", type = "outputs")
 nihtbx_pattern_fc <- load_data("nihtbx_pattern_fc_imp.csv", type = "outputs")
 nihtbx_cardsort_fc <- load_data("nihtbx_cardsort_fc_imp.csv", type = "outputs")
-
 
 # Filtering to common subjects
 full_df_list <- list(mtbi_loc = as_mtbi_loc,
@@ -102,10 +108,10 @@ full_df_list <- list(mtbi_loc = as_mtbi_loc,
     cbcl_overtired,
     cbcl_sleeping_more,
     cbcl_sleeping_less,
-    cbcl_depress_r,
-    cbcl_anxiety_r,
-    cbcl_attention_r,
-    cbcl_aggressive_r,
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive,
     sds_sleep)
 
 shared_df <- full_df_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
@@ -213,7 +219,7 @@ output_matrix <-
 output_matrix$mean_p_val <- as.numeric(output_matrix$mean_p_val)
 output_matrix$min_p_val <- as.numeric(output_matrix$min_p_val)
 
-write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om.csv"))
+# write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om.csv"))
 
 min(output_matrix$min_p_val)
 min(output_matrix$mean_p_val)
@@ -222,31 +228,31 @@ ggplot(output_matrix, mapping = aes(x = min_p_val, y = mean_p_val)) +
     geom_point() +
     theme_bw()
 
-a_k_matrix <- matrix(nrow = length(unique(output_matrix$K)), ncol = length(unique(output_matrix$alpha)))
-colnames(a_k_matrix) <- as.character(seq(0.3, 1, by = 0.1))
-rownames(a_k_matrix) <- as.character(seq(10, 100, by = 10))
-for (i in 1:nrow(output_matrix)) {
+a_k_matrix_min <- matrix(nrow = length(unique(output_matrix$K)),
+                     ncol = length(unique(output_matrix$alpha)))
+colnames(a_k_matrix_min) <- as.character(seq(0.3, 1, by = 0.1))
+rownames(a_k_matrix_min) <- as.character(seq(10, 100, by = 10))
+for (i in seq_len(nrow(output_matrix))) {
     print(i)
-   row <- as.character(output_matrix[i, "K"]) 
-   col <- as.character(output_matrix[i, "alpha"]) 
+   row <- as.character(output_matrix[i, "K"])
+   col <- as.character(output_matrix[i, "alpha"])
    min_p <- as.numeric(output_matrix[i, "min_p_val"])
-   a_k_matrix[row, col] <- min_p
+   a_k_matrix_min[row, col] <- min_p
 }
-a_k_matrix
-pheatmap(a_k_matrix, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE)
 
-a_k_matrix <- matrix(nrow = length(unique(output_matrix$K)), ncol = length(unique(output_matrix$alpha)))
-colnames(a_k_matrix) <- as.character(seq(0.3, 1, by = 0.1))
-rownames(a_k_matrix) <- as.character(seq(10, 100, by = 10))
-for (i in 1:nrow(output_matrix)) {
+a_k_matrix_mean <- matrix(nrow = length(unique(output_matrix$K)),
+                          ncol = length(unique(output_matrix$alpha)))
+colnames(a_k_matrix_mean) <- as.character(seq(0.3, 1, by = 0.1))
+rownames(a_k_matrix_mean) <- as.character(seq(10, 100, by = 10))
+for (i in seq_len(nrow(output_matrix))) {
     print(i)
-   row <- as.character(output_matrix[i, "K"]) 
-   col <- as.character(output_matrix[i, "alpha"]) 
+   row <- as.character(output_matrix[i, "K"])
+   col <- as.character(output_matrix[i, "alpha"])
    mean_p <- as.numeric(output_matrix[i, "mean_p_val"])
-   a_k_matrix[row, col] <- mean_p
+   a_k_matrix_mean[row, col] <- mean_p
 }
-a_k_matrix
-pheatmap(a_k_matrix, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE)
 
 
 # Try the base given the psychosocial vars
@@ -254,9 +260,9 @@ set.seed(42)
 design_matrix_base <- build_design_matrix_base_t2()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
-output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
+# output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
-#output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
+output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
 
 output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
@@ -268,23 +274,29 @@ min(output_matrix_full$min_p_val)
 min(output_matrix_full$mean_p_val)
 # These are outstanding p-values
 
-write_csv(output_matrix_full, here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
+write_csv(output_matrix_full,
+    here(paste0("data/abcd/results/processed/",
+                "full_scan_om_adjusted_cbcl_inc_psych.csv")))
 
 mc_pvals <- p_val_select(output_matrix_full)
 
 # That looks pretty intense
 heatmap_pvals(mc_pvals)
 
-mc_results <- meta_cluster(output_matrix_full)
+# mc_results <- meta_cluster(output_matrix_full)
+# write_csv(data.frame(mc_results),
+#     here(paste0("data/abcd/results/processed/",
+#                 "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
 
-mc_results
+mc_results <- as.matrix(read_delim(
+    here(paste0("data/abcd/results/processed/",
+                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
 
+colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 
 # That is extremely well-separated
 pheatmap::pheatmap(mc_results)
-
-output_matrix_full
-
 ```
 
 Make sure to remove headaches from the final list of examined outcomes, as it is basically an input
@@ -305,17 +317,6 @@ dm_scaled$snf_scheme <- dm_scaled$snf_scheme / max(dm_scaled$snf_scheme)
 dm_scaled$eigen_or_rot <- dm_scaled$eigen_or_rot / max(dm_scaled$eigen_or_rot)
 
 pheatmap(dm_scaled, cluster_rows = FALSE, cluster_columns = FALSE)
-
-mc_results
-
-colnames(mc_results) <- as.character(1:nrow(mc_results))
-rownames(mc_results) <- as.character(1:nrow(mc_results))
-
-
-write_csv(data.frame(mc_results), here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))
-
-mc_results <- as.matrix(read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
-
 
 out <- pheatmap(mc_results,
     filename = here("figures/abcd/mc_heatmap_inc_psych.png"))
@@ -340,12 +341,106 @@ pheatmap(mc_pvals_reordered, cluster_rows = FALSE,
 
 pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
  
-om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
+# om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
+
+om_reordered
+
+om_reordered
 
 om_row1 <- om_reordered[1, ]
 
 om_row1
 ```
+
+# New section on finding the solutions to use for characterization
+
+```{r}
+
+# The strongest performing meta cluster
+best_mc <- om_reordered[1:36, ]
+
+best_mc_subs <- best_mc |>
+    dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
+    t()
+colnames(best_mc_subs) <- best_mc_subs["row_id", ]
+best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
+
+best_mc_subs
+
+row_means <- apply(X=best_mc_subs, MARGIN=1, FUN=mean, na.rm=TRUE)
+
+# Shows how consistently a subject was assigned to a particular cluster
+plot(row_means)
+
+hist(row_means)
+
+abs(row_means - 1.5) - 0.5
+
+# How far away are the mean cluster assignments to either 1 or 2?
+deviation_df <- data.frame(
+    subjectkey = names(row_means),
+    deviation = abs(abs(row_means - 1.5) - 0.5))
+rownames(deviation_df) <- NULL
+ 
+row_means
+
+deviation_df
+
+plot(deviation_df$deviation)
+
+hist(deviation_df$deviation)
+
+data.frame(deviation)
+
+ggplot(deviation_df, aes(x = deviation)) +
+    geom_density() +
+    geom_vline(xintercept = 0.15, colour = "red") +
+    theme_bw()
+
+
+length(which(deviation_df$deviation > 0.25))
+length(which(deviation_df$deviation > 0.15))
+length(which(deviation_df$deviation > 0.1))
+length(which(deviation_df$deviation > 0.086))
+length(which(deviation_df$deviation > 0.05))
+length(which(deviation_df$deviation > 0.0285))
+length(which(deviation_df$deviation > 0.01))
+
+nrow(best_mc)
+
+# Function to show deviation given number of solutions
+#  and number of solutions stating a subject should be in cluster 2
+deviation_tally <- function(n, n_2) {
+    return(abs(abs(mean(c(rep(2, n_2), rep(1, n - n_2)) - 1.5) - 0.5)))
+}
+
+deviation_tally(36, 0.9 * 36)
+deviation_tally(36, 0.9 * 36)
+deviation_tally(36, 0.95 * 36)
+
+which(deviation_df$deviation > 0.15)
+
+low_deviation_subjects <-
+    deviation_df$subjectkey[deviation_df$deviation <= 0.15]
+
+low_deviation_subjects
+
+om_reordered
+
+best_mc_subs
+
+# Next steps are to evaluate a few options:
+# A consensus cluster row
+# A row containing everybody
+# Consensus cluster row without problematic patients
+# A row containing everybody without problematic patients
+
+```
+
+
+
+
+
 
 ## Are the p-values calculated properly?
 
