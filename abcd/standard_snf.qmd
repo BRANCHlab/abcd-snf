@@ -217,6 +217,7 @@ design_matrix <- build_design_matrix_s()
 
 # Assess clustering minimum p-value for an ordinal dependent variable
 # output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
 output_matrix <-
     read_delim(here("data/abcd/results/processed/standard_scan_om.csv"))
 
@@ -264,9 +265,9 @@ set.seed(42)
 design_matrix_base <- build_design_matrix_base_t2()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
-# output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
+output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
-output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
+#output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
 
 output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
@@ -288,13 +289,14 @@ mc_pvals <- p_val_select(output_matrix_full)
 heatmap_pvals(mc_pvals)
 
 # mc_results <- meta_cluster(output_matrix_full)
+
 # write_csv(data.frame(mc_results),
 #     here(paste0("data/abcd/results/processed/",
 #                 "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
 
-mc_results <- as.matrix(read_delim(
-    here(paste0("data/abcd/results/processed/",
-                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
+#mc_results <- as.matrix(read_delim(
+#    here(paste0("data/abcd/results/processed/",
+#                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
@@ -341,8 +343,10 @@ mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 #     filename = here("figures/abcd/om_reordered_pvals.png"))
 
 pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
- 
+
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
+
+om_reordered$snf_scheme[1:40]
 
 ```
 
@@ -351,7 +355,7 @@ om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 ```{r}
 
 # The strongest performing meta cluster
-best_mc <- om_reordered[1:36, ]
+best_mc <- om_reordered[2:36, ]
 
 best_mc_subs <- best_mc |>
     dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
@@ -359,9 +363,15 @@ best_mc_subs <- best_mc |>
 colnames(best_mc_subs) <- best_mc_subs["row_id", ]
 best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
 
+
+best_mc_subs <- as.data.frame(best_mc_subs)
+best_mc_subs <- sapply(best_mc_subs, as.numeric)
+
 best_mc_subs
 
 row_means <- apply(X=best_mc_subs, MARGIN=1, FUN=mean, na.rm=TRUE)
+
+names(row_means) <- colnames(subs(best_mc))[-1]
 
 # Shows how consistently a subject was assigned to a particular cluster
 plot(row_means)
@@ -371,6 +381,13 @@ hist(row_means)
 abs(row_means - 1.5) - 0.5
 
 # How far away are the mean cluster assignments to either 1 or 2?
+names(row_means)
+
+row_means
+
+colnames(best_mc_subs)
+
+
 deviation_df <- data.frame(
     subjectkey = names(row_means),
     deviation = abs(abs(row_means - 1.5) - 0.5))
@@ -438,6 +455,7 @@ best_mc_subs
 best_mc_subs
 
 # Best MC Subs: finding some dm rows to work with
+# Is something not working?
 
 best_mc_df <- data.frame(best_mc_subs)
 colnames(best_mc_df) <- colnames(best_mc_subs)
@@ -467,6 +485,8 @@ ggplot(best_mc, aes(x = min_p_val, y = mean_p_val, label = row_id, color = (inc_
   scale_x_continuous(trans='log10') +
   geom_text(hjust=0, vjust=0) +
   theme_bw()
+
+om_reordered$row_id
 
 best_mc
 
