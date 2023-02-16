@@ -264,6 +264,9 @@ set.seed(42)
 design_matrix_base <- build_design_matrix_base_t2()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
+#write_csv(design_matrix,
+#    here(paste0("data/abcd/results/processed/full_design_matrix.csv")))
+
 # output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
 output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
@@ -344,6 +347,8 @@ pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
  
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 
+om_reordered
+
 ```
 
 # New section on finding the solutions to use for characterization
@@ -353,11 +358,21 @@ om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 # The strongest performing meta cluster
 best_mc <- om_reordered[1:36, ]
 
+best_mc # it's a tibble
+
 best_mc_subs <- best_mc |>
     dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
     t()
 colnames(best_mc_subs) <- best_mc_subs["row_id", ]
 best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
+
+class(best_mc_subs) # matrix array
+
+dim(best_mc_subs) # 253, 36
+
+colnames(best_mc_subs) # colnames are row_ids
+
+rownames(best_mc_subs) # rownames are subjectids are row_ids
 
 best_mc_subs
 
