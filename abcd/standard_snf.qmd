@@ -267,6 +267,22 @@ design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
 output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
+new_output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
+write_csv(new_output_matrix,
+    here(paste0("data/abcd/results/processed/",
+                "full_scan_om_adjusted_cbcl_inc_psych_scaled.csv")))
+
+om_read <- read_delim(here(
+    "data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_scaled.csv"))
+
+all.equal(output_matrix_full, om_read)
+
+#write_csv(output_matrix_full,
+#    here(paste0("data/abcd/results/processed/",
+#                "full_scan_om_adjusted_cbcl_inc_psych.csv")))
+
+
 #output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
 
@@ -275,13 +291,54 @@ output_matrix_full$min_p_val <- as.numeric(output_matrix_full$min_p_val)
 
 output_matrix_full$min_p_val
 
-min(output_matrix_full$min_p_val)
-min(output_matrix_full$mean_p_val)
-# These are outstanding p-values
+min(output_matrix_full$min_p_val) #3.2 e-08
+min(output_matrix_full$mean_p_val) #0.00345
 
-#write_csv(output_matrix_full,
-#    here(paste0("data/abcd/results/processed/",
-#                "full_scan_om_adjusted_cbcl_inc_psych.csv")))
+scaled_om <- new_output_matrix
+
+min(scaled_om$min_p_val) #0.0001,
+min(scaled_om$mean_p_val) #0.00345
+
+# The scaled OM has a lower min p val, suggesting that the lowest p value in the OM was not from a scheme 1
+# This is because the two OMs should be identical apart from changes that have happened to the domain scheme
+
+which(output_matrix_full$min_p_val == min(output_matrix_full$min_p_val))
+
+class(output_matrix_full[9, ])
+
+original_om <- data.frame(output_matrix_full)
+
+class(scaled_om[9, ])
+
+all.equal(original_om[1:100, 1:297], scaled_om[1:100, 1:297])
+
+original_om_ns <- as.matrix(no_subs(original_om))
+scaled_om_ns <- as.matrix(no_subs(scaled_om))
+
+str(original_om_ns)
+str(scaled_om_ns)
+
+rownames(original_om_ns) <- NULL
+rownames(scaled_om_ns) <- NULL
+
+original_om_ns[1, ]
+
+sapply(scaled_om_ns, as.numeric)
+
+scaled_om_m <- matrix(as.numeric(scaled_om_ns), ncol = ncol(scaled_om_ns))
+original_om_m <- matrix(as.numeric(original_om_ns), ncol = ncol(original_om_ns))
+
+all.equal(original_om_m, scaled_om_m)
+
+original_om_ns
+
+original_om_ns <- sapply(original_om_ns, as.numeric)
+scaled_om_ns <- sapply(scaled_om_ns, as.numeric)
+
+original_om_ns
+
+scaled_om_ns
+
 
 mc_pvals <- p_val_select(output_matrix_full)
 
