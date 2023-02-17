@@ -269,6 +269,27 @@ output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_li
 
 new_output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
+
+om_unscaled <- execute_design_matrix(data_list, design_matrix, outcome_list)
+om_scaled <- execute_design_matrix2(data_list, design_matrix, outcome_list)
+
+length(which(om_unscaled != om_scaled))
+length(which(om_unscaled == om_scaled))
+
+vector <- c()
+for (i in seq_len(nrow(om_unscaled))) {
+    vector <- c(vector, identical(om_unscaled[i, ], om_scaled[i, ]))
+}
+
+matching_om_scaled <- om_scaled[vector, ]
+
+not_matching_om_scaled <- om_scaled[!vector, ]
+
+matching_om_scaled
+
+not_matching_om_scaled
+
+
 write_csv(new_output_matrix,
     here(paste0("data/abcd/results/processed/",
                 "full_scan_om_adjusted_cbcl_inc_psych_scaled.csv")))
@@ -285,6 +306,7 @@ all.equal(output_matrix_full, om_read)
 
 #output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
 
+output_matrix_full <- om_scaled
 
 output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
 output_matrix_full$min_p_val <- as.numeric(output_matrix_full$min_p_val)
@@ -394,6 +416,8 @@ dm_reordered
 
 pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
 
+dm_scaled_reordered
+
 mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 
 # pheatmap(mc_pvals_reordered, cluster_rows = FALSE,
@@ -402,6 +426,8 @@ mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
 
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
+
+om_reordered
 
 om_reordered$snf_scheme[1:40]
 
@@ -457,8 +483,6 @@ which(deviation_df$deviation == max(deviation_df$deviation))
 plot(deviation_df$deviation)
 
 hist(deviation_df$deviation)
-
-data.frame(deviation)
 
 ggplot(deviation_df, aes(x = deviation)) +
     geom_density() +
