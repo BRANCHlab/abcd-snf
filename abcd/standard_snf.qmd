@@ -198,8 +198,7 @@ data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 exercise = p_exercise)
 
 # Structure containing all outcome data
-outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
-                                      cbcl_nausea = cbcl_nausea,
+outcome_list <- generate_outcome_list(cbcl_nausea = cbcl_nausea,
                                       cbcl_vomiting = cbcl_vomiting,
                                       cbcl_dizzy = cbcl_dizzy,
                                       cbcl_overtired = cbcl_overtired,
@@ -208,15 +207,16 @@ outcome_list <- generate_outcome_list(cbcl_headaches = cbcl_headaches,
                                       cbcl_depress = cbcl_depress,
                                       cbcl_anxiety = cbcl_anxiety,
                                       cbcl_attention = cbcl_attention,
-                                      cbcl_aggressive = cbcl_aggressive,
-                                      sds_sleep = sds_sleep)
+                                      cbcl_aggressive = cbcl_aggressive)
 
 
-# Builds a standard design matrix only exploring SNF hyperparameters
-design_matrix <- build_design_matrix_ak()
+# Builds a standard design matrix only exploring SNF hyperparameters alpha and K
+design_matrix_ak <- build_design_matrix_ak()
 
 # Assess clustering minimum p-value for an ordinal dependent variable
-# output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
+ak_scan_om <- execute_design_matrix(data_list, design_matrix_ak, outcome_list)
+
+
 
 output_matrix <-
     read_delim(here("data/abcd/results/processed/standard_scan_om.csv"))
@@ -311,10 +311,14 @@ all.equal(output_matrix_full, om_read)
 
 output_matrix_full <- om_scaled
 
+output_matrix_full <- new_output_matrix
+
 output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
 output_matrix_full$min_p_val <- as.numeric(output_matrix_full$min_p_val)
 
 output_matrix_full$min_p_val
+
+output_matrix_full # hmm...
 
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00345
