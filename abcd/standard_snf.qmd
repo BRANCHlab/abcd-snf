@@ -217,6 +217,7 @@ design_matrix <- build_design_matrix_s()
 
 # Assess clustering minimum p-value for an ordinal dependent variable
 # output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
+
 output_matrix <-
     read_delim(here("data/abcd/results/processed/standard_scan_om.csv"))
 
@@ -269,21 +270,100 @@ design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
 # output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
-output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
+new_output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
+
+om_unscaled <- execute_design_matrix(data_list, design_matrix, outcome_list)
+om_scaled <- execute_design_matrix2(data_list, design_matrix, outcome_list)
+
+length(which(om_unscaled != om_scaled))
+length(which(om_unscaled == om_scaled))
+
+vector <- c()
+for (i in seq_len(nrow(om_unscaled))) {
+    vector <- c(vector, identical(om_unscaled[i, ], om_scaled[i, ]))
+}
+
+matching_om_scaled <- om_scaled[vector, ]
+
+not_matching_om_scaled <- om_scaled[!vector, ]
+
+matching_om_scaled
+
+not_matching_om_scaled
+
+
+write_csv(new_output_matrix,
+    here(paste0("data/abcd/results/processed/",
+                "full_scan_om_adjusted_cbcl_inc_psych_scaled.csv")))
+
+om_read <- read_delim(here(
+    "data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_scaled.csv"))
+
+all.equal(output_matrix_full, om_read)
+
+#write_csv(output_matrix_full,
+#    here(paste0("data/abcd/results/processed/",
+#                "full_scan_om_adjusted_cbcl_inc_psych.csv")))
+
+
+#output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
+
+output_matrix_full <- om_scaled
 
 output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
 output_matrix_full$min_p_val <- as.numeric(output_matrix_full$min_p_val)
 
 output_matrix_full$min_p_val
 
-min(output_matrix_full$min_p_val)
-min(output_matrix_full$mean_p_val)
-# These are outstanding p-values
+min(output_matrix_full$min_p_val) #3.2 e-08
+min(output_matrix_full$mean_p_val) #0.00345
 
-#write_csv(output_matrix_full,
-#    here(paste0("data/abcd/results/processed/",
-#                "full_scan_om_adjusted_cbcl_inc_psych.csv")))
+scaled_om <- new_output_matrix
+
+min(scaled_om$min_p_val) #0.0001,
+min(scaled_om$mean_p_val) #0.00345
+
+# The scaled OM has a lower min p val, suggesting that the lowest p value in the OM was not from a scheme 1
+# This is because the two OMs should be identical apart from changes that have happened to the domain scheme
+
+which(output_matrix_full$min_p_val == min(output_matrix_full$min_p_val))
+
+class(output_matrix_full[9, ])
+
+original_om <- data.frame(output_matrix_full)
+
+class(scaled_om[9, ])
+
+all.equal(original_om[1:100, 1:297], scaled_om[1:100, 1:297])
+
+original_om_ns <- as.matrix(no_subs(original_om))
+scaled_om_ns <- as.matrix(no_subs(scaled_om))
+
+str(original_om_ns)
+str(scaled_om_ns)
+
+rownames(original_om_ns) <- NULL
+rownames(scaled_om_ns) <- NULL
+
+original_om_ns[1, ]
+
+sapply(scaled_om_ns, as.numeric)
+
+scaled_om_m <- matrix(as.numeric(scaled_om_ns), ncol = ncol(scaled_om_ns))
+original_om_m <- matrix(as.numeric(original_om_ns), ncol = ncol(original_om_ns))
+
+all.equal(original_om_m, scaled_om_m)
+
+original_om_ns
+
+original_om_ns <- sapply(original_om_ns, as.numeric)
+scaled_om_ns <- sapply(scaled_om_ns, as.numeric)
+
+original_om_ns
+
+scaled_om_ns
+
 
 mc_pvals <- p_val_select(output_matrix_full)
 
@@ -291,13 +371,14 @@ mc_pvals <- p_val_select(output_matrix_full)
 heatmap_pvals(mc_pvals)
 
 # mc_results <- meta_cluster(output_matrix_full)
+
 # write_csv(data.frame(mc_results),
 #     here(paste0("data/abcd/results/processed/",
 #                 "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
 
-mc_results <- as.matrix(read_delim(
-    here(paste0("data/abcd/results/processed/",
-                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
+#mc_results <- as.matrix(read_delim(
+#    here(paste0("data/abcd/results/processed/",
+#                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
@@ -338,16 +419,20 @@ dm_reordered
 
 pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
 
+dm_scaled_reordered
+
 mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 
 # pheatmap(mc_pvals_reordered, cluster_rows = FALSE,
 #     filename = here("figures/abcd/om_reordered_pvals.png"))
 
 pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
- 
+
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 
 om_reordered
+
+om_reordered$snf_scheme[1:40]
 
 ```
 
@@ -356,7 +441,7 @@ om_reordered
 ```{r}
 
 # The strongest performing meta cluster
-best_mc <- om_reordered[1:36, ]
+best_mc <- om_reordered[2:36, ]
 
 best_mc # it's a tibble
 
@@ -366,17 +451,15 @@ best_mc_subs <- best_mc |>
 colnames(best_mc_subs) <- best_mc_subs["row_id", ]
 best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
 
-class(best_mc_subs) # matrix array
 
-dim(best_mc_subs) # 253, 36
-
-colnames(best_mc_subs) # colnames are row_ids
-
-rownames(best_mc_subs) # rownames are subjectids are row_ids
+best_mc_subs <- as.data.frame(best_mc_subs)
+best_mc_subs <- sapply(best_mc_subs, as.numeric)
 
 best_mc_subs
 
 row_means <- apply(X=best_mc_subs, MARGIN=1, FUN=mean, na.rm=TRUE)
+
+names(row_means) <- colnames(subs(best_mc))[-1]
 
 # Shows how consistently a subject was assigned to a particular cluster
 plot(row_means)
@@ -386,6 +469,13 @@ hist(row_means)
 abs(row_means - 1.5) - 0.5
 
 # How far away are the mean cluster assignments to either 1 or 2?
+names(row_means)
+
+row_means
+
+colnames(best_mc_subs)
+
+
 deviation_df <- data.frame(
     subjectkey = names(row_means),
     deviation = abs(abs(row_means - 1.5) - 0.5))
@@ -398,8 +488,6 @@ which(deviation_df$deviation == max(deviation_df$deviation))
 plot(deviation_df$deviation)
 
 hist(deviation_df$deviation)
-
-data.frame(deviation)
 
 ggplot(deviation_df, aes(x = deviation)) +
     geom_density() +
@@ -453,6 +541,7 @@ best_mc_subs
 best_mc_subs
 
 # Best MC Subs: finding some dm rows to work with
+# Is something not working?
 
 best_mc_df <- data.frame(best_mc_subs)
 colnames(best_mc_df) <- colnames(best_mc_subs)
@@ -482,6 +571,8 @@ ggplot(best_mc, aes(x = min_p_val, y = mean_p_val, label = row_id, color = (inc_
   scale_x_continuous(trans='log10') +
   geom_text(hjust=0, vjust=0) +
   theme_bw()
+
+om_reordered$row_id
 
 best_mc
 
