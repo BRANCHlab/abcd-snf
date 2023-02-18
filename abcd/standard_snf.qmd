@@ -1,9 +1,5 @@
 # Clustering
 
-Automatic feature scaling is performed for mixed-measurement type data through Gower's dissimilarity measurements.
-
-Actually take a closer look at how feature scaling is done.
-
 ## Loading data
 
 ```{r eval = FALSE}
@@ -216,45 +212,46 @@ design_matrix_ak <- build_design_matrix_ak()
 # Assess clustering minimum p-value for an ordinal dependent variable
 ak_scan_om <- execute_design_matrix(data_list, design_matrix_ak, outcome_list)
 
+write_csv(ak_scan_om,
+    here("data/abcd/results/processed/2023_02_17_ak_scan_om.csv"))
 
+# Note that the column types will be different (and more accurate) when going
+#  through the read_delim function. Without doing this, you will have a lot of
+#  character columns.
+ak_scan_om <-
+    read_delim(here("data/abcd/results/processed/2023_02_17_ak_scan_om.csv"))
 
-output_matrix <-
-    read_delim(here("data/abcd/results/processed/standard_scan_om.csv"))
+min(ak_scan_om$min_p_val)
+min(ak_scan_om$mean_p_val)
 
-output_matrix$mean_p_val <- as.numeric(output_matrix$mean_p_val)
-output_matrix$min_p_val <- as.numeric(output_matrix$min_p_val)
+ak_scan_om
 
-# write_csv(output_matrix, here("data/abcd/results/processed/standard_scan_om.csv"))
-
-min(output_matrix$min_p_val)
-min(output_matrix$mean_p_val)
-
-ggplot(output_matrix, mapping = aes(x = min_p_val, y = mean_p_val)) +
+ggplot(ak_scan_om, mapping = aes(x = min_p_val, y = mean_p_val)) +
     geom_point() +
     theme_bw()
 
-a_k_matrix_min <- matrix(nrow = length(unique(output_matrix$K)),
-                     ncol = length(unique(output_matrix$alpha)))
+a_k_matrix_min <- matrix(nrow = length(unique(ak_scan_om$K)),
+                     ncol = length(unique(ak_scan_om$alpha)))
 colnames(a_k_matrix_min) <- as.character(seq(0.3, 1, by = 0.1))
 rownames(a_k_matrix_min) <- as.character(seq(10, 100, by = 10))
-for (i in seq_len(nrow(output_matrix))) {
+for (i in seq_len(nrow(ak_scan_om))) {
     print(i)
-   row <- as.character(output_matrix[i, "K"])
-   col <- as.character(output_matrix[i, "alpha"])
-   min_p <- as.numeric(output_matrix[i, "min_p_val"])
+   row <- as.character(ak_scan_om[i, "K"])
+   col <- as.character(ak_scan_om[i, "alpha"])
+   min_p <- as.numeric(ak_scan_om[i, "min_p_val"])
    a_k_matrix_min[row, col] <- min_p
 }
 pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE)
 
-a_k_matrix_mean <- matrix(nrow = length(unique(output_matrix$K)),
-                          ncol = length(unique(output_matrix$alpha)))
+a_k_matrix_mean <- matrix(nrow = length(unique(ak_scan_om$K)),
+                          ncol = length(unique(ak_scan_om$alpha)))
 colnames(a_k_matrix_mean) <- as.character(seq(0.3, 1, by = 0.1))
 rownames(a_k_matrix_mean) <- as.character(seq(10, 100, by = 10))
-for (i in seq_len(nrow(output_matrix))) {
+for (i in seq_len(nrow(ak_scan_om))) {
     print(i)
-   row <- as.character(output_matrix[i, "K"])
-   col <- as.character(output_matrix[i, "alpha"])
-   mean_p <- as.numeric(output_matrix[i, "mean_p_val"])
+   row <- as.character(ak_scan_om[i, "K"])
+   col <- as.character(ak_scan_om[i, "alpha"])
+   mean_p <- as.numeric(ak_scan_om[i, "mean_p_val"])
    a_k_matrix_mean[row, col] <- mean_p
 }
 pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE)
@@ -268,117 +265,31 @@ design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 #write_csv(design_matrix,
 #    here(paste0("data/abcd/results/processed/full_design_matrix.csv")))
 
-# output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
+output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
 
-new_output_matrix <- execute_design_matrix(data_list, design_matrix, outcome_list)
+write_csv(output_matrix_full,
+    here(paste0("data/abcd/results/processed/2023_02_17_om.csv")))
 
+output_matrix_full <-
+    read_delim(here(paste0("data/abcd/results/processed/2023_02_17_om.csv")))
 
-om_unscaled <- execute_design_matrix(data_list, design_matrix, outcome_list)
-om_scaled <- execute_design_matrix2(data_list, design_matrix, outcome_list)
-
-length(which(om_unscaled != om_scaled))
-length(which(om_unscaled == om_scaled))
-
-vector <- c()
-for (i in seq_len(nrow(om_unscaled))) {
-    vector <- c(vector, identical(om_unscaled[i, ], om_scaled[i, ]))
-}
-
-matching_om_scaled <- om_scaled[vector, ]
-
-not_matching_om_scaled <- om_scaled[!vector, ]
-
-matching_om_scaled
-
-not_matching_om_scaled
-
-
-write_csv(new_output_matrix,
-    here(paste0("data/abcd/results/processed/",
-                "full_scan_om_adjusted_cbcl_inc_psych_scaled.csv")))
-
-om_read <- read_delim(here(
-    "data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych_scaled.csv"))
-
-all.equal(output_matrix_full, om_read)
-
-#write_csv(output_matrix_full,
-#    here(paste0("data/abcd/results/processed/",
-#                "full_scan_om_adjusted_cbcl_inc_psych.csv")))
-
-
-#output_matrix_full <- read_delim(here("data/abcd/results/processed/full_scan_om_adjusted_cbcl_inc_psych.csv"))
-
-output_matrix_full <- om_scaled
-
-output_matrix_full <- new_output_matrix
-
-output_matrix_full$mean_p_val <- as.numeric(output_matrix_full$mean_p_val)
-output_matrix_full$min_p_val <- as.numeric(output_matrix_full$min_p_val)
-
-output_matrix_full$min_p_val
-
-output_matrix_full # hmm...
 
 min(output_matrix_full$min_p_val) #3.2 e-08
-min(output_matrix_full$mean_p_val) #0.00345
-
-scaled_om <- new_output_matrix
-
-min(scaled_om$min_p_val) #0.0001,
-min(scaled_om$mean_p_val) #0.00345
-
-# The scaled OM has a lower min p val, suggesting that the lowest p value in the OM was not from a scheme 1
-# This is because the two OMs should be identical apart from changes that have happened to the domain scheme
+min(output_matrix_full$mean_p_val) #0.00414
 
 which(output_matrix_full$min_p_val == min(output_matrix_full$min_p_val))
 
 class(output_matrix_full[9, ])
-
-original_om <- data.frame(output_matrix_full)
-
-class(scaled_om[9, ])
-
-all.equal(original_om[1:100, 1:297], scaled_om[1:100, 1:297])
-
-original_om_ns <- as.matrix(no_subs(original_om))
-scaled_om_ns <- as.matrix(no_subs(scaled_om))
-
-str(original_om_ns)
-str(scaled_om_ns)
-
-rownames(original_om_ns) <- NULL
-rownames(scaled_om_ns) <- NULL
-
-original_om_ns[1, ]
-
-sapply(scaled_om_ns, as.numeric)
-
-scaled_om_m <- matrix(as.numeric(scaled_om_ns), ncol = ncol(scaled_om_ns))
-original_om_m <- matrix(as.numeric(original_om_ns), ncol = ncol(original_om_ns))
-
-all.equal(original_om_m, scaled_om_m)
-
-original_om_ns
-
-original_om_ns <- sapply(original_om_ns, as.numeric)
-scaled_om_ns <- sapply(scaled_om_ns, as.numeric)
-
-original_om_ns
-
-scaled_om_ns
-
 
 mc_pvals <- p_val_select(output_matrix_full)
 
 # That looks pretty intense
 heatmap_pvals(mc_pvals)
 
-# mc_results <- meta_cluster(output_matrix_full)
+mc_results <- meta_cluster(output_matrix_full)
 
-# write_csv(data.frame(mc_results),
-#     here(paste0("data/abcd/results/processed/",
-#                 "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv")))
+write_csv(data.frame(mc_results), here(paste0("data/abcd/results/processed/",
+    "2023_02_17_mc_results.csv")))
 
 #mc_results <- as.matrix(read_delim(
 #    here(paste0("data/abcd/results/processed/",
@@ -438,14 +349,20 @@ om_reordered
 
 om_reordered$snf_scheme[1:40]
 
+which(om_reordered$snf_scheme == 1)
+
+dm_reordered$row_id
+
 ```
 
 # New section on finding the solutions to use for characterization
 
 ```{r}
 
-# The strongest performing meta cluster
-best_mc <- om_reordered[2:36, ]
+# The strongest performing meta cluster by visual inspection
+best_mc <- om_reordered[6:41, ]
+
+best_mc
 
 best_mc # it's a tibble
 
@@ -484,7 +401,7 @@ deviation_df <- data.frame(
     subjectkey = names(row_means),
     deviation = abs(abs(row_means - 1.5) - 0.5))
 rownames(deviation_df) <- NULL
- 
+
 row_means
 
 which(deviation_df$deviation == max(deviation_df$deviation))
@@ -554,8 +471,6 @@ rownames(best_mc_df) <- NULL
 
 best_mc_df
 
-
-best_mc <- om_reordered[1:36, ]
 
 best_mc
 
@@ -629,7 +544,7 @@ ggplot(best_mc, aes(x = min_p_val, y = dist, label = row_id, color = dist)) +
 
 
 # row 48 appears to also be the lowest distance from the cc solution
-best_mc[which(best_mc$dist == min(row_distances)), ] # row 48 
+best_mc[which(best_mc$dist == min(row_distances)), ] # row 48
 
 
 ```
@@ -642,11 +557,13 @@ best_mc[which(best_mc$dist == min(row_distances)), ] # row 48
 ```{r}
 # Pick a row
 
-om_row <- 1
 
-om_reordered
+om_row <- 35 # Corresponds to row_id 84, the lowest min/mean p value
 
-clustered_subjects <- subs(om_reordered[om_row, ])
+best_mc
+
+
+clustered_subjects <- subs(best_mc[om_row, ])
 clusters <- data.frame(t(clustered_subjects))
 clusters$id <- rownames(clusters)
 rownames(clusters) <- NULL
@@ -659,7 +576,6 @@ groups
 
 outcome_list <- list(
     clusters,
-    cbcl_headaches,
     cbcl_nausea,
     cbcl_vomiting,
     cbcl_dizzy,
@@ -669,8 +585,7 @@ outcome_list <- list(
     cbcl_depress,
     cbcl_anxiety,
     cbcl_attention,
-    cbcl_aggressive,
-    sds_sleep)
+    cbcl_aggressive)
 
 comparison_df <-
     outcome_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
@@ -710,8 +625,8 @@ c2_df <- comparison_df |> dplyr::filter(cluster == 2)
 
 colnames(c1_df)
 
-nrow(c1_df) # 114
-nrow(c2_df) # 139
+nrow(c1_df) # 111
+nrow(c2_df) # 142
 
 # How many borderline/clinical patients in each cluster?
 length(which(c1_df$cbcl_nausea > 0))
@@ -1519,7 +1434,6 @@ full_data_list <- generate_data_list(
                                 exercise = p_exercise_full)
 
 outcome_list_full <- generate_outcome_list(
-    cbcl_headaches = cbcl_headaches_full,
     cbcl_nausea = cbcl_nausea_full,
     cbcl_vomiting = cbcl_vomiting_full,
     cbcl_dizzy = cbcl_dizzy_full,
@@ -1529,8 +1443,7 @@ outcome_list_full <- generate_outcome_list(
     cbcl_depress = cbcl_depress_full,
     cbcl_anxiety = cbcl_anxiety_full,
     cbcl_attention = cbcl_attention_full,
-    cbcl_aggressive = cbcl_aggressive_full,
-    sds_sleep = sds_sleep_full)
+    cbcl_aggressive = cbcl_aggressive_full)
 
 
 
@@ -1543,8 +1456,19 @@ top_dm_rows <- dm_reordered |>
     dplyr::filter(row_id %in% top_om_rows$row_id)
 
 
+top_om_rows <- top_om_rows |> dplyr::arrange(by = row_id)
+
+top_dm_rows <- top_dm_rows |> dplyr::arrange(by = row_id)
+
+
+top_om_rows
+
+top_dm_rows
+
 current_dm_row <- top_dm_rows[1, ]
 current_dm_row
+
+current_om_row <- top_om_rows[1, ]
 
 current_data_list <- execute_inclusion(full_data_list, current_dm_row)
 current_K <- current_dm_row$K
@@ -1555,35 +1479,36 @@ fused_network <- snf_step(current_data_list,
                           K = current_K,
                           alpha = current_alpha)
 
-subs(top_om_rows[1, ])[1:5]
-
 # Need to reorder the fused network
 
-a <- colnames(fused_network[1:5, 1:5])
+clustered_subs <- colnames(subs(current_om_row))[-1]
 
-b <- fused_network[1:5, 1:5]
+test_subs <- as_mtbi_loc_test$subjectkey
 
-b
+ordered_subs <- c(clustered_subs, test_subs)
 
-a <- sample(a)
+fused_network <- fused_network[ordered_subs, ordered_subs]
 
-a
-
-b |> select(names(a))
-
-col.order <- a
-
-a
-
-b[col.order , col.order]
-b[col.order , col.order]
+# Looks good
+fused_network[1:5, 1:5]
+clustered_subs[1:5]
 
 
-fused_network
-a
-p_exercise_train$subjectkey
+clustered_subjects <- subs(best_mc[om_row, ])
 
-p_exercise_test$subjectkey
+# Ahh.. gotta fix something in here
+
+
+clustered_subjects <- subs(current_om_row)
+clusters <- data.frame(t(clustered_subjects))
+clusters$id <- rownames(clusters)
+rownames(clusters) <- NULL
+colnames(clusters) <- c("cluster", "subjectkey")
+clusters <- clusters[2:nrow(clusters), ]
+clusters
+
+groups <- clusters$cluster
+groups
 
 
 
@@ -1750,7 +1675,7 @@ percentile <- ecdf(vector)
 hist(vector,col="gray",las=1,main="", breaks=30)
 abline(v=true_diff,col="red")
 
-
+# Praise it. PRAISE IT
 
 ```
 
