@@ -342,11 +342,6 @@ output_matrix_full <-
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00414
 
-mc_pvals <- p_val_select(output_matrix_full)
-
-# That looks pretty intense
-heatmap_pvals(mc_pvals)
-
 mc_results <- meta_cluster(output_matrix_full)
 
 write_csv(data.frame(mc_results), here(paste0("data/abcd/results/processed/",
@@ -397,11 +392,13 @@ pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
 
 dm_scaled_reordered
 
+mc_pvals <- p_val_select(output_matrix_full)
 mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 
 # pheatmap(mc_pvals_reordered, cluster_rows = FALSE,
 #     filename = here("figures/abcd/om_reordered_pvals.png"))
 
+# This is the actual important graph
 pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
 
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
