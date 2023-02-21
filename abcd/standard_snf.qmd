@@ -23,6 +23,19 @@ load_data <- function(filename, type, imputed = TRUE) {
     return(stats::na.omit(df))
 }
 
+abcd_ggsave <- function(filename, saved_plot) {
+    filename <- here(paste0("data/abcd/results/figures/", filename))
+    print(filename)
+    ggsave(filename, saved_plot)
+}
+
+abcd_pheatmapsave <- function(filename, matrix) {
+    filename <- here(paste0("data/abcd/results/figures/", filename))
+    print(filename)
+    pheatmap(matrix, filename = filename)
+}
+
+
 # Importing data
 as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
 as_mtbi_mechanism <- load_data("as_mtbi_mechanism_imp.csv", type = "inputs")
@@ -229,12 +242,51 @@ ak_scan_om <-
 min(ak_scan_om$min_p_val)
 min(ak_scan_om$mean_p_val)
 
+ak_scan_om$nclust <- as.factor(ak_scan_om$nclust)
+
 ak_scan_om
 
-ggplot(ak_scan_om, mapping = aes(x = min_p_val, y = mean_p_val)) +
-    geom_point() +
-    theme_bw()
+# Highlighting the point that used the most default settings
+ak_default <- ak_scan_om |>
+    dplyr::filter(K == 20, alpha == 0.5)
 
+k_scan_plot <-
+    ggplot(ak_scan_om,
+        mapping = aes(x = min_p_val,
+                      y = mean_p_val,
+                      color = nclust,
+                      size = K)) +
+        geom_point(data = ak_default, colour = "pink", size = 6) +
+        geom_point() +
+        scale_x_continuous(trans = 'log10') +
+        xlab("Minimum p-value") +
+        ylab("Mean p-value") +
+        theme_bw() +
+        theme(text = element_text(size = 20))
+k_scan_plot
+
+abcd_ggsave("2023_02_20_k_scan_plot.png", k_scan_plot)
+
+a_scan_plot <-
+    ggplot(ak_scan_om,
+        mapping = aes(x = min_p_val,
+                      y = mean_p_val,
+                      color = nclust,
+                      size = alpha)) +
+        geom_point(data = ak_default, colour = "pink", size = 7) +
+        geom_point() +
+        scale_x_continuous(trans = 'log10') +
+        xlab("Minimum p-value") +
+        ylab("Mean p-value") +
+        theme_bw() +
+        theme(text = element_text(size = 20))
+a_scan_plot
+
+abcd_ggsave("2023_02_20_a_scan_plot.png", a_scan_plot)
+
+
+# Alternative visualizations
+# Min-p-values
 a_k_matrix_min <- matrix(nrow = length(unique(ak_scan_om$K)),
                      ncol = length(unique(ak_scan_om$alpha)))
 colnames(a_k_matrix_min) <- as.character(seq(0.3, 1, by = 0.1))
@@ -248,6 +300,9 @@ for (i in seq_len(nrow(ak_scan_om))) {
 }
 pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE)
 
+abcd_pheatmapsave("2023_02_20_a_k_matrix_min.png", a_k_matrix_min)
+
+# Mean p-values
 a_k_matrix_mean <- matrix(nrow = length(unique(ak_scan_om$K)),
                           ncol = length(unique(ak_scan_om$alpha)))
 colnames(a_k_matrix_mean) <- as.character(seq(0.3, 1, by = 0.1))
@@ -260,6 +315,8 @@ for (i in seq_len(nrow(ak_scan_om))) {
    a_k_matrix_mean[row, col] <- mean_p
 }
 pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE)
+
+abcd_pheatmapsave("2023_02_20_a_k_matrix_mean.png", a_k_matrix_mean)
 ```
 
 
@@ -273,14 +330,14 @@ design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 #write_csv(design_matrix,
 #    here(paste0("data/abcd/results/processed/full_design_matrix.csv")))
 
-output_matrix_full <- execute_design_matrix(data_list, design_matrix, outcome_list)
+output_matrix_full <-
+    execute_design_matrix(data_list, design_matrix, outcome_list)
 
 write_csv(output_matrix_full,
     here(paste0("data/abcd/results/processed/2023_02_17_om.csv")))
 
 output_matrix_full <-
     read_delim(here(paste0("data/abcd/results/processed/2023_02_17_om.csv")))
-
 
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00414
