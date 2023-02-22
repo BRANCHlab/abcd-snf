@@ -11,8 +11,6 @@ library(here)
 library(ggplot2)
 library(pheatmap)
 
-
-
 # Function to import data from carbon
 load_data <- function(filename, type, imputed = TRUE) {
     if (imputed) {
@@ -341,10 +339,11 @@ output_matrix_full <-
     execute_design_matrix(data_list, design_matrix, outcome_list)
 
 write_csv(output_matrix_full,
-    here(paste0("data/abcd/results/processed/2023_02_17_om.csv")))
+    here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))
 
 output_matrix_full <-
-    read_delim(here(paste0("data/abcd/results/processed/2023_02_17_om.csv")))
+    read_delim(here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))
+
 
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00414
@@ -352,12 +351,11 @@ min(output_matrix_full$mean_p_val) #0.00414
 mc_results <- meta_cluster(output_matrix_full)
 
 write_csv(data.frame(mc_results), here(paste0("data/abcd/results/processed/",
-    "2023_02_17_mc_results.csv")))
+    "2023_02_22_mc_results.csv")))
 
 mc_results <- as.matrix(read_delim(
     here(paste0("data/abcd/results/processed/",
-                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
-
+                "2023_02_22_mc_results.csv"))))
 
 # That is extremely well-separated
 colnames(mc_results) <- NULL
@@ -377,7 +375,10 @@ pheatmap(mc_results,
     legend_labels = c("0", "0.5", "1", "ARI\n\n"),
     legend = TRUE,
     border_color = FALSE,
-    filename = img_path("2023_02_21_mc_results.png"))
+    filename = img_path("2023_02_22_mc_results.png"),
+    cellheight = 6,
+    width = 10,
+    height = 10)
 dev.off()
 
 # Pretty art
@@ -385,7 +386,7 @@ pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
 
 # Same thing, but saving the file
 pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
-    filename = img_path("2023_02_mc_pretty.png"))
+    filename = img_path("2023_02_22_mc_pretty.png"))
 dev.off()
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
@@ -412,13 +413,6 @@ dm_scaled_reordered <- dm_scaled[out$tree_row[["order"]], ]
 
 dm_reordered <- design_matrix[out$tree_row[["order"]], ]
 
-# The corresponding design matrix
-pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
-
-dm_scaled_reordered_norows <- dm_scaled_reordered
-
-rownames(dm_scaled_reordered_norows) <- NULL
-
 # Heatmap of the design matrix
 pheatmap(dm_scaled_reordered,
          cluster_rows = FALSE,
@@ -434,14 +428,11 @@ pheatmap(dm_scaled_reordered,
     labels_row = "",
     legend = FALSE,
     fontsize = 12,
-    filename = img_path("2023_02_21_dm.png"))
+    filename = img_path("2023_02_22_dm.png"))
 dev.off()
 
 mc_pvals <- p_val_select(output_matrix_full)
 mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
-
-# pheatmap(mc_pvals_reordered, cluster_rows = FALSE,
-#     filename = here("figures/abcd/om_reordered_pvals.png"))
 
 # This is the actual important graph
 pheatmap(mc_pvals_reordered,
@@ -458,117 +449,81 @@ pheatmap(mc_pvals_reordered,
     legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
     cluster_rows = FALSE,
     legend = TRUE,
-    filename = here(paste0("data/abcd/results/figures/2023_02_21_dm.png")))
+    filename = img_path("2023_02_22_mc_pvals.png"))
 dev.off()
 
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 
 om_reordered
-
-om_reordered$snf_scheme[1:40]
-
-which(om_reordered$snf_scheme == 1)
-
-dm_reordered$row_id
-
 ```
 
-# New section on finding the solutions to use for characterization
-
+# Examining distribution of subjects across the various clustering solutions
 ```{r}
-
-# The strongest performing meta cluster by visual inspection
+# A selection based on the main visual meta cluster and the p-values
 best_mc <- om_reordered[6:41, ]
 
 best_mc
 
-best_mc # it's a tibble
+best_mc_clusters <- as.matrix(subs(best_mc)[, -1])
 
+# Visualization of cluster assignments
+pheatmap(best_mc_clusters,
+    cluster_rows = FALSE,
+    show_rownames = FALSE,
+    show_colnames = FALSE,
+    legend = FALSE,
+    cellwidth = 2.2)
+
+pheatmap(best_mc_clusters,
+    cluster_rows = FALSE,
+    show_rownames = FALSE,
+    show_colnames = FALSE,
+    legend = FALSE,
+    cellwidth = 2.2,
+    filename = img_path("2023_02_22_cluster_assignment_heatmap.png"))
+dev.off()
+
+# Alternative visualizations
 best_mc_subs <- best_mc |>
     dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
     t()
 colnames(best_mc_subs) <- best_mc_subs["row_id", ]
 best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
-
-
 best_mc_subs <- as.data.frame(best_mc_subs)
 best_mc_subs <- sapply(best_mc_subs, as.numeric)
-
-best_mc_subs
-
-row_means <- apply(X=best_mc_subs, MARGIN=1, FUN=mean, na.rm=TRUE)
-
+row_means <- apply(X = best_mc_subs, MARGIN = 1, FUN = mean, na.rm = TRUE)
 names(row_means) <- colnames(subs(best_mc))[-1]
 
 # Shows how consistently a subject was assigned to a particular cluster
-plot(row_means)
+png(img_path("2023_02_22_avg_cluster.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+plot(row_means,
+    xlab = "Subject",
+    ylab = "Mean assigned cluster")
+dev.off()
 
-hist(row_means)
+# Histogram form
+png(img_path("2023_02_22_avg_cluster_hist.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+hist(row_means,
+    xlab = "Mean assigned cluster",
+    main = NULL)
+dev.off()
+```
 
-abs(row_means - 1.5) - 0.5
+# Choosing specific solutions to further characterize
 
-# How far away are the mean cluster assignments to either 1 or 2?
-names(row_means)
-
-row_means
-
-colnames(best_mc_subs)
-
-
-deviation_df <- data.frame(
-    subjectkey = names(row_means),
-    deviation = abs(abs(row_means - 1.5) - 0.5))
-rownames(deviation_df) <- NULL
-
-row_means
-
-which(deviation_df$deviation == max(deviation_df$deviation))
-
-plot(deviation_df$deviation)
-
-hist(deviation_df$deviation)
-
-ggplot(deviation_df, aes(x = deviation)) +
-    geom_density() +
-    geom_vline(xintercept = 0.15, colour = "red") +
-    theme_bw()
-
-
-length(which(deviation_df$deviation > 0.25))
-length(which(deviation_df$deviation > 0.15))
-length(which(deviation_df$deviation > 0.1))
-length(which(deviation_df$deviation > 0.086))
-length(which(deviation_df$deviation > 0.05))
-length(which(deviation_df$deviation > 0.0285))
-length(which(deviation_df$deviation > 0.01))
-
-median(c(1, 1, 2, 2))
-
-nrow(best_mc)
-
-# Function to show deviation given number of solutions
-#  and number of solutions stating a subject should be in cluster 2
-deviation_tally <- function(n, n_2) {
-    return(abs(abs(mean(c(rep(2, n_2), rep(1, n - n_2)) - 1.5) - 0.5)))
-}
-
-deviation_tally(36, 0.9 * 36)
-deviation_tally(36, 0.9 * 36)
-deviation_tally(36, 0.95 * 36)
-
-which(deviation_df$deviation > 0.15)
-
-low_deviation_subjects <-
-    deviation_df$subjectkey[deviation_df$deviation <= 0.15]
-
-low_deviation_subjects
-
+```{r}
 om_reordered
 
-best_mc_subs
-
 # Next steps are to evaluate a few options:
-# A consensus cluster row
+# A consensus cluster row (nah)
 # A row containing everybody
 # Consensus cluster row without problematic patients
 # A row containing everybody without problematic patients
@@ -577,41 +532,33 @@ best_mc_subs
 # 1. The consensus results
 # 2. The best results
 
-best_mc_subs
-
 # Best MC Subs: finding some dm rows to work with
-# Is something not working?
-
 best_mc_df <- data.frame(best_mc_subs)
 colnames(best_mc_df) <- colnames(best_mc_subs)
 best_mc_df$subjectkey <- rownames(best_mc_df)
 rownames(best_mc_df) <- NULL
 
-best_mc_df
-
-
-best_mc
-
-best_mc_subs <- best_mc |>
-    dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
-    t()
-colnames(best_mc_subs) <- best_mc_subs["row_id", ]
-best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
-
-
-best_mc$inc_var_count <- best_mc |>
+# Choosing a row to characterize by p-value
+best_mc_copy <- best_mc
+best_mc_copy$inc_var_count <- best_mc_copy |>
     dplyr::select(dplyr::starts_with("inc")) |>
     rowSums()
 
-ggplot(best_mc, aes(x = min_p_val, y = mean_p_val, label = row_id, color = (inc_var_count == 25))) +
-  geom_point() +
-  scale_x_continuous(trans='log10') +
-  geom_text(hjust=0, vjust=0) +
-  theme_bw()
+ggplot(best_mc_copy,
+    aes(x = min_p_val, y = mean_p_val, label = row_id,
+        color = (inc_var_count == 25))) +
+    geom_point() +
+    scale_x_continuous(trans = "log10") +
+    scale_y_continuous(trans = "log10") +
+    geom_text(hjust = 0, vjust = 0) +
+    xlab("Minimum CBCL log(p-value)") +
+    ylab("Mean CBCL log(p-value)") +
+    labs(color = "All variables included?") +
+    theme_bw() +
+    theme(text = element_text(size = 15))
+# ggsave(img_path("2023_02_22_solutions_by_pvals.png"))
 
-om_reordered$row_id
 
-best_mc
 
 # The rows that had the lowest min/mean p values
 lowest_p_a <- best_mc[best_mc$row_id == 10, ]
