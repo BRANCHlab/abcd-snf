@@ -11,6 +11,8 @@ library(here)
 library(ggplot2)
 library(pheatmap)
 
+
+
 # Function to import data from carbon
 load_data <- function(filename, type, imputed = TRUE) {
     if (imputed) {
@@ -35,6 +37,11 @@ abcd_pheatmapsave <- function(filename, matrix) {
     pheatmap(matrix, filename = filename)
 }
 
+img_path <- function(filename) {
+    img_folder <- here(paste0("data/abcd/results/figures/"))
+    img_path <- paste0(img_folder, filename)
+    return(img_path)
+}
 
 # Importing data
 as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
@@ -347,21 +354,48 @@ mc_results <- meta_cluster(output_matrix_full)
 write_csv(data.frame(mc_results), here(paste0("data/abcd/results/processed/",
     "2023_02_17_mc_results.csv")))
 
-#mc_results <- as.matrix(read_delim(
-#    here(paste0("data/abcd/results/processed/",
-#                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
+mc_results <- as.matrix(read_delim(
+    here(paste0("data/abcd/results/processed/",
+                "full_scan_om_adjusted_cbcl_inc_psych_mc_results.csv"))))
+
+
+# That is extremely well-separated
+colnames(mc_results) <- NULL
+rownames(mc_results) <- NULL
+pheatmap(mc_results,
+    legend_breaks = c(0, 0.5, 1, max(mc_results)),
+    main = "",
+    legend_labels = c("0", "0.5", "1", "ARI\n\n"),
+    legend = TRUE, border_color = FALSE)
+
+# Same thing, but saving the file
+colnames(mc_results) <- NULL
+rownames(mc_results) <- NULL
+pheatmap(mc_results,
+    legend_breaks = c(0, 0.5, 1, max(mc_results)),
+    main = "",
+    legend_labels = c("0", "0.5", "1", "ARI\n\n"),
+    legend = TRUE,
+    border_color = FALSE,
+    filename = img_path("2023_02_21_mc_results.png"))
+dev.off()
+
+# Pretty art
+pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
+
+# Same thing, but saving the file
+pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
+    filename = img_path("2023_02_mc_pretty.png"))
+dev.off()
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-
-# That is extremely well-separated
-pheatmap(mc_results, border_color = FALSE)
 ```
 
 Make sure to remove headaches from the final list of examined outcomes, as it is basically an input
 
 
-## Figuring out how to characterize the MC results
+## Characterizing meta-clustering results
 
 ```{r}
 # Trying to plot the input design matrix as a heatmap
@@ -372,25 +406,36 @@ dm_scaled$alpha <- dm_scaled$alpha / max(dm_scaled$alpha)
 dm_scaled$snf_scheme <- dm_scaled$snf_scheme / max(dm_scaled$snf_scheme)
 dm_scaled$eigen_or_rot <- dm_scaled$eigen_or_rot / max(dm_scaled$eigen_or_rot)
 
-pheatmap(dm_scaled, cluster_rows = FALSE, cluster_columns = FALSE)
-
-#out <- pheatmap(mc_results,
-#    filename = here("figures/abcd/mc_heatmap_inc_psych.png"))
-
 out <- pheatmap(mc_results)
 
 dm_scaled_reordered <- dm_scaled[out$tree_row[["order"]], ]
 
 dm_reordered <- design_matrix[out$tree_row[["order"]], ]
 
-dm_reordered
-
-# pheatmap(dm_scaled_reordered, cluster_rows = FALSE,
-#     filename = here("figures/abcd/dm_scaled_reordered_inc_psych.png"))
-
+# The corresponding design matrix
 pheatmap(dm_scaled_reordered, cluster_rows = FALSE)
 
-dm_scaled_reordered
+dm_scaled_reordered_norows <- dm_scaled_reordered
+
+rownames(dm_scaled_reordered_norows) <- NULL
+
+# Heatmap of the design matrix
+pheatmap(dm_scaled_reordered,
+         cluster_rows = FALSE,
+         cluster_cols = FALSE,
+         labels_row = "",
+         legend = FALSE,
+         fontsize = 12)
+
+# Same thing but saved to a file
+pheatmap(dm_scaled_reordered,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    labels_row = "",
+    legend = FALSE,
+    fontsize = 12,
+    filename = img_path("2023_02_21_dm.png"))
+dev.off()
 
 mc_pvals <- p_val_select(output_matrix_full)
 mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
@@ -399,7 +444,22 @@ mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 #     filename = here("figures/abcd/om_reordered_pvals.png"))
 
 # This is the actual important graph
-pheatmap(mc_pvals_reordered, cluster_rows = FALSE)
+pheatmap(mc_pvals_reordered,
+    legend_breaks = c(0, 0.2, 0.4, 0.6, 0.8, max(mc_pvals_reordered)),
+    main = "",
+    legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
+    cluster_rows = FALSE,
+    legend = TRUE)
+
+# Same one, but saved
+pheatmap(mc_pvals_reordered,
+    legend_breaks = c(0, 0.2, 0.4, 0.6, 0.8, max(mc_pvals_reordered)),
+    main = "",
+    legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
+    cluster_rows = FALSE,
+    legend = TRUE,
+    filename = here(paste0("data/abcd/results/figures/2023_02_21_dm.png")))
+dev.off()
 
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 
