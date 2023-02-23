@@ -43,10 +43,17 @@ img_path <- function(filename) {
 
 # The better function
 image_path <- function(filename) {
-    img_folder <- here(paste0("data/abcd/results/figures/"))
+    image_folder <- here(paste0("data/abcd/results/figures/"))
     date <- paste0(gsub("-", "_", Sys.Date()), "_")
-    image_path <- paste0(img_folder, date, filename)
+    image_path <- paste0(image_folder, date, filename)
     return(image_path)
+}
+
+data_path <- function(filename) {
+    data_folder <- here(paste0("data/abcd/results/processed/"))
+    date <- paste0(gsub("-", "_", Sys.Date()), "_")
+    data_path <- paste0(data_folder, date, filename)
+    return(data_path)
 }
 
 
@@ -1113,7 +1120,9 @@ ci
 
 # See if we can get the label prop results using the design matrix approach
 ```{r}
-# Importing data again
+# I have to re-import because of the 'keep_split' that happened early in script
+# Once the keep training split data is renamed to end in train, won't need to
+#  do this double importing.
 as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
 as_mtbi_mechanism <- load_data("as_mtbi_mechanism_imp.csv", type = "inputs")
 as_mtbi_mem_daze <- load_data("as_mtbi_mem_daze_imp.csv", type = "inputs")
@@ -1202,6 +1211,7 @@ cbcl_anxiety_train <- keep_split(cbcl_anxiety, assigned_df, "train")
 cbcl_attention_train <- keep_split(cbcl_attention, assigned_df, "train")
 cbcl_aggressive_train <- keep_split(cbcl_aggressive, assigned_df, "train")
 sds_sleep_train <- keep_split(sds_sleep, assigned_df, "train")
+
 as_mtbi_loc_test <- keep_split(as_mtbi_loc, assigned_df, "test")
 as_mtbi_mechanism_test <- keep_split(as_mtbi_mechanism, assigned_df, "test")
 as_mtbi_mem_daze_test <- keep_split(as_mtbi_mem_daze, assigned_df, "test")
@@ -1240,8 +1250,6 @@ cbcl_anxiety_test <- keep_split(cbcl_anxiety, assigned_df, "test")
 cbcl_attention_test <- keep_split(cbcl_attention, assigned_df, "test")
 cbcl_aggressive_test <- keep_split(cbcl_aggressive, assigned_df, "test")
 sds_sleep_test <- keep_split(sds_sleep, assigned_df, "test")
-# Begin label propagation: https://rdrr.io/cran/SNFtool/src/R/groupPredict.r
-
 
 as_mtbi_loc_full <- rbind(as_mtbi_loc_train, as_mtbi_loc_test)
 as_mtbi_mechanism_full <- rbind(as_mtbi_mechanism_train, as_mtbi_mechanism_test)
@@ -1269,7 +1277,6 @@ p_sports_full <- rbind(p_sports_train, p_sports_test)
 p_prosocial_full <- rbind(p_prosocial_train, p_prosocial_test)
 p_parent_psych_full <- rbind(p_parent_psych_train, p_parent_psych_test)
 p_exercise_full <- rbind(p_exercise_train, p_exercise_test)
-
 cbcl_headaches_full <- rbind(cbcl_headaches_train, cbcl_headaches_test)
 cbcl_nausea_full <- rbind(cbcl_nausea_train, cbcl_nausea_test)
 cbcl_vomiting_full <- rbind(cbcl_vomiting_train, cbcl_vomiting_test)
@@ -1284,7 +1291,6 @@ cbcl_anxiety_full <- rbind(cbcl_anxiety_train, cbcl_anxiety_test)
 cbcl_attention_full <- rbind(cbcl_attention_train, cbcl_attention_test)
 cbcl_aggressive_full <- rbind(cbcl_aggressive_train, cbcl_aggressive_test)
 sds_sleep_full <- rbind(sds_sleep_train, sds_sleep_test)
-
 
 full_data_list <- generate_data_list(
                                 mtbi_loc = as_mtbi_loc_full,
@@ -1329,25 +1335,17 @@ outcome_list_full <- generate_outcome_list(
 
 
 # Options we've previously collected
-# The best rows (from the output matrix, which isn't really needed here)
-top_om_rows
+# The best row (from the output matrix, which isn't really needed here)
+top_om_row
 
-# The best rows (from the design matrix)
-top_dm_rows <- dm_reordered |>
-    dplyr::filter(row_id %in% top_om_rows$row_id)
+# The best row (from the design matrix)
+top_dm_row <- dm_reordered |>
+    dplyr::filter(row_id %in% top_om_row$row_id)
+top_dm_row
 
-top_om_rows <- top_om_rows |> dplyr::arrange(by = row_id)
-top_dm_rows <- top_dm_rows |> dplyr::arrange(by = row_id)
-
-
-top_om_rows
-
-top_dm_rows
-
-current_dm_row <- top_dm_rows[4, ]
-current_dm_row
-
-current_om_row <- top_om_rows[4, ]
+# This formality is in preparation for looping this chunk through many rows
+current_dm_row <- top_dm_row
+current_om_row <- top_om_row
 
 current_data_list <- execute_inclusion(full_data_list, current_dm_row)
 current_K <- current_dm_row$K
@@ -1358,41 +1356,33 @@ full_fused_network <- snf_step(current_data_list,
                           K = current_K,
                           alpha = current_alpha)
 
-# Need to reorder the fused network
-
+# Make sure the order between OM and fused network match
 clustered_subs <- colnames(subs(current_om_row))[-1]
 
 test_subs <- as_mtbi_loc_test$subjectkey
-
 ordered_subs <- c(clustered_subs, test_subs)
-
 full_fused_network <- full_fused_network[ordered_subs, ordered_subs]
 
-# Looks good
-full_fused_network[1:5, 1:5]
-clustered_subs[1:5]
+identical(colnames(full_fused_network)[seq_along(clustered_subs)],
+          clustered_subs)
 
-
-clustered_subjects <- subs(best_mc[om_row, ])
-
-# Ahh.. gotta fix something in here
-
-
-clustered_subjects <- subs(current_om_row)
+clustered_subjects <- subs(current_om_row) # keep row_id and subj cluster info
 clusters <- data.frame(t(clustered_subjects))
 clusters$id <- rownames(clusters)
 rownames(clusters) <- NULL
 colnames(clusters) <- c("cluster", "subjectkey")
 clusters <- clusters[2:nrow(clusters), ]
-clusters
+clusters # reformatted for label prop
 
 groups <- clusters$cluster
 groups
 
+# Another sanity check that everything is in order
+identical(colnames(full_fused_network)[seq_along(clustered_subs)],
+          clusters$subjectkey)
 
-
-Y0 <- matrix(0, nrow(fused_network), as.numeric(max(groups)))
-
+# Label propagation from SNFtool's source code
+Y0 <- matrix(0, nrow(full_fused_network), as.numeric(max(groups)))
 Y0
 groups <- as.numeric(groups)
 for (i in 1:length(groups)){
@@ -1453,10 +1443,17 @@ ord_reg_p(test_clusters, cbcl_attention, "cbcl_attention")
 ord_reg_p(test_clusters, cbcl_aggressive, "cbcl_aggressive")
 c1_test_df <- test_evaluation_df |> dplyr::filter(cluster == 1)
 c2_test_df <- test_evaluation_df |> dplyr::filter(cluster == 2)
-nrow(c1_test_df) # 4
-nrow(c2_test_df) # 63
-# How many borderline/clinical patients in each cluster?
+nrow(c1_test_df) # 6
+nrow(c2_test_df) # 61
 
+# THIS IS WHERE I LEFT OFF! (FEBRUARY 23)
+
+write_csv(c1_test_df, data_path("label_propagated_c1.csv"))
+write_csv(c2_test_df, data_path("label_propagated_c2.csv"))
+
+
+
+# How many borderline/clinical patients in each cluster?
 length(which(c1_test_df$cbcl_nausea > 0))
 length(which(c1_test_df$cbcl_dizzy > 0))
 length(which(c1_test_df$cbcl_overtired > 0))
