@@ -41,6 +41,16 @@ img_path <- function(filename) {
     return(img_path)
 }
 
+# The better function
+image_path <- function(filename) {
+    img_folder <- here(paste0("data/abcd/results/figures/"))
+    date <- paste0(gsub("-", "_", Sys.Date()), "_")
+    image_path <- paste0(img_folder, date, filename)
+    return(image_path)
+}
+
+
+
 # Importing data
 as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
 as_mtbi_mechanism <- load_data("as_mtbi_mechanism_imp.csv", type = "inputs")
@@ -500,6 +510,7 @@ plot(row_means,
     ylab = "Mean assigned cluster")
 dev.off()
 
+
 # Histogram form
 png(img_path("2023_02_22_avg_cluster_hist.png"),
     height = 5,
@@ -657,11 +668,6 @@ comparison_df <-
 
 comparison_df$cluster <- as.factor(comparison_df$cluster)
 
-
-colnames(comparison_df)
-
-dim(comparison_df)
-
 # Using ordinal regression, the p-values are very low
 8 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
 8 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy")
@@ -671,9 +677,6 @@ dim(comparison_df)
 8 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety")
 8 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention")
 8 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive")
-
-# Some manual checks for making graphs!
-
 
 nausea_summary <- comparison_df |>
     group_by(cluster) |>
@@ -690,7 +693,7 @@ ggplot(nausea_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_nausea.png"))
+ggsave(image_path("cbcl_nausea.png"), height = 6, dpi = 300)
 # p = 0.015
 
 dizzy_summary <- comparison_df |>
@@ -704,10 +707,11 @@ ggplot(dizzy_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL dizzy Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_dizzy.png"))
+ggsave(image_path("cbcl_dizzy.png"), height = 6, dpi = 300)
 # p = 0.12 (NS)
 
 overtired_summary <- comparison_df |>
@@ -721,12 +725,12 @@ ggplot(overtired_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL overtired Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_overtired.png"))
+ggsave(image_path("cbcl_overtired.png"), height = 6, dpi = 300)
 # p = 0.037
-
 
 sleeping_more_summary <- comparison_df |>
     group_by(cluster) |>
@@ -739,10 +743,11 @@ ggplot(sleeping_more_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_more Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_sleeping_more.png"))
+ggsave(image_path("cbcl_sleeping_more.png"), height = 6, dpi = 300)
 # p = 0.024
 
 sleeping_less_summary <- comparison_df |>
@@ -756,10 +761,11 @@ ggplot(sleeping_less_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_less Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_sleeping_less.png"))
+ggsave(image_path("cbcl_sleeping_less.png"), height = 6, dpi = 300)
 # p = 0.06 (NS)
 
 anxiety_summary <- comparison_df |>
@@ -773,10 +779,11 @@ ggplot(anxiety_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL anxiety Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_anxiety.png"))
+ggsave(image_path("cbcl_anxiety.png"), height = 6, dpi = 300)
 # p = 0.00025
 
 attention_summary <- comparison_df |>
@@ -790,10 +797,11 @@ ggplot(attention_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL attention Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_attention.png"))
+ggsave(image_path("cbcl_attention.png"), height = 6, dpi = 300)
 # p = 2e-05
 
 aggressive_summary <- comparison_df |>
@@ -807,11 +815,29 @@ ggplot(aggressive_summary,
     geom_bar(stat = "identity", position = position_stack()) +
     geom_text(aes(label = paste(Percent, "%"), y = Percent),
             position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
     labs(x = "Cluster", y = "Percentage", fill = "CBCL aggressive Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(img_path("2023_02_22_cbcl_aggressive.png"))
+ggsave(image_path("cbcl_aggressive.png"), height = 6, dpi = 300)
 # p = 2e-05
+
+depress_summary <- comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_depress) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+depress_summary$cbcl_depress <-
+    factor(depress_summary$cbcl_depress, levels = c("2", "1", "0"))
+ggplot(depress_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_depress)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL Depress Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+ggsave(image_path("cbcl_depress.png"), height = 6, dpi = 300)
 
 
 pval_vec <- c(
@@ -853,6 +879,8 @@ length(which(c2_df$cbcl_anxiety > 0))
 length(which(c2_df$cbcl_attention > 0))
 length(which(c2_df$cbcl_aggressive > 0))
 
+
+
 # Plotting
 which(c1_df$cbcl_nausea > 0)
 which(c1_df$cbcl_dizzy > 0)
@@ -873,23 +901,6 @@ which(c2_df$cbcl_anxiety > 0)
 which(c2_df$cbcl_attention > 0)
 which(c2_df$cbcl_aggressive > 0)
 
-c2_df
-
-c2_df |>
-    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
-    as.matrix() |>
-    pheatmap(cellheight = 4,
-             filename = img_path("2022_02_22_cbcl_train_matrix_c2.png"))
-dev.off()
-
-c1_df |>
-    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
-    as.matrix() |>
-    pheatmap(cellheight = 4,
-             filename = img_path("2022_02_22_cbcl_train_matrix_c1.png"))
-dev.off()
-
-# HERE IS WHERE I LEFT OFF 2022_02_23
 
 # Proportions:
 length(which(c1_df$cbcl_nausea > 0)) / nrow(c1_df) * 100
@@ -921,10 +932,127 @@ c2_df$cbcl_total <- c2_df |>
     dplyr::select(dplyr::contains("cbcl")) |>
     rowSums()
 
+library("RColorBrewer")
+
+color
+
+# create matrix
+colours <- c("#2274e0", "#FFFFBF", "#db0f1d")
+
+# Obtain the heatmap of c1_df so we can extract the right column order
+cbcl_pheatmap <- c1_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix() |>
+    pheatmap(cellheight = 3,
+             color = colours,
+             legend_breaks = c(0, 1, 2),
+             cellwidth = 30)
+
+# This is the clustered column order from c1_df
+cbcl_outcome_clustering <- cbcl_pheatmap$tree_col[["order"]]
+
+# Prep the two dataframes in matrix form so we don't need the many pipes
+c1_df_matrix <- c1_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+c2_df_matrix <- c2_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+
+# Reorder the matrices to match the column order from the original c1_df
+c1_df_matrix <- c1_df_matrix[, cbcl_outcome_clustering]
+c2_df_matrix <- c2_df_matrix[, cbcl_outcome_clustering]
+
+# Plots
+pheatmap(c1_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+# Same thing, but saved
+pheatmap(c1_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = image_path("cbcl_train_matrix_c1.png"))
+dev.off()
+
+pheatmap(c2_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+# Same thing, but saved
+pheatmap(c2_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = image_path("cbcl_train_matrix_c2.png"))
+dev.off()
+
+
+c1_df_total <- c1_df |>
+    dplyr::select(subjectkey, cbcl_total)
+c2_df_total <- c2_df |>
+    dplyr::select(subjectkey, cbcl_total)
+c1_df_total$cluster <- 1
+c2_df_total$cluster <- 2
+train_total_c_df <- rbind(c1_df_total, c2_df_total)
+train_total_c_df$cluster <- as.factor(train_total_c_df$cluster)
+
+ggplot(train_total_c_df,
+    aes(x = cbcl_total,
+        fill = cluster)) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+    geom_density(alpha = 0.6) +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+ggsave(image_path("cbcl_total_problems_train.png"), height = 6, dpi = 300)
+
+# HERE
+
+# Rather than looking at the sum (which treats 1 and 2 differently,
+#  examine the density of whether or not a child is borderline+ (i.e., above 0)
+c1_df_no_total <- c1_df |>
+    dplyr::select(dplyr::contains("cbcl"), -cbcl_total)
+c1_df_no_total[c1_df_no_total == 2] <- 1
+c1_df_no_total$total_any <- rowSums(c1_df_no_total)
+
+c2_df_no_total <- c2_df |>
+    dplyr::select(dplyr::contains("cbcl"), -cbcl_total)
+c2_df_no_total[c2_df_no_total == 2] <- 1
+c2_df_no_total$total_any <- rowSums(c2_df_no_total)
+
+c1_df_total_binary <- c1_df_no_total |>
+    dplyr::select(total_any)
+c2_df_total_binary <- c2_df_no_total |>
+    dplyr::select(total_any)
+c1_df_total_binary$cluster <- 1
+c2_df_total_binary$cluster <- 2
+
+train_total_c_binary_df <- rbind(c1_df_total_binary, c2_df_total_binary)
+train_total_c_binary_df$cluster <- as.factor(train_total_c_df$cluster)
+
+ggplot(train_total_c_binary_df,
+    aes(x = total_any,
+        fill = cluster)) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+    geom_density(alpha = 0.6) +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+ggsave(image_path("cbcl_any_problems_train.png"), height = 6, dpi = 300)
+
+
 c1_df$cbcl_total[c1_df$cbcl_total > 0] <- 1
 c2_df$cbcl_total[c2_df$cbcl_total > 0] <- 1
-
-c1_df
 
 # Consider fleshing out these odds ratios more later
 
@@ -942,8 +1070,10 @@ odds_ratio <- function(DE, HE, DN, HN) {
     denominator <- DN / HN
     return(numerator / denominator)
 }
-odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
+true_or <- odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
+true_or
 ors <- vector()
+set.seed(42)
 for (i in 1:1000) {
     bootstrap_c1 <- sample(c1_df$cbcl_total, replace = TRUE)
     bootstrap_c2 <- sample(c2_df$cbcl_total, replace = TRUE)
@@ -954,12 +1084,32 @@ for (i in 1:1000) {
     ors <- c(ors,
              odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
 }
-quantile(ors, probs = c(0.05, 0.95))
-sample(c1_df$cbcl_total)
+ci <- quantile(ors, probs = c(0.05, 0.95))
+ci
+
+
+c1_and_c2_df <- rbind(c1_df, c2_df)
+c1_and_c2_df$cluster <- as.factor(c1_and_c2_df$cluster)
+c1_and_c2_df$cbcl_total <- as.factor(c1_and_c2_df$cbcl_total)
+c1_and_c2_df <- c1_and_c2_df |>
+    group_by(cluster) |>
+    count(cbcl_total) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+c1_and_c2_df$cbcl_total <-
+    factor(c1_and_c2_df$cbcl_total, levels = c("1", "0"))
+ggplot(c1_and_c2_df,
+    aes(x = cluster, y = Percent, fill = cbcl_total)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+    labs(x = "Cluster", y = "Percentage", fill = "Has any CBCL impairment") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+ggsave(image_path("any_cbcl_impairment.png"), height = 6, dpi = 300)
+true_or
+ci
 ```
-
-
-
 
 # See if we can get the label prop results using the design matrix approach
 ```{r}
@@ -1186,9 +1336,7 @@ top_om_rows
 top_dm_rows <- dm_reordered |>
     dplyr::filter(row_id %in% top_om_rows$row_id)
 
-
 top_om_rows <- top_om_rows |> dplyr::arrange(by = row_id)
-
 top_dm_rows <- top_dm_rows |> dplyr::arrange(by = row_id)
 
 
@@ -1350,6 +1498,7 @@ length(which(c2_test_df$cbcl_aggressive > 0))
 #length(which(c2_test_df$cbcl_attention > 0)) / nrow(c2_test_df) * 100
 #length(which(c2_test_df$cbcl_aggressive > 0)) / nrow(c2_test_df) * 100
 # More rigorous random simulation based testing
+
 c1_test_df
 c2_test_df
 c1_test_df$cbcl_total <- c1_test_df |>
