@@ -40,16 +40,22 @@ img_path <- function(filename) {
 }
 
 # The better function
-image_path <- function(filename) {
+image_path <- function(filename, date = NULL) {
     image_folder <- here(paste0("data/abcd/results/figures/"))
-    date <- paste0(gsub("-", "_", Sys.Date()), "_")
+    if (is.null(date)) {
+        date <- gsub("-", "_", Sys.Date())
+    }
+    date <- paste0(date, "_")
     image_path <- paste0(image_folder, date, filename)
     return(image_path)
 }
 
-data_path <- function(filename) {
+data_path <- function(filename, date = NULL) {
     data_folder <- here(paste0("data/abcd/results/processed/"))
-    date <- paste0(gsub("-", "_", Sys.Date()), "_")
+    if (is.null(date)) {
+        date <- gsub("-", "_", Sys.Date())
+    }
+    date <- paste0(date, "_")
     data_path <- paste0(data_folder, date, filename)
     return(data_path)
 }
@@ -1332,8 +1338,8 @@ top_dm_row
 write_csv(top_om_row, data_path("top_om_row.csv"))
 write_csv(top_dm_row, data_path("top_dm_row.csv"))
 
-top_om_row <- read_delim(data_path("top_om_row.csv"))
-top_dm_row <- read_delim(data_path("top_dm_row.csv"))
+top_om_row <- read_delim(data_path("top_om_row.csv", date = "2023_02_23"))
+top_dm_row <- read_delim(data_path("top_dm_row.csv", date = "2023_02_23"))
 
 
 # This formality is in preparation for looping this chunk through many rows
@@ -1445,10 +1451,12 @@ write_csv(c1_test_df, data_path("label_propagated_c1.csv"))
 write_csv(c2_test_df, data_path("label_propagated_c2.csv"))
 write_csv(test_evaluation_df, data_path("test_evaluation_df.csv"))
 
-c1_test_df <- data.frame(read_delim(data_path("label_propagated_c1.csv")))
-c2_test_df <- data.frame(read_delim(data_path("label_propagated_c2.csv")))
-test_evaluation_df <-
-    data.frame(read_delim(data_path("test_evaluation_df.csv")))
+c1_test_df <- data.frame(read_delim(data_path("label_propagated_c1.csv",
+    date = "2023_02_23")))
+c2_test_df <- data.frame(read_delim(data_path("label_propagated_c2.csv",
+    date = "2023_02_23")))
+test_evaluation_df <- data.frame(read_delim(data_path("test_evaluation_df.csv",
+    date = "2023_02_23")))
 
 c1_test_df$cbcl_total <- c1_test_df |>
     dplyr::select(dplyr::contains("cbcl")) |>
@@ -1470,6 +1478,10 @@ c1_impaired_frac <- length(which(c1_test_df$max_impair > 1)) / nrow(c1_test_df)
 c2_impaired_frac <- length(which(c2_test_df$max_impair > 1)) / nrow(c2_test_df)
 true_diff <- c1_impaired_frac - c2_impaired_frac
 
+c1_border_frac <- length(which(c1_test_df$max_impair > 0)) / nrow(c1_test_df)
+c2_border_frac <- length(which(c2_test_df$max_impair > 0)) / nrow(c2_test_df)
+true_diff_border <- c1_border_frac - c2_border_frac
+
 test_evaluation_df$cbcl_total <- test_evaluation_df |>
     dplyr::select(dplyr::contains("cbcl")) |>
     rowSums()
@@ -1477,9 +1489,16 @@ test_evaluation_df$cbcl_total <- test_evaluation_df |>
 test_evaluation_df <- test_evaluation_df |>
     rowwise() |>
     dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))
+```
 
-# Trying to pull out random splits of the testing data
-vector <- c()
+## Permutation testing
+
+### CBCL proportions
+
+```{r}
+
+# Permutation testing difference in proportion# {{{
+vector_uniform <- c()
 set.seed(42)
 for (i in 1:10000) {
     number_in_c1 <- sample.int(66, 1)
@@ -1493,19 +1512,23 @@ for (i in 1:10000) {
         length(which(mock_c2_df$max_impair > 1)) / nrow(mock_c2_df)
     difference <- c1_impaired_frac - c2_impaired_frac
     print(i)
-    vector <- c(vector, difference)
+    vector_uniform <- c(vector_uniform, difference)
     if (is.nan(difference)) {
         print(c1_impaired_frac)
         print(c2_impaired_frac)
         print(number_in_c1)
     }
 }
-
-percentile <- ecdf(vector)
+percentile <- ecdf(vector_uniform)
 1 - percentile(true_diff) # The p-value
 
+png(img_path("difference_in_proportion_cbcl_uniform_lp.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
 # This is an essential plot
-hist(vector,
+hist(vector_uniform,
     col = "gray",
     las = 1,
     main = "",
@@ -1514,10 +1537,347 @@ hist(vector,
 abline(v = true_diff,
     col = "red")
 axis(1,at=seq(-1,1,by=0.5))
+dev.off()# }}}
 
-# Praise it. PRAISE IT
+# Preserving the 6 and 61 split size# {{{
+vector_6_61 <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- 6
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 1)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 1)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_6_61 <- c(vector_6_61, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_6_61)
+1 - percentile(true_diff) # The p-value
+
+png(img_path("difference_in_proportion_cbcl_6_61_lp.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+hist(vector_6_61,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of children with clinical CBCL impairment")
+abline(v = true_diff,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
+dev.off()# }}}
+
+# Permutation testing difference in proportion borderline OR clinical# {{{
+vector_uniform <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- sample.int(66, 1)
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 0)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 0)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_uniform <- c(vector_uniform, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_uniform)
+1 - percentile(true_diff_border) # The p-value is 0.0341
+
+png(image_path("difference_in_proportion_any_cbcl_uniform_lp.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+# This is an essential plot
+hist(vector_uniform,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of any CBCL impairment")
+abline(v = true_diff_border,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
+dev.off()# }}}
+
+# Preserving the 6 and 61 split size# {{{
+vector_6_61 <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- 6
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 0)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 0)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_6_61 <- c(vector_6_61, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_6_61)
+1 - percentile(true_diff_border) # The p-value
+
+png(image_path("difference_in_proportion_any_cbcl_6_61_lp.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+hist(vector_6_61,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of any CBCL impairment")
+abline(v = true_diff_border,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
+dev.off()# }}}
+```
+
+## CBCL relationships
+
+```{r}
+
+c1_df
+
+test_evaluation_df
+
+c1_test_matrix <- c1_test_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+c1_test_matrix <- c1_test_matrix[, cbcl_outcome_clustering]
 
 
+c2_test_matrix <- c2_test_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+c2_test_matrix <- c2_test_matrix[, cbcl_outcome_clustering]
+
+
+pheatmap(c1_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+pheatmap(c2_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+pheatmap(c1_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = image_path("cbcl_test_matrix_c1.png"))
+dev.off()
+
+pheatmap(c2_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = image_path("cbcl_test_matrix_c2.png"))
+dev.off()
+
+```
+
+
+
+## Odds ratios
+```{r}
+
+# Training subjects only
+cbcl_outcomes <- list(
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive)
+
+top_om_row
+
+a <- list(3, 5, 6)
+
+append(a, 6)
+
+
+or_om_row <- function(om_row, outcome_list) {
+    om_row_subs <- subs(om_row)
+    clusters_df <- data.frame(t(om_row_subs))
+    clusters_df$cluster <- rownames(clusters_df)
+    rownames(clusters_df) <- NULL
+    colnames(clusters_df) <- c("cluster", "subjectkey")
+    clusters_df <- clusters_df[2:nrow(clusters_df), ]
+    clusters_and_outcomes_list <- append(list(clusters_df), outcome_list)
+    clusters_and_outcomes_df <- clusters_and_outcomes_list |>
+        purrr::reduce(dplyr::inner_join, by = "subjectkey")
+    return(clusters_and_outcomes_df)
+}
+train_evaluation_df <- or_om_row(top_om_row, cbcl_outcomes)
+
+train_evaluation_df
+
+
+odds_ratio <- function(de, he, dn, hn) {
+    numerator <- de / he
+    denominator <- dn / hn
+    return(numerator / denominator)
+}
+
+
+cbcl_or <- function(evaluation_df) {
+    or_df <- data.frame(outcome = as.character(),
+                        or = as.numeric(),
+                        ci_low = as.numeric(),
+                        ci_high = as.numeric())
+    outcome_names <- evaluation_df |>
+        dplyr::select(dplyr::starts_with("cbcl")) |>
+        colnames()
+    for (i in seq_along(outcome_names)) {
+        current_outcome <- outcome_names[i]
+        or_summary <- evaluation_df |>
+            group_by(cluster) |>
+            count(evaluation_df[, current_outcome] > 0)
+        colnames(or_summary) <- c("cluster", "bad_outcome", "n")
+        # Calculating odds ratios
+        de_bad_c1 <- or_summary |>
+            dplyr::filter(cluster == 1 & bad_outcome == TRUE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        he_good_c1 <- or_summary |>
+            dplyr::filter(cluster == 1 & bad_outcome == FALSE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        dn_bad_c2 <- or_summary |>
+            dplyr::filter(cluster == 2 & bad_outcome == TRUE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        hn_good_c2 <- or_summary |>
+            dplyr::filter(cluster == 2 & bad_outcome == FALSE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        or <- odds_ratio(de = de_bad_c1,
+            he = he_good_c1,
+            dn = dn_bad_c2,
+            hn = hn_good_c2)
+        # Calculating upper and lower bounds
+        a_val <- de_bad_c1
+        c_val <- dn_bad_c2
+        b_val <- he_good_c1
+        d_val <- hn_good_c2
+        num <- a_val/b_val
+        den <- c_val/d_val
+        se_ln_or <- sqrt((1/a_val + 1/b_val + 1/c_val + 1/d_val))
+        ln_or <- log(num/den)
+        lower <- exp(ln_or - 1.96 * se_ln_or)
+        upper <- exp(ln_or + 1.96 * se_ln_or)
+        current_df <- data.frame(outcome = current_outcome,
+                              or = or,
+                              ci_low = lower,
+                              ci_high = upper)
+        or_df <- rbind(or_df, current_df)
+    }
+    return(or_df)
+}
+
+test_evaluation_df <- data.frame(test_evaluation_df)
+
+train_cbcl_ors <- cbcl_or(train_evaluation_df)
+test_cbcl_ors <- cbcl_or(test_evaluation_df)
+
+
+train_cbcl_ors
+
+test_cbcl_ors
+
+
+ggplot(train_cbcl_ors, aes(y = outcome, x = or, color = ci_low > 1)) +
+  geom_point(shape = 18, size = 5) +  
+  geom_errorbarh(aes(xmin = ci_low, xmax = ci_high), height = 0.25) +
+  geom_vline(xintercept = 1, color = "red", linetype = "dashed", cex = 1, alpha = 0.5) +
+  xlab("Odds Ratio (95% CI)") + 
+  ylab(" ") + 
+  scale_x_continuous(trans = 'log10') +
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(size = 12, colour = "black"),
+        axis.text.x.bottom = element_text(size = 12, colour = "black"),
+        axis.title.x = element_text(size = 12, colour = "black"))
+
+ggplot(test_cbcl_ors, aes(y = outcome, x = or, color = ci_low > 1)) +
+  geom_point(shape = 18, size = 5) +  
+  geom_errorbarh(aes(xmin = ci_low, xmax = ci_high), height = 0.25) +
+  geom_vline(xintercept = 1, color = "red", linetype = "dashed", cex = 1, alpha = 0.5) +
+  xlab("Odds Ratio (95% CI)") + 
+  ylab(" ") + 
+  scale_x_continuous(trans = 'log10') +
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(size = 12, colour = "black"),
+        axis.text.x.bottom = element_text(size = 12, colour = "black"),
+        axis.title.x = element_text(size = 12, colour = "black"))
+
+
+```
+
+
+
+
+```{r}
 test_comparison_df <- rbind(c1_test_df, c2_test_df)
 
 test_comparison_df$cluster <- as.factor(test_comparison_df$cluster)
