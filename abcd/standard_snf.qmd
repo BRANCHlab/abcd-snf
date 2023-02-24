@@ -1,6 +1,4 @@
-# Clustering
-
-## Loading and prepping data
+# Loading Data
 
 ```{r eval = FALSE}
 library(dplyr)
@@ -199,7 +197,9 @@ cbcl_aggressive <- keep_split(cbcl_aggressive, assigned_df, "train")
 sds_sleep <- keep_split(sds_sleep, assigned_df, "train")
 ```
 
-## SNF run to find good alpha and K hyperparameters
+# SNF
+
+## Alpha and K
 
 In this section, 'default' settings (i.e., including all variables) are used to iterate through clustering solutions from different values of alpha and K.
 
@@ -342,7 +342,7 @@ abcd_pheatmapsave("2023_02_20_a_k_matrix_mean.png", a_k_matrix_mean)
 ```
 
 
-## Full SNF run on training data
+## Training set
 
 ```{r}
 set.seed(42)
@@ -413,7 +413,7 @@ rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 Make sure to remove headaches from the final list of examined outcomes, as it is basically an input
 
 
-## Characterizing meta-clustering results
+## Meta-clustering
 
 ```{r}
 # Trying to plot the input design matrix as a heatmap
@@ -471,7 +471,8 @@ dev.off()
 
 ```
 
-# Examining distribution of subjects across the various clustering solutions
+## Distribution of cluster assignment
+
 ```{r}
 # A selection based on the main visual meta cluster and the p-values
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
@@ -530,7 +531,7 @@ hist(row_means,
 dev.off()
 ```
 
-# Choosing specific solutions to further characterize
+## Choosing top solution
 
 ```{r}
 om_reordered
@@ -571,27 +572,12 @@ ggplot(best_mc_copy,
     theme(text = element_text(size = 15))
 # ggsave(img_path("2023_02_22_solutions_by_pvals.png"))
 
-# All below commented out code is perhaps a little overkill
-## The rows that had the lowest min/mean p values
-#lowest_p_a <- best_mc[best_mc$row_id == 84, ]
-#lowest_p_b <- best_mc[best_mc$row_id == 10, ]
-#
-## The rows that had the lowest min/mean p-values, given all variables included
-#inc_all_a <- best_mc[best_mc$row_id == 28, ]
-#inc_all_b <- best_mc[best_mc$row_id == 48, ]
-#
-#top_om_rows <-
-#    do.call("rbind", list(lowest_p_a, lowest_p_b, inc_all_a, inc_all_b))
-#
-## They appear to not be that similar to each other
-#meta_cluster(top_om_rows)
-
 top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
 
 ```
 
 
-# Finding the consensus cluster best row - Can do this later {{{
+## Finding the consensus cluster best row - Can do this later {{{
 
 ```{r}
 # Let me now find the consensus clustering results
@@ -633,8 +619,9 @@ best_mc[which(best_mc$dist == min(row_distances)), ] # row 48
 ```
 }}}
 
+# Cluster characterization
 
-## Are the p-values calculated properly?
+## CBCL measures
 
 ```{r}
 # Pick a row
@@ -1024,7 +1011,6 @@ ggplot(train_total_c_df,
     theme(text = element_text(size = 20))
 ggsave(image_path("cbcl_total_problems_train.png"), height = 6, dpi = 300)
 
-# HERE
 
 # Rather than looking at the sum (which treats 1 and 2 differently,
 #  examine the density of whether or not a child is borderline+ (i.e., above 0)
@@ -1118,7 +1104,7 @@ true_or
 ci
 ```
 
-# See if we can get the label prop results using the design matrix approach
+# Label propagation
 ```{r}
 # I have to re-import because of the 'keep_split' that happened early in script
 # Once the keep training split data is renamed to end in train, won't need to
@@ -1343,6 +1329,13 @@ top_dm_row <- dm_reordered |>
     dplyr::filter(row_id %in% top_om_row$row_id)
 top_dm_row
 
+write_csv(top_om_row, data_path("top_om_row.csv"))
+write_csv(top_dm_row, data_path("top_dm_row.csv"))
+
+top_om_row <- read_delim(data_path("top_om_row.csv"))
+top_dm_row <- read_delim(data_path("top_dm_row.csv"))
+
+
 # This formality is in preparation for looping this chunk through many rows
 current_dm_row <- top_dm_row
 current_om_row <- top_om_row
@@ -1450,54 +1443,13 @@ nrow(c2_test_df) # 61
 
 write_csv(c1_test_df, data_path("label_propagated_c1.csv"))
 write_csv(c2_test_df, data_path("label_propagated_c2.csv"))
+write_csv(test_evaluation_df, data_path("test_evaluation_df.csv"))
 
+c1_test_df <- data.frame(read_delim(data_path("label_propagated_c1.csv")))
+c2_test_df <- data.frame(read_delim(data_path("label_propagated_c2.csv")))
+test_evaluation_df <-
+    data.frame(read_delim(data_path("test_evaluation_df.csv")))
 
-
-# How many borderline/clinical patients in each cluster?
-length(which(c1_test_df$cbcl_nausea > 0))
-length(which(c1_test_df$cbcl_dizzy > 0))
-length(which(c1_test_df$cbcl_overtired > 0))
-length(which(c1_test_df$cbcl_sleeping_more > 0))
-length(which(c1_test_df$cbcl_sleeping_less > 0))
-length(which(c1_test_df$cbcl_depress > 0))
-length(which(c1_test_df$cbcl_anxiety > 0))
-length(which(c1_test_df$cbcl_attention > 0))
-length(which(c1_test_df$cbcl_aggressive > 0))
-## C2 counts
-length(which(c2_test_df$cbcl_nausea > 0))
-length(which(c2_test_df$cbcl_dizzy > 0))
-length(which(c2_test_df$cbcl_overtired > 0))
-length(which(c2_test_df$cbcl_sleeping_more > 0))
-length(which(c2_test_df$cbcl_sleeping_less > 0))
-length(which(c2_test_df$cbcl_depress > 0))
-length(which(c2_test_df$cbcl_anxiety > 0))
-length(which(c2_test_df$cbcl_attention > 0))
-length(which(c2_test_df$cbcl_aggressive > 0))
-
-# Hm... I believe it is on to something.
-#length(which(c1_test_df$cbcl_nausea > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_dizzy > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_overtired > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_sleeping_more > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_sleeping_less > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_depress > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_anxiety > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_attention > 0)) / nrow(c1_test_df) * 100
-#length(which(c1_test_df$cbcl_aggressive > 0)) / nrow(c1_test_df) * 100
-## c2 proportions
-#length(which(c2_test_df$cbcl_nausea > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_dizzy > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_overtired > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_sleeping_more > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_sleeping_less > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_depress > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_anxiety > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_attention > 0)) / nrow(c2_test_df) * 100
-#length(which(c2_test_df$cbcl_aggressive > 0)) / nrow(c2_test_df) * 100
-# More rigorous random simulation based testing
-
-c1_test_df
-c2_test_df
 c1_test_df$cbcl_total <- c1_test_df |>
     dplyr::select(dplyr::contains("cbcl")) |>
     rowSums()
@@ -1548,25 +1500,27 @@ for (i in 1:10000) {
         print(number_in_c1)
     }
 }
+
 percentile <- ecdf(vector)
 1 - percentile(true_diff) # The p-value
+
 # This is an essential plot
-hist(vector,col="gray",las=1,main="", breaks=30)
-abline(v=true_diff,col="red")
+hist(vector,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of children with clinical CBCL impairment")
+abline(v = true_diff,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
 
 # Praise it. PRAISE IT
 
-true_diff
-
-vector
-
-percentile(true_diff)
-
-c1_test_df
-
-c2_test_df
 
 test_comparison_df <- rbind(c1_test_df, c2_test_df)
+
+test_comparison_df$cluster <- as.factor(test_comparison_df$cluster)
 
 nausea_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1583,8 +1537,10 @@ ggplot(nausea_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_nausea_lp.png"))
 
+# HERE FEB 24
 
 dizzy_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1600,8 +1556,8 @@ ggplot(dizzy_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL dizzy Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_dizzy_lp.png"))
-# p = 0.12 (NS)
 
 overtired_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1617,8 +1573,8 @@ ggplot(overtired_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL overtired Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_overtired_lp.png"))
-# p = 0.037
 
 
 sleeping_more_summary <- test_comparison_df |>
@@ -1635,8 +1591,8 @@ ggplot(sleeping_more_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_more Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_sleeping_more_lp.png"))
-# p = 0.024
 
 sleeping_less_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1652,8 +1608,8 @@ ggplot(sleeping_less_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_less Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_sleeping_less_lp.png"))
-# p = 0.06 (NS)
 
 anxiety_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1669,8 +1625,8 @@ ggplot(anxiety_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL anxiety Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_anxiety_lp.png"))
-# p = 0.00025
 
 attention_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1686,8 +1642,8 @@ ggplot(attention_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL attention Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_attention_lp.png"))
-# p = 2e-05
 
 aggressive_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1703,8 +1659,8 @@ ggplot(aggressive_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL aggressive Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
+
 ggsave(img_path("2023_02_22_cbcl_aggressive_lp.png"))
-# p = 2e-05
 
 ```
 
@@ -2013,18 +1969,3 @@ rankFeaturesByNMI <- function(
     return(ordered_results_df)
 }
 ```
-
-
-
-
-## Manual check of clustering results
-
-Here, I go through the SNF process for one of the design matrix rows "by hand" instead of through the design matrix function.
-
-```{r}
-# To-do
-dm_reordered[1, ]
-```
-
-
-
