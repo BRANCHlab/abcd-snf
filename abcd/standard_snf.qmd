@@ -1,7 +1,7 @@
 # Loading Data
 
 ```{r eval = FALSE}
-library(dplyr)
+library(dplyr)# {{{
 library(abcdutils)
 library(scabcd)
 library(readr)
@@ -200,7 +200,7 @@ cbcl_depress <- keep_split(cbcl_depress, assigned_df, "train")
 cbcl_anxiety <- keep_split(cbcl_anxiety, assigned_df, "train")
 cbcl_attention <- keep_split(cbcl_attention, assigned_df, "train")
 cbcl_aggressive <- keep_split(cbcl_aggressive, assigned_df, "train")
-sds_sleep <- keep_split(sds_sleep, assigned_df, "train")
+sds_sleep <- keep_split(sds_sleep, assigned_df, "train")}}}
 ```
 
 # SNF
@@ -210,7 +210,7 @@ sds_sleep <- keep_split(sds_sleep, assigned_df, "train")
 In this section, 'default' settings (i.e., including all variables) are used to iterate through clustering solutions from different values of alpha and K.
 
 ```{r}
-# Structure containing all input data
+# Structure containing all input data# {{{
 # These data should not contain any NAs, but need not have the same subjects
 data_list <- generate_data_list(mtbi_loc = as_mtbi_loc,
                                 mtbi_mechanism = as_mtbi_mechanism,
@@ -344,14 +344,14 @@ for (i in seq_len(nrow(ak_scan_om))) {
 }
 pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE)
 
-abcd_pheatmapsave("2023_02_20_a_k_matrix_mean.png", a_k_matrix_mean)
+abcd_pheatmapsave("2023_02_20_a_k_matrix_mean.png", a_k_matrix_mean)# }}}
 ```
 
 
 ## Training set
 
 ```{r}
-set.seed(42)
+set.seed(42)# {{{
 design_matrix_base <- build_design_matrix_base()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
@@ -413,7 +413,7 @@ pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
 dev.off()
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))}}}
 ```
 
 Make sure to remove headaches from the final list of examined outcomes, as it is basically an input
@@ -422,7 +422,7 @@ Make sure to remove headaches from the final list of examined outcomes, as it is
 ## Meta-clustering
 
 ```{r}
-# Trying to plot the input design matrix as a heatmap
+# Trying to plot the input design matrix as a heatmap# {{{
 dm_scaled <- design_matrix
 dm_scaled$row_id <- dm_scaled$row_id / max(dm_scaled$row_id)
 dm_scaled$K <- dm_scaled$K / max(dm_scaled$K)
@@ -474,13 +474,13 @@ pheatmap(mc_pvals_reordered,
     legend = TRUE,
     filename = img_path("2023_02_22_mc_pvals.png"))
 dev.off()
-
+# }}}
 ```
 
 ## Distribution of cluster assignment
 
 ```{r}
-# A selection based on the main visual meta cluster and the p-values
+# A selection based on the main visual meta cluster and the p-values# {{{
 om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
 best_mc <- om_reordered[6:41, ]
 best_mc_clusters <- as.matrix(subs(best_mc)[, -1])
@@ -534,13 +534,13 @@ png(img_path("2023_02_22_avg_cluster_hist.png"),
 hist(row_means,
     xlab = "Mean assigned cluster",
     main = NULL)
-dev.off()
+dev.off()# }}}
 ```
 
 ## Choosing top solution
 
 ```{r}
-om_reordered
+om_reordered# {{{
 
 # Next steps are to evaluate a few options:
 # A consensus cluster row (nah)
@@ -579,7 +579,7 @@ ggplot(best_mc_copy,
 # ggsave(img_path("2023_02_22_solutions_by_pvals.png"))
 
 top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
-
+# }}}
 ```
 
 
@@ -630,7 +630,7 @@ best_mc[which(best_mc$dist == min(row_distances)), ] # row 48
 ## CBCL measures
 
 ```{r}
-# Pick a row
+# Pick a row# {{{
 
 
 om_row <- 34 # Corresponds to row_id 84, the lowest min/mean p value
@@ -1085,12 +1085,12 @@ ggplot(c1_and_c2_df,
     theme(text = element_text(size = 20))
 ggsave(image_path("any_cbcl_impairment.png"), height = 6, dpi = 300)
 true_or
-ci
+ci# }}}
 ```
 
 # Label propagation
 ```{r}
-# I have to re-import because of the 'keep_split' that happened early in script
+# I have to re-import because of the 'keep_split' that happened early in script# {{{
 # Once the keep training split data is renamed to end in train, won't need to
 #  do this double importing.
 as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
@@ -1470,7 +1470,7 @@ test_evaluation_df$cbcl_total <- test_evaluation_df |>
 
 test_evaluation_df <- test_evaluation_df |>
     rowwise() |>
-    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))
+    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))# }}}
 ```
 
 ## Permutation testing
@@ -1478,7 +1478,6 @@ test_evaluation_df <- test_evaluation_df |>
 ### CBCL proportions
 
 ```{r}
-
 # Permutation testing difference in proportion# {{{
 vector_uniform <- c()
 set.seed(42)
@@ -1823,8 +1822,6 @@ test_cbcl_ors <- test_cbcl_ors |>
     arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
     mutate(row = row_number())
 
-ggplot(df,aes(x=reorder(V1,row),y=V2))+geom_bar()
-
 test_cbcl_ors
 
 train_cbcl_ors$outcome <- as.factor(train_cbcl_ors$outcome)
@@ -1906,6 +1903,7 @@ ggplot(test_cbcl_ors, aes(y = reorder(outcome, rev(row)),
         axis.text.x.bottom = element_text(colour = "black"),
         text = element_text(size = 30))
 #    labs(colour = "Significant OR") +
+
 ggsave(image_path("testing_cbcl_ors.png"), height = 6, dpi = 300)
 
 
@@ -2179,7 +2177,7 @@ odds_ratio_and_ci <- function(dataframe, outcome) {
 
 colnames(input_train_df)
 
-# S checks
+# S checks (train)
 odds_ratio_and_ci(input_train_df, "F") # S
 odds_ratio_and_ci(input_train_df, "non_white") # S
 odds_ratio_and_ci(input_train_df, "pubertal") # S
@@ -2192,8 +2190,7 @@ t.test(c1in$nihtbx_pattern_fc, c2in$nihtbx_pattern_fc)
 t.test(c1in$nihtbx_cardsort_fc, c2in$nihtbx_cardsort_fc)
 
 
-
-# NS checks
+# NS checks (train)
 odds_ratio_and_ci(input_train_df, "latest_mtbi_loc")
 odds_ratio_and_ci(input_train_df, "latest_mtbi_mem_daze")
 t.test(c1in$interview_age, c2in$interview_age)
@@ -2204,34 +2201,30 @@ t.test(c1in$os_friend, c2in$os_friend)
 t.test(c1in$os_close_friend, c2in$os_close_friend)
 t.test(c1in$ss_close_friend, c2in$ss_close_friend)
 
-#
-odds_ratio_and_ci(input_test_df, "F") # S
-
-odds_ratio_and_ci(input_test_df, "non_white") # S
-
-input_test_df[input_test_df$cluster == 1, c("cluster", "non_white", "F")]
-
-odds_ratio_and_ci(input_test_df, "pubertal") # S
-
-odds_ratio_and_ci(input_test_df, "parent_psych") # S (clinical range parent)
+# S checks (test)
+odds_ratio_and_ci(input_test_df, "pubertal")
+t.test(c1in_test$ss_friend, c2in_test$ss_friend) # Not in original
+t.test(c1in_test$latest_mtbi_age, c2in_test$latest_mtbi_age) # not in original
 
 
+# Trending checks (test)
+odds_ratio_and_ci(input_test_df, "non_white")
+odds_ratio_and_ci(input_test_df, "parent_psych")
+
+# NS checks (test)
+odds_ratio_and_ci(input_test_df, "F") # NS
 t.test(c1in_test$screentime_wknd_hrs, c2in_test$screentime_wknd_hrs)
 t.test(c1in_test$screentime_wkday_hrs, c2in_test$screentime_wkday_hrs)
-
-# NS checks
 odds_ratio_and_ci(input_test_df, "latest_mtbi_loc")
 odds_ratio_and_ci(input_test_df, "latest_mtbi_mem_daze")
 t.test(c1in_test$interview_age, c2in_test$interview_age)
-t.test(c1in_test$latest_mtbi_age, c2in_test$latest_mtbi_age)
 t.test(c1in_test$mtbi_count, c2in_test$mtbi_count)
-t.test(c1in_test$ss_friend, c2in_test$ss_friend)
 t.test(c1in_test$os_friend, c2in_test$os_friend)
 t.test(c1in_test$os_close_friend, c2in_test$os_close_friend)
 t.test(c1in_test$ss_close_friend, c2in_test$ss_close_friend)
 
-head(input_test_df)
 
+head(input_test_df)
 
 input_train_ors <- do.call("rbind", list(
     train_cbcl_ors[, 1:4],
@@ -2368,6 +2361,181 @@ ggplot(parent_psych_summary,
 ggsave(image_path("test_parent_psych_bar.png"), height = 6, dpi = 300)
 
 ```
+
+
+# Permutation testing the inputs again
+
+```{r}
+permutation_test <- function(df, param, title, save_plot = FALSE) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    true_diff <- mean(vals1) - mean(vals2)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:10000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mean_difference <- mean(mock_c1) - mean(mock_c2)
+        results <- c(results, mean_difference)
+    }
+    percentile <- ecdf(results)
+    print(paste0("The true mean difference: ", signif(true_diff, 2)))
+    print("The 5% and 95% percentiles:")
+    print(quantile(results, probs = c(0.05, 0.95)))
+    p_value <- length(which(results >= true_diff)) / (length(results))
+    print(paste0("p-value: ", p_value))
+    if (save_plot) {
+        png(image_path(paste0("lp_ptest_", param, ".png")),
+            height = 5,
+            width = 5,
+            units = "in",
+            res = 300)
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+        dev.off()
+    } else {
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+    }
+}
+
+permutation_test(input_test_df, "cbcl_nausea", "Nauseous")
+
+permutation_test(input_test_df, "cbcl_vomiting", "Vomiting")
+
+permutation_test(input_test_df, "cbcl_dizzy", "Dizzy")
+
+permutation_test(input_test_df, "cbcl_overtired", "Overtired")
+
+permutation_test(input_test_df, "cbcl_sleeping_less", "Oversleeping")
+
+permutation_test(input_test_df, "cbcl_sleeping_more", "Undersleeping")
+
+permutation_test(input_test_df, "cbcl_depress", "Depressed") # 0.010
+
+permutation_test(input_test_df, "cbcl_anxiety", "Anxious") # 0.0098
+
+permutation_test(input_test_df, "cbcl_attention", "Attention issues") # 0.0013
+
+permutation_test(input_test_df, "cbcl_aggressive", "Aggressive") # 0.0010
+
+permutation_test(input_test_df, "F", "Female") # 0.53
+
+permutation_test(input_test_df, "non_white", "Non-white") # 0.0018
+
+permutation_test(input_test_df, "pubertal", "Pubertal") # 0.014
+
+permutation_test(input_test_df,
+                 "parent_psych",
+                 "Clinical Parent\nPsychopathology") # 0.25
+
+
+permutation_test_prop <- function(df, param, title, save_plot = FALSE) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    prop1 <- length(which(vals1 > 0)) / length(vals1)
+    prop2 <- length(which(vals2 > 0)) / length(vals2)
+    prop_diff <- prop1 - prop2
+    print(prop_diff)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:1000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mock_prop1 <- length(which(mock_c1 > 0)) / length(mock_c1)
+        mock_prop2 <- length(which(mock_c2 > 0)) / length(mock_c2)
+        mock_prop_diff <- mock_prop1 - mock_prop2
+        results <- c(results, mock_prop_diff)
+    }
+    p_value <- length(which(results >= prop_diff)) / (length(results))
+    print(p_value)
+    if (save_plot) {
+        png(image_path(paste0("lp_ptest_", param, ".png")),
+            height = 5,
+            width = 5,
+            units = "in",
+            res = 300)
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+        dev.off()
+    } else {
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Difference in Proportion",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+    }
+}
+
+permutation_test_prop(input_test_df, "non_white", "Non-white", save_plot = TRUE)
+
+
+
+
+```
+
+# Cohen's d
+
+```{r}
+
+cohens_d <- function(df, param) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    mean1 <- mean(vals1)
+    print(mean1)
+    mean2 <- mean(vals2)
+    print(mean2)
+    n1 <- length(vals1)
+    n2 <- length(vals2)
+    std1 <- sd(vals1)
+    std2 <- sd(vals2)
+    sdp <- sqrt((std1^2 + std2^2)/2)
+    d <- (mean1 - mean2) / sdp
+    return(d)
+}
+cohens_d(input_test_df, "non_white")
+
+```
+
+
+
 
 # Neuroimaging things
 
