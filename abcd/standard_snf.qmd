@@ -693,7 +693,7 @@ ggplot(nausea_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_nausea.png"), height = 6, dpi = 300)
+# ggsave(image_path("cbcl_nausea.png"), height = 6, dpi = 300)
 # p = 0.015
 
 dizzy_summary <- comparison_df |>
@@ -880,28 +880,6 @@ length(which(c2_df$cbcl_attention > 0))
 length(which(c2_df$cbcl_aggressive > 0))
 
 
-
-# Plotting
-which(c1_df$cbcl_nausea > 0)
-which(c1_df$cbcl_dizzy > 0)
-which(c1_df$cbcl_overtired > 0)
-which(c1_df$cbcl_sleeping_more > 0)
-which(c1_df$cbcl_sleeping_less > 0)
-which(c1_df$cbcl_depress > 0)
-which(c1_df$cbcl_anxiety > 0)
-which(c1_df$cbcl_attention > 0)
-which(c1_df$cbcl_aggressive > 0)
-which(c2_df$cbcl_nausea > 0)
-which(c2_df$cbcl_dizzy > 0)
-which(c2_df$cbcl_overtired > 0)
-which(c2_df$cbcl_sleeping_more > 0)
-which(c2_df$cbcl_sleeping_less > 0)
-which(c2_df$cbcl_depress > 0)
-which(c2_df$cbcl_anxiety > 0)
-which(c2_df$cbcl_attention > 0)
-which(c2_df$cbcl_aggressive > 0)
-
-
 # Proportions:
 length(which(c1_df$cbcl_nausea > 0)) / nrow(c1_df) * 100
 length(which(c1_df$cbcl_dizzy > 0)) / nrow(c1_df) * 100
@@ -1047,7 +1025,7 @@ ggplot(train_total_c_binary_df,
     geom_density(alpha = 0.6) +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_any_problems_train.png"), height = 6, dpi = 300)
+# ggsave(image_path("cbcl_any_problems_train.png"), height = 6, dpi = 300)
 
 
 c1_df$cbcl_total[c1_df$cbcl_total > 0] <- 1
@@ -1203,6 +1181,10 @@ cbcl_anxiety_train <- keep_split(cbcl_anxiety, assigned_df, "train")
 cbcl_attention_train <- keep_split(cbcl_attention, assigned_df, "train")
 cbcl_aggressive_train <- keep_split(cbcl_aggressive, assigned_df, "train")
 sds_sleep_train <- keep_split(sds_sleep, assigned_df, "train")
+
+nihtbx_list_fc_train <- keep_split(nihtbx_list_fc, assigned_df, "train")
+nihtbx_pattern_fc_train <- keep_split(nihtbx_pattern_fc, assigned_df, "train")
+nihtbx_cardsort_fc_train <- keep_split(nihtbx_cardsort_fc, assigned_df, "train")
 
 as_mtbi_loc_test <- keep_split(as_mtbi_loc, assigned_df, "test")
 as_mtbi_mechanism_test <- keep_split(as_mtbi_mechanism, assigned_df, "test")
@@ -1652,6 +1634,7 @@ png(image_path("difference_in_proportion_any_cbcl_6_61_lp.png"),
     width = 5,
     units = "in",
     res = 300)
+
 hist(vector_6_61,
     col = "gray",
     las = 1,
@@ -1660,7 +1643,7 @@ hist(vector_6_61,
     xlab = "Difference in proportion of any CBCL impairment")
 abline(v = true_diff_border,
     col = "red")
-axis(1,at=seq(-1,1,by=0.5))
+
 dev.off()# }}}
 ```
 
@@ -1737,10 +1720,6 @@ cbcl_outcomes <- list(
     cbcl_aggressive)
 
 top_om_row
-
-a <- list(3, 5, 6)
-
-append(a, 6)
 
 
 or_om_row <- function(om_row, outcome_list) {
@@ -1829,56 +1808,114 @@ cbcl_or <- function(evaluation_df) {
 test_evaluation_df <- data.frame(test_evaluation_df)
 
 train_cbcl_ors <- cbcl_or(train_evaluation_df)
-test_cbcl_ors <- cbcl_or(test_evaluation_df)
+
+test_cbcl_ors <- cbcl_or(test_evaluation_df) |>
+    dplyr::filter(!(outcome == "cbcl_total"))
 
 
-train_cbcl_ors
+outcome_order <- train_cbcl_ors$outcome[cbcl_outcome_clustering]
+
+train_cbcl_ors <- train_cbcl_ors |>
+    arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
+    mutate(row = row_number())
+
+test_cbcl_ors <- test_cbcl_ors |>
+    arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
+    mutate(row = row_number())
+
+ggplot(df,aes(x=reorder(V1,row),y=V2))+geom_bar()
 
 test_cbcl_ors
 
+train_cbcl_ors$outcome <- as.factor(train_cbcl_ors$outcome)
 
-ggplot(train_cbcl_ors, aes(y = outcome, x = or, color = ci_low > 1)) +
-  geom_point(shape = 18, size = 5) +  
-  geom_errorbarh(aes(xmin = ci_low, xmax = ci_high), height = 0.25) +
-  geom_vline(xintercept = 1, color = "red", linetype = "dashed", cex = 1, alpha = 0.5) +
-  xlab("Odds Ratio (95% CI)") + 
-  ylab(" ") + 
-  scale_x_continuous(trans = 'log10') +
-  theme_bw() +
-  theme(panel.border = element_blank(),
-        panel.background = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        axis.line = element_line(colour = "black"),
-        axis.text.y = element_text(size = 12, colour = "black"),
-        axis.text.x.bottom = element_text(size = 12, colour = "black"),
-        axis.title.x = element_text(size = 12, colour = "black"))
 
-ggplot(test_cbcl_ors, aes(y = outcome, x = or, color = ci_low > 1)) +
-  geom_point(shape = 18, size = 5) +  
-  geom_errorbarh(aes(xmin = ci_low, xmax = ci_high), height = 0.25) +
-  geom_vline(xintercept = 1, color = "red", linetype = "dashed", cex = 1, alpha = 0.5) +
-  xlab("Odds Ratio (95% CI)") + 
-  ylab(" ") + 
-  scale_x_continuous(trans = 'log10') +
-  theme_bw() +
-  theme(panel.border = element_blank(),
+ggplot(train_cbcl_ors, aes(y = reorder(outcome, rev(row)),
+                          x = or,
+                          color = ci_low > 1)) +
+    geom_point(shape = 18, size = 10, show.legend = FALSE) +
+    geom_errorbarh(aes(xmin = ci_low, xmax = ci_high),
+                   height = 0.5, size = 1.5, show.legend = FALSE) +
+    geom_vline(xintercept = 1,
+             linetype = "dashed",
+             cex = 1,
+             alpha = 0.5) +
+    xlab("Odds Ratio (95% CI)") +
+    ylab(" ") +
+    scale_x_continuous(trans = 'log10') +
+    scale_y_discrete(labels = c("Undersleeping",
+                                "Nauseous",
+                                "Overtired",
+                                "Vomiting",
+                                "Dizzy",
+                                "Oversleeping",
+                                "Anxious",
+                                "Depressed",
+                                "Aggressive",
+                                "Attention issues")) +
+    scale_colour_manual(values = "#F8766D") +
+    theme_bw() +
+    theme(panel.border = element_blank(),
         panel.background = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black"),
-        axis.text.y = element_text(size = 12, colour = "black"),
-        axis.text.x.bottom = element_text(size = 12, colour = "black"),
-        axis.title.x = element_text(size = 12, colour = "black"))
+        axis.text.y = element_text(colour = "black"),
+        axis.title.x = element_text(colour = "black",
+                                    margin = margin(t = 15,
+                                                    r = 20, b = 0, l = 0)),
+        axis.text.x.bottom = element_text(colour = "black"),
+        text = element_text(size = 30))
+#    labs(colour = "Significant OR") +
+ggsave(image_path("training_cbcl_ors.png"), height = 6, dpi = 300)
+
+ggplot(test_cbcl_ors, aes(y = reorder(outcome, rev(row)),
+                          x = or,
+                          color = ci_low > 1)) +
+    geom_point(shape = 18, size = 10, show.legend = FALSE) +
+    geom_errorbarh(aes(xmin = ci_low, xmax = ci_high),
+                   height = 0.5, size = 1.5, show.legend = FALSE) +
+    geom_vline(xintercept = 1,
+             linetype = "dashed",
+             cex = 1,
+             alpha = 0.5) +
+    xlab("Odds Ratio (95% CI)") +
+    ylab(" ") +
+    scale_x_continuous(trans = 'log10') +
+    scale_y_discrete(labels = c("Undersleeping",
+                                "Nauseous",
+                                "Overtired",
+                                "Vomiting",
+                                "Dizzy",
+                                "Oversleeping",
+                                "Anxious",
+                                "Depressed",
+                                "Aggressive",
+                                "Attention issues")) +
+    scale_colour_manual(values = c("darkgray", "#F8766D")) +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(colour = "black"),
+        axis.title.x = element_text(colour = "black",
+                                    margin = margin(t = 15,
+                                                    r = 20, b = 0, l = 0)),
+        axis.text.x.bottom = element_text(colour = "black"),
+        text = element_text(size = 30))
+#    labs(colour = "Significant OR") +
+ggsave(image_path("testing_cbcl_ors.png"), height = 6, dpi = 300)
 
 
 ```
 
 
-
+## Individual CBCL measures as bar charts
 
 ```{r}
-test_comparison_df <- rbind(c1_test_df, c2_test_df)
+test_comparison_df <- rbind(c1_test_df, c2_test_df) # {{{
 
 test_comparison_df$cluster <- as.factor(test_comparison_df$cluster)
 
@@ -1899,8 +1936,6 @@ ggplot(nausea_summary,
     theme(text = element_text(size = 20))
 
 ggsave(img_path("2023_02_22_cbcl_nausea_lp.png"))
-
-# HERE FEB 24
 
 dizzy_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1935,7 +1970,6 @@ ggplot(overtired_summary,
     theme(text = element_text(size = 20))
 
 ggsave(img_path("2023_02_22_cbcl_overtired_lp.png"))
-
 
 sleeping_more_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -2021,24 +2055,14 @@ ggplot(aggressive_summary,
     theme(text = element_text(size = 20))
 
 ggsave(img_path("2023_02_22_cbcl_aggressive_lp.png"))
-
+# }}}
 ```
-
-
-
-
-
-
-
-
 
 ## Input variable characterization
 
 ```{r}
 
-d_sex_train <- d_sex[d_sex$subjectkey %in% training_subs, ]
-
-train_input_char <- list(clusters,
+train_input_char <- list(train_evaluation_df,
     as_mtbi_loc_train,
     as_mtbi_mechanism_train,
     as_mtbi_mem_daze_train,
@@ -2056,153 +2080,211 @@ train_input_char <- list(clusters,
     p_sports_train,
     p_prosocial_train,
     p_parent_psych_train,
-    p_exercise_train)
+    p_exercise_train,
+    nihtbx_list_fc,
+    nihtbx_pattern_fc,
+    nihtbx_cardsort_fc)
 
 
+test_input_char <- list(test_evaluation_df,
+    as_mtbi_loc_test,
+    as_mtbi_mechanism_test,
+    as_mtbi_mem_daze_test,
+    d_income_test,
+    d_interview_age_test,
+    d_mtbi_age_test,
+    d_pubertal_status_test,
+    d_race_test,
+    d_sex_test,
+    mh_headaches_test,
+    mh_mtbi_count_test,
+    p_loneliness_test,
+    p_screen_time_test,
+    p_family_function_test,
+    p_sports_test,
+    p_prosocial_test,
+    p_parent_psych_test,
+    p_exercise_test)
 
-input_df <- train_input_char |>
+
+input_train_df <- train_input_char |>
     purrr::reduce(dplyr::inner_join, by = "subjectkey")
 
-colnames(input_df)
+input_test_df <- test_input_char |>
+    purrr::reduce(dplyr::inner_join, by = "subjectkey")
 
-c1in <- input_df[input_df$cluster == 1, ]
-c2in <- input_df[input_df$cluster == 2, ]
+input_train_df <- input_train_df |>
+    dplyr::mutate(
+        F = dplyr::case_when(M == 0 ~ 1, TRUE ~ 0),
+        pubertal = dplyr::case_when(pubertal_status > 2 ~ 1, TRUE ~ 0),
+        non_white = dplyr::case_when(race != "white" ~ 1, TRUE ~ 0),
+        parent_psych = dplyr::case_when(asr_scr_totprob_r > 63 ~ 1, TRUE ~ 0))
+input_train_df$cluster <- as.factor(input_train_df$cluster)
+
+# Participants scoring above 63 on the ASR scales are considered to be in the
+#  clinical range (Achenbach and Rescorla 2003).
+input_test_df <- input_test_df |>
+    dplyr::mutate(
+        F = dplyr::case_when(M == 0 ~ 1, TRUE ~ 0),
+        pubertal = dplyr::case_when(pubertal_status > 2 ~ 1, TRUE ~ 0),
+        non_white = dplyr::case_when(race != "white" ~ 1, TRUE ~ 0),
+        parent_psych = dplyr::case_when(asr_scr_totprob_r > 63 ~ 1, TRUE ~ 0))
+input_test_df$cluster <- as.factor(input_test_df$cluster)
+
+input_train_df$total_family_env <- input_train_df |>
+    dplyr::select(cluster, "q1_fight":"q9_yell") |>
+    sapply(as.numeric) |>
+    rowSums()
+
+input_test_df$total_family_env <- input_test_df |>
+    dplyr::select(cluster, "q1_fight":"q9_yell") |>
+    sapply(as.numeric) |>
+    rowSums()
+
+
+c1in <- input_train_df[input_train_df$cluster == 1, ]
+c2in <- input_train_df[input_train_df$cluster == 2, ]
+
+c1in_test <- input_test_df[input_test_df$cluster == 1, ]
+c2in_test <- input_test_df[input_test_df$cluster == 2, ]
 
 # More females in c1
-length(which(c1in$M == 0)) / length(c1in$M) # 46% F
-length(which(c2in$M == 0)) / length(c2in$M) # 37% F
+length(which(c1in$M == 0)) / length(c1in$M) # 50% F
+length(which(c2in$M == 0)) / length(c2in$M) # 33% F
 
-# NS
+odds_ratio_and_ci <- function(dataframe, outcome) {
+    summary_df <- dataframe |>
+        dplyr::group_by_at("cluster") |>
+        dplyr::count(dataframe[, outcome])
+    colnames(summary_df) <- c("cluster", as.character(outcome), "n")
+    a_val <- summary_df$"n"[1]
+    c_val <- summary_df$"n"[2]
+    b_val <- summary_df$"n"[3]
+    d_val <- summary_df$"n"[4]
+    summary_df$exposure <- c("exposed", "exposed", "control", "control")
+    summary_df$health <- c("healthy", "diseased", "healthy", "diseased")
+    print(summary_df)
+    or <- odds_ratio(he = a_val, de = c_val, hn = b_val, dn = d_val)
+    se_ln_or <- sqrt((1/a_val + 1/b_val + 1/c_val + 1/d_val))
+    ln_or <- log(or)
+    lower <- exp(ln_or - 1.96 * se_ln_or)
+    upper <- exp(ln_or + 1.96 * se_ln_or)
+    or_df <- data.frame(outcome = as.character(outcome),
+                        or = as.numeric(round(or, 2)),
+                        ci_low = as.numeric(round(lower, 2)),
+                        ci_high = as.numeric(round(upper, 2)))
+    print(or_df)
+}
+
+
+colnames(input_train_df)
+
+# S checks
+odds_ratio_and_ci(input_train_df, "F") # S
+odds_ratio_and_ci(input_train_df, "non_white") # S
+odds_ratio_and_ci(input_train_df, "pubertal") # S
+odds_ratio_and_ci(input_train_df, "parent_psych") # S (clinical range parent)
+t.test(c1in$screentime_wknd_hrs, c2in$screentime_wknd_hrs)
+t.test(c1in$screentime_wkday_hrs, c2in$screentime_wkday_hrs)
+
+t.test(c1in$nihtbx_list_fc, c2in$nihtbx_list_fc)
+t.test(c1in$nihtbx_pattern_fc, c2in$nihtbx_pattern_fc)
+t.test(c1in$nihtbx_cardsort_fc, c2in$nihtbx_cardsort_fc)
+
+
+
+# NS checks
+odds_ratio_and_ci(input_train_df, "latest_mtbi_loc")
+odds_ratio_and_ci(input_train_df, "latest_mtbi_mem_daze")
 t.test(c1in$interview_age, c2in$interview_age)
-
-# NS
 t.test(c1in$latest_mtbi_age, c2in$latest_mtbi_age)
-
-# More LOC in c1
-length(which(c1in$latest_mtbi_loc == 1)) / length(c1in$latest_mtbi_loc) # 30%
-length(which(c2in$latest_mtbi_loc == 1)) / length(c2in$latest_mtbi_loc) # 19%
-
-
-
-# p = 2.06e-07; significantly higher pubertal status in c1
-t.test(c1in$pubertal_status, c2in$pubertal_status)
-
-m1 <- mean(c1in$pubertal_status)
-m2 <- mean(c2in$pubertal_status)
-sd1 <- sd(c1in$pubertal_status)
-sd2 <- sd(c2in$pubertal_status)
-n1 <- length(c1in$pubertal_status)
-n2 <- length(c2in$pubertal_status)
-
-sdp <- sqrt((sd1^2 + sd2^2)/2)
-
-(m1 - m2)/sdp
-
-
-unique(c1in$pubertal_status)
-
-unique(c2in$pubertal_status)
-
-# Bit of a strange way to do pubertal status. Anne suggested OR for a pre/post-pubertal cutoff
-
-# Odds ratio calcs
-
-
-# C2 ~ Not exposed
-# C1 ~ Exposed
-# good ~ Healthy
-# bad ~ Diseased
-
-odds_ratio <- function(DE, HE, DN, HN) {
-    numerator <- DE / HE
-    denominator <- DN / HN
-    return(numerator / denominator)
-}
-
-c1_bad <- length(which(c1in$pubertal_status > 1))
-c1_good <- length(which(c1in$pubertal_status <= 1))
-c2_bad <- length(which(c2in$pubertal_status > 1))
-c2_good <- length(which(c2in$pubertal_status <= 1))
-
-odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
-
-ors <- vector()
-for (i in 1:1000) {
-    bootstrap_c1 <- sample(c1in$pubertal_status, replace = TRUE)
-    bootstrap_c2 <- sample(c2in$pubertal_status, replace = TRUE)
-    c1_bad <- length(which(bootstrap_c1 > 1))
-    c1_good <- length(which(bootstrap_c1 <= 1))
-    c2_bad <- length(which(bootstrap_c2 > 1))
-    c2_good <- length(which(bootstrap_c2 <= 1))
-    ors <- c(ors,
-             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
-}
-
-quantile(ors, probs = c(0.05, 0.95))
-
-sample(c1_df$cbcl_total)
-
-
-# For LOC:
-c1_bad <- length(which(c1in$latest_mtbi_loc > 0))
-c1_good <- length(which(c1in$latest_mtbi_loc == 0))
-c2_bad <- length(which(c2in$latest_mtbi_loc > 0))
-c2_good <- length(which(c2in$latest_mtbi_loc == 0))
-
-odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good) # 1.87
-
-ors <- vector()
-for (i in 1:1000) {
-    bootstrap_c1 <- sample(c1in$latest_mtbi_loc, replace = TRUE)
-    bootstrap_c2 <- sample(c2in$latest_mtbi_loc, replace = TRUE)
-    c1_bad <- length(which(bootstrap_c1 > 0))
-    c1_good <- length(which(bootstrap_c1 <= 0))
-    c2_bad <- length(which(bootstrap_c2 > 0))
-    c2_good <- length(which(bootstrap_c2 <= 0))
-    ors <- c(ors,
-             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
-}
-
-quantile(ors, probs = c(0.05, 0.95))
-
-sample(c1_df$cbcl_total)
-
-
-# For being female
-c1_bad <- length(which(c1in$M == 0))
-c1_good <- length(which(c1in$M > 0))
-c2_bad <- length(which(c2in$M == 0))
-c2_good <- length(which(c2in$M > 0))
-
-odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good) # 1.87
-
-ors <- vector()
-for (i in 1:1000) {
-    bootstrap_c1 <- sample(c1in$M, replace = TRUE)
-    bootstrap_c2 <- sample(c2in$M, replace = TRUE)
-    c1_bad <- length(which(bootstrap_c1 == 0))
-    c1_good <- length(which(bootstrap_c1 > 0))
-    c2_bad <- length(which(bootstrap_c2 == 0))
-    c2_good <- length(which(bootstrap_c2 > 0))
-    ors <- c(ors,
-             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
-}
-quantile(ors, probs = c(0.05, 0.95))
-
-sample(c1_df$cbcl_total)
-
-
-
-
-
-# Note that age is not significantly different, but pubertal status is
-# Expected given females go through puberty earlier?
-
-# More concussions in C2? strange
 t.test(c1in$mtbi_count, c2in$mtbi_count)
+t.test(c1in$ss_friend, c2in$ss_friend)
+t.test(c1in$os_friend, c2in$os_friend)
+t.test(c1in$os_close_friend, c2in$os_close_friend)
+t.test(c1in$ss_close_friend, c2in$ss_close_friend)
+
+#
+odds_ratio_and_ci(input_test_df, "F") # S
+
+odds_ratio_and_ci(input_test_df, "non_white") # S
+
+input_test_df[input_test_df$cluster == 1, c("cluster", "non_white", "F")]
+
+odds_ratio_and_ci(input_test_df, "pubertal") # S
+
+odds_ratio_and_ci(input_test_df, "parent_psych") # S (clinical range parent)
 
 
-t.test(c1in$mtbi_count, c2in$mtbi_count)
+t.test(c1in_test$screentime_wknd_hrs, c2in_test$screentime_wknd_hrs)
+t.test(c1in_test$screentime_wkday_hrs, c2in_test$screentime_wkday_hrs)
+
+# NS checks
+odds_ratio_and_ci(input_test_df, "latest_mtbi_loc")
+odds_ratio_and_ci(input_test_df, "latest_mtbi_mem_daze")
+t.test(c1in_test$interview_age, c2in_test$interview_age)
+t.test(c1in_test$latest_mtbi_age, c2in_test$latest_mtbi_age)
+t.test(c1in_test$mtbi_count, c2in_test$mtbi_count)
+t.test(c1in_test$ss_friend, c2in_test$ss_friend)
+t.test(c1in_test$os_friend, c2in_test$os_friend)
+t.test(c1in_test$os_close_friend, c2in_test$os_close_friend)
+t.test(c1in_test$ss_close_friend, c2in_test$ss_close_friend)
+
+head(input_test_df)
+
+
+input_train_ors <- do.call("rbind", list(
+    train_cbcl_ors[, 1:4],
+    odds_ratio_and_ci(input_train_df, "F"),
+    odds_ratio_and_ci(input_train_df, "non_white"),
+    odds_ratio_and_ci(input_train_df, "pubertal"),
+    odds_ratio_and_ci(input_train_df, "parent_psych"),
+    odds_ratio_and_ci(input_test_df, "latest_mtbi_loc"),
+    odds_ratio_and_ci(input_test_df, "latest_mtbi_mem_daze")))
+
+input_train_ors <- input_train_ors |>
+    arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
+    mutate(row = row_number())
+
+ggplot(input_train_ors,
+        aes(y = reorder(outcome, rev(row)),
+            x = or,
+            color = ci_low > 1)) +
+    geom_point(shape = 18, size = 10, show.legend = FALSE) +
+    geom_errorbarh(aes(xmin = ci_low, xmax = ci_high),
+                   height = 0.5, size = 1.5, show.legend = FALSE) +
+    geom_vline(xintercept = 1,
+             linetype = "dashed",
+             cex = 1,
+             alpha = 0.5) +
+    geom_hline(yintercept = 6.5, cex = 0.3) +
+    xlab("Odds Ratio (95% CI)") +
+    ylab(" ") +
+    scale_x_continuous(trans = "log10") +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(colour = "black"),
+        axis.title.x = element_text(colour = "black",
+                                    margin = margin(t = 15,
+                                                    r = 20, b = 0, l = 0)),
+        axis.text.x.bottom = element_text(colour = "black"),
+        text = element_text(size = 30))
+
+ggsave(image_path("training_input_ors.png"), height = 6, dpi = 300)
+
+
+ggplot(input_train_df, mapping = aes(x = cluster, y = screentime_wkday_hrs)) +
+    geom_boxplot() +
+    geom_jitter(height = 0, width = 0.1, alpha = 0.5)
+
+ggplot(input_train_df, mapping = aes(x = cluster, y = screentime_wknd_hrs)) +
+    geom_boxplot() +
+    geom_jitter(height = 0, width = 0.1, alpha = 0.5)
+
 
 # This is actually fire emoji
 pvals <- c(
@@ -2226,60 +2308,74 @@ pvals <- c(
     t.test(c1in$asr_scr_antisocial_r, c2in$asr_scr_antisocial_r)$p.value,
     t.test(c1in$asr_scr_inattention_r, c2in$asr_scr_inattention_r)$p.value,
     t.test(c1in$asr_scr_hyperactive_r, c2in$asr_scr_hyperactive_r)$p.value)
-
 mean(pvals)
 
-physical_activity1_y
-physical_activity2_y
 
 
-
-c1in$asr_scr_perstr_r
-c1in$asr_scr_anxdep_r
-c1in$asr_scr_withdrawn_r
-c1in$asr_scr_somatic_r
-c1in$asr_scr_thought_r
-c1in$asr_scr_attention_r
-c1in$asr_scr_aggressive_r
-c1in$asr_scr_rulebreak_r
-c1in$asr_scr_intrusive_r
-c1in$asr_scr_internal_r
-c1in$asr_scr_external_r
-c1in$asr_scr_totprob_r
-c1in$asr_scr_depress_r
-c1in$asr_scr_anxdisord_r
-c1in$asr_scr_somaticpr_r
-c1in$asr_scr_avoidant_r
-c1in$asr_scr_adhd_r
-c1in$asr_scr_antisocial_r
-c1in$asr_scr_inattention_r
-c1in$asr_scr_hyperactive_r
+f_summary <- input_test_df |>
+    group_by(cluster) |>
+    count(F) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+f_summary$F <- factor(f_summary$F)
+ggplot(f_summary,
+    aes(x = cluster, y = Percent, fill = F)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5), size = 6) +
+    labs(x = "Cluster", y = "Percentage", fill = "Sex") +
+    theme_bw() +
+    theme(text = element_text(size = 30)) +
+    scale_fill_discrete(labels = c("F", "M"))
+ggsave(image_path("test_sex_bar.png"), height = 6, width = 8, dpi = 300)
 
 
-c1in$total_parent <- c1in |>
-    dplyr::select(dplyr::contains("asr_scr")) |>
-    rowSums()
+colnames(input_test_df)
 
-c2in$total_parent <- c2in |>
-    dplyr::select(dplyr::contains("asr_scr")) |>
-    rowSums()
+white_summary <- input_test_df |>
+    group_by(cluster) |>
+    count(non_white) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+white_summary$non_white <- factor(white_summary$non_white, levels = c(1, 0))
+ggplot(white_summary,
+    aes(x = cluster, y = Percent, fill = non_white)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5), size = 6) +
+    labs(x = "Cluster", y = "Percentage", fill = "Race") +
+    theme_bw() +
+    theme(text = element_text(size = 30)) +
+    scale_fill_discrete(labels = c("Non-white", "White"))
+ggsave(image_path("test_white_bar.png"), height = 6, width = 8, dpi = 300)
 
-t.test(c1in$total_parent, c2in$total_parent)
 
-t.test(c1in$total_parent, c2in$total_parent)
-
-
-m1 <- mean(c1in$total_parent)
-m2 <- mean(c2in$total_parent)
-sd1 <- sd(c1in$total_parent)
-sd2 <- sd(c2in$total_parent)
-
-sdp <- sqrt((sd1^2 + sd2^2)/2)
-
-(m1 - m2)/sdp
+parent_psych_summary <- input_test_df |>
+    group_by(cluster) |>
+    count(parent_psych) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+parent_psych_summary$parent_psych <-
+    factor(parent_psych_summary$parent_psych, levels = c(1, 0))
+ggplot(parent_psych_summary,
+    aes(x = cluster, y = Percent, fill = parent_psych)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5), size = 6) +
+    labs(x = "Cluster",
+         y = "Percentage",
+         fill = "Parent\nPsychopathology\nScore") +
+    theme_bw() +
+    theme(text = element_text(size = 30)) +
+    scale_fill_discrete(labels = c("Clinical", "Normal"))
+ggsave(image_path("test_parent_psych_bar.png"), height = 6, dpi = 300)
 
 ```
 
+# Neuroimaging things
+
+```{r}
+
+input_train_df
+
+```
 
 
 
