@@ -413,7 +413,7 @@ pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
 dev.off()
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))}}}
+rownames(mc_results) <- as.character(seq_len(nrow(mc_results))) # }}}
 ```
 
 Make sure to remove headaches from the final list of examined outcomes, as it is basically an input
@@ -461,18 +461,21 @@ mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
 pheatmap(mc_pvals_reordered,
     legend_breaks = c(0, 0.2, 0.4, 0.6, 0.8, max(mc_pvals_reordered)),
     main = "",
+    color = colorRampPalette(
+        RColorBrewer::brewer.pal(n = 7, name = "RdYlBu"))(100),
     legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
     cluster_rows = FALSE,
     legend = TRUE)
 
-# Same one, but saved
 pheatmap(mc_pvals_reordered,
     legend_breaks = c(0, 0.2, 0.4, 0.6, 0.8, max(mc_pvals_reordered)),
     main = "",
+    color = colorRampPalette(
+        RColorBrewer::brewer.pal(n = 7, name = "RdYlBu"))(100),
     legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
     cluster_rows = FALSE,
     legend = TRUE,
-    filename = img_path("2023_02_22_mc_pvals.png"))
+    filename = image_path("mc_pvals.png"))
 dev.off()
 # }}}
 ```
@@ -2213,10 +2216,12 @@ odds_ratio_and_ci(input_test_df, "parent_psych")
 
 # NS checks (test)
 odds_ratio_and_ci(input_test_df, "F") # NS
-t.test(c1in_test$screentime_wknd_hrs, c2in_test$screentime_wknd_hrs)
-t.test(c1in_test$screentime_wkday_hrs, c2in_test$screentime_wkday_hrs)
 odds_ratio_and_ci(input_test_df, "latest_mtbi_loc")
 odds_ratio_and_ci(input_test_df, "latest_mtbi_mem_daze")
+
+
+t.test(c1in_test$screentime_wknd_hrs, c2in_test$screentime_wknd_hrs)
+t.test(c1in_test$screentime_wkday_hrs, c2in_test$screentime_wkday_hrs)
 t.test(c1in_test$interview_age, c2in_test$interview_age)
 t.test(c1in_test$mtbi_count, c2in_test$mtbi_count)
 t.test(c1in_test$os_friend, c2in_test$os_friend)
@@ -2319,6 +2324,7 @@ ggplot(f_summary,
     theme_bw() +
     theme(text = element_text(size = 30)) +
     scale_fill_discrete(labels = c("F", "M"))
+
 ggsave(image_path("test_sex_bar.png"), height = 6, width = 8, dpi = 300)
 
 
@@ -2358,6 +2364,7 @@ ggplot(parent_psych_summary,
     theme_bw() +
     theme(text = element_text(size = 30)) +
     scale_fill_discrete(labels = c("Clinical", "Normal"))
+
 ggsave(image_path("test_parent_psych_bar.png"), height = 6, dpi = 300)
 
 ```
@@ -2485,9 +2492,9 @@ permutation_test_prop <- function(df, param, title, save_plot = FALSE) {
              cex.axis = 2,
              cex.main = 2,
              cex.sub = 2,
-             xlab = "Mean Difference",
+             xlab = "Difference in Proportion",
              main = title)
-        abline(v = true_diff,
+        abline(v = prop_diff,
             col = "red")
         dev.off()
     } else {
@@ -2499,14 +2506,70 @@ permutation_test_prop <- function(df, param, title, save_plot = FALSE) {
              cex.sub = 2,
              xlab = "Difference in Proportion",
              main = title)
-        abline(v = true_diff,
+        abline(v = prop_diff,
             col = "red")
     }
 }
 
-permutation_test_prop(input_test_df, "non_white", "Non-white", save_plot = TRUE)
+permutation_test_prop(input_test_df, "non_white", "Non-white")
+
+permutation_test_prop(input_test_df, "F", "Female") # 0.53
+
+permutation_test_prop(input_test_df, "non_white", "Non-white") # 0.0018
+
+permutation_test_prop(input_test_df, "pubertal", "Pubertal") # 0.014
+
+permutation_test_prop(input_test_df,
+                 "parent_psych",
+                 "Clinical Parent\nPsychopathology") # 0.25
 
 
+
+
+permutation_test_prop(input_test_df, "non_white", "Non-white",
+                      save_plot = TRUE)
+
+permutation_test_prop(input_test_df, "F", "Female",
+                      save_plot = TRUE) # 0.53
+
+permutation_test_prop(input_test_df, "non_white", "Non-white",
+                      save_plot = TRUE) # 0.0018
+
+permutation_test_prop(input_test_df, "pubertal", "Pubertal",
+                      save_plot = TRUE) # 0.014
+
+permutation_test_prop(input_test_df,
+                 "parent_psych",
+                 "Clinical Parent\nPsychopathology", save_plot = TRUE) # 0.25
+
+# Function for debugging
+permutation_test_d <- function(df, param, title) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    prop1 <- length(which(vals1 > 0)) / length(vals1)
+    prop2 <- length(which(vals2 > 0)) / length(vals2)
+    prop_diff <- prop1 - prop2
+    print(prop_diff)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:1000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mock_prop1 <- length(which(mock_c1 > 0)) / length(mock_c1)
+        mock_prop2 <- length(which(mock_c2 > 0)) / length(mock_c2)
+        mock_prop_diff <- mock_prop1 - mock_prop2
+        results <- c(results, mock_prop_diff)
+    }
+    p_value <- length(which(results >= prop_diff)) / (length(results))
+    print(p_value)
+    print(which(results == prop_diff))
+}
+
+permutation_test_d(input_test_df, "pubertal", "Pubertal") # 0.014
 
 
 ```
