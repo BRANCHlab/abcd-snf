@@ -10,16 +10,31 @@ library(ggplot2)
 library(pheatmap)
 
 # Function to import data from carbon
-load_data <- function(filename, type, imputed = TRUE) {
+load_data2 <- function(filename, type, imputed = TRUE) {
     if (imputed) {
         impute_str <- "post-imputation/"
     } else {
         impute_str <- "pre-imputation/"
     }
-    df <- read_csv(here(paste0("data/abcd/", type, "/", impute_str, filename)),
-        show_col_types = FALSE)
+    filename <- here(paste0("data/abcd/", type, "/", impute_str, filename))
+    print(filename)
+    df <- read_csv(filename, show_col_types = FALSE)
     return(stats::na.omit(df))
 }
+
+read_csv(imputed_data())
+
+
+# TO-DO: Merge all these files together.
+# Imputed input variables
+data_in_imp <- path_maker(here(paste0("data/abcd/inputs/post-imputation")))
+# Non-imputed input variables
+data_in <- path_maker(here(paste0("data/abcd/inputs/pre-imputation")))
+# Imputed input variables
+data_out_imp <- path_maker(here(paste0("data/abcd/outputs/post-imputation")))
+
+as_mtbi_loc2 <- read_csv(data_path_in_imp("as_mtbi_loc_imp.csv"))
+
 
 abcd_ggsave <- function(filename, saved_plot) {
     filename <- here(paste0("data/abcd/results/figures/", filename))
@@ -33,12 +48,6 @@ abcd_pheatmapsave <- function(filename, matrix) {
     pheatmap(matrix, filename = filename)
 }
 
-img_path <- function(filename) {
-    img_folder <- here(paste0("data/abcd/results/figures/"))
-    img_path <- paste0(img_folder, filename)
-    return(img_path)
-}
-
 # The better function
 image_path <- function(filename, date = NULL) {
     image_folder <- here(paste0("data/abcd/results/figures/"))
@@ -50,6 +59,8 @@ image_path <- function(filename, date = NULL) {
     return(image_path)
 }
 
+fig_path <- path_maker(here(paste0("data/abcd/results/figures/")))
+
 data_path <- function(filename, date = NULL) {
     data_folder <- here(paste0("data/abcd/results/processed/"))
     if (is.null(date)) {
@@ -59,6 +70,49 @@ data_path <- function(filename, date = NULL) {
     data_path <- paste0(data_folder, date, filename)
     return(data_path)
 }
+
+# Importing data
+as_mtbi_loc <- read_csv(data_path_in_imp("as_mtbi_loc_imp.csv"))
+as_mtbi_mechanism <- read_csv(data_path_in_imp("as_mtbi_mechanism_imp.csv"))
+as_mtbi_mem_daze <- read_csv(data_path_in_imp("as_mtbi_mem_daze_imp.csv"))
+d_income <- read_csv(data_path_in_imp("d_income_imp.csv"))
+d_interview_age <- read_csv(data_path_in_imp("d_interview_age_imp.csv"))
+d_mtbi_age <- read_csv(data_path_in_imp("d_mtbi_age_imp.csv"))
+d_pubertal_status <- read_csv(data_path_in_imp("d_pubertal_status_imp.csv"))
+d_race <- read_csv(data_path_in_imp("d_race_imp.csv"))
+d_sex <- read_csv(data_path_in_imp("d_sex_imp.csv"))
+mh_headaches <- read_csv(data_path_in_imp("mh_headaches_imp.csv"))
+mh_mtbi_count <- read_csv(data_path_in_imp("mh_mtbi_count_imp.csv"))
+dm_wmndf_qc <- read_csv(data_path_in("dm_wmndf_qc.csv"))
+rm_gord_cor_qc <- read_csv(data_path_in("rm_gord_cor_qc.csv"))
+rm_gord_var_qc <- read_csv(data_path_in("rm_gord_var_qc.csv"))
+rm_subc_cor_qc <- read_csv(data_path_in("rm_subc_cor_qc.csv"))
+rm_subc_var_qc <- read_csv(data_path_in("rm_subc_var_qc.csv"))
+sm_cort_sa_qc <- read_csv(data_path_in("sm_cort_sa_qc.csv"))
+sm_cort_t_qc <- read_csv(data_path_in("sm_cort_t_qc.csv"))
+sm_subc_v_qc <- read_csv(data_path_in("sm_subc_v_qc.csv"))
+p_loneliness <- read_csv(data_path_in_imp("p_loneliness_imp.csv"))
+p_screen_time <- read_csv(data_path_in_imp("p_screen_time_imp.csv"))
+p_family_function <- read_csv(data_path_in_imp("p_family_function_imp.csv"))
+p_sports <- read_csv(data_path_in_imp("p_sports_imp.csv"))
+p_prosocial <- read_csv(data_path_in_imp("p_prosocial_imp.csv"))
+p_parent_psych <- read_csv(data_path_in_imp("p_parent_psych_imp.csv"))
+p_exercise <- read_csv(data_path_in_imp("p_exercise_imp.csv"))
+cbcl_headaches <- read_csv(data_path_out_imp("cbcl_headaches_imp.csv"))
+cbcl_nausea <- read_csv(data_path_out_imp("cbcl_nausea_imp.csv"))
+cbcl_vomiting <- read_csv(data_path_out_imp("cbcl_vomiting_imp.csv"))
+cbcl_dizzy <- read_csv(data_path_out_imp("cbcl_dizzy_imp.csv"))
+cbcl_overtired <- read_csv(data_path_out_imp("cbcl_overtired_imp.csv"))
+cbcl_sleeping_more <- read_csv(data_path_out_imp("cbcl_sleeping_more_imp.csv"))
+cbcl_sleeping_less <- read_csv(data_path_out_imp("cbcl_sleeping_less_imp.csv"))
+cbcl_depress <- read_csv(data_path_out_imp("cbcl_depress_imp.csv"))
+cbcl_anxiety <- read_csv(data_path_out_imp("cbcl_anxiety_imp.csv"))
+cbcl_attention <- read_csv(data_path_out_imp("cbcl_attention_imp.csv"))
+cbcl_aggressive <- read_csv(data_path_out_imp("cbcl_aggressive_imp.csv"))
+sds_sleep <- read_csv(data_path_out_imp("sds_sleep_imp.csv"))
+nihtbx_list_fc <- read_csv(data_path_out_imp("nihtbx_list_fc_imp.csv"))
+nihtbx_pattern_fc <- read_csv(data_path_out_imp("nihtbx_pattern_fc_imp.csv"))
+nihtbx_cardsort_fc <- read_csv(data_path_out_imp("nihtbx_cardsort_fc_imp.csv"))
 
 
 
@@ -399,7 +453,7 @@ pheatmap(mc_results,
     legend_labels = c("0", "0.5", "1", "ARI\n\n"),
     legend = TRUE,
     border_color = FALSE,
-    filename = img_path("2023_02_22_mc_results.png"),
+    filename = fig_path("2023_02_22_mc_results.png"),
     cellheight = 6,
     width = 10,
     height = 10)
@@ -410,7 +464,7 @@ pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
 
 # Same thing, but saving the file
 pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
-    filename = img_path("2023_02_22_mc_pretty.png"))
+    filename = fig_path("2023_02_22_mc_pretty.png"))
 dev.off()
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
@@ -452,7 +506,7 @@ pheatmap(dm_scaled_reordered,
     labels_row = "",
     legend = FALSE,
     fontsize = 12,
-    filename = img_path("2023_02_22_dm.png"))
+    filename = fig_path("2023_02_22_dm.png"))
 dev.off()
 
 mc_pvals <- p_val_select(output_matrix_full)
@@ -478,6 +532,11 @@ pheatmap(mc_pvals_reordered,
     legend = TRUE,
     filename = image_path("mc_pvals.png"))
 dev.off()
+
+image_path("mc_pvals.png")
+
+fig_path("mc_pvals.png", date = TRUE)
+
 # }}}
 ```
 
@@ -503,7 +562,7 @@ pheatmap(best_mc_clusters,
     show_colnames = FALSE,
     legend = FALSE,
     cellwidth = 2.2,
-    filename = img_path("2023_02_22_cluster_assignment_heatmap.png"))
+    filename = fig_path("2023_02_22_cluster_assignment_heatmap.png"))
 dev.off()
 
 # Alternative visualizations
@@ -518,7 +577,7 @@ row_means <- apply(X = best_mc_subs, MARGIN = 1, FUN = mean, na.rm = TRUE)
 names(row_means) <- colnames(subs(best_mc))[-1]
 
 # Shows how consistently a subject was assigned to a particular cluster
-png(img_path("2023_02_22_avg_cluster.png"),
+png(fig_path("2023_02_22_avg_cluster.png"),
     height = 5,
     width = 5,
     units = "in",
@@ -530,7 +589,7 @@ dev.off()
 
 
 # Histogram form
-png(img_path("2023_02_22_avg_cluster_hist.png"),
+png(fig_path("2023_02_22_avg_cluster_hist.png"),
     height = 5,
     width = 5,
     units = "in",
@@ -580,7 +639,7 @@ ggplot(best_mc_copy,
     labs(color = "All variables included?") +
     theme_bw() +
     theme(text = element_text(size = 15))
-# ggsave(img_path("2023_02_22_solutions_by_pvals.png"))
+# ggsave(fig_path("2023_02_22_solutions_by_pvals.png"))
 
 top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
 # }}}
@@ -1463,7 +1522,7 @@ for (i in 1:10000) {
 percentile <- ecdf(vector_uniform)
 1 - percentile(true_diff) # The p-value
 
-png(img_path("difference_in_proportion_cbcl_uniform_lp.png"),
+png(fig_path("difference_in_proportion_cbcl_uniform_lp.png"),
     height = 5,
     width = 5,
     units = "in",
@@ -1505,7 +1564,7 @@ for (i in 1:10000) {
 percentile <- ecdf(vector_6_61)
 1 - percentile(true_diff) # The p-value
 
-png(img_path("difference_in_proportion_cbcl_6_61_lp.png"),
+png(fig_path("difference_in_proportion_cbcl_6_61_lp.png"),
     height = 5,
     width = 5,
     units = "in",
@@ -1893,7 +1952,7 @@ ggplot(nausea_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_nausea_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_nausea_lp.png"))
 
 dizzy_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1910,7 +1969,7 @@ ggplot(dizzy_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_dizzy_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_dizzy_lp.png"))
 
 overtired_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1927,7 +1986,7 @@ ggplot(overtired_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_overtired_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_overtired_lp.png"))
 
 sleeping_more_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1944,7 +2003,7 @@ ggplot(sleeping_more_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_sleeping_more_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_sleeping_more_lp.png"))
 
 sleeping_less_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1961,7 +2020,7 @@ ggplot(sleeping_less_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_sleeping_less_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_sleeping_less_lp.png"))
 
 anxiety_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1978,7 +2037,7 @@ ggplot(anxiety_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_anxiety_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_anxiety_lp.png"))
 
 attention_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -1995,7 +2054,7 @@ ggplot(attention_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_attention_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_attention_lp.png"))
 
 aggressive_summary <- test_comparison_df |>
     group_by(cluster) |>
@@ -2012,7 +2071,7 @@ ggplot(aggressive_summary,
     theme_bw() +
     theme(text = element_text(size = 20))
 
-ggsave(img_path("2023_02_22_cbcl_aggressive_lp.png"))
+ggsave(fig_path("2023_02_22_cbcl_aggressive_lp.png"))
 # }}}
 ```
 
