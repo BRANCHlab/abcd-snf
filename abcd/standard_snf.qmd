@@ -200,7 +200,8 @@ cbcl_depress <- keep_split(cbcl_depress, assigned_df, "train")
 cbcl_anxiety <- keep_split(cbcl_anxiety, assigned_df, "train")
 cbcl_attention <- keep_split(cbcl_attention, assigned_df, "train")
 cbcl_aggressive <- keep_split(cbcl_aggressive, assigned_df, "train")
-sds_sleep <- keep_split(sds_sleep, assigned_df, "train")}}}
+sds_sleep <- keep_split(sds_sleep, assigned_df, "train")
+# }}}
 ```
 
 # SNF
@@ -585,56 +586,12 @@ top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
 # }}}
 ```
 
-
-## Finding the consensus cluster best row - Can do this later {{{
-
-```{r}
-# Let me now find the consensus clustering results
-best_mc_df$mean_cluster <- best_mc_df |>
-    dplyr::select(-subjectkey) |>
-    rowMeans()
-
-which(best_mc_df$mean_cluster == 1.5) # subjects 40 and 118 are exactly equally distributed to cluster 1 and 2
-
-
-# Dataframe to calculate deviation of clustering solns from CC soln
-distance_from_cc <- data.frame(row_id = as.character(best_mc$row_id))
-
-best_mc_df
-
-row_distances <- vector()
-for (i in seq_len(nrow(distance_from_cc))) {
-   dist <- mean((best_mc_df[, i] - best_mc_df$"mean_cluster")^2)
-    row_distances <- c(row_distances, dist)
-}
-
-distance_from_cc$dist <- row_distances
-
-distance_from_cc
-
-best_mc$dist <- row_distances
-
-
-ggplot(best_mc, aes(x = min_p_val, y = dist, label = row_id, color = dist)) +
-  geom_point() +
-  scale_x_continuous(trans = 'log10') +
-  geom_text(hjust = 0, vjust = 0) +
-  theme_bw()
-
-
-# row 48 appears to also be the lowest distance from the cc solution
-best_mc[which(best_mc$dist == min(row_distances)), ] # row 48
-
-```
-}}}
-
 # Cluster characterization
 
 ## CBCL measures
 
 ```{r}
 # Pick a row# {{{
-
 
 om_row <- 34 # Corresponds to row_id 84, the lowest min/mean p value
 best_mc$row_id[om_row] == 84
