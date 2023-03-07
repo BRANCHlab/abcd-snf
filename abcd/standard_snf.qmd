@@ -9,49 +9,12 @@ library(here)
 library(ggplot2)
 library(pheatmap)
 
-# Function to import data from carbon
-read_csv(imputed_data())
 
-
-# TO-DO: Merge all these files together.
-# Imputed input variables
+# Functions to import data from carbon
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
-
-abcd_ggsave <- function(filename, saved_plot) {
-    filename <- here(paste0("data/abcd/results/figures/", filename))
-    print(filename)
-    ggsave(filename, saved_plot)
-}
-
-abcd_pheatmapsave <- function(filename, matrix) {
-    filename <- here(paste0("data/abcd/results/figures/", filename))
-    print(filename)
-    pheatmap(matrix, filename = filename)
-}
-
-# The better function
-image_path <- function(filename, date = NULL) {
-    image_folder <- here(paste0("data/abcd/results/figures/"))
-    if (is.null(date)) {
-        date <- gsub("-", "_", Sys.Date())
-    }
-    date <- paste0(date, "_")
-    image_path <- paste0(image_folder, date, filename)
-    return(image_path)
-}
-
-
-data_path <- function(filename, date = NULL) {
-    data_folder <- here(paste0("data/abcd/results/processed/"))
-    if (is.null(date)) {
-        date <- gsub("-", "_", Sys.Date())
-    }
-    date <- paste0(date, "_")
-    data_path <- paste0(data_folder, date, filename)
-    return(data_path)
-}
 
 # Importing data
 as_mtbi_loc <- read_csv(input_path("as_mtbi_loc_imp.csv"))
@@ -279,7 +242,7 @@ k_scan_plot <-
         theme(text = element_text(size = 20))
 k_scan_plot
 
-abcd_ggsave("2023_02_20_k_scan_plot.png", k_scan_plot)
+# ggsave(fig_path("k_scan_plot.png", date = TRUE), k_scan_plot)
 
 a_scan_plot <-
     ggplot(ak_scan_om,
@@ -296,7 +259,7 @@ a_scan_plot <-
         theme(text = element_text(size = 20))
 a_scan_plot
 
-abcd_ggsave("2023_02_20_a_scan_plot.png", a_scan_plot)
+# ggsave(fig_path("a_scan_plot.png", date = TRUE), a_scan_plot)
 
 
 # Alternative visualizations
@@ -314,7 +277,9 @@ for (i in seq_len(nrow(ak_scan_om))) {
 }
 pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE)
 
-abcd_pheatmapsave("2023_02_20_a_k_matrix_min.png", a_k_matrix_min)
+pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE,
+         filename = fig_path("a_k_matrix_min.png", date = TRUE))
+
 
 # Mean p-values
 a_k_matrix_mean <- matrix(nrow = length(unique(ak_scan_om$K)),
@@ -330,7 +295,8 @@ for (i in seq_len(nrow(ak_scan_om))) {
 }
 pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE)
 
-abcd_pheatmapsave("2023_02_20_a_k_matrix_mean.png", a_k_matrix_mean)# }}}
+pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE,
+    filename = fig_path("a_k_matrix_mean.png", date = TRUE))
 ```
 
 
@@ -384,7 +350,7 @@ pheatmap(mc_results,
     legend_labels = c("0", "0.5", "1", "ARI\n\n"),
     legend = TRUE,
     border_color = FALSE,
-    filename = fig_path("2023_02_22_mc_results.png"),
+    filename = fig_path("mc_results.png", date = TRUE),
     cellheight = 6,
     width = 10,
     height = 10)
@@ -395,7 +361,7 @@ pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
 
 # Same thing, but saving the file
 pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
-    filename = fig_path("2023_02_22_mc_pretty.png"))
+    filename = fig_path("mc_pretty.png", date = TRUE))
 dev.off()
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
@@ -437,7 +403,7 @@ pheatmap(dm_scaled_reordered,
     labels_row = "",
     legend = FALSE,
     fontsize = 12,
-    filename = fig_path("2023_02_22_dm.png"))
+    filename = fig_path("dm_reordered.png", date = TRUE))
 dev.off()
 
 mc_pvals <- p_val_select(output_matrix_full)
@@ -461,12 +427,8 @@ pheatmap(mc_pvals_reordered,
     legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
     cluster_rows = FALSE,
     legend = TRUE,
-    filename = image_path("mc_pvals.png"))
+    filename = fig_path("mc_pvals.png", date = TRUE))
 dev.off()
-
-image_path("mc_pvals.png")
-
-fig_path("mc_pvals.png", date = TRUE)
 
 # }}}
 ```
@@ -643,7 +605,7 @@ ggplot(nausea_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-# ggsave(image_path("cbcl_nausea.png"), height = 6, dpi = 300)
+# ggsave(fig_path("cbcl_nausea.png", date = TRUE), height = 6, dpi = 300)
 # p = 0.015
 
 dizzy_summary <- comparison_df |>
@@ -661,7 +623,7 @@ ggplot(dizzy_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL dizzy Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_dizzy.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_dizzy.png", date = TRUE), height = 6, dpi = 300)
 # p = 0.12 (NS)
 
 overtired_summary <- comparison_df |>
@@ -679,7 +641,7 @@ ggplot(overtired_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL overtired Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_overtired.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_overtired.png", date = TRUE), height = 6, dpi = 300)
 # p = 0.037
 
 sleeping_more_summary <- comparison_df |>
@@ -697,7 +659,7 @@ ggplot(sleeping_more_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_more Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_sleeping_more.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_sleeping_more.png", date = TRUE), height = 6, dpi = 300)
 # p = 0.024
 
 sleeping_less_summary <- comparison_df |>
@@ -715,7 +677,7 @@ ggplot(sleeping_less_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_less Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_sleeping_less.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_sleeping_less.png", date = TRUE), height = 6, dpi = 300)
 # p = 0.06 (NS)
 
 anxiety_summary <- comparison_df |>
@@ -733,7 +695,7 @@ ggplot(anxiety_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL anxiety Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_anxiety.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_anxiety.png", date = TRUE), height = 6, dpi = 300)
 # p = 0.00025
 
 attention_summary <- comparison_df |>
@@ -751,7 +713,7 @@ ggplot(attention_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL attention Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_attention.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_attention.png", date = TRUE), height = 6, dpi = 300)
 # p = 2e-05
 
 aggressive_summary <- comparison_df |>
@@ -769,7 +731,7 @@ ggplot(aggressive_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL aggressive Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_aggressive.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_aggressive.png", date = TRUE), height = 6, dpi = 300)
 # p = 2e-05
 
 depress_summary <- comparison_df |>
@@ -787,7 +749,7 @@ ggplot(depress_summary,
     labs(x = "Cluster", y = "Percentage", fill = "CBCL Depress Grade") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_depress.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_depress.png", date = TRUE), height = 6, dpi = 300)
 
 
 pval_vec <- c(
@@ -906,7 +868,7 @@ pheatmap(c1_df_matrix,
     legend_breaks = c(0, 1, 2),
     cellwidth = 30,
     cluster_cols = FALSE,
-    filename = image_path("cbcl_train_matrix_c1.png"))
+    filename = fig_path("cbcl_train_matrix_c1.png", date = TRUE))
 dev.off()
 
 pheatmap(c2_df_matrix,
@@ -923,7 +885,7 @@ pheatmap(c2_df_matrix,
     legend_breaks = c(0, 1, 2),
     cellwidth = 30,
     cluster_cols = FALSE,
-    filename = image_path("cbcl_train_matrix_c2.png"))
+    filename = fig_path("cbcl_train_matrix_c2.png", date = TRUE))
 dev.off()
 
 
@@ -943,7 +905,7 @@ ggplot(train_total_c_df,
     geom_density(alpha = 0.6) +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("cbcl_total_problems_train.png"), height = 6, dpi = 300)
+ggsave(fig_path("cbcl_total_problems_train.png", date = TRUE), height = 6, dpi = 300)
 
 
 # Rather than looking at the sum (which treats 1 and 2 differently,
@@ -975,7 +937,8 @@ ggplot(train_total_c_binary_df,
     geom_density(alpha = 0.6) +
     theme_bw() +
     theme(text = element_text(size = 20))
-# ggsave(image_path("cbcl_any_problems_train.png"), height = 6, dpi = 300)
+# ggsave(fig_path("cbcl_any_problems_train.png", date = TRUE),
+#     height = 6, dpi = 300)
 
 
 c1_df$cbcl_total[c1_df$cbcl_total > 0] <- 1
@@ -1033,7 +996,7 @@ ggplot(c1_and_c2_df,
     labs(x = "Cluster", y = "Percentage", fill = "Has any CBCL impairment") +
     theme_bw() +
     theme(text = element_text(size = 20))
-ggsave(image_path("any_cbcl_impairment.png"), height = 6, dpi = 300)
+ggsave(fig_path("any_cbcl_impairment.png", date = TRUE), height = 6, dpi = 300)
 true_or
 ci# }}}
 ```
@@ -1267,11 +1230,11 @@ top_dm_row <- dm_reordered |>
     dplyr::filter(row_id %in% top_om_row$row_id)
 top_dm_row
 
-write_csv(top_om_row, data_path("top_om_row.csv"))
-write_csv(top_dm_row, data_path("top_dm_row.csv"))
+write_csv(top_om_row, proc_path("top_om_row.csv", date = TRUE))
+write_csv(top_dm_row, proc_path("top_dm_row.csv", date = TRUE))
 
-top_om_row <- read_delim(data_path("top_om_row.csv", date = "2023_02_23"))
-top_dm_row <- read_delim(data_path("top_dm_row.csv", date = "2023_02_23"))
+top_om_row <- read_delim(proc_path("top_om_row.csv", date = "2023_02_23"))
+top_dm_row <- read_delim(proc_path("top_dm_row.csv", date = "2023_02_23"))
 
 
 # This formality is in preparation for looping this chunk through many rows
@@ -1377,17 +1340,15 @@ c2_test_df <- test_evaluation_df |> dplyr::filter(cluster == 2)
 nrow(c1_test_df) # 6
 nrow(c2_test_df) # 61
 
-# THIS IS WHERE I LEFT OFF! (FEBRUARY 23)
+write_csv(c1_test_df, proc_path("label_propagated_c1.csv", date = TRUE))
+write_csv(c2_test_df, proc_path("label_propagated_c2.csv", date = TRUE))
+write_csv(test_evaluation_df, proc_path("test_evaluation_df.csv", date = TRUE))
 
-write_csv(c1_test_df, data_path("label_propagated_c1.csv"))
-write_csv(c2_test_df, data_path("label_propagated_c2.csv"))
-write_csv(test_evaluation_df, data_path("test_evaluation_df.csv"))
-
-c1_test_df <- data.frame(read_delim(data_path("label_propagated_c1.csv",
+c1_test_df <- data.frame(read_delim(proc_path("label_propagated_c1.csv",
     date = "2023_02_23")))
-c2_test_df <- data.frame(read_delim(data_path("label_propagated_c2.csv",
+c2_test_df <- data.frame(read_delim(proc_path("label_propagated_c2.csv",
     date = "2023_02_23")))
-test_evaluation_df <- data.frame(read_delim(data_path("test_evaluation_df.csv",
+test_evaluation_df <- data.frame(read_delim(proc_path("test_evaluation_df.csv",
     date = "2023_02_23")))
 
 c1_test_df$cbcl_total <- c1_test_df |>
@@ -1536,7 +1497,7 @@ for (i in 1:10000) {
 percentile <- ecdf(vector_uniform)
 1 - percentile(true_diff_border) # The p-value is 0.0341
 
-png(image_path("difference_in_proportion_any_cbcl_uniform_lp.png"),
+png(fig_path("difference_in_proportion_any_cbcl_uniform_lp.png", date = TRUE),
     height = 5,
     width = 5,
     units = "in",
@@ -1578,7 +1539,7 @@ for (i in 1:10000) {
 percentile <- ecdf(vector_6_61)
 1 - percentile(true_diff_border) # The p-value
 
-png(image_path("difference_in_proportion_any_cbcl_6_61_lp.png"),
+png(fig_path("difference_in_proportion_any_cbcl_6_61_lp.png", date = TRUE),
     height = 5,
     width = 5,
     units = "in",
@@ -1636,7 +1597,7 @@ pheatmap(c1_test_matrix,
     legend_breaks = c(0, 1, 2),
     cellwidth = 30,
     cluster_cols = FALSE,
-    filename = image_path("cbcl_test_matrix_c1.png"))
+    filename = fig_path("cbcl_test_matrix_c1.png", date = TRUE))
 dev.off()
 
 pheatmap(c2_test_matrix,
@@ -1645,7 +1606,7 @@ pheatmap(c2_test_matrix,
     legend_breaks = c(0, 1, 2),
     cellwidth = 30,
     cluster_cols = FALSE,
-    filename = image_path("cbcl_test_matrix_c2.png"))
+    filename = fig_path("cbcl_test_matrix_c2.png", date = TRUE))
 dev.off()
 
 ```
@@ -1814,7 +1775,7 @@ ggplot(train_cbcl_ors, aes(y = reorder(outcome, rev(row)),
         axis.text.x.bottom = element_text(colour = "black"),
         text = element_text(size = 30))
 #    labs(colour = "Significant OR") +
-ggsave(image_path("training_cbcl_ors.png"), height = 6, dpi = 300)
+ggsave(fig_path("training_cbcl_ors.png", date = TRUE), height = 6, dpi = 300)
 
 ggplot(test_cbcl_ors, aes(y = reorder(outcome, rev(row)),
                           x = or,
@@ -1854,7 +1815,7 @@ ggplot(test_cbcl_ors, aes(y = reorder(outcome, rev(row)),
         text = element_text(size = 30))
 #    labs(colour = "Significant OR") +
 
-ggsave(image_path("testing_cbcl_ors.png"), height = 6, dpi = 300)
+ggsave(fig_path("testing_cbcl_ors.png", date = TRUE), height = 6, dpi = 300)
 
 
 ```
@@ -2219,7 +2180,7 @@ ggplot(input_train_ors,
         axis.text.x.bottom = element_text(colour = "black"),
         text = element_text(size = 30))
 
-ggsave(image_path("training_input_ors.png"), height = 6, dpi = 300)
+ggsave(fig_path("training_input_ors.png", date = TRUE), height = 6, dpi = 300)
 
 
 ggplot(input_train_df, mapping = aes(x = cluster, y = screentime_wkday_hrs)) +
@@ -2272,7 +2233,7 @@ ggplot(f_summary,
     theme(text = element_text(size = 30)) +
     scale_fill_discrete(labels = c("F", "M"))
 
-ggsave(image_path("test_sex_bar.png"), height = 6, width = 8, dpi = 300)
+ggsave(fig_path("test_sex_bar.png", date = TRUE), height = 6, width = 8, dpi = 300)
 
 
 colnames(input_test_df)
@@ -2291,7 +2252,7 @@ ggplot(white_summary,
     theme_bw() +
     theme(text = element_text(size = 30)) +
     scale_fill_discrete(labels = c("Non-white", "White"))
-ggsave(image_path("test_white_bar.png"), height = 6, width = 8, dpi = 300)
+ggsave(fig_path("test_white_bar.png", date = TRUE), height = 6, width = 8, dpi = 300)
 
 
 parent_psych_summary <- input_test_df |>
@@ -2312,7 +2273,7 @@ ggplot(parent_psych_summary,
     theme(text = element_text(size = 30)) +
     scale_fill_discrete(labels = c("Clinical", "Normal"))
 
-ggsave(image_path("test_parent_psych_bar.png"), height = 6, dpi = 300)
+ggsave(fig_path("test_parent_psych_bar.png", date = TRUE), height = 6, dpi = 300)
 
 ```
 
@@ -2343,7 +2304,7 @@ permutation_test <- function(df, param, title, save_plot = FALSE) {
     p_value <- length(which(results >= true_diff)) / (length(results))
     print(paste0("p-value: ", p_value))
     if (save_plot) {
-        png(image_path(paste0("lp_ptest_", param, ".png")),
+        png(fig_path(paste0("lp_ptest_", param, ".png"), date = TRUE),
             height = 5,
             width = 5,
             units = "in",
@@ -2428,7 +2389,7 @@ permutation_test_prop <- function(df, param, title, save_plot = FALSE) {
     p_value <- length(which(results >= prop_diff)) / (length(results))
     print(p_value)
     if (save_plot) {
-        png(image_path(paste0("lp_ptest_", param, ".png")),
+        png(fig_path(paste0("lp_ptest_", param, ".png"), date = TRUE),
             height = 5,
             width = 5,
             units = "in",
