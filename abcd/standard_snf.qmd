@@ -64,14 +64,7 @@ write_csv(design_matrix, proc_path("full_design_matrix.csv", date = TRUE))
 design_matrix <- data.frame(read_csv(proc_path("full_design_matrix.csv")))
 
 
-# SNF
-
-## Alpha and K
-
-In this section, 'default' settings (i.e., including all variables) are used to iterate through clustering solutions from different values of alpha and K.
-
-```{r}
-# Structure containing all input data# {{{
+# Structure containing all input data
 # These data should not contain any NAs, but need not have the same subjects
 data_list <- generate_data_list(
     mtbi_loc = as_mtbi_loc_train,
@@ -113,106 +106,6 @@ outcome_list <- generate_outcome_list(
     cbcl_anxiety = cbcl_anxiety_train,
     cbcl_attention = cbcl_attention_train,
     cbcl_aggressive = cbcl_aggressive_train)
-
-
-# Builds a standard design matrix only exploring SNF hyperparameters alpha and K
-design_matrix_ak <- build_design_matrix_ak()
-
-# Assess clustering minimum p-value for an ordinal dependent variable
-ak_scan_om <- execute_design_matrix(data_list, design_matrix_ak, outcome_list)
-
-write_csv(ak_scan_om,
-    here("data/abcd/results/processed/2023_02_17_ak_scan_om.csv"))
-
-# Note that the column types will be different (and more accurate) when going
-#  through the read_delim function. Without doing this, you will have a lot of
-#  character columns.
-ak_scan_om <-
-    read_delim(here("data/abcd/results/processed/2023_02_17_ak_scan_om.csv"))
-
-min(ak_scan_om$min_p_val)
-min(ak_scan_om$mean_p_val)
-
-ak_scan_om$nclust <- as.factor(ak_scan_om$nclust)
-
-ak_scan_om
-
-# Highlighting the point that used the most default settings
-ak_default <- ak_scan_om |>
-    dplyr::filter(K == 20, alpha == 0.5)
-
-k_scan_plot <-
-    ggplot(ak_scan_om,
-        mapping = aes(x = min_p_val,
-                      y = mean_p_val,
-                      color = nclust,
-                      size = K)) +
-        geom_point(data = ak_default, colour = "pink", size = 6) +
-        geom_point() +
-        scale_x_continuous(trans = 'log10') +
-        xlab("Minimum p-value") +
-        ylab("Mean p-value") +
-        theme_bw() +
-        theme(text = element_text(size = 20))
-k_scan_plot
-
-# ggsave(fig_path("k_scan_plot.png", date = TRUE), k_scan_plot)
-
-a_scan_plot <-
-    ggplot(ak_scan_om,
-        mapping = aes(x = min_p_val,
-                      y = mean_p_val,
-                      color = nclust,
-                      size = alpha)) +
-        geom_point(data = ak_default, colour = "pink", size = 7) +
-        geom_point() +
-        scale_x_continuous(trans = 'log10') +
-        xlab("Minimum p-value") +
-        ylab("Mean p-value") +
-        theme_bw() +
-        theme(text = element_text(size = 20))
-a_scan_plot
-
-# ggsave(fig_path("a_scan_plot.png", date = TRUE), a_scan_plot)
-
-
-# Alternative visualizations
-# Min-p-values
-a_k_matrix_min <- matrix(nrow = length(unique(ak_scan_om$K)),
-                     ncol = length(unique(ak_scan_om$alpha)))
-colnames(a_k_matrix_min) <- as.character(seq(0.3, 1, by = 0.1))
-rownames(a_k_matrix_min) <- as.character(seq(10, 100, by = 10))
-for (i in seq_len(nrow(ak_scan_om))) {
-    print(i)
-   row <- as.character(ak_scan_om[i, "K"])
-   col <- as.character(ak_scan_om[i, "alpha"])
-   min_p <- as.numeric(ak_scan_om[i, "min_p_val"])
-   a_k_matrix_min[row, col] <- min_p
-}
-pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE)
-
-pheatmap(a_k_matrix_min, cluster_rows = FALSE, cluster_cols = FALSE,
-         filename = fig_path("a_k_matrix_min.png", date = TRUE))
-
-
-# Mean p-values
-a_k_matrix_mean <- matrix(nrow = length(unique(ak_scan_om$K)),
-                          ncol = length(unique(ak_scan_om$alpha)))
-colnames(a_k_matrix_mean) <- as.character(seq(0.3, 1, by = 0.1))
-rownames(a_k_matrix_mean) <- as.character(seq(10, 100, by = 10))
-for (i in seq_len(nrow(ak_scan_om))) {
-    print(i)
-   row <- as.character(ak_scan_om[i, "K"])
-   col <- as.character(ak_scan_om[i, "alpha"])
-   mean_p <- as.numeric(ak_scan_om[i, "mean_p_val"])
-   a_k_matrix_mean[row, col] <- mean_p
-}
-pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE)
-
-pheatmap(a_k_matrix_mean, cluster_rows = FALSE, cluster_cols = FALSE,
-    filename = fig_path("a_k_matrix_mean.png", date = TRUE))
-```
-
 
 ## Training set
 
