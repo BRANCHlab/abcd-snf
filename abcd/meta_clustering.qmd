@@ -1,41 +1,44 @@
-# Meta-clustering
+# Meta-clustering and characterization
 
 ```{r eval = FALSE}
 library(here)
 library(readr)
 library(dplyr)
 library(scabcd)
-library(mclust)
-library(qgraph)
-
-# Import SNF meta-clustering output matrix results
-snf_om <- read_csv(here("data/abcd/results/raw/snf_mc_output_matrix.csv"))
-
-snf_mc_sm <- meta_cluster(snf_om)
+library(abcdutils)
 
 
-# Heatmap visualization of the similarities matrix
-pheatmap::pheatmap(snf_mc_sm)
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
-qgraph(snf_mc_sm)
+output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
 
+min(output_matrix_full$min_p_val) #3.2 e-08
+min(output_matrix_full$mean_p_val) #0.00414
+
+mc_results <- meta_cluster(output_matrix_full)
+
+write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
+
+mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
+
+colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+
+# Visualizing the meta-clustering results
+mc_heatmap(mc_results, save = fig_path("mc_results.png", date = TRUE))
+
+# Pretty art
+pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
+
+# Trying to plot the input design matrix as a heatmap
+mc_order <- get_pheatmap_order(mc_results)
+
+dm_heatmap(design_matrix[mc_order, ], fig_path("dm_reordered.png", date = TRUE))
+
+mc_pvals <- p_val_select(output_matrix_full)
+
+mc_pvals_reordered <- mc_pvals[mc_order, ]
+
+# This is the actual important graph
+pvals_pheatmap(mc_pvals_reordered, save = fig_path("mc_pvals.png", date = TRUE))
 ```
-
-
-```{r}
-# Extract and plot outcome measure p-values
-mc_pvals <- p_val_select(snf_om)
-
-# Plot p-values
-heatmap_path <- here("data/abcd/results/figures/snf_mc_pvals_heatmap.png")
-heatmap_pvals(mc_pvals, heatmap_path)
-
-# Meta-cluster calculations:
-
-
-
-```
-
-Cluster by p-vals
-Actually meta-cluster and perhaps label each meta-cluster across outcome measures
- gj
