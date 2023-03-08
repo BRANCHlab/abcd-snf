@@ -1,4 +1,6 @@
-# Loading Data
+# Repeated SNF
+
+## Loading Data
 
 ```{r eval = FALSE}
 library(dplyr)# {{{
@@ -8,7 +10,6 @@ library(readr)
 library(here)
 library(ggplot2)
 library(pheatmap)
-
 
 # Functions to import data from carbon
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
@@ -58,6 +59,10 @@ sds_sleep_train <- read_csv(proc_path("sds_sleep_train.csv"))
 
 ## SNF
 
+```{r}
+set.seed(42)# {{{
+design_matrix_base <- build_design_matrix_base()
+design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
 write_csv(design_matrix, proc_path("full_design_matrix.csv", date = TRUE))
 
@@ -107,144 +112,57 @@ outcome_list <- generate_outcome_list(
     cbcl_attention = cbcl_attention_train,
     cbcl_aggressive = cbcl_aggressive_train)
 
-## Training set
-
-```{r}
-set.seed(42)# {{{
-design_matrix_base <- build_design_matrix_base()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
-
-#write_csv(design_matrix,
-#    here(paste0("data/abcd/results/processed/full_design_matrix.csv")))
-
 output_matrix_full <-
-    execute_design_matrix(data_list, design_matrix, outcome_list)
+    execute_design_matrix(data_list, design_matrix2, outcome_list)
 
 write_csv(output_matrix_full,
     here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))
+```
 
-output_matrix_full <-
-    read_delim(here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))
+The following code chunk is where I left off with cleaning.
+It is in meta_clustering.qmd.
 
+```{r}
+output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
 
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00414
 
 mc_results <- meta_cluster(output_matrix_full)
 
-write_csv(data.frame(mc_results), here(paste0("data/abcd/results/processed/",
-    "2023_02_22_mc_results.csv")))
+write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
 
-mc_results <- as.matrix(read_delim(
-    here(paste0("data/abcd/results/processed/",
-                "2023_02_22_mc_results.csv"))))
+mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
 
-# That is extremely well-separated
-colnames(mc_results) <- NULL
-rownames(mc_results) <- NULL
-pheatmap(mc_results,
-    legend_breaks = c(0, 0.5, 1, max(mc_results)),
-    main = "",
-    legend_labels = c("0", "0.5", "1", "ARI\n\n"),
-    legend = TRUE, border_color = FALSE)
+colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 
-# Same thing, but saving the file
-colnames(mc_results) <- NULL
-rownames(mc_results) <- NULL
-pheatmap(mc_results,
-    legend_breaks = c(0, 0.5, 1, max(mc_results)),
-    main = "",
-    legend_labels = c("0", "0.5", "1", "ARI\n\n"),
-    legend = TRUE,
-    border_color = FALSE,
-    filename = fig_path("mc_results.png", date = TRUE),
-    cellheight = 6,
-    width = 10,
-    height = 10)
-dev.off()
+# Visualizing the meta-clustering results
+mc_heatmap(mc_results, save = fig_path("mc_results.png", date = TRUE))
 
 # Pretty art
 pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
 
-# Same thing, but saving the file
-pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE,
-    filename = fig_path("mc_pretty.png", date = TRUE))
-dev.off()
+# Trying to plot the input design matrix as a heatmap
+mc_order <- get_pheatmap_order(mc_results)
 
-colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-rownames(mc_results) <- as.character(seq_len(nrow(mc_results))) # }}}
-```
-
-Make sure to remove headaches from the final list of examined outcomes, as it is basically an input
-
-
-## Meta-clustering
-
-```{r}
-# Trying to plot the input design matrix as a heatmap# {{{
-dm_scaled <- design_matrix
-dm_scaled$row_id <- dm_scaled$row_id / max(dm_scaled$row_id)
-dm_scaled$K <- dm_scaled$K / max(dm_scaled$K)
-dm_scaled$alpha <- dm_scaled$alpha / max(dm_scaled$alpha)
-dm_scaled$snf_scheme <- dm_scaled$snf_scheme / max(dm_scaled$snf_scheme)
-dm_scaled$eigen_or_rot <- dm_scaled$eigen_or_rot / max(dm_scaled$eigen_or_rot)
-
-out <- pheatmap(mc_results)
-
-dm_scaled_reordered <- dm_scaled[out$tree_row[["order"]], ]
-
-dm_reordered <- design_matrix[out$tree_row[["order"]], ]
-
-# Heatmap of the design matrix
-pheatmap(dm_scaled_reordered,
-         cluster_rows = FALSE,
-         cluster_cols = FALSE,
-         labels_row = "",
-         legend = FALSE,
-         fontsize = 12)
-
-# Same thing but saved to a file
-pheatmap(dm_scaled_reordered,
-    cluster_rows = FALSE,
-    cluster_cols = FALSE,
-    labels_row = "",
-    legend = FALSE,
-    fontsize = 12,
-    filename = fig_path("dm_reordered.png", date = TRUE))
-dev.off()
+dm_heatmap(design_matrix[mc_order, ], fig_path("dm_reordered.png", date = TRUE))
 
 mc_pvals <- p_val_select(output_matrix_full)
-mc_pvals_reordered <- mc_pvals[out$tree_row[["order"]], ]
+
+mc_pvals
+
+mc_pvals_reordered <- mc_pvals[mc_order, ]
 
 # This is the actual important graph
-pheatmap(mc_pvals_reordered,
-    legend_breaks = c(0, 0.2, 0.4, 0.6, 0.8, max(mc_pvals_reordered)),
-    main = "",
-    color = colorRampPalette(
-        RColorBrewer::brewer.pal(n = 7, name = "RdYlBu"))(100),
-    legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
-    cluster_rows = FALSE,
-    legend = TRUE)
-
-pheatmap(mc_pvals_reordered,
-    legend_breaks = c(0, 0.2, 0.4, 0.6, 0.8, max(mc_pvals_reordered)),
-    main = "",
-    color = colorRampPalette(
-        RColorBrewer::brewer.pal(n = 7, name = "RdYlBu"))(100),
-    legend_labels = c("0", "0.2", "0.4", "0.6", "0.8", "p-value\n\n"),
-    cluster_rows = FALSE,
-    legend = TRUE,
-    filename = fig_path("mc_pvals.png", date = TRUE))
-dev.off()
-
-# }}}
+pvals_pheatmap(mc_pvals_reordered, save = fig_path("mc_pvals.png", date = TRUE))
 ```
 
 ## Distribution of cluster assignment
 
 ```{r}
 # A selection based on the main visual meta cluster and the p-values# {{{
-om_reordered <- output_matrix_full[out$tree_row[["order"]], ]
+om_reordered <- output_matrix_full[mc_order, ]
 best_mc <- om_reordered[6:41, ]
 best_mc_clusters <- as.matrix(subs(best_mc)[, -1])
 
@@ -327,6 +245,8 @@ best_mc_copy$inc_var_count <- best_mc_copy |>
     dplyr::select(dplyr::starts_with("inc")) |>
     rowSums()
 
+best_mc_copy
+
 ggplot(best_mc_copy,
     aes(x = min_p_val, y = mean_p_val, label = row_id,
         color = (inc_var_count == 25))) +
@@ -343,6 +263,9 @@ ggplot(best_mc_copy,
 
 top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
 # }}}
+
+
+om_scatter(output_matrix_full)
 ```
 
 # Cluster characterization
@@ -1033,7 +956,7 @@ outcome_list_full <- generate_outcome_list(
 top_om_row
 
 # The best row (from the design matrix)
-top_dm_row <- dm_reordered |>
+top_dm_row <- design_matrix |>
     dplyr::filter(row_id %in% top_om_row$row_id)
 top_dm_row
 
