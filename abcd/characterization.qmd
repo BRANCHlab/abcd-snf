@@ -1,11 +1,66 @@
 # Cluster characterization
 
+
+## Load libraries and data
 ```{r}
 library(scabcd)
+library(abcdutils)
+library(here)
+library(readr)
 
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
-top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
+# Outcome data
+cbcl_nausea_train <- read_csv(proc_path("cbcl_nausea_train.csv"))
+cbcl_vomiting_train <- read_csv(proc_path("cbcl_vomiting_train.csv"))
+cbcl_dizzy_train <- read_csv(proc_path("cbcl_dizzy_train.csv"))
+cbcl_overtired_train <- read_csv(proc_path("cbcl_overtired_train.csv"))
+cbcl_sleeping_more_train <- read_csv(proc_path("cbcl_sleeping_more_train.csv"))
+cbcl_sleeping_less_train <- read_csv(proc_path("cbcl_sleeping_less_train.csv"))
+cbcl_depress_train <- read_csv(proc_path("cbcl_depress_train.csv"))
+cbcl_anxiety_train <- read_csv(proc_path("cbcl_anxiety_train.csv"))
+cbcl_attention_train <- read_csv(proc_path("cbcl_attention_train.csv"))
+cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
 
+# The SNF meta-clustering outcome rows we are interested in characterizing
+top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
+```
+
+```{r}
+# Process 1: Make a dataframe of the subjects and their assigned clusters
+get_cluster_df <- function(om_row) {
+    cluster_df <-
+        subs(top_om_rows[2, ]) |>
+        t() |>
+        data.frame()
+    cluster_df$id <- rownames(cluster_df)
+    rownames(cluster_df) <- NULL
+    colnames(cluster_df) <- c("cluster", "subjectkey")
+    cluster_df <- cluster_df[2:nrow(cluster_df), ]
+    return(cluster_df)
+}
+
+
+# Make a joined dataframe for further characterization
+cluster_outcome_list <- list(
+    cluster_df,
+    cbcl_nausea_train,
+    cbcl_vomiting_train,
+    cbcl_dizzy_train,
+    cbcl_overtired_train,
+    cbcl_sleeping_more_train,
+    cbcl_sleeping_less_train,
+    cbcl_depress_train,
+    cbcl_anxiety_train,
+    cbcl_attention_train,
+    cbcl_aggressive_train)
+
+
+get_cluster_df(top_om_rows[2, ])
+
+
+# Process X: label propagation
+
+groups <- cluster_df$cluster
 ```
 
