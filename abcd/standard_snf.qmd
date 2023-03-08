@@ -3,7 +3,7 @@
 ## Loading Data
 
 ```{r eval = FALSE}
-library(dplyr)# {{{
+library(dplyr)
 library(abcdutils)
 library(scabcd)
 library(readr)
@@ -60,7 +60,7 @@ sds_sleep_train <- read_csv(proc_path("sds_sleep_train.csv"))
 ## SNF
 
 ```{r}
-set.seed(42)# {{{
+set.seed(42)
 design_matrix_base <- build_design_matrix_base()
 design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
 
@@ -156,12 +156,11 @@ mc_pvals_reordered <- mc_pvals[mc_order, ]
 
 # This is the actual important graph
 pvals_pheatmap(mc_pvals_reordered, save = fig_path("mc_pvals.png", date = TRUE))
-```
+
 
 ## Distribution of cluster assignment
 
-```{r}
-# A selection based on the main visual meta cluster and the p-values# {{{
+# A selection based on the main visual meta cluster and the p-values
 om_reordered <- output_matrix_full[mc_order, ]
 best_mc <- om_reordered[6:41, ]
 best_mc_clusters <- as.matrix(subs(best_mc)[, -1])
@@ -215,13 +214,12 @@ png(fig_path("2023_02_22_avg_cluster_hist.png"),
 hist(row_means,
     xlab = "Mean assigned cluster",
     main = NULL)
-dev.off()# }}}
-```
+dev.off()
+
 
 ## Choosing top solution
 
-```{r}
-om_reordered# {{{
+om_reordered
 
 # Next steps are to evaluate a few options:
 # A consensus cluster row (nah)
@@ -262,18 +260,20 @@ ggplot(best_mc_copy,
 # ggsave(fig_path("2023_02_22_solutions_by_pvals.png"))
 
 top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
-# }}}
+
 
 
 om_scatter(output_matrix_full)
 ```
+
+This should be a separate file
 
 # Cluster characterization
 
 ## CBCL measures
 
 ```{r}
-# Pick a row# {{{
+# Pick a row
 
 om_row <- 34 # Corresponds to row_id 84, the lowest min/mean p value
 best_mc$row_id[om_row] == 84
@@ -728,12 +728,12 @@ ggplot(c1_and_c2_df,
     theme(text = element_text(size = 20))
 ggsave(fig_path("any_cbcl_impairment.png", date = TRUE), height = 6, dpi = 300)
 true_or
-ci# }}}
+ci
 ```
 
 # Label propagation
 ```{r}
-# I have to re-import because of the 'keep_split' that happened early in script# {{{
+# I have to re-import because of the 'keep_split' that happened early in script
 # Once the keep training split data is renamed to end in train, won't need to
 #  do this double importing.
 as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
@@ -1111,7 +1111,7 @@ test_evaluation_df$cbcl_total <- test_evaluation_df |>
 
 test_evaluation_df <- test_evaluation_df |>
     rowwise() |>
-    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))# }}}
+    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))
 ```
 
 ## Permutation testing
@@ -1119,7 +1119,7 @@ test_evaluation_df <- test_evaluation_df |>
 ### CBCL proportions
 
 ```{r}
-# Permutation testing difference in proportion# {{{
+# Permutation testing difference in proportion
 vector_uniform <- c()
 set.seed(42)
 for (i in 1:10000) {
@@ -1159,9 +1159,9 @@ hist(vector_uniform,
 abline(v = true_diff,
     col = "red")
 axis(1,at=seq(-1,1,by=0.5))
-dev.off()# }}}
+dev.off()
 
-# Preserving the 6 and 61 split size# {{{
+# Preserving the 6 and 61 split size
 vector_6_61 <- c()
 set.seed(42)
 for (i in 1:10000) {
@@ -1200,9 +1200,9 @@ hist(vector_6_61,
 abline(v = true_diff,
     col = "red")
 axis(1,at=seq(-1,1,by=0.5))
-dev.off()# }}}
+dev.off()
 
-# Permutation testing difference in proportion borderline OR clinical# {{{
+# Permutation testing difference in proportion borderline OR clinical
 vector_uniform <- c()
 set.seed(42)
 for (i in 1:10000) {
@@ -1242,9 +1242,9 @@ hist(vector_uniform,
 abline(v = true_diff_border,
     col = "red")
 axis(1,at=seq(-1,1,by=0.5))
-dev.off()# }}}
+dev.off()
 
-# Preserving the 6 and 61 split size# {{{
+# Preserving the 6 and 61 split size
 vector_6_61 <- c()
 set.seed(42)
 for (i in 1:10000) {
@@ -1284,7 +1284,7 @@ hist(vector_6_61,
 abline(v = true_diff_border,
     col = "red")
 
-dev.off()# }}}
+dev.off()
 ```
 
 ## CBCL relationships
@@ -1554,7 +1554,7 @@ ggsave(fig_path("testing_cbcl_ors.png", date = TRUE), height = 6, dpi = 300)
 ## Individual CBCL measures as bar charts
 
 ```{r}
-test_comparison_df <- rbind(c1_test_df, c2_test_df) # {{{
+test_comparison_df <- rbind(c1_test_df, c2_test_df) 
 
 test_comparison_df$cluster <- as.factor(test_comparison_df$cluster)
 
@@ -1694,7 +1694,7 @@ ggplot(aggressive_summary,
     theme(text = element_text(size = 20))
 
 ggsave(fig_path("2023_02_22_cbcl_aggressive_lp.png"))
-# }}}
+
 ```
 
 ## Input variable characterization
