@@ -1,4 +1,4 @@
-# Cluster characterization
+# Training cluster characterization
 
 
 ## Load libraries and data
@@ -26,19 +26,10 @@ cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
 top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
 ```
 
+## Characterize CBCL measures
+
 ```{r}
-# Process 1: Make a dataframe of the subjects and their assigned clusters
-get_cluster_df <- function(om_row) {
-    cluster_df <-
-        subs(top_om_rows[2, ]) |>
-        t() |>
-        data.frame()
-    cluster_df$id <- rownames(cluster_df)
-    rownames(cluster_df) <- NULL
-    colnames(cluster_df) <- c("cluster", "subjectkey")
-    cluster_df <- cluster_df[2:nrow(cluster_df), ]
-    return(cluster_df)
-}
+cluster_df <- get_cluster_df(top_om_rows[2, ])
 
 
 # Make a joined dataframe for further characterization
@@ -54,12 +45,25 @@ cluster_outcome_list <- list(
     cbcl_anxiety_train,
     cbcl_attention_train,
     cbcl_aggressive_train)
+characterization_df <- merge_df_list(cluster_outcome_list)
+
+# P-values
+cbcl_ord_reg(characterization_df)
+
+# Process 3: plotting
 
 
-get_cluster_df(top_om_rows[2, ])
+cbcl_bar_chart(characterization_df, "cbcl_nausea")
 
 
 # Process X: label propagation
+
+a <- "cluster"
+
+
+head(
+     cluster_df |> dplyr::rename("clust" = !!a)
+)
 
 groups <- cluster_df$cluster
 ```
