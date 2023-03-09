@@ -24,17 +24,21 @@ cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
 
 # The SNF meta-clustering outcome rows we are interested in characterizing
 top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
+
+top_om_rows
 ```
 
 ## Characterize CBCL measures
 
 ```{r}
-cluster_df <- get_cluster_df(top_om_rows[2, ])
+cluster_df1 <- get_cluster_df(top_om_rows[1, ]) # The top solution of MC2
+cluster_df2 <- get_cluster_df(top_om_rows[2, ]) # The top solution of MC1
+cluster_df3 <- get_cluster_df(top_om_rows[3, ]) # The stable full soln in MC2
 
 
 # Make a joined dataframe for further characterization
-cluster_outcome_list <- list(
-    cluster_df,
+cluster_outcome_list1 <- list(
+    cluster_df1,
     cbcl_nausea_train,
     cbcl_vomiting_train,
     cbcl_dizzy_train,
@@ -45,16 +49,152 @@ cluster_outcome_list <- list(
     cbcl_anxiety_train,
     cbcl_attention_train,
     cbcl_aggressive_train)
-characterization_df <- merge_df_list(cluster_outcome_list)
+
+cluster_outcome_list2 <- list(
+    cluster_df2,
+    cbcl_nausea_train,
+    cbcl_vomiting_train,
+    cbcl_dizzy_train,
+    cbcl_overtired_train,
+    cbcl_sleeping_more_train,
+    cbcl_sleeping_less_train,
+    cbcl_depress_train,
+    cbcl_anxiety_train,
+    cbcl_attention_train,
+    cbcl_aggressive_train)
+
+cluster_outcome_list3 <- list(
+    cluster_df3,
+    cbcl_nausea_train,
+    cbcl_vomiting_train,
+    cbcl_dizzy_train,
+    cbcl_overtired_train,
+    cbcl_sleeping_more_train,
+    cbcl_sleeping_less_train,
+    cbcl_depress_train,
+    cbcl_anxiety_train,
+    cbcl_attention_train,
+    cbcl_aggressive_train)
+
+characterization_df1 <- merge_df_list(cluster_outcome_list1)
+characterization_df2 <- merge_df_list(cluster_outcome_list2)
+characterization_df3 <- merge_df_list(cluster_outcome_list3)
+
 
 # P-values
-cbcl_ord_reg(characterization_df)
+cbcl_ord_reg(characterization_df1, bonferroni = TRUE)
+cbcl_anova(characterization_df1, bonferroni = TRUE)
 
-# Process 3: plotting
+cbcl_ord_reg(characterization_df2, bonferroni = TRUE)
+cbcl_anova(characterization_df2, bonferroni = TRUE)
+
+cbcl_ord_reg(characterization_df3, bonferroni = TRUE)
+cbcl_anova(characterization_df3, bonferroni = TRUE)
 
 
-cbcl_bar_chart(characterization_df, "cbcl_nausea")
 
+
+# DF1
+## S by anova and ord reg:
+nausea1 <- cbcl_bar_chart(characterization_df1, "cbcl_nausea")
+vomiting1 <- cbcl_bar_chart(characterization_df1, "cbcl_vomiting")
+dizzy1 <- cbcl_bar_chart(characterization_df1, "cbcl_dizzy")
+
+## S by anova or ord_reg:
+anxiety1 <- cbcl_bar_chart(characterization_df1, "cbcl_anxiety")
+
+## NS by anova and ord reg:
+sleeping_more1 <- cbcl_bar_chart(characterization_df1, "cbcl_sleeping_more")
+sleeping_less1 <- cbcl_bar_chart(characterization_df1, "cbcl_sleeping_less")
+overtired1 <- cbcl_bar_chart(characterization_df1, "cbcl_overtired")
+aggressive1 <- cbcl_bar_chart(characterization_df1, "cbcl_aggressive")
+attention1 <- cbcl_bar_chart(characterization_df1, "cbcl_attention")
+depress1 <- cbcl_bar_chart(characterization_df1, "cbcl_depress")
+
+
+# DF2
+## S by anova and ord reg:
+nausea2 <- cbcl_bar_chart(characterization_df2, "cbcl_nausea")
+vomiting2 <- cbcl_bar_chart(characterization_df2, "cbcl_vomiting")
+overtired2 <- cbcl_bar_chart(characterization_df2, "cbcl_overtired")
+sleeping_more2 <- cbcl_bar_chart(characterization_df2, "cbcl_sleeping_more")
+depress2 <- cbcl_bar_chart(characterization_df2, "cbcl_depress")
+anxiety2 <- cbcl_bar_chart(characterization_df2, "cbcl_anxiety")
+attention2 <- cbcl_bar_chart(characterization_df2, "cbcl_attention")
+aggressive2 <- cbcl_bar_chart(characterization_df2, "cbcl_aggressive")
+
+## NS by anova and ord reg:
+dizzy2 <- cbcl_bar_chart(characterization_df2, "cbcl_dizzy")
+sleeping_less2 <- cbcl_bar_chart(characterization_df2, "cbcl_sleeping_less")
+
+
+
+# DF3
+## NS by anova and ord reg:
+nausea3 <- cbcl_bar_chart(characterization_df3, "cbcl_nausea")
+vomiting3 <- cbcl_bar_chart(characterization_df3, "cbcl_vomiting")
+dizzy3 <- cbcl_bar_chart(characterization_df3, "cbcl_dizzy")
+overtired3 <- cbcl_bar_chart(characterization_df3, "cbcl_overtired")
+sleeping_more3 <- cbcl_bar_chart(characterization_df3, "cbcl_sleeping_more")
+sleeping_less3 <- cbcl_bar_chart(characterization_df3, "cbcl_sleeping_less")
+depress3 <- cbcl_bar_chart(characterization_df3, "cbcl_depress")
+anxiety3 <- cbcl_bar_chart(characterization_df3, "cbcl_anxiety")
+attention3 <- cbcl_bar_chart(characterization_df3, "cbcl_attention")
+aggressive3 <- cbcl_bar_chart(characterization_df3, "cbcl_aggressive")
+
+nausea3
+
+clean_plot(nausea3)
+
+clean_plot <- function(plot) {
+    cleaned_plot <- plot +
+        ggplot2::theme(legend.position = "none") +
+        ggplot2::xlab("") +
+        ggplot2::ylab("")
+    return(cleaned_plot)
+}
+
+grid.arrange(
+    clean_plot(nausea1),
+    clean_plot(vomiting1),
+    clean_plot(dizzy1),
+    clean_plot(overtired1),
+    clean_plot(sleeping_more1),
+    clean_plot(sleeping_less1),
+    clean_plot(depress1),
+    clean_plot(anxiety1),
+    clean_plot(attention1),
+    clean_plot(aggressive1)
+)
+
+
+grid.arrange(
+    clean_plot(nausea2),
+    clean_plot(vomiting2),
+    clean_plot(dizzy2),
+    clean_plot(overtired2),
+    clean_plot(sleeping_more2),
+    clean_plot(sleeping_less2),
+    clean_plot(depress2),
+    clean_plot(anxiety2),
+    clean_plot(attention2),
+    clean_plot(aggressive2)
+)
+
+grid.arrange(
+    clean_plot(nausea3),
+    clean_plot(vomiting3),
+    clean_plot(dizzy3),
+    clean_plot(overtired3),
+    clean_plot(sleeping_more3),
+    clean_plot(sleeping_less3),
+    clean_plot(depress3),
+    clean_plot(anxiety3),
+    clean_plot(attention3),
+    clean_plot(aggressive3)
+)
+
+# Left off here
 
 # Process X: label propagation
 
