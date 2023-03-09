@@ -237,7 +237,7 @@ clean_plot <- function(plot) {
 }
 
 
-cluster_characterizer <- function(om_row, outcome_list) {
+cluster_characterizer <- function(om_row, outcome_list, save = NULL) {
     cluster_df <- get_cluster_df(om_row)
     cluster_outcome_list <- append(list(cluster_df), outcome_list)
     characterization_df <- merge_df_list(cluster_outcome_list)
@@ -250,7 +250,7 @@ cluster_characterizer <- function(om_row, outcome_list) {
     nausea <- cbcl_bar_chart(characterization_df, "cbcl_nausea")
     vomiting <- cbcl_bar_chart(characterization_df, "cbcl_vomiting")
     dizzy <- cbcl_bar_chart(characterization_df, "cbcl_dizzy")
--   overtired <- cbcl_bar_chart(characterization_df, "cbcl_overtired")
+    overtired <- cbcl_bar_chart(characterization_df, "cbcl_overtired")
     sleeping_more <- cbcl_bar_chart(characterization_df, "cbcl_sleeping_more")
     sleeping_less <- cbcl_bar_chart(characterization_df, "cbcl_sleeping_less")
     depress <- cbcl_bar_chart(characterization_df, "cbcl_depress")
@@ -269,19 +269,38 @@ cluster_characterizer <- function(om_row, outcome_list) {
         clean_plot(attention),
         clean_plot(aggressive)
     )
+    if (!is.null(save)) {
+        grid <-
+            gridExtra::arrangeGrob(
+                clean_plot(nausea),
+                clean_plot(vomiting),
+                clean_plot(dizzy),
+                clean_plot(overtired),
+                clean_plot(sleeping_more),
+                clean_plot(sleeping_less),
+                clean_plot(depress),
+                clean_plot(anxiety),
+                clean_plot(attention),
+                clean_plot(aggressive)
+            )
+        ggplot2::ggsave(file = save, grid)
+    }
 }
 
-cluster_characterizer(top_oms[1, ], outcome_list)
 
-characterization_df
+for (row in seq_len(nrow(top_oms))) {
+    cluster_characterizer(
+        top_oms[row, ],
+        outcome_list,
+        save = fig_path(
+            paste0(top_oms[row, ]$"significance", ".png"),
+            date = TRUE
+        )
+    )
+}
 
-top_oms |>
-    dplyr::select(contains(c("row_id", "nclust", "cbcl_"))) |>
-    data.frame()
+data_list
 
-#for (row in seq_len(nrow(top_oms))) {
-#    cluster_characterizer(top_oms[row, ], outcome_list)
-#}
-
+nmi_df1 <- calc_nmi(top_om_rows[1, ], data_list)
 
 ```
