@@ -165,3 +165,24 @@ ggplot(nmi_df1, aes(x = input, y = nmi)) +
 ggsave(fig_path("five_cluster_second_mc_lowest_pvals_nmis.png", date = TRUE))
 
 ```
+
+
+## Calculating NMIs for the min and mean p-value solutions of each nclust
+```{r}
+library(gt)
+library(gtExtras)
+library(webshot2)
+
+top_om_all <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
+
+
+
+for (row in seq_len(nrow(top_om_all))) {
+    calc_nmi(top_om_all[row, ], data_list) |>
+        gt() |>
+        gt_theme_538() |>
+        gtsave(fig_path(paste0(top_om_all[row, ]$"significance", "_nmis.png"),
+                date = TRUE))
+}
+```
+
