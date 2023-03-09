@@ -92,8 +92,6 @@ cbcl_ord_reg(characterization_df3, bonferroni = TRUE)
 cbcl_anova(characterization_df3, bonferroni = TRUE)
 
 
-
-
 # DF1
 ## S by anova and ord reg:
 nausea1 <- cbcl_bar_chart(characterization_df1, "cbcl_nausea")
@@ -148,11 +146,13 @@ clean_plot(nausea3)
 
 clean_plot <- function(plot) {
     cleaned_plot <- plot +
-        ggplot2::theme(legend.position = "none") +
-        ggplot2::xlab("") +
+        #ggplot2::theme(legend.position = "none") +
+        #ggplot2::xlab("") +
         ggplot2::ylab("")
     return(cleaned_plot)
 }
+
+library(gridExtra)
 
 grid.arrange(
     clean_plot(nausea1),
@@ -208,3 +208,80 @@ head(
 groups <- cluster_df$cluster
 ```
 
+
+## Ignore all the above and use the "top clusters by p-vals"
+
+```{r}
+
+top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
+
+outcome_list <- list(
+    cbcl_nausea_train,
+    cbcl_vomiting_train,
+    cbcl_dizzy_train,
+    cbcl_overtired_train,
+    cbcl_sleeping_more_train,
+    cbcl_sleeping_less_train,
+    cbcl_depress_train,
+    cbcl_anxiety_train,
+    cbcl_attention_train,
+    cbcl_aggressive_train)
+
+
+clean_plot <- function(plot) {
+    cleaned_plot <- plot +
+        #ggplot2::theme(legend.position = "none") +
+        #ggplot2::xlab("") +
+        ggplot2::ylab("")
+    return(cleaned_plot)
+}
+
+
+cluster_characterizer <- function(om_row, outcome_list) {
+    cluster_df <- get_cluster_df(om_row)
+    cluster_outcome_list <- append(list(cluster_df), outcome_list)
+    characterization_df <- merge_df_list(cluster_outcome_list)
+    print(paste0("Characterization for row_id ",
+                 om_row$"row_id",
+                 ". Number of clusters: ",
+                 om_row$"nclust"))
+    print(cbcl_ord_reg(characterization_df, bonferroni = TRUE))
+    # Making the bar charts
+    nausea <- cbcl_bar_chart(characterization_df, "cbcl_nausea")
+    vomiting <- cbcl_bar_chart(characterization_df, "cbcl_vomiting")
+    dizzy <- cbcl_bar_chart(characterization_df, "cbcl_dizzy")
+-   overtired <- cbcl_bar_chart(characterization_df, "cbcl_overtired")
+    sleeping_more <- cbcl_bar_chart(characterization_df, "cbcl_sleeping_more")
+    sleeping_less <- cbcl_bar_chart(characterization_df, "cbcl_sleeping_less")
+    depress <- cbcl_bar_chart(characterization_df, "cbcl_depress")
+    anxiety <- cbcl_bar_chart(characterization_df, "cbcl_anxiety")
+    attention <- cbcl_bar_chart(characterization_df, "cbcl_attention")
+    aggressive <- cbcl_bar_chart(characterization_df, "cbcl_aggressive")
+    gridExtra::grid.arrange(
+        clean_plot(nausea),
+        clean_plot(vomiting),
+        clean_plot(dizzy),
+        clean_plot(overtired),
+        clean_plot(sleeping_more),
+        clean_plot(sleeping_less),
+        clean_plot(depress),
+        clean_plot(anxiety),
+        clean_plot(attention),
+        clean_plot(aggressive)
+    )
+}
+
+cluster_characterizer(top_oms[1, ], outcome_list)
+
+characterization_df
+
+top_oms |>
+    dplyr::select(contains(c("row_id", "nclust", "cbcl_"))) |>
+    data.frame()
+
+#for (row in seq_len(nrow(top_oms))) {
+#    cluster_characterizer(top_oms[row, ], outcome_list)
+#}
+
+
+```
