@@ -8,6 +8,7 @@ library(readr)
 library(dplyr)
 library(scabcd)
 library(abcdutils)
+library(ggplot2)
 
 
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -138,3 +139,27 @@ top_om_rows
 
 write_csv(top_om_rows, proc_path("top_om_rows.csv", date = TRUE))
 ```
+
+
+## Picking new top rows based on each cluster size
+
+```{r}
+output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
+
+min(output_matrix_full$min_p_val) #3.2 e-08
+min(output_matrix_full$mean_p_val) #0.00414
+
+unique(output_matrix_full$nclust)
+
+top_oms <- top_om_per_cluster(output_matrix_full)
+
+write_csv(top_oms, proc_path("top_om_rows_all_nclust.csv", date = TRUE))
+
+om_scatter(top_oms, save = fig_path("top_oms_all_nclust.png", date = TRUE))
+
+
+
+```
+
+
+
