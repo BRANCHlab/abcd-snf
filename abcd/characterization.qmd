@@ -1,7 +1,7 @@
-# Training cluster characterization
-
+# Cluster characterization
 
 ## Load libraries and data
+
 ```{r}
 library(scabcd)
 library(abcdutils)
@@ -9,6 +9,9 @@ library(here)
 library(readr)
 
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
 
 # Outcome data
 cbcl_nausea_train <- read_csv(proc_path("cbcl_nausea_train.csv"))
@@ -22,199 +25,121 @@ cbcl_anxiety_train <- read_csv(proc_path("cbcl_anxiety_train.csv"))
 cbcl_attention_train <- read_csv(proc_path("cbcl_attention_train.csv"))
 cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
 
-# The SNF meta-clustering outcome rows we are interested in characterizing
-top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
-
-top_om_rows
-```
-
-## Characterize CBCL measures
-
-```{r}
-cluster_df1 <- get_cluster_df(top_om_rows[1, ]) # The top solution of MC2
-cluster_df2 <- get_cluster_df(top_om_rows[2, ]) # The top solution of MC1
-cluster_df3 <- get_cluster_df(top_om_rows[3, ]) # The stable full soln in MC2
-
-
-# Make a joined dataframe for further characterization
-cluster_outcome_list1 <- list(
-    cluster_df1,
-    cbcl_nausea_train,
-    cbcl_vomiting_train,
-    cbcl_dizzy_train,
-    cbcl_overtired_train,
-    cbcl_sleeping_more_train,
-    cbcl_sleeping_less_train,
-    cbcl_depress_train,
-    cbcl_anxiety_train,
-    cbcl_attention_train,
-    cbcl_aggressive_train)
-
-cluster_outcome_list2 <- list(
-    cluster_df2,
-    cbcl_nausea_train,
-    cbcl_vomiting_train,
-    cbcl_dizzy_train,
-    cbcl_overtired_train,
-    cbcl_sleeping_more_train,
-    cbcl_sleeping_less_train,
-    cbcl_depress_train,
-    cbcl_anxiety_train,
-    cbcl_attention_train,
-    cbcl_aggressive_train)
-
-cluster_outcome_list3 <- list(
-    cluster_df3,
-    cbcl_nausea_train,
-    cbcl_vomiting_train,
-    cbcl_dizzy_train,
-    cbcl_overtired_train,
-    cbcl_sleeping_more_train,
-    cbcl_sleeping_less_train,
-    cbcl_depress_train,
-    cbcl_anxiety_train,
-    cbcl_attention_train,
-    cbcl_aggressive_train)
-
-characterization_df1 <- merge_df_list(cluster_outcome_list1)
-characterization_df2 <- merge_df_list(cluster_outcome_list2)
-characterization_df3 <- merge_df_list(cluster_outcome_list3)
+# Input data
+as_mtbi_loc_train <- read_csv(proc_path("as_mtbi_loc_train.csv"))
+as_mtbi_mechanism_train <- read_csv(proc_path("as_mtbi_mechanism_train.csv"))
+as_mtbi_mem_daze_train <- read_csv(proc_path("as_mtbi_mem_daze_train.csv"))
+d_income_train <- read_csv(proc_path("d_income_train.csv"))
+d_interview_age_train <- read_csv(proc_path("d_interview_age_train.csv"))
+d_mtbi_age_train <- read_csv(proc_path("d_mtbi_age_train.csv"))
+d_pubertal_status_train <- read_csv(proc_path("d_pubertal_status_train.csv"))
+d_race_train <- read_csv(proc_path("d_race_train.csv"))
+d_sex_train <- read_csv(proc_path("d_sex_train.csv"))
+mh_headaches_train <- read_csv(proc_path("mh_headaches_train.csv"))
+mh_mtbi_count_train <- read_csv(proc_path("mh_mtbi_count_train.csv"))
+dm_wmndf_qc_train <- read_csv(proc_path("dm_wmndf_qc_train.csv"))
+rm_gord_cor_qc_train <- read_csv(proc_path("rm_gord_cor_qc_train.csv"))
+rm_gord_var_qc_train <- read_csv(proc_path("rm_gord_var_qc_train.csv"))
+rm_subc_cor_qc_train <- read_csv(proc_path("rm_subc_cor_qc_train.csv"))
+rm_subc_var_qc_train <- read_csv(proc_path("rm_subc_var_qc_train.csv"))
+sm_cort_sa_qc_train <- read_csv(proc_path("sm_cort_sa_qc_train.csv"))
+sm_cort_t_qc_train <- read_csv(proc_path("sm_cort_t_qc_train.csv"))
+sm_subc_v_qc_train <- read_csv(proc_path("sm_subc_v_qc_train.csv"))
+p_loneliness_train <- read_csv(proc_path("p_loneliness_train.csv"))
+p_screen_time_train <- read_csv(proc_path("p_screen_time_train.csv"))
+p_family_function_train <- read_csv(proc_path("p_family_function_train.csv"))
+p_sports_train <- read_csv(proc_path("p_sports_train.csv"))
+p_prosocial_train <- read_csv(proc_path("p_prosocial_train.csv"))
+p_parent_psych_train <- read_csv(proc_path("p_parent_psych_train.csv"))
+p_exercise_train <- read_csv(proc_path("p_exercise_train.csv"))
+cbcl_headaches_train <- read_csv(proc_path("cbcl_headaches_train.csv"))
+cbcl_nausea_train <- read_csv(proc_path("cbcl_nausea_train.csv"))
+cbcl_vomiting_train <- read_csv(proc_path("cbcl_vomiting_train.csv"))
+cbcl_dizzy_train <- read_csv(proc_path("cbcl_dizzy_train.csv"))
+cbcl_overtired_train <- read_csv(proc_path("cbcl_overtired_train.csv"))
+cbcl_sleeping_more_train <- read_csv(proc_path("cbcl_sleeping_more_train.csv"))
+cbcl_sleeping_less_train <- read_csv(proc_path("cbcl_sleeping_less_train.csv"))
+cbcl_depress_train <- read_csv(proc_path("cbcl_depress_train.csv"))
+cbcl_anxiety_train <- read_csv(proc_path("cbcl_anxiety_train.csv"))
+cbcl_attention_train <- read_csv(proc_path("cbcl_attention_train.csv"))
+cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
 
 
-# P-values
-cbcl_ord_reg(characterization_df1, bonferroni = TRUE)
-cbcl_anova(characterization_df1, bonferroni = TRUE)
-
-cbcl_ord_reg(characterization_df2, bonferroni = TRUE)
-cbcl_anova(characterization_df2, bonferroni = TRUE)
-
-cbcl_ord_reg(characterization_df3, bonferroni = TRUE)
-cbcl_anova(characterization_df3, bonferroni = TRUE)
-
-
-# DF1
-## S by anova and ord reg:
-nausea1 <- cbcl_bar_chart(characterization_df1, "cbcl_nausea")
-vomiting1 <- cbcl_bar_chart(characterization_df1, "cbcl_vomiting")
-dizzy1 <- cbcl_bar_chart(characterization_df1, "cbcl_dizzy")
-
-## S by anova or ord_reg:
-anxiety1 <- cbcl_bar_chart(characterization_df1, "cbcl_anxiety")
-
-## NS by anova and ord reg:
-sleeping_more1 <- cbcl_bar_chart(characterization_df1, "cbcl_sleeping_more")
-sleeping_less1 <- cbcl_bar_chart(characterization_df1, "cbcl_sleeping_less")
-overtired1 <- cbcl_bar_chart(characterization_df1, "cbcl_overtired")
-aggressive1 <- cbcl_bar_chart(characterization_df1, "cbcl_aggressive")
-attention1 <- cbcl_bar_chart(characterization_df1, "cbcl_attention")
-depress1 <- cbcl_bar_chart(characterization_df1, "cbcl_depress")
-
-
-# DF2
-## S by anova and ord reg:
-nausea2 <- cbcl_bar_chart(characterization_df2, "cbcl_nausea")
-vomiting2 <- cbcl_bar_chart(characterization_df2, "cbcl_vomiting")
-overtired2 <- cbcl_bar_chart(characterization_df2, "cbcl_overtired")
-sleeping_more2 <- cbcl_bar_chart(characterization_df2, "cbcl_sleeping_more")
-depress2 <- cbcl_bar_chart(characterization_df2, "cbcl_depress")
-anxiety2 <- cbcl_bar_chart(characterization_df2, "cbcl_anxiety")
-attention2 <- cbcl_bar_chart(characterization_df2, "cbcl_attention")
-aggressive2 <- cbcl_bar_chart(characterization_df2, "cbcl_aggressive")
-
-## NS by anova and ord reg:
-dizzy2 <- cbcl_bar_chart(characterization_df2, "cbcl_dizzy")
-sleeping_less2 <- cbcl_bar_chart(characterization_df2, "cbcl_sleeping_less")
+# Input data
+as_mtbi_loc_test <- read_csv(proc_path("as_mtbi_loc_test.csv"))
+as_mtbi_mechanism_test <- read_csv(proc_path("as_mtbi_mechanism_test.csv"))
+as_mtbi_mem_daze_test <- read_csv(proc_path("as_mtbi_mem_daze_test.csv"))
+d_income_test <- read_csv(proc_path("d_income_test.csv"))
+d_interview_age_test <- read_csv(proc_path("d_interview_age_test.csv"))
+d_mtbi_age_test <- read_csv(proc_path("d_mtbi_age_test.csv"))
+d_pubertal_status_test <- read_csv(proc_path("d_pubertal_status_test.csv"))
+d_race_test <- read_csv(proc_path("d_race_test.csv"))
+d_sex_test <- read_csv(proc_path("d_sex_test.csv"))
+mh_headaches_test <- read_csv(proc_path("mh_headaches_test.csv"))
+mh_mtbi_count_test <- read_csv(proc_path("mh_mtbi_count_test.csv"))
+dm_wmndf_qc_test <- read_csv(proc_path("dm_wmndf_qc_test.csv"))
+rm_gord_cor_qc_test <- read_csv(proc_path("rm_gord_cor_qc_test.csv"))
+rm_gord_var_qc_test <- read_csv(proc_path("rm_gord_var_qc_test.csv"))
+rm_subc_cor_qc_test <- read_csv(proc_path("rm_subc_cor_qc_test.csv"))
+rm_subc_var_qc_test <- read_csv(proc_path("rm_subc_var_qc_test.csv"))
+sm_cort_sa_qc_test <- read_csv(proc_path("sm_cort_sa_qc_test.csv"))
+sm_cort_t_qc_test <- read_csv(proc_path("sm_cort_t_qc_test.csv"))
+sm_subc_v_qc_test <- read_csv(proc_path("sm_subc_v_qc_test.csv"))
+p_loneliness_test <- read_csv(proc_path("p_loneliness_test.csv"))
+p_screen_time_test <- read_csv(proc_path("p_screen_time_test.csv"))
+p_family_function_test <- read_csv(proc_path("p_family_function_test.csv"))
+p_sports_test <- read_csv(proc_path("p_sports_test.csv"))
+p_prosocial_test <- read_csv(proc_path("p_prosocial_test.csv"))
+p_parent_psych_test <- read_csv(proc_path("p_parent_psych_test.csv"))
+p_exercise_test <- read_csv(proc_path("p_exercise_test.csv"))
+cbcl_headaches_test <- read_csv(proc_path("cbcl_headaches_test.csv"))
+cbcl_nausea_test <- read_csv(proc_path("cbcl_nausea_test.csv"))
+cbcl_vomiting_test <- read_csv(proc_path("cbcl_vomiting_test.csv"))
+cbcl_dizzy_test <- read_csv(proc_path("cbcl_dizzy_test.csv"))
+cbcl_overtired_test <- read_csv(proc_path("cbcl_overtired_test.csv"))
+cbcl_sleeping_more_test <- read_csv(proc_path("cbcl_sleeping_more_test.csv"))
+cbcl_sleeping_less_test <- read_csv(proc_path("cbcl_sleeping_less_test.csv"))
+cbcl_depress_test <- read_csv(proc_path("cbcl_depress_test.csv"))
+cbcl_anxiety_test <- read_csv(proc_path("cbcl_anxiety_test.csv"))
+cbcl_attention_test <- read_csv(proc_path("cbcl_attention_test.csv"))
+cbcl_aggressive_test <- read_csv(proc_path("cbcl_aggressive_test.csv"))
 
 
-
-# DF3
-## NS by anova and ord reg:
-nausea3 <- cbcl_bar_chart(characterization_df3, "cbcl_nausea")
-vomiting3 <- cbcl_bar_chart(characterization_df3, "cbcl_vomiting")
-dizzy3 <- cbcl_bar_chart(characterization_df3, "cbcl_dizzy")
-overtired3 <- cbcl_bar_chart(characterization_df3, "cbcl_overtired")
-sleeping_more3 <- cbcl_bar_chart(characterization_df3, "cbcl_sleeping_more")
-sleeping_less3 <- cbcl_bar_chart(characterization_df3, "cbcl_sleeping_less")
-depress3 <- cbcl_bar_chart(characterization_df3, "cbcl_depress")
-anxiety3 <- cbcl_bar_chart(characterization_df3, "cbcl_anxiety")
-attention3 <- cbcl_bar_chart(characterization_df3, "cbcl_attention")
-aggressive3 <- cbcl_bar_chart(characterization_df3, "cbcl_aggressive")
-
-nausea3
-
-clean_plot(nausea3)
-
-clean_plot <- function(plot) {
-    cleaned_plot <- plot +
-        #ggplot2::theme(legend.position = "none") +
-        #ggplot2::xlab("") +
-        ggplot2::ylab("")
-    return(cleaned_plot)
-}
-
-library(gridExtra)
-
-grid.arrange(
-    clean_plot(nausea1),
-    clean_plot(vomiting1),
-    clean_plot(dizzy1),
-    clean_plot(overtired1),
-    clean_plot(sleeping_more1),
-    clean_plot(sleeping_less1),
-    clean_plot(depress1),
-    clean_plot(anxiety1),
-    clean_plot(attention1),
-    clean_plot(aggressive1)
-)
-
-
-grid.arrange(
-    clean_plot(nausea2),
-    clean_plot(vomiting2),
-    clean_plot(dizzy2),
-    clean_plot(overtired2),
-    clean_plot(sleeping_more2),
-    clean_plot(sleeping_less2),
-    clean_plot(depress2),
-    clean_plot(anxiety2),
-    clean_plot(attention2),
-    clean_plot(aggressive2)
-)
-
-grid.arrange(
-    clean_plot(nausea3),
-    clean_plot(vomiting3),
-    clean_plot(dizzy3),
-    clean_plot(overtired3),
-    clean_plot(sleeping_more3),
-    clean_plot(sleeping_less3),
-    clean_plot(depress3),
-    clean_plot(anxiety3),
-    clean_plot(attention3),
-    clean_plot(aggressive3)
-)
-
-# Left off here
-
-# Process X: label propagation
-
-a <- "cluster"
-
-
-head(
-     cluster_df |> dplyr::rename("clust" = !!a)
-)
-
-groups <- cluster_df$cluster
+# Structure containing all input data
+# These data should not contain any NAs, but need not have the same subjects
+data_list <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_train,
+    mtbi_mechanism = as_mtbi_mechanism_train,
+    mtbi_mem_daze = as_mtbi_mem_daze_train,
+    income = d_income_train,
+    interview_age = d_interview_age_train,
+    mtbi_age = d_mtbi_age_train,
+    pubertal_status = d_pubertal_status_train,
+    race = d_race_train,
+    sex = d_sex_train,
+    headaches = mh_headaches_train,
+    mtbi_count = mh_mtbi_count_train,
+    wmndf = dm_wmndf_qc_train,
+    gord_cor = rm_gord_cor_qc_train,
+    gord_var = rm_gord_var_qc_train,
+    subc_cor = rm_subc_cor_qc_train,
+    subc_var = rm_subc_var_qc_train,
+    cort_sa = sm_cort_sa_qc_train,
+    cort_t = sm_cort_t_qc_train,
+    subc_v = sm_subc_v_qc_train,
+    loneliness = p_loneliness_train,
+    screen_time = p_screen_time_train,
+    family_function = p_family_function_train,
+    sports = p_sports_train,
+    prosocial = p_prosocial_train,
+    parent_psych = p_parent_psych_train,
+    exercise = p_exercise_train)
 ```
 
 
-## Ignore all the above and use the "top clusters by p-vals"
+## Plotting
 
 ```{r}
-
-top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
-
 outcome_list <- list(
     cbcl_nausea_train,
     cbcl_vomiting_train,
@@ -228,68 +153,8 @@ outcome_list <- list(
     cbcl_aggressive_train)
 
 
-clean_plot <- function(plot) {
-    cleaned_plot <- plot +
-        #ggplot2::theme(legend.position = "none") +
-        #ggplot2::xlab("") +
-        ggplot2::ylab("")
-    return(cleaned_plot)
-}
-
-
-cluster_characterizer <- function(om_row, outcome_list, save = NULL) {
-    cluster_df <- get_cluster_df(om_row)
-    cluster_outcome_list <- append(list(cluster_df), outcome_list)
-    characterization_df <- merge_df_list(cluster_outcome_list)
-    print(paste0("Characterization for row_id ",
-                 om_row$"row_id",
-                 ". Number of clusters: ",
-                 om_row$"nclust"))
-    print(cbcl_ord_reg(characterization_df, bonferroni = TRUE))
-    # Making the bar charts
-    nausea <- cbcl_bar_chart(characterization_df, "cbcl_nausea")
-    vomiting <- cbcl_bar_chart(characterization_df, "cbcl_vomiting")
-    dizzy <- cbcl_bar_chart(characterization_df, "cbcl_dizzy")
-    overtired <- cbcl_bar_chart(characterization_df, "cbcl_overtired")
-    sleeping_more <- cbcl_bar_chart(characterization_df, "cbcl_sleeping_more")
-    sleeping_less <- cbcl_bar_chart(characterization_df, "cbcl_sleeping_less")
-    depress <- cbcl_bar_chart(characterization_df, "cbcl_depress")
-    anxiety <- cbcl_bar_chart(characterization_df, "cbcl_anxiety")
-    attention <- cbcl_bar_chart(characterization_df, "cbcl_attention")
-    aggressive <- cbcl_bar_chart(characterization_df, "cbcl_aggressive")
-    gridExtra::grid.arrange(
-        clean_plot(nausea),
-        clean_plot(vomiting),
-        clean_plot(dizzy),
-        clean_plot(overtired),
-        clean_plot(sleeping_more),
-        clean_plot(sleeping_less),
-        clean_plot(depress),
-        clean_plot(anxiety),
-        clean_plot(attention),
-        clean_plot(aggressive)
-    )
-    if (!is.null(save)) {
-        grid <-
-            gridExtra::arrangeGrob(
-                clean_plot(nausea),
-                clean_plot(vomiting),
-                clean_plot(dizzy),
-                clean_plot(overtired),
-                clean_plot(sleeping_more),
-                clean_plot(sleeping_less),
-                clean_plot(depress),
-                clean_plot(anxiety),
-                clean_plot(attention),
-                clean_plot(aggressive)
-            )
-        ggplot2::ggsave(file = save, grid)
-    }
-}
-
-
 for (row in seq_len(nrow(top_oms))) {
-    cluster_characterizer(
+    plot_all_cbcl(
         top_oms[row, ],
         outcome_list,
         save = fig_path(
@@ -298,9 +163,185 @@ for (row in seq_len(nrow(top_oms))) {
         )
     )
 }
+```
 
-data_list
 
-nmi_df1 <- calc_nmi(top_om_rows[1, ], data_list)
+## NMI calculations
+
+```{r}
+nmi_df <- om_df_to_nmi_df(top_oms, data_list)
+
+write_csv(nmi_df, proc_path("nmi_df.csv", date = TRUE))
+
+nmi_df <- data.frame(read_csv(proc_path("2023_03_13_nmi_df.csv")))
+nmi_df <- format(nmi_df, scientific = FALSE)
+```
+
+
+## Label propagation
+
+```{r}
+# We need to re-run SNF using both training and testing subjects.
+as_mtbi_loc_full <- rbind(as_mtbi_loc_train, as_mtbi_loc_test)
+as_mtbi_mechanism_full <- rbind(as_mtbi_mechanism_train, as_mtbi_mechanism_test)
+as_mtbi_mem_daze_full <- rbind(as_mtbi_mem_daze_train, as_mtbi_mem_daze_test)
+d_income_full <- rbind(d_income_train, d_income_test)
+d_interview_age_full <- rbind(d_interview_age_train, d_interview_age_test)
+d_mtbi_age_full <- rbind(d_mtbi_age_train, d_mtbi_age_test)
+d_pubertal_status_full <- rbind(d_pubertal_status_train, d_pubertal_status_test)
+d_race_full <- rbind(d_race_train, d_race_test)
+d_sex_full <- rbind(d_sex_train, d_sex_test)
+mh_headaches_full <- rbind(mh_headaches_train, mh_headaches_test)
+mh_mtbi_count_full <- rbind(mh_mtbi_count_train, mh_mtbi_count_test)
+dm_wmndf_qc_full <- rbind(dm_wmndf_qc_train, dm_wmndf_qc_test)
+rm_gord_cor_qc_full <- rbind(rm_gord_cor_qc_train, rm_gord_cor_qc_test)
+rm_gord_var_qc_full <- rbind(rm_gord_var_qc_train, rm_gord_var_qc_test)
+rm_subc_cor_qc_full <- rbind(rm_subc_cor_qc_train, rm_subc_cor_qc_test)
+rm_subc_var_qc_full <- rbind(rm_subc_var_qc_train, rm_subc_var_qc_test)
+sm_cort_sa_qc_full <- rbind(sm_cort_sa_qc_train, sm_cort_sa_qc_test)
+sm_cort_t_qc_full <- rbind(sm_cort_t_qc_train, sm_cort_t_qc_test)
+sm_subc_v_qc_full <- rbind(sm_subc_v_qc_train, sm_subc_v_qc_test)
+p_loneliness_full <- rbind(p_loneliness_train, p_loneliness_test)
+p_screen_time_full <- rbind(p_screen_time_train, p_screen_time_test)
+p_family_function_full <- rbind(p_family_function_train, p_family_function_test)
+p_sports_full <- rbind(p_sports_train, p_sports_test)
+p_prosocial_full <- rbind(p_prosocial_train, p_prosocial_test)
+p_parent_psych_full <- rbind(p_parent_psych_train, p_parent_psych_test)
+p_exercise_full <- rbind(p_exercise_train, p_exercise_test)
+cbcl_headaches_full <- rbind(cbcl_headaches_train, cbcl_headaches_test)
+cbcl_nausea_full <- rbind(cbcl_nausea_train, cbcl_nausea_test)
+cbcl_vomiting_full <- rbind(cbcl_vomiting_train, cbcl_vomiting_test)
+cbcl_dizzy_full <- rbind(cbcl_dizzy_train, cbcl_dizzy_test)
+cbcl_overtired_full <- rbind(cbcl_overtired_train, cbcl_overtired_test)
+cbcl_sleeping_more_full <-
+    rbind(cbcl_sleeping_more_train, cbcl_sleeping_more_test)
+cbcl_sleeping_less_full <-
+    rbind(cbcl_sleeping_less_train, cbcl_sleeping_less_test)
+cbcl_depress_full <- rbind(cbcl_depress_train, cbcl_depress_test)
+cbcl_anxiety_full <- rbind(cbcl_anxiety_train, cbcl_anxiety_test)
+cbcl_attention_full <- rbind(cbcl_attention_train, cbcl_attention_test)
+cbcl_aggressive_full <- rbind(cbcl_aggressive_train, cbcl_aggressive_test)
+
+full_data_list <- generate_data_list(
+                                mtbi_loc = as_mtbi_loc_full,
+                                mtbi_mechanism = as_mtbi_mechanism_full,
+                                mtbi_mem_daze = as_mtbi_mem_daze_full,
+                                income = d_income_full,
+                                interview_age = d_interview_age_full,
+                                mtbi_age = d_mtbi_age_full,
+                                pubertal_status = d_pubertal_status_full,
+                                sex = d_sex_full,
+                                race = d_race_full,
+                                headaches = mh_headaches_full,
+                                mtbi_count = mh_mtbi_count_full,
+                                wmndf = dm_wmndf_qc_full,
+                                gord_cor = rm_gord_cor_qc_full,
+                                gord_var = rm_gord_var_qc_full,
+                                subc_cor = rm_subc_cor_qc_full,
+                                subc_var = rm_subc_var_qc_full,
+                                cort_sa = sm_cort_sa_qc_full,
+                                cort_t = sm_cort_t_qc_full,
+                                subc_v = sm_subc_v_qc_full,
+                                loneliness = p_loneliness_full,
+                                screen_time = p_screen_time_full,
+                                family_function = p_family_function_full,
+                                sports = p_sports_full,
+                                prosocial = p_prosocial_full,
+                                parent_psych = p_parent_psych_full,
+                                exercise = p_exercise_full)
+
+outcome_list_full <- generate_outcome_list(
+    cbcl_nausea = cbcl_nausea_full,
+    cbcl_vomiting = cbcl_vomiting_full,
+    cbcl_dizzy = cbcl_dizzy_full,
+    cbcl_overtired = cbcl_overtired_full,
+    cbcl_sleeping_more = cbcl_sleeping_more_full,
+    cbcl_sleeping_less = cbcl_sleeping_less_full,
+    cbcl_depress = cbcl_depress_full,
+    cbcl_anxiety = cbcl_anxiety_full,
+    cbcl_attention = cbcl_attention_full,
+    cbcl_aggressive = cbcl_aggressive_full)
+
+
+library(SNFtool)
+
+cs_prediction <- function(full_fused_network, y0) {
+    p <- full_fused_network / rowSums(full_fused_network)
+    nlabel <- which(rowSums(y0) == 0)[1] - 1
+    y <- y0
+    for (i in 1:1000){
+        y <- p %*% y
+        y[1:nlabel, ] <- y0[1:nlabel, ]
+    }
+    return(y)
+}
+
+
+label_prop <- function(full_fused_network, clusters, k, alpha) {
+    num_subjects <- nrow(full_fused_network)
+    # The y0 matrix stores which cluster everybody belongs to. It is one-hot
+    #  encoded. Here it is initialized.
+    y0 <- matrix(0, num_subjects, max(groups))
+    # Next, we assign the clusters we already know to be true.
+    for (i in seq_along(groups)){
+        y0[i, groups[i]] <- 1
+    }
+    # Given the full fused network and the matrix for storing clusters, run LP
+    y <- cs_prediction(full_fused_network, y0)
+    newgroups <- rep(0, num_subjects)
+    for (i in seq_len(nrow(y))){
+        newgroups[i] <- which(y[i, ] == max(y[i, ]))
+    }
+    return(newgroups)
+}
+
+
+current_row <- top_oms[1, ]
+
+
+# Label propagation process
+
+reduced_dl <- execute_inclusion(full_data_list, current_row)
+
+check_subj_orders_for_lp(reduced_dl, current_row, n_train = 253, n_test = 67)
+
+full_fused_network <- snf_step(reduced_dl,
+         scheme = current_row$"snf_scheme",
+         K = current_row$"K",
+         alpha = current_row$"alpha"
+)
+
+
+subs(current_row)
+
+clusters <- get_clusters(current_row)
+
+label_prop(full_fused_network, clusters, current_row$"K", current_row$"alpha")
+
+top_oms
+
+lp_om <- function(om, full_data_list, n_test) {
+    n_train <- nrow(full_data_list[[1]]$"data") - n_test
+    current_row <- om[1, ]
+    reduced_dl <- execute_inclusion(full_data_list, current_row)
+    check_subj_orders_for_lp(reduced_dl,
+                             current_row,
+                             n_train = n_train,
+                             n_test = n_test)
+    full_fused_network <- snf_step(reduced_dl,
+             scheme = current_row$"snf_scheme",
+             K = current_row$"K",
+             alpha = current_row$"alpha"
+    )
+    clusters <- get_clusters(current_row)
+    propagated_labels <- label_prop(full_fused_network,
+               clusters,
+               current_row$"K",
+               current_row$"alpha")
+    return(propagated_labels)
+}
+
+lp_om(top_oms, full_data_list, 67)
+
 
 ```
