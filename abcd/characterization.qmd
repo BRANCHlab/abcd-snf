@@ -9,6 +9,8 @@ library(here)
 library(readr)
 
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+proc_writer <- make_writer(proc_path)
+proc_reader <- make_reader(proc_path)
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
 top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
@@ -137,7 +139,7 @@ data_list <- generate_data_list(
 ```
 
 
-## Plotting
+## CBCL Plotting
 
 ```{r}
 outcome_list <- list(
@@ -153,23 +155,14 @@ outcome_list <- list(
     cbcl_aggressive_train)
 
 
-for (row in seq_len(nrow(top_oms))) {
-    plot_all_cbcl(
-        top_oms[row, ],
-        outcome_list,
-        save = fig_path(
-            paste0(top_oms[row, ]$"significance", ".png"),
-            date = TRUE
-        )
-    )
-}
+om_plot_all_cbcl(top_oms, outcome_list, fig_path)
 ```
 
 
 ## NMI calculations
 
 ```{r}
-nmi_df <- om_df_to_nmi_df(top_oms, data_list)
+nmi_df <- om_to_nmi_df(top_oms, data_list)
 
 write_csv(nmi_df, proc_path("nmi_df.csv", date = TRUE))
 
@@ -263,85 +256,79 @@ outcome_list_full <- generate_outcome_list(
     cbcl_aggressive = cbcl_aggressive_full)
 
 
-library(SNFtool)
+propagated_labels <- lp_om(top_oms, full_data_list)
 
-cs_prediction <- function(full_fused_network, y0) {
-    p <- full_fused_network / rowSums(full_fused_network)
-    nlabel <- which(rowSums(y0) == 0)[1] - 1
-    y <- y0
-    for (i in 1:1000){
-        y <- p %*% y
-        y[1:nlabel, ] <- y0[1:nlabel, ]
+write_csv(propagated_labels, proc_path("top_oms_lp.csv", date = TRUE))
+
+propagated_labels <- proc_reader("2023_03_14_top_oms_lp.csv")
+
+propagated_labels <-
+    data.frame(read_csv(proc_path("2023_03_14_top_oms_lp.csv")))
+
+propagated_labels
+```
+
+## Repeating patterns in the label propagated group
+
+```{r}
+test_labels <- propagated_labels |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-"group")
+
+outcomes_and_eval_df <- list(
+    test_labels,
+    cbcl_nausea_full,
+    cbcl_vomiting_full,
+    cbcl_dizzy_full,
+    cbcl_overtired_full,
+    cbcl_sleeping_more_full,
+    cbcl_sleeping_less_full,
+    cbcl_depress_full,
+    cbcl_anxiety_full,
+    cbcl_attention_full,
+    cbcl_aggressive_full)
+
+test_eval_df <- merge_df_list(outcomes_and_eval_df)
+
+test_eval_df
+
+
+cbcl_list_full <- list(
+    cbcl_nausea_full,
+    cbcl_vomiting_full,
+    cbcl_dizzy_full,
+    cbcl_overtired_full,
+    cbcl_sleeping_more_full,
+    cbcl_sleeping_less_full,
+    cbcl_depress_full,
+    cbcl_anxiety_full,
+    cbcl_attention_full,
+    cbcl_aggressive_full)
+
+
+test_plot_all_cbcl <- function(eval_df, outcome_list, fig_path_fn) {
+    solutions <- eval_df |>
+        dplyr::select(-dplyr::starts_with(c("subject", "cbcl"))) |>
+        colnames()
+    for (solution in solutions) {
+        cluster_df <- eval_df |>
+            dplyr::select(!!solution, "subjectkey") |>
+            data.frame()
+        colnames(cluster_df) <- c("cluster", "subjectkey")
+        current_sig <- solution
+        plot_all_cbcl(
+            cluster_df,
+            current_sig,
+            outcome_list,
+            save = fig_path_fn(paste0(current_sig, "_lp.png"), date = TRUE))
     }
-    return(y)
 }
 
-
-label_prop <- function(full_fused_network, clusters, k, alpha) {
-    num_subjects <- nrow(full_fused_network)
-    # The y0 matrix stores which cluster everybody belongs to. It is one-hot
-    #  encoded. Here it is initialized.
-    y0 <- matrix(0, num_subjects, max(groups))
-    # Next, we assign the clusters we already know to be true.
-    for (i in seq_along(groups)){
-        y0[i, groups[i]] <- 1
-    }
-    # Given the full fused network and the matrix for storing clusters, run LP
-    y <- cs_prediction(full_fused_network, y0)
-    newgroups <- rep(0, num_subjects)
-    for (i in seq_len(nrow(y))){
-        newgroups[i] <- which(y[i, ] == max(y[i, ]))
-    }
-    return(newgroups)
-}
+test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)
 
 
-current_row <- top_oms[1, ]
-
-
-# Label propagation process
-
-reduced_dl <- execute_inclusion(full_data_list, current_row)
-
-check_subj_orders_for_lp(reduced_dl, current_row, n_train = 253, n_test = 67)
-
-full_fused_network <- snf_step(reduced_dl,
-         scheme = current_row$"snf_scheme",
-         K = current_row$"K",
-         alpha = current_row$"alpha"
-)
-
-
-subs(current_row)
-
-clusters <- get_clusters(current_row)
-
-label_prop(full_fused_network, clusters, current_row$"K", current_row$"alpha")
-
-top_oms
-
-lp_om <- function(om, full_data_list, n_test) {
-    n_train <- nrow(full_data_list[[1]]$"data") - n_test
-    current_row <- om[1, ]
-    reduced_dl <- execute_inclusion(full_data_list, current_row)
-    check_subj_orders_for_lp(reduced_dl,
-                             current_row,
-                             n_train = n_train,
-                             n_test = n_test)
-    full_fused_network <- snf_step(reduced_dl,
-             scheme = current_row$"snf_scheme",
-             K = current_row$"K",
-             alpha = current_row$"alpha"
-    )
-    clusters <- get_clusters(current_row)
-    propagated_labels <- label_prop(full_fused_network,
-               clusters,
-               current_row$"K",
-               current_row$"alpha")
-    return(propagated_labels)
-}
-
-lp_om(top_oms, full_data_list, 67)
-
+om_plot_all_cbcl(top_oms, outcome_list, fig_path)
 
 ```
+
+
