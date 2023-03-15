@@ -181,6 +181,42 @@ write_csv(nmi_df, proc_path("nmi_df.csv", date = TRUE))
 
 nmi_df <- data.frame(read_csv(proc_path("2023_03_13_nmi_df.csv")))
 nmi_df <- format(nmi_df, scientific = FALSE)
+
+
+current_row <- top_oms[2, ]
+
+problem_sim_list <- calc_nmi(current_row, data_list_train)
+
+length(data_list_train)
+
+length(problem_sim_list)
+
+SNFtool::spectralClustering(problem_sim_list[[6]], 2)
+
+for (i in 1:26) {
+    tryCatch(
+        {
+            SNFtool::spectralClustering(problem_sim_list[[i]], 2)
+        }, error = function(cond) {
+             message(i)
+        }, finally = {
+             print("pass")
+        }
+    )
+}
+
+lapply(problem_sim_list,
+    function(x) {
+        print(min(x))
+    })
+
+
+SNFtool::spectralClustering(problem_sim_list[[4]], 2)
+
+top_oms
+
+# issues with 4
+
 ```
 
 
