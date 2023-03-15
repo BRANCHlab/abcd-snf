@@ -1,11 +1,14 @@
+# Data organization
+
+This chapter loads the raw and imputed input files and organizes them into the objects that will be used for subsequent analyses.
+
+## Training and testing data splits
+
 ```{r eval = FALSE}
-library(dplyr)
 library(abcdutils)
 library(scabcd)
 library(readr)
 library(here)
-library(ggplot2)
-library(pheatmap)
 
 
 # Functions to import data from carbon
@@ -98,7 +101,7 @@ common_subs <- common_subjects(list(mtbi_loc = as_mtbi_loc,
     cbcl_aggressive,
     sds_sleep))
 
-# Splitting into training and testing sets
+# Assigning common subjects into training and testing sets
 assigned_df <- train_test_assign(train_frac = 0.8, subjects = common_subs)
 
 # Generate training set
@@ -181,6 +184,49 @@ cbcl_attention_test <- keep_split(cbcl_attention, assigned_df, "test")
 cbcl_aggressive_test <- keep_split(cbcl_aggressive, assigned_df, "test")
 sds_sleep_test <- keep_split(sds_sleep, assigned_df, "test")
 
+# Generate full set (note that this is structured specifically in row order of
+#  training subjects followed by testing subjects)
+as_mtbi_loc_full <- rbind(as_mtbi_loc_train, as_mtbi_loc_test)
+as_mtbi_mechanism_full <- rbind(as_mtbi_mechanism_train, as_mtbi_mechanism_test)
+as_mtbi_mem_daze_full <- rbind(as_mtbi_mem_daze_train, as_mtbi_mem_daze_test)
+d_income_full <- rbind(d_income_train, d_income_test)
+d_interview_age_full <- rbind(d_interview_age_train, d_interview_age_test)
+d_mtbi_age_full <- rbind(d_mtbi_age_train, d_mtbi_age_test)
+d_pubertal_status_full <- rbind(d_pubertal_status_train, d_pubertal_status_test)
+d_race_full <- rbind(d_race_train, d_race_test)
+d_sex_full <- rbind(d_sex_train, d_sex_test)
+mh_headaches_full <- rbind(mh_headaches_train, mh_headaches_test)
+mh_mtbi_count_full <- rbind(mh_mtbi_count_train, mh_mtbi_count_test)
+dm_wmndf_qc_full <- rbind(dm_wmndf_qc_train, dm_wmndf_qc_test)
+rm_gord_cor_qc_full <- rbind(rm_gord_cor_qc_train, rm_gord_cor_qc_test)
+rm_gord_var_qc_full <- rbind(rm_gord_var_qc_train, rm_gord_var_qc_test)
+rm_subc_cor_qc_full <- rbind(rm_subc_cor_qc_train, rm_subc_cor_qc_test)
+rm_subc_var_qc_full <- rbind(rm_subc_var_qc_train, rm_subc_var_qc_test)
+sm_cort_sa_qc_full <- rbind(sm_cort_sa_qc_train, sm_cort_sa_qc_test)
+sm_cort_t_qc_full <- rbind(sm_cort_t_qc_train, sm_cort_t_qc_test)
+sm_subc_v_qc_full <- rbind(sm_subc_v_qc_train, sm_subc_v_qc_test)
+p_loneliness_full <- rbind(p_loneliness_train, p_loneliness_test)
+p_screen_time_full <- rbind(p_screen_time_train, p_screen_time_test)
+p_family_function_full <- rbind(p_family_function_train, p_family_function_test)
+p_sports_full <- rbind(p_sports_train, p_sports_test)
+p_prosocial_full <- rbind(p_prosocial_train, p_prosocial_test)
+p_parent_psych_full <- rbind(p_parent_psych_train, p_parent_psych_test)
+p_exercise_full <- rbind(p_exercise_train, p_exercise_test)
+cbcl_headaches_full <- rbind(cbcl_headaches_train, cbcl_headaches_test)
+cbcl_nausea_full <- rbind(cbcl_nausea_train, cbcl_nausea_test)
+cbcl_vomiting_full <- rbind(cbcl_vomiting_train, cbcl_vomiting_test)
+cbcl_dizzy_full <- rbind(cbcl_dizzy_train, cbcl_dizzy_test)
+cbcl_overtired_full <- rbind(cbcl_overtired_train, cbcl_overtired_test)
+cbcl_sleeping_more_full <-
+    rbind(cbcl_sleeping_more_train, cbcl_sleeping_more_test)
+cbcl_sleeping_less_full <-
+    rbind(cbcl_sleeping_less_train, cbcl_sleeping_less_test)
+cbcl_depress_full <- rbind(cbcl_depress_train, cbcl_depress_test)
+cbcl_anxiety_full <- rbind(cbcl_anxiety_train, cbcl_anxiety_test)
+cbcl_attention_full <- rbind(cbcl_attention_train, cbcl_attention_test)
+cbcl_aggressive_full <- rbind(cbcl_aggressive_train, cbcl_aggressive_test)
+
+
 # Export training set
 write_csv(as_mtbi_loc_train, proc_path("as_mtbi_loc_train.csv"))
 write_csv(as_mtbi_mechanism_train, proc_path("as_mtbi_mechanism_train.csv"))
@@ -260,4 +306,151 @@ write_csv(cbcl_anxiety_test, proc_path("cbcl_anxiety_test.csv"))
 write_csv(cbcl_attention_test, proc_path("cbcl_attention_test.csv"))
 write_csv(cbcl_aggressive_test, proc_path("cbcl_aggressive_test.csv"))
 write_csv(sds_sleep_test, proc_path("sds_sleep_test.csv"))
+
+# Full data
+write_csv(as_mtbi_loc_full, proc_path("as_mtbi_loc_full.csv"))
+write_csv(as_mtbi_mechanism_full, proc_path("as_mtbi_mechanism_full.csv"))
+write_csv(as_mtbi_mem_daze_full, proc_path("as_mtbi_mem_daze_full.csv"))
+write_csv(d_income_full, proc_path("d_income_full.csv"))
+write_csv(d_interview_age_full, proc_path("d_interview_age_full.csv"))
+write_csv(d_mtbi_age_full, proc_path("d_mtbi_age_full.csv"))
+write_csv(d_pubertal_status_full, proc_path("d_pubertal_status_full.csv"))
+write_csv(d_race_full, proc_path("d_race_full.csv"))
+write_csv(d_sex_full, proc_path("d_sex_full.csv"))
+write_csv(mh_headaches_full, proc_path("mh_headaches_full.csv"))
+write_csv(mh_mtbi_count_full, proc_path("mh_mtbi_count_full.csv"))
+write_csv(dm_wmndf_qc_full, proc_path("dm_wmndf_qc_full.csv"))
+write_csv(rm_gord_cor_qc_full, proc_path("rm_gord_cor_qc_full.csv"))
+write_csv(rm_gord_var_qc_full, proc_path("rm_gord_var_qc_full.csv"))
+write_csv(rm_subc_cor_qc_full, proc_path("rm_subc_cor_qc_full.csv"))
+write_csv(rm_subc_var_qc_full, proc_path("rm_subc_var_qc_full.csv"))
+write_csv(sm_cort_sa_qc_full, proc_path("sm_cort_sa_qc_full.csv"))
+write_csv(sm_cort_t_qc_full, proc_path("sm_cort_t_qc_full.csv"))
+write_csv(sm_subc_v_qc_full, proc_path("sm_subc_v_qc_full.csv"))
+write_csv(p_loneliness_full, proc_path("p_loneliness_full.csv"))
+write_csv(p_screen_time_full, proc_path("p_screen_time_full.csv"))
+write_csv(p_family_function_full, proc_path("p_family_function_full.csv"))
+write_csv(p_sports_full, proc_path("p_sports_full.csv"))
+write_csv(p_prosocial_full, proc_path("p_prosocial_full.csv"))
+write_csv(p_parent_psych_full, proc_path("p_parent_psych_full.csv"))
+write_csv(p_exercise_full, proc_path("p_exercise_full.csv"))
+write_csv(cbcl_headaches_full, proc_path("cbcl_headaches_full.csv"))
+write_csv(cbcl_nausea_full, proc_path("cbcl_nausea_full.csv"))
+write_csv(cbcl_vomiting_full, proc_path("cbcl_vomiting_full.csv"))
+write_csv(cbcl_dizzy_full, proc_path("cbcl_dizzy_full.csv"))
+write_csv(cbcl_overtired_full, proc_path("cbcl_overtired_full.csv"))
+write_csv(cbcl_sleeping_more_full, proc_path("cbcl_sleeping_more_full.csv"))
+write_csv(cbcl_sleeping_less_full, proc_path("cbcl_sleeping_less_full.csv"))
+write_csv(cbcl_depress_full, proc_path("cbcl_depress_full.csv"))
+write_csv(cbcl_anxiety_full, proc_path("cbcl_anxiety_full.csv"))
+write_csv(cbcl_attention_full, proc_path("cbcl_attention_full.csv"))
+write_csv(cbcl_aggressive_full, proc_path("cbcl_aggressive_full.csv"))
 ```
+
+
+## Data and outcome lists
+
+Subsequent analyses make use of custom `data_list` and `outcome_list` objects that store information about all input variables and outcome (CBCL) measures used for SNF and cluster characterization.
+I also store make use of a `cbcl_list` object, which is simply a list of cbcl dataframes and does not keep a track of the same amount of metadata as used in the highly nested `outcome_list` object.
+Instead of loading each individual file and building these lists, we can build the lists here and export them for later use.
+
+```{r}
+library(rlist)
+
+# Training data list
+data_list_train <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_train,
+    mtbi_mechanism = as_mtbi_mechanism_train,
+    mtbi_mem_daze = as_mtbi_mem_daze_train,
+    income = d_income_train,
+    interview_age = d_interview_age_train,
+    mtbi_age = d_mtbi_age_train,
+    pubertal_status = d_pubertal_status_train,
+    race = d_race_train,
+    sex = d_sex_train,
+    headaches = mh_headaches_train,
+    mtbi_count = mh_mtbi_count_train,
+    wmndf = dm_wmndf_qc_train,
+    gord_cor = rm_gord_cor_qc_train,
+    gord_var = rm_gord_var_qc_train,
+    subc_cor = rm_subc_cor_qc_train,
+    subc_var = rm_subc_var_qc_train,
+    cort_sa = sm_cort_sa_qc_train,
+    cort_t = sm_cort_t_qc_train,
+    subc_v = sm_subc_v_qc_train,
+    loneliness = p_loneliness_train,
+    screen_time = p_screen_time_train,
+    family_function = p_family_function_train,
+    sports = p_sports_train,
+    prosocial = p_prosocial_train,
+    parent_psych = p_parent_psych_train,
+    exercise = p_exercise_train)
+
+list.save(data_list_train, proc_path("data_list_train.rdata", date = TRUE))
+
+# Full data list
+data_list_full <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_full,
+    mtbi_mechanism = as_mtbi_mechanism_full,
+    mtbi_mem_daze = as_mtbi_mem_daze_full,
+    income = d_income_full,
+    interview_age = d_interview_age_full,
+    mtbi_age = d_mtbi_age_full,
+    pubertal_status = d_pubertal_status_full,
+    race = d_race_full,
+    sex = d_sex_full,
+    headaches = mh_headaches_full,
+    mtbi_count = mh_mtbi_count_full,
+    wmndf = dm_wmndf_qc_full,
+    gord_cor = rm_gord_cor_qc_full,
+    gord_var = rm_gord_var_qc_full,
+    subc_cor = rm_subc_cor_qc_full,
+    subc_var = rm_subc_var_qc_full,
+    cort_sa = sm_cort_sa_qc_full,
+    cort_t = sm_cort_t_qc_full,
+    subc_v = sm_subc_v_qc_full,
+    loneliness = p_loneliness_full,
+    screen_time = p_screen_time_full,
+    family_function = p_family_function_full,
+    sports = p_sports_full,
+    prosocial = p_prosocial_full,
+    parent_psych = p_parent_psych_full,
+    exercise = p_exercise_full)
+
+list.save(data_list_full, proc_path("data_list_full.rdata", date = TRUE))
+
+
+
+# Training CBCL list
+cbcl_list_train <- list(
+    cbcl_nausea_train,
+    cbcl_vomiting_train,
+    cbcl_dizzy_train,
+    cbcl_overtired_train,
+    cbcl_sleeping_more_train,
+    cbcl_sleeping_less_train,
+    cbcl_depress_train,
+    cbcl_anxiety_train,
+    cbcl_attention_train,
+    cbcl_aggressive_train)
+
+list.save(cbcl_list_train, proc_path("cbcl_list_train.rdata", date = TRUE))
+
+
+cbcl_list_full <- list(
+    cbcl_nausea_full,
+    cbcl_vomiting_full,
+    cbcl_dizzy_full,
+    cbcl_overtired_full,
+    cbcl_sleeping_more_full,
+    cbcl_sleeping_less_full,
+    cbcl_depress_full,
+    cbcl_anxiety_full,
+    cbcl_attention_full,
+    cbcl_aggressive_full)
+
+list.save(cbcl_list_full, proc_path("cbcl_list_full.rdata", date = TRUE))
+
+
+```
+
