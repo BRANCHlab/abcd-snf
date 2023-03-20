@@ -115,20 +115,10 @@ plot_nmis(nmi_df, fig_path)
 ## Input variable characterization
 ```{r}
 
-train_dfs <- lapply(data_list_train, function(x) x$"data")
-
-train_df_names <- lapply(data_list_train, function(x) x$"name") |>
-    unlist()
-
-subjects_train <- data_list_train[[1]]$"data"$"subjectkey"
-
-subjects_train
-
-top_oms
-
-train_df_names
-
-plot_om_bar <- function(om_row, input_df, feature, featname) {
+plot_om_bar <- function(om_row, input_df, feature, featname, save = NULL) {
+    if (is.null(input_df)) {
+        return(NULL)
+    }
     cluster_df <- get_cluster_df(om_row)
     characterization_df <-
         dplyr::inner_join(cluster_df, input_df, by = "subjectkey")
@@ -162,6 +152,7 @@ plot_om_bar <- function(om_row, input_df, feature, featname) {
             mapping = ggplot2::aes(
                 label = n,
                 y = percent),
+            size = 8,
             position = ggplot2::position_stack(
                 vjust = 0.5)) +
         ggplot2::scale_y_continuous(
@@ -173,11 +164,67 @@ plot_om_bar <- function(om_row, input_df, feature, featname) {
         ggplot2::theme_bw() +
         ggplot2::theme(
             text = ggplot2::element_text(
-                size = 20))
-    print(plot)
+                size = 30))
+    if (!is.null(save)) {
+        ggplot2::ggsave(file = save, plot, width = 10, height = 10)
+    } else {
+        return(plot)
+    }
 }
-
-plot_om_cont <- function(om_row, input_df, feature, featname) {
+pheatmap_om_matrix <- function(om_row, input_df, binary = FALSE, save = NULL,
+                               main = "", show_row = FALSE) {
+    if (is.null(input_df)) {
+        return(NULL)
+    }
+    cluster <- ""
+    cluster_df <- get_cluster_df(om_row)
+    characterization_df <-
+        dplyr::inner_join(input_df, cluster_df, by = "subjectkey")
+    cluster_names <- characterization_df |>
+        dplyr::group_by(cluster) |>
+        dplyr::select(-"subjectkey") |>
+        dplyr::summarize_all(mean) |>
+        dplyr::select("cluster") |>
+        unlist() |>
+        names()
+    matrix <- characterization_df |>
+        dplyr::group_by(cluster) |>
+        dplyr::select(-"subjectkey") |>
+        dplyr::summarize_all(mean) |>
+        dplyr::select(-"cluster") |>
+        t()
+    colnames(matrix) <- cluster_names
+    if (binary == TRUE) {
+    # This for loop ensures that the lowest value in each row becomes 0
+        for (i in seq_len(nrow(matrix))) {
+            matrix[i, ] <- matrix[i, ] - min(matrix[i, ])
+        }
+    }
+    # This for loop ensures that the highest value in each row becomes 1
+    matrix_row_max <- apply(matrix, 1, max)
+    for (i in seq_len(nrow(matrix))) {
+        matrix[i, ] <- (matrix[i, ] / matrix_row_max[i])
+    }
+    if (!(is.null(grDevices::dev.list())) && !(is.null(save))) {
+        grDevices::dev.off()
+    }
+    if (!(is.null(save))) {
+        pheatmap::pheatmap(matrix,
+                           cluster_cols = FALSE,
+                           filename = save,
+                           main = main,
+                           fontsize = 25,
+                           show_rownames = show_row)
+    } else {
+        return(pheatmap::pheatmap(matrix, cluster_cols = FALSE, main = main,
+                                  fontsize = 25,
+                                  show_rownames = show_row))
+    }
+}
+plot_om_cont <- function(om_row, input_df, feature, featname, save = NULL) {
+    if (is.null(input_df)) {
+        return(NULL)
+    }
     cluster_df <- get_cluster_df(om_row)
     cluster <- ""
     keycol <- ""
@@ -191,7 +238,8 @@ plot_om_cont <- function(om_row, input_df, feature, featname) {
         ggplot2::aes(
             x = cluster,
             y = keycol)) +
-        ggplot2::geom_boxplot() +
+        #ggplot2::geom_boxplot() +
+        ggplot2::geom_violin() +
         ggplot2::geom_jitter(height = 0, alpha = 0.2, size = 4) +
         ggplot2::scale_y_continuous(
             expand = ggplot2::expansion(mult = c(0, .1))) +
@@ -201,12 +249,25 @@ plot_om_cont <- function(om_row, input_df, feature, featname) {
         ggplot2::theme_bw() +
         ggplot2::theme(
             text = ggplot2::element_text(
-                size = 20))
-    print(plot)
+                size = 30))
+    if (!is.null(save)) {
+        print(save)
+        ggplot2::ggsave(file = save, plot, width = 10, height = 10)
+    } else {
+        return(plot)
+    }
 }
 
+train_dfs <- lapply(data_list_train, function(x) x$"data")
+
+train_df_names <- lapply(data_list_train, function(x) x$"name") |>
+    unlist()
+
+
+top_oms[, c("row_id", "significance")]
 
 row <- 1
+top_oms[row, "significance"]
 
 # LOC
 plot_om_bar(top_oms[row, ], train_dfs[[1]], "latest_mtbi_loc", "LOC")
@@ -218,7 +279,7 @@ plot_om_bar(top_oms[row, ], train_dfs[[2]], "latest_mtbi_mechanism", "MOI")
 plot_om_bar(top_oms[row, ], train_dfs[[3]], "latest_mtbi_mem_daze", "Dazed")
 
 # Income
-plot_om_cont(top_oms[row, ], train_dfs[[4]], "household_income", "Income")
+plot_om_bar(top_oms[row, ], train_dfs[[4]], "household_income", "Income")
 
 # Age at interview
 plot_om_cont(top_oms[row, ], train_dfs[[5]], "interview_age", "Interview Age")
@@ -241,49 +302,656 @@ plot_om_bar(top_oms[row, ], train_dfs[[10]], "headache", "Headaches")
 # Number of injuries
 plot_om_cont(top_oms[row, ], train_dfs[[11]], "mtbi_count", "mTBI Count")
 
-colnames(train_dfs[[12]])
+# dMRI
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[12]], binary = FALSE, main = "Gordon correlations")
 
-ndwm <- train_dfs[[12]]
+# Gord cor
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[13]], binary = TRUE)
 
-ndwm
-cluster_df <- get_cluster_df(top_oms[row, ])
+# Gord var
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[14]], binary = FALSE)
 
-char_df <- dplyr::inner_join(ndwm, cluster_df, by = "subjectkey")
+# Subc cor
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[15]], binary = TRUE)
 
-c1_char_df <- char_df |>
-    dplyr::filter(cluster == 1) |>
-    dplyr::select(-"cluster")
+# Subc var
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[16]], binary = FALSE)
 
-new_df <- char_df |>
-    dplyr::group_by(cluster) |>
-    dplyr::select(-"subjectkey") |>
-    dplyr::summarize_all(mean) |>
-    dplyr::select(-"cluster") |>
-    t()
+# Cort sa
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[17]], binary = FALSE)
 
-new_df
+# Cort t
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[18]], binary = FALSE)
 
-new_df_row_max <- apply(new_df, 1, max)
+# Subc v
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[19]], binary = FALSE)
 
-for (i in seq_len(nrow(new_df))) {
-    new_df[i, ] <- (new_df[i, ] / new_df_row_max[i])
+# Loneliness
+plot_om_cont(top_oms[row, ], train_dfs[[20]], "ss_friend",
+             "Number of Same Sex Friends")
+
+plot_om_cont(top_oms[row, ], train_dfs[[20]], "ss_close_friend",
+             "Number of Same Sex Close Friends")
+
+plot_om_cont(top_oms[row, ], train_dfs[[20]], "os_friend",
+             "Number of Opposite Sex Friends")
+
+plot_om_cont(top_oms[row, ], train_dfs[[20]], "os_close_friend",
+             "Number of Opposite Sex Close Friends")
+
+# Screentime
+plot_om_cont(top_oms[row, ], train_dfs[[21]], "screentime_wknd_hrs",
+             "Weekend Screentime")
+
+plot_om_cont(top_oms[row, ], train_dfs[[21]], "screentime_wknd_hrs",
+             "Weekday Screentime")
+
+# Family function
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[22]])
+
+# Sports and Activities
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[23]])
+
+plot_om_cont(top_oms[row, ], train_dfs[[23]], "organized_school_activities",
+             "Activities organized within school")
+
+plot_om_cont(top_oms[row, ], train_dfs[[23]], "organized_outside_activities",
+             "Activities organized outside of school")
+
+plot_om_cont(top_oms[row, ], train_dfs[[23]], "private_instruction_activities",
+             "Activities with private instruction")
+
+plot_om_cont(top_oms[row, ], train_dfs[[23]], "p12_activities",
+             "Activities in the last year")
+
+# Prosocial behaviour
+plot_om_bar(top_oms[row, ], train_dfs[[24]], "q1",
+            "Care about \nothers' feelings")
+
+plot_om_bar(top_oms[row, ], train_dfs[[24]], "q2",
+            "Help those \nhurt, upset, \nor feeling sick")
+
+plot_om_bar(top_oms[row, ], train_dfs[[24]], "q3",
+            "Often offer to help")
+
+# Parent psychopathology
+pheatmap_om_matrix(top_oms[row, ], train_dfs[[25]])
+
+# Exercise
+plot_om_cont(top_oms[row, ], train_dfs[[26]], "physical_activity1_y",
+    "Days with over 60\n mins activity this week")
+
+plot_om_cont(top_oms[row, ], train_dfs[[26]], "physical_activity2_y",
+    "Days with strength \nexercise")
+
+plot_om_cont(top_oms[row, ], train_dfs[[26]], "physical_activity5_y",
+    "Days of PE class\n per week")
+
+train_dfs[[26]]
+
+input_reader <- make_reader(input_path)
+
+nihtbx_pattern <- input_reader("nihtbx_pattern_fc_imp.csv")
+nihtbx_list <- input_reader("nihtbx_list_fc_imp.csv")
+nihtbx_cardsort <- input_reader("nihtbx_cardsort_fc_imp.csv")
+sds_sleep_df <- input_reader("sds_sleep_df.csv")
+
+# NIHTBX
+plot_om_cont(top_oms[row, ], nihtbx_pattern, "nihtbx_pattern_fc", "Pattern")
+
+# NIH Cardsort
+plot_om_cont(top_oms[row, ], nihtbx_cardsort, "nihtbx_cardsort_fc", "cardsort")
+
+# NIH List
+plot_om_cont(top_oms[row, ], nihtbx_list, "nihtbx_list_fc", "list")
+
+pheatmap_om_matrix(top_oms[row, ], sds_sleep_df)
+
+
+input_characterization_plots <- function(om,
+                                         loc = NULL,
+                                         mechanism = NULL,
+                                         dazed = NULL,
+                                         income = NULL,
+                                         interview_age = NULL,
+                                         mtbi_age = NULL,
+                                         pubertal = NULL,
+                                         race = NULL,
+                                         sex = NULL,
+                                         headache = NULL,
+                                         mtbi_count = NULL,
+                                         wmnd = NULL,
+                                         gord_cor = NULL,
+                                         gord_var = NULL,
+                                         subc_cor = NULL,
+                                         subc_var = NULL,
+                                         cort_sa = NULL,
+                                         cort_t = NULL,
+                                         subc_v = NULL,
+                                         loneliness = NULL,
+                                         screentime = NULL,
+                                         fam_fn = NULL,
+                                         sports = NULL,
+                                         prosocial = NULL,
+                                         parent_psych = NULL,
+                                         exercise = NULL,
+                                         pattern = NULL,
+                                         cardsort = NULL,
+                                         list = NULL) {
+    #for (i in seq_len(nrow(om))) {
+    for (i in 1) {
+        row_i <- om[i, ]
+        id <- row_i$"row_id"
+        sig <- row_i$"significance"
+        prefix <- paste0("row_", id, "_", sig, "_")
+        # LOC
+        filename <-
+            fig_path(paste0(prefix, "loc_bar_train.png"), date = TRUE)
+        plot_om_bar(row_i, loc, "latest_mtbi_loc", "LOC", save = filename)
+        # Mechanism
+        filename <-
+            fig_path(paste0(prefix, "mechanism_bar_train.png"), date = TRUE)
+        plot_om_bar(row_i, mechanism, "latest_mtbi_mechanism", "MOI",
+                    save = filename)
+        # Dazed
+        filename <-
+            fig_path(paste0(prefix, "dazed_bar_train.png"), date = TRUE)
+        plot_om_bar(row_i, dazed, "latest_mtbi_mem_daze", "Dazed",
+                    save = filename)
+        # Income
+        filename <-
+            fig_path(paste0(prefix, "income_bar_train.png"), date = TRUE)
+        plot_om_bar(row_i, income, "household_income", "Income", filename)
+        # Age at interview
+        filename <-
+            fig_path(paste0(prefix, "int_age_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, interview_age, "interview_age", "Interview Age",
+            save = filename)
+        # Age at injury
+        filename <-
+            fig_path(paste0(prefix, "mtbi_age_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, mtbi_age, "latest_mtbi_age", "Injury Age",
+                     save = filename)
+        # Pubertal status
+        filename <-
+            fig_path(paste0(prefix, "pubertal_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, pubertal, "pubertal_status", "Pubertal",
+                     save = filename)
+        # Race
+        filename <-
+            fig_path(paste0(prefix, "race_bar_train.png"), date = TRUE)
+        plot_om_bar(row_i, train_dfs[[8]], "race", "Race", save = filename)
+        # Sex
+        filename <-
+            fig_path(paste0(prefix, "sex_bar__train.png"), date = TRUE)
+        plot_om_bar(row_i, train_dfs[[9]], "M", "Male", save = filename)
+        # Headaches
+        filename <-
+            fig_path(paste0(prefix, "headaches_bar_train.png"), date = TRUE)
+        plot_om_bar(row_i, train_dfs[[10]], "headache", "Headaches",
+                    save = filename)
+        # Number of injuries
+        filename <-
+            fig_path(paste0(prefix, "mtbi_count_train.png"), date = TRUE)
+        plot_om_cont(row_i, train_dfs[[11]], "mtbi_count", "mTBI Count",
+                     save = filename)
+        # dMRI
+        filename <-
+            fig_path(paste0(prefix, "nd_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, wmnd, binary = FALSE, save = filename)
+        # gord_cor
+        filename <-
+            fig_path(paste0(prefix, "gord_cor_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, gord_cor, binary = TRUE, save = filename)
+        # gord_var
+        filename <-
+            fig_path(paste0(prefix, "gord_var_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, gord_var, save = filename)
+        # subc_cor
+        filename <-
+            fig_path(paste0(prefix, "subc_cor_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, subc_cor, binary = TRUE, save = filename)
+        # subc_var
+        filename <-
+            fig_path(paste0(prefix, "subc_var_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, subc_var, save = filename)
+        # cort_sa
+        filename <-
+            fig_path(paste0(prefix, "cort_sa_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, cort_sa, save = filename)
+        # cort_t
+        filename <-
+            fig_path(paste0(prefix, "cort_t_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, cort_t, save = filename)
+        # subc_v
+        filename <-
+            fig_path(paste0(prefix, "subc_v_pheatmap_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, subc_v, save = filename)
+        # Loneliness
+        filename <-
+            fig_path(paste0(prefix, "ss_friend_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, loneliness, "ss_friend",
+                     "Number of Same Sex Friends", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "ss_cfriend_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, loneliness, "ss_close_friend",
+                     "Number of Same Sex Close Friends", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "os_friend_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, loneliness, "os_friend",
+                     "Number of Opposite Sex Friends", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "os_cfriend_cont_train.png"), date = TRUE)
+        plot_om_cont(row_i, loneliness, "os_close_friend",
+                     "Number of Opposite Sex Close Friends", save = filename)
+        # Screentime
+        filename <-
+            fig_path(paste0(prefix, "screentime_wknd_hrs_cont_train.png"),
+                     date = TRUE)
+        plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+                     "Weekend Screentime", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "screentime_wknd_hrs_cont_train.png"),
+                     date = TRUE)
+        plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+                     "Weekday Screentime", save = filename)
+        # Family function
+        pheatmap_om_matrix(row_i, fam_fn, save = filename)
+        # Sports and Activities
+        pheatmap_om_matrix(row_i, sports, save = filename)
+        filename <-
+            fig_path(paste0(prefix,
+                "organized_school_activities_cont_train.png"),
+                     date = TRUE)
+        plot_om_cont(row_i, sports, "organized_school_activities",
+                     "Activities organized within school", save = filename)
+        filename <-
+            fig_path(paste0(prefix,
+                "organized_outside_activities_cont_train.png"),
+                     date = TRUE)
+        plot_om_cont(row_i, sports, "organized_outside_activities",
+                     "Activities organized outside of school", save = filename)
+        filename <-
+            fig_path(paste0(prefix,
+                "private_instruction_activities_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, sports, "private_instruction_activities",
+                     "Activities with private instruction", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "p12_activities_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, sports, "p12_activities",
+                     "Activities in the last year", save = filename)
+        # Prosocial behaviour
+        filename <-
+            fig_path(paste0(prefix, "q1_bar_train.png"),
+                date = TRUE)
+        plot_om_bar(row_i, prosocial, "q1",
+                    "Care about \nothers' feelings", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "q2_bar_train.png"),
+                date = TRUE)
+        plot_om_bar(row_i, prosocial, "q2",
+                    "Help hurt, upset, \nor sick people", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "q3_bar_train.png"),
+                date = TRUE)
+        plot_om_bar(row_i, prosocial, "q3",
+                    "Often offer to help", save = filename)
+        # Parent psychopathology
+        filename <-
+            fig_path(paste0(prefix, "parent_psych_heatmap.png"),
+                date = TRUE)
+        pheatmap_om_matrix(row_i, parent_psych, save = filename)
+        # Exercise
+        filename <-
+            fig_path(paste0(prefix, "physical_activity1_y_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, exercise, "physical_activity1_y",
+            "Days with over 60\n mins activity this week", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "physical_activity2_y_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, exercise, "physical_activity2_y",
+            "Days with strength \nexercise", save = filename)
+        filename <-
+            fig_path(paste0(prefix, "physical_activity5_y_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, exercise, "physical_activity5_y",
+            "Days of PE class\n per week", save = filename)
+        # NIHTBX
+        filename <-
+            fig_path(paste0(prefix, "nihtbx_pattern_fc_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, nihtbx_pattern, "nihtbx_pattern_fc", "Pattern",
+                     save = filename)
+        # NIH Cardsort
+        filename <-
+            fig_path(paste0(prefix, "nihtbx_cardsort_fc_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, nihtbx_cardsort, "nihtbx_cardsort_fc", "cardsort",
+                     save = filename)
+        # NIH List
+        filename <-
+            fig_path(paste0(prefix, "nihtbx_list_fc_cont_train.png"),
+                date = TRUE)
+        plot_om_cont(row_i, nihtbx_list, "nihtbx_list_fc", "list",
+                     save = filename)
+        # SDS
+        filename <-
+            fig_path(paste0(prefix, "sds_matrix_train.png"), date = TRUE)
+        pheatmap_om_matrix(row_i, sds_sleep_df, save = filename)
+    }
 }
 
-pheatmap::pheatmap(new_df)
 
-a <- matrix(c(9, 2, 1, 4, 6, 7, 2, 2, 3), 3, 3)
-a
-b <- apply(a, 1, max)
-b
-for (i in seq_len(nrow(a))) {
-    a[i, ] <- (a[i, ] / b[i])
+
+
+
+
+input_characterization_plots(top_oms,
+                             loc = train_dfs[[1]],
+                             mechanism = train_dfs[[2]],
+                             dazed = train_dfs[[3]],
+                             income = train_dfs[[4]],
+                             interview_age = train_dfs[[5]],
+                             mtbi_age = train_dfs[[6]],
+                             pubertal = train_dfs[[7]],
+                             race = train_dfs[[8]],
+                             sex = train_dfs[[9]],
+                             headache = train_dfs[[10]],
+                             mtbi_count = train_dfs[[11]],
+                             wmnd = train_dfs[[12]],
+                             gord_cor = train_dfs[[13]],
+                             gord_var = train_dfs[[14]],
+                             subc_cor = train_dfs[[15]],
+                             subc_var = train_dfs[[16]],
+                             cort_sa = train_dfs[[17]],
+                             cort_t = train_dfs[[18]],
+                             subc_v = train_dfs[[19]],
+                             loneliness = train_dfs[[20]],
+                             screentime = train_dfs[[21]],
+                             fam_fn = train_dfs[[22]],
+                             sports = train_dfs[[23]],
+                             prosocial = train_dfs[[24]],
+                             parent_psych = train_dfs[[25]],
+                             exercise = train_dfs[[26]],
+                             pattern = nihtbx_pattern,
+                             cardsort = nihtbx_cardsort,
+                             list = nihtbx_list)
+
+
+
+
+input_characterization_plots(top_oms)
+
+data_list_train
+
+
+
+input_characterization_plots_g <- function(om,
+                                         loc = NULL,
+                                         mechanism = NULL,
+                                         dazed = NULL,
+                                         income = NULL,
+                                         interview_age = NULL,
+                                         mtbi_age = NULL,
+                                         pubertal = NULL,
+                                         race = NULL,
+                                         sex = NULL,
+                                         headache = NULL,
+                                         mtbi_count = NULL,
+                                         wmnd = NULL,
+                                         gord_cor = NULL,
+                                         gord_var = NULL,
+                                         subc_cor = NULL,
+                                         subc_var = NULL,
+                                         cort_sa = NULL,
+                                         cort_t = NULL,
+                                         subc_v = NULL,
+                                         loneliness = NULL,
+                                         screentime = NULL,
+                                         fam_fn = NULL,
+                                         sports = NULL,
+                                         prosocial = NULL,
+                                         parent_psych = NULL,
+                                         exercise = NULL,
+                                         pattern = NULL,
+                                         cardsort = NULL,
+                                         list = NULL) {
+    #for (i in seq_len(nrow(om))) {
+    for (i in 1) {
+        row_i <- om[i, ]
+        id <- row_i$"row_id"
+        sig <- row_i$"significance"
+        prefix <- paste0("row_", id, "_", sig, "_")
+        # LOC
+        loc_p <- plot_om_bar(row_i, loc, "latest_mtbi_loc", "LOC")
+        # Mechanism
+        mech_p <- plot_om_bar(row_i, mechanism, "latest_mtbi_mechanism", "MOI")
+        # Dazed
+        dazed_p <- plot_om_bar(row_i, dazed, "latest_mtbi_mem_daze", "Dazed")
+        # Income
+        income_p <- plot_om_bar(row_i, income, "household_income", "Income")
+        gridExtra::grid.arrange(
+                abcdutils::clean_plot(loc_p, c("x", "y")),
+                abcdutils::clean_plot(mech_p, c("x", "y")),
+                abcdutils::clean_plot(dazed_p, c("x", "y")),
+                abcdutils::clean_plot(income_p, c("x", "y")))
+        ## Age at interview
+        #filename <-
+        #    fig_path(paste0(prefix, "int_age_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, interview_age, "interview_age", "Interview Age",
+        #    save = filename)
+        ## Age at injury
+        #filename <-
+        #    fig_path(paste0(prefix, "mtbi_age_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, mtbi_age, "latest_mtbi_age", "Injury Age",
+        #             save = filename)
+        ## Pubertal status
+        #filename <-
+        #    fig_path(paste0(prefix, "pubertal_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, pubertal, "pubertal_status", "Pubertal",
+        #             save = filename)
+        ## Race
+        #filename <-
+        #    fig_path(paste0(prefix, "race_bar_train.png"), date = TRUE)
+        #plot_om_bar(row_i, train_dfs[[8]], "race", "Race", save = filename)
+        ## Sex
+        #filename <-
+        #    fig_path(paste0(prefix, "sex_bar__train.png"), date = TRUE)
+        #plot_om_bar(row_i, train_dfs[[9]], "M", "Male", save = filename)
+        ## Headaches
+        #filename <-
+        #    fig_path(paste0(prefix, "headaches_bar_train.png"), date = TRUE)
+        #plot_om_bar(row_i, train_dfs[[10]], "headache", "Headaches",
+        #            save = filename)
+        ## Number of injuries
+        #filename <-
+        #    fig_path(paste0(prefix, "mtbi_count_train.png"), date = TRUE)
+        #plot_om_cont(row_i, train_dfs[[11]], "mtbi_count", "mTBI Count",
+        #             save = filename)
+        ## dMRI
+        #filename <-
+        #    fig_path(paste0(prefix, "nd_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, wmnd, binary = FALSE, save = filename)
+        ## gord_cor
+        #filename <-
+        #    fig_path(paste0(prefix, "gord_cor_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, gord_cor, binary = TRUE, save = filename)
+        ## gord_var
+        #filename <-
+        #    fig_path(paste0(prefix, "gord_var_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, gord_var, save = filename)
+        ## subc_cor
+        #filename <-
+        #    fig_path(paste0(prefix, "subc_cor_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, subc_cor, binary = TRUE, save = filename)
+        ## subc_var
+        #filename <-
+        #    fig_path(paste0(prefix, "subc_var_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, subc_var, save = filename)
+        ## cort_sa
+        #filename <-
+        #    fig_path(paste0(prefix, "cort_sa_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, cort_sa, save = filename)
+        ## cort_t
+        #filename <-
+        #    fig_path(paste0(prefix, "cort_t_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, cort_t, save = filename)
+        ## subc_v
+        #filename <-
+        #    fig_path(paste0(prefix, "subc_v_pheatmap_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, subc_v, save = filename)
+        ## Loneliness
+        #filename <-
+        #    fig_path(paste0(prefix, "ss_friend_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, loneliness, "ss_friend",
+        #             "Number of Same Sex Friends", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "ss_cfriend_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, loneliness, "ss_close_friend",
+        #             "Number of Same Sex Close Friends", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "os_friend_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, loneliness, "os_friend",
+        #             "Number of Opposite Sex Friends", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "os_cfriend_cont_train.png"), date = TRUE)
+        #plot_om_cont(row_i, loneliness, "os_close_friend",
+        #             "Number of Opposite Sex Close Friends", save = filename)
+        ## Screentime
+        #filename <-
+        #    fig_path(paste0(prefix, "screentime_wknd_hrs_cont_train.png"),
+        #             date = TRUE)
+        #plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+        #             "Weekend Screentime", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "screentime_wknd_hrs_cont_train.png"),
+        #             date = TRUE)
+        #plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+        #             "Weekday Screentime", save = filename)
+        ## Family function
+        #pheatmap_om_matrix(row_i, fam_fn, save = filename)
+        ## Sports and Activities
+        #pheatmap_om_matrix(row_i, sports, save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix,
+        #        "organized_school_activities_cont_train.png"),
+        #             date = TRUE)
+        #plot_om_cont(row_i, sports, "organized_school_activities",
+        #             "Activities organized within school", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix,
+        #        "organized_outside_activities_cont_train.png"),
+        #             date = TRUE)
+        #plot_om_cont(row_i, sports, "organized_outside_activities",
+        #             "Activities organized outside of school", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix,
+        #        "private_instruction_activities_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, sports, "private_instruction_activities",
+        #             "Activities with private instruction", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "p12_activities_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, sports, "p12_activities",
+        #             "Activities in the last year", save = filename)
+        ## Prosocial behaviour
+        #filename <-
+        #    fig_path(paste0(prefix, "q1_bar_train.png"),
+        #        date = TRUE)
+        #plot_om_bar(row_i, prosocial, "q1",
+        #            "Care about \nothers' feelings", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "q2_bar_train.png"),
+        #        date = TRUE)
+        #plot_om_bar(row_i, prosocial, "q2",
+        #            "Help hurt, upset, \nor sick people", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "q3_bar_train.png"),
+        #        date = TRUE)
+        #plot_om_bar(row_i, prosocial, "q3",
+        #            "Often offer to help", save = filename)
+        ## Parent psychopathology
+        #filename <-
+        #    fig_path(paste0(prefix, "parent_psych_heatmap.png"),
+        #        date = TRUE)
+        #pheatmap_om_matrix(row_i, parent_psych, save = filename)
+        ## Exercise
+        #filename <-
+        #    fig_path(paste0(prefix, "physical_activity1_y_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, exercise, "physical_activity1_y",
+        #    "Days with over 60\n mins activity this week", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "physical_activity2_y_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, exercise, "physical_activity2_y",
+        #    "Days with strength \nexercise", save = filename)
+        #filename <-
+        #    fig_path(paste0(prefix, "physical_activity5_y_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, exercise, "physical_activity5_y",
+        #    "Days of PE class\n per week", save = filename)
+        ## NIHTBX
+        #filename <-
+        #    fig_path(paste0(prefix, "nihtbx_pattern_fc_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, nihtbx_pattern, "nihtbx_pattern_fc", "Pattern",
+        #             save = filename)
+        ## NIH Cardsort
+        #filename <-
+        #    fig_path(paste0(prefix, "nihtbx_cardsort_fc_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, nihtbx_cardsort, "nihtbx_cardsort_fc", "cardsort",
+        #             save = filename)
+        ## NIH List
+        #filename <-
+        #    fig_path(paste0(prefix, "nihtbx_list_fc_cont_train.png"),
+        #        date = TRUE)
+        #plot_om_cont(row_i, nihtbx_list, "nihtbx_list_fc", "list",
+        #             save = filename)
+        ## SDS
+        #filename <-
+        #    fig_path(paste0(prefix, "sds_matrix_train.png"), date = TRUE)
+        #pheatmap_om_matrix(row_i, sds_sleep_df, save = filename)
+    }
 }
 
-a
 
-i <- 12
-colnames(train_dfs[[i]])
-train_df_names[i]
+input_characterization_plots_g(top_oms,
+                             loc = train_dfs[[1]],
+                             mechanism = train_dfs[[2]],
+                             dazed = train_dfs[[3]],
+                             income = train_dfs[[4]],
+                             interview_age = train_dfs[[5]],
+                             mtbi_age = train_dfs[[6]],
+                             pubertal = train_dfs[[7]],
+                             race = train_dfs[[8]],
+                             sex = train_dfs[[9]],
+                             headache = train_dfs[[10]],
+                             mtbi_count = train_dfs[[11]],
+                             wmnd = train_dfs[[12]],
+                             gord_cor = train_dfs[[13]],
+                             gord_var = train_dfs[[14]],
+                             subc_cor = train_dfs[[15]],
+                             subc_var = train_dfs[[16]],
+                             cort_sa = train_dfs[[17]],
+                             cort_t = train_dfs[[18]],
+                             subc_v = train_dfs[[19]],
+                             loneliness = train_dfs[[20]],
+                             screentime = train_dfs[[21]],
+                             fam_fn = train_dfs[[22]],
+                             sports = train_dfs[[23]],
+                             prosocial = train_dfs[[24]],
+                             parent_psych = train_dfs[[25]],
+                             exercise = train_dfs[[26]],
+                             pattern = nihtbx_pattern,
+                             cardsort = nihtbx_cardsort,
+                             list = nihtbx_list)
+
 ```
 
 
