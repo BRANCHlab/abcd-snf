@@ -19,6 +19,7 @@ proc_reader <- make_reader(proc_path)
 top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
 
 data_list_train <- list.load(proc_path("2023_03_15_data_list_train.rdata"))
+data_list_test <- list.load(proc_path("2023_03_21_data_list_test.rdata"))
 cbcl_list_train <- list.load(proc_path("2023_03_15_cbcl_list_train.rdata"))
 data_list_full <- list.load(proc_path("2023_03_15_data_list_full.rdata"))
 cbcl_list_full <- list.load(proc_path("2023_03_15_cbcl_list_full.rdata"))
@@ -103,7 +104,7 @@ test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {
 test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)
 ```
 
-## Plotting and assessing inputs
+## NMI characterization
 ```{r}
 nmi_df
 
@@ -418,288 +419,8 @@ plot_om_cont(top_oms[row, ], nihtbx_cardsort, "nihtbx_cardsort_fc", "cardsort")
 
 # NIH List
 plot_om_cont(top_oms[row, ], nihtbx_list, "nihtbx_list_fc", "list")
-
 pheatmap_om_matrix(top_oms[row, ], sds_sleep_df)
 
-
-input_characterization_plots <- function(om,
-                                         loc = NULL,
-                                         mechanism = NULL,
-                                         dazed = NULL,
-                                         income = NULL,
-                                         interview_age = NULL,
-                                         mtbi_age = NULL,
-                                         pubertal = NULL,
-                                         race = NULL,
-                                         sex = NULL,
-                                         headache = NULL,
-                                         mtbi_count = NULL,
-                                         wmnd = NULL,
-                                         gord_cor = NULL,
-                                         gord_var = NULL,
-                                         subc_cor = NULL,
-                                         subc_var = NULL,
-                                         cort_sa = NULL,
-                                         cort_t = NULL,
-                                         subc_v = NULL,
-                                         loneliness = NULL,
-                                         screentime = NULL,
-                                         fam_fn = NULL,
-                                         sports = NULL,
-                                         prosocial = NULL,
-                                         parent_psych = NULL,
-                                         exercise = NULL,
-                                         pattern = NULL,
-                                         cardsort = NULL,
-                                         list = NULL) {
-    #for (i in seq_len(nrow(om))) {
-    for (i in 1) {
-        row_i <- om[i, ]
-        id <- row_i$"row_id"
-        sig <- row_i$"significance"
-        prefix <- paste0("row_", id, "_", sig, "_")
-        # LOC
-        filename <-
-            fig_path(paste0(prefix, "loc_bar_train.png"), date = TRUE)
-        plot_om_bar(row_i, loc, "latest_mtbi_loc", "LOC", save = filename)
-        # Mechanism
-        filename <-
-            fig_path(paste0(prefix, "mechanism_bar_train.png"), date = TRUE)
-        plot_om_bar(row_i, mechanism, "latest_mtbi_mechanism", "MOI",
-                    save = filename)
-        # Dazed
-        filename <-
-            fig_path(paste0(prefix, "dazed_bar_train.png"), date = TRUE)
-        plot_om_bar(row_i, dazed, "latest_mtbi_mem_daze", "Dazed",
-                    save = filename)
-        # Income
-        filename <-
-            fig_path(paste0(prefix, "income_bar_train.png"), date = TRUE)
-        plot_om_bar(row_i, income, "household_income", "Income", filename)
-        # Age at interview
-        filename <-
-            fig_path(paste0(prefix, "int_age_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, interview_age, "interview_age", "Interview Age",
-            save = filename)
-        # Age at injury
-        filename <-
-            fig_path(paste0(prefix, "mtbi_age_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, mtbi_age, "latest_mtbi_age", "Injury Age",
-                     save = filename)
-        # Pubertal status
-        filename <-
-            fig_path(paste0(prefix, "pubertal_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, pubertal, "pubertal_status", "Pubertal",
-                     save = filename)
-        # Race
-        filename <-
-            fig_path(paste0(prefix, "race_bar_train.png"), date = TRUE)
-        plot_om_bar(row_i, train_dfs[[8]], "race", "Race", save = filename)
-        # Sex
-        filename <-
-            fig_path(paste0(prefix, "sex_bar__train.png"), date = TRUE)
-        plot_om_bar(row_i, train_dfs[[9]], "M", "Male", save = filename)
-        # Headaches
-        filename <-
-            fig_path(paste0(prefix, "headaches_bar_train.png"), date = TRUE)
-        plot_om_bar(row_i, train_dfs[[10]], "headache", "Headaches",
-                    save = filename)
-        # Number of injuries
-        filename <-
-            fig_path(paste0(prefix, "mtbi_count_train.png"), date = TRUE)
-        plot_om_cont(row_i, train_dfs[[11]], "mtbi_count", "mTBI Count",
-                     save = filename)
-        # dMRI
-        filename <-
-            fig_path(paste0(prefix, "nd_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, wmnd, binary = FALSE, save = filename)
-        # gord_cor
-        filename <-
-            fig_path(paste0(prefix, "gord_cor_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, gord_cor, binary = TRUE, save = filename)
-        # gord_var
-        filename <-
-            fig_path(paste0(prefix, "gord_var_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, gord_var, save = filename)
-        # subc_cor
-        filename <-
-            fig_path(paste0(prefix, "subc_cor_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, subc_cor, binary = TRUE, save = filename)
-        # subc_var
-        filename <-
-            fig_path(paste0(prefix, "subc_var_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, subc_var, save = filename)
-        # cort_sa
-        filename <-
-            fig_path(paste0(prefix, "cort_sa_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, cort_sa, save = filename)
-        # cort_t
-        filename <-
-            fig_path(paste0(prefix, "cort_t_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, cort_t, save = filename)
-        # subc_v
-        filename <-
-            fig_path(paste0(prefix, "subc_v_pheatmap_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, subc_v, save = filename)
-        # Loneliness
-        filename <-
-            fig_path(paste0(prefix, "ss_friend_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, loneliness, "ss_friend",
-                     "Number of Same Sex Friends", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "ss_cfriend_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, loneliness, "ss_close_friend",
-                     "Number of Same Sex Close Friends", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "os_friend_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, loneliness, "os_friend",
-                     "Number of Opposite Sex Friends", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "os_cfriend_cont_train.png"), date = TRUE)
-        plot_om_cont(row_i, loneliness, "os_close_friend",
-                     "Number of Opposite Sex Close Friends", save = filename)
-        # Screentime
-        filename <-
-            fig_path(paste0(prefix, "screentime_wknd_hrs_cont_train.png"),
-                     date = TRUE)
-        plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
-                     "Weekend Screentime", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "screentime_wknd_hrs_cont_train.png"),
-                     date = TRUE)
-        plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
-                     "Weekday Screentime", save = filename)
-        # Family function
-        pheatmap_om_matrix(row_i, fam_fn, save = filename)
-        # Sports and Activities
-        pheatmap_om_matrix(row_i, sports, save = filename)
-        filename <-
-            fig_path(paste0(prefix,
-                "organized_school_activities_cont_train.png"),
-                     date = TRUE)
-        plot_om_cont(row_i, sports, "organized_school_activities",
-                     "Activities organized within school", save = filename)
-        filename <-
-            fig_path(paste0(prefix,
-                "organized_outside_activities_cont_train.png"),
-                     date = TRUE)
-        plot_om_cont(row_i, sports, "organized_outside_activities",
-                     "Activities organized outside of school", save = filename)
-        filename <-
-            fig_path(paste0(prefix,
-                "private_instruction_activities_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, sports, "private_instruction_activities",
-                     "Activities with private instruction", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "p12_activities_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, sports, "p12_activities",
-                     "Activities in the last year", save = filename)
-        # Prosocial behaviour
-        filename <-
-            fig_path(paste0(prefix, "q1_bar_train.png"),
-                date = TRUE)
-        plot_om_bar(row_i, prosocial, "q1",
-                    "Care about \nothers' feelings", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "q2_bar_train.png"),
-                date = TRUE)
-        plot_om_bar(row_i, prosocial, "q2",
-                    "Help hurt, upset, \nor sick people", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "q3_bar_train.png"),
-                date = TRUE)
-        plot_om_bar(row_i, prosocial, "q3",
-                    "Often offer\nto help", save = filename)
-        # Parent psychopathology
-        filename <-
-            fig_path(paste0(prefix, "parent_psych_heatmap.png"),
-                date = TRUE)
-        pheatmap_om_matrix(row_i, parent_psych, save = filename)
-        # Exercise
-        filename <-
-            fig_path(paste0(prefix, "physical_activity1_y_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, exercise, "physical_activity1_y",
-            "Days with over 60\n mins activity this week", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "physical_activity2_y_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, exercise, "physical_activity2_y",
-            "Days with strength \nexercise", save = filename)
-        filename <-
-            fig_path(paste0(prefix, "physical_activity5_y_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, exercise, "physical_activity5_y",
-            "Days of PE class\n per week", save = filename)
-        # NIHTBX
-        filename <-
-            fig_path(paste0(prefix, "nihtbx_pattern_fc_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, nihtbx_pattern, "nihtbx_pattern_fc", "Pattern",
-                     save = filename)
-        # NIH Cardsort
-        filename <-
-            fig_path(paste0(prefix, "nihtbx_cardsort_fc_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, nihtbx_cardsort, "nihtbx_cardsort_fc", "cardsort",
-                     save = filename)
-        # NIH List
-        filename <-
-            fig_path(paste0(prefix, "nihtbx_list_fc_cont_train.png"),
-                date = TRUE)
-        plot_om_cont(row_i, nihtbx_list, "nihtbx_list_fc", "list",
-                     save = filename)
-        # SDS
-        filename <-
-            fig_path(paste0(prefix, "sds_matrix_train.png"), date = TRUE)
-        pheatmap_om_matrix(row_i, sds_sleep_df, save = filename)
-    }
-}
-
-
-
-
-
-
-input_characterization_plots(top_oms,
-                             loc = train_dfs[[1]],
-                             mechanism = train_dfs[[2]],
-                             dazed = train_dfs[[3]],
-                             income = train_dfs[[4]],
-                             interview_age = train_dfs[[5]],
-                             mtbi_age = train_dfs[[6]],
-                             pubertal = train_dfs[[7]],
-                             race = train_dfs[[8]],
-                             sex = train_dfs[[9]],
-                             headache = train_dfs[[10]],
-                             mtbi_count = train_dfs[[11]],
-                             wmnd = train_dfs[[12]],
-                             gord_cor = train_dfs[[13]],
-                             gord_var = train_dfs[[14]],
-                             subc_cor = train_dfs[[15]],
-                             subc_var = train_dfs[[16]],
-                             cort_sa = train_dfs[[17]],
-                             cort_t = train_dfs[[18]],
-                             subc_v = train_dfs[[19]],
-                             loneliness = train_dfs[[20]],
-                             screentime = train_dfs[[21]],
-                             fam_fn = train_dfs[[22]],
-                             sports = train_dfs[[23]],
-                             prosocial = train_dfs[[24]],
-                             parent_psych = train_dfs[[25]],
-                             exercise = train_dfs[[26]],
-                             pattern = nihtbx_pattern,
-                             cardsort = nihtbx_cardsort,
-                             list = nihtbx_list)
-
-
-
-
-input_characterization_plots(top_oms)
-
-data_list_train
 
 
 
@@ -999,21 +720,64 @@ input_characterization_plots_g(top_oms,
     general_inp_path = fig_path("general_inputs_train.png", date = TRUE),
     rsfmri_path = fig_path("rsfmri_inputs_train.png", date = TRUE),
     other_mri_path = fig_path("other_mri_train.png", date = TRUE),
-    other_heatmap_path = fig_path("other_input_path.png", date = TRUE))
+    other_heatmap_path = fig_path("other_input_train_path.png", date = TRUE))
 
-nihtbx_pattern
-
-
-
-head(train_dfs[[1]])
-
-test_eval_df
 
 
 test_dfs <- lapply(data_list_test, function(x) x$"data")
 
-test_df_names <- lapply(data_list_test, function(x) x$"name") |>
-    unlist()
+propagated_labels
+
+# Conversion of propagated labels into an om format
+propagated_om <- propagated_labels |>
+    dplyr::select(-"group") |>
+    t()
+colnames(propagated_om) <- propagated_om[1, ]
+propagated_om <- data.frame(propagated_om[-1, ])
+propagated_om$"significance" <- propagated_labels |>
+    dplyr::select(-c("subjectkey", "group")) |>
+    colnames()
+rownames(propagated_om) <- NULL
+top_oms$"row_id"
+if (all(top_oms$"significance" == propagated_om$"significance")) {
+    propagated_om$"row_id" <- top_oms$"row_id"
+    propagated_om$"nclust" <- top_oms$"nclust"
+}
+
+input_characterization_plots_g(propagated_om,
+    loc = test_dfs[[1]],
+    mechanism = test_dfs[[2]],
+    dazed = test_dfs[[3]],
+    income = test_dfs[[4]],
+    interview_age = test_dfs[[5]],
+    mtbi_age = test_dfs[[6]],
+    pubertal = test_dfs[[7]],
+    race = test_dfs[[8]],
+    sex = test_dfs[[9]],
+    headache = test_dfs[[10]],
+    mtbi_count = test_dfs[[11]],
+    wmnd = test_dfs[[12]],
+    gord_cor = test_dfs[[13]],
+    gord_var = test_dfs[[14]],
+    subc_cor = test_dfs[[15]],
+    subc_var = test_dfs[[16]],
+    cort_sa = test_dfs[[17]],
+    cort_t = test_dfs[[18]],
+    subc_v = test_dfs[[19]],
+    loneliness = test_dfs[[20]],
+    screentime = test_dfs[[21]],
+    fam_fn = test_dfs[[22]],
+    sports = test_dfs[[23]],
+    prosocial = test_dfs[[24]],
+    parent_psych = test_dfs[[25]],
+    exercise = test_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    general_inp_path = fig_path("general_inputs_test.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_test.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_test.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_test_path.png", date = TRUE))
 
 ```
 
