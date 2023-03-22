@@ -44,16 +44,53 @@ library(here)
 library(knitr)
 library(abcdutils)
 
+raw_path <- path_maker(here(paste0("data/abcd/raw")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+
 # Import baseline TBI dataset
-abcd_otbi01 <- read_delim(here("data/abcd/raw/abcd_otbi01.txt"))
+abcd_otbi01 <- read_delim(raw_path("abcd_otbi01.txt"))
+# Longitudinal subjects
+abcd_lpohstbi01 <- read_delim(raw_path("abcd_lpohstbi01.txt"))
 
 # Identify baseline mtbi subjects at chronic stage post-mTBI (> 3 months)
-mtbi_subjects <- get_mtbi_subjects(abcd_otbi01, min_latest_mtbi_mpi = 3, t = 0)
-```
+mtbi_subjects_0 <- get_mtbi_subjects(abcd_otbi01, min_mpi = 3, t = 0)
+mtbi_subjects_1 <- get_mtbi_subjects(abcd_lpohstbi01, min_mpi = 3, t = 1)
+mtbi_subjects_2 <- get_mtbi_subjects(abcd_lpohstbi01, min_mpi = 3, t = 2)
 
+# Note that the longitudinal subjects have not been filtered in any way based on
+#  whether or not they also had an mTBI at bsaeline or another timepoint
 
-```{r}
-write_csv(mtbi_subjects, here("data/abcd/subjects/mtbi_subjects.csv"))
+write_csv(mtbi_subjects_0, sub_path("mtbi_subjects_0.csv", date = TRUE))
+write_csv(mtbi_subjects_1, sub_path("mtbi_subjects_1.csv", date = TRUE))
+write_csv(mtbi_subjects_2, sub_path("mtbi_subjects_2.csv", date = TRUE))
+
+mtbi_subjects_0 <- read_csv(sub_path("2023_03_22_mtbi_subjects_0.csv"))
+mtbi_subjects_1 <- read_csv(sub_path("2023_03_22_mtbi_subjects_1.csv"))
+mtbi_subjects_2 <- read_csv(sub_path("2023_03_22_mtbi_subjects_2.csv"))
+
+mtbi_subjects_0
+mtbi_subjects_1
+mtbi_subjects_2
+
+which(mtbi_subjects_0$"subjectkey" %in% mtbi_subjects_1$"subjectkey")
+
+which(mtbi_subjects_0$"subjectkey" %in% mtbi_subjects_2$"subjectkey")
+
+which(mtbi_subjects_1$"subjectkey" %in% mtbi_subjects_2$"subjectkey")
+
+intersect(intersect(mtbi_subjects_0$"subjectkey", mtbi_subjects_1$"subjectkey"),
+          mtbi_subjects_2$"subjectkey")
+
+Reduce(intersect, list(mtbi_subjects_0$"subjectkey",
+                       mtbi_subjects_1$"subjectkey",
+                       mtbi_subjects_2$"subjectkey"))
+
+# Unique to longitudinal
+colnames(q)[which(!(colnames(q) %in% colnames(w)))]
+
+# Unique to baseline
+colnames(w)[which(!(colnames(w) %in% colnames(q)))]
+
 ```
 
 
