@@ -14,5 +14,6 @@ To read the book, you can either open a pre-rendered version (the .pdf file or o
 
 ## To-do
 
-1. Integrate psychosocial variables into meta-clustering
-2. Adjusted rand index calculations to see link between clustering similarity
+1. Examine uninjured subjects
+2. Examine longitudinal subjects (those who had their mTBIs after baseline data collection, but prior to 2yfu)
+3. Examine how standard hierarchical clustering compares with SNF/meta-clustering approach
