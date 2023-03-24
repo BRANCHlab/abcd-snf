@@ -44,6 +44,7 @@ library(knitr)
 library(abcdutils)
 
 raw_path <- path_maker(here(paste0("data/abcd/raw")))
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 # Import baseline TBI dataset
@@ -149,12 +150,9 @@ a
 ```
 
 ```{r}
-write_csv(as_mtbi_mem_daze,
-    here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
-write_csv(as_mtbi_mechanism,
-    here("data/abcd/inputs/as_mtbi_mechanism.csv"))
-write_csv(as_mtbi_loc,
-    here("data/abcd/inputs/as_mtbi_loc.csv"))
+write_csv(as_mtbi_mem_daze, here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
+write_csv(as_mtbi_mechanism, here("data/abcd/inputs/as_mtbi_mechanism.csv"))
+write_csv(as_mtbi_loc, here("data/abcd/inputs/as_mtbi_loc.csv"))
 ```
 
 
@@ -321,12 +319,28 @@ A change anounced in the ABCD 4.0 MRI release notes indicates that neurite densi
 drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 
 ## White matter neurite densities
-dm_wmndf <- get_wmnd(drsip201, mtbi_subjects, t = 0)
+dm_wmnd <- get_wmnd(drsip201, mtbi_subjects_0, t = 0)
+
+
+dm_wmnd_full <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
+
+dm_wmnd_full
+
+
+dm_wmndf <- col_to_num_all_possible(dm_wmndf)
+
+all.equal(dm_wmndf, dm_wmndf_og_saved, check.attributes = FALSE)
+
+dm_wmnd_full
 ```
 
 ```{r}
-write_csv(dm_wmndf,
-    here("data/abcd/inputs/dm_wmndf.csv"))
+#write_csv(dm_wmndf, here("data/abcd/inputs/dm_wmndf.csv"))
+
+write_csv(dm_wmnd_full, input_path("dm_wmnd.csv", date = TRUE)
+
+write_csv(dm_wmndf, here("data/abcd/inputs/dm_wmndf.csv"))
+dm_wmndf_og_saved <- read_csv(here("data/abcd/inputs/dm_wmndf.csv"))
 ```
 
 
