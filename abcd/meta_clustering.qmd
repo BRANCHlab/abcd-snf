@@ -14,16 +14,19 @@ library(ggplot2)
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
-output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
+#output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
+output_matrix_full <- read_csv(proc_path("2023_03_27_om.csv"))
 
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00414
 
 mc_results <- meta_cluster(output_matrix_full)
 
-write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
+#write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
+write_csv(data.frame(mc_results), proc_path("mc_results.csv", date = TRUE))
 
-mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
+#mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
+mc_results <- as.matrix(read_csv(proc_path("2023_03_27_mc_results.csv")))
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
@@ -33,6 +36,8 @@ mc_heatmap(mc_results, save = fig_path("mc_results.png", date = TRUE))
 
 # Trying to plot the input design matrix as a heatmap
 mc_order <- get_pheatmap_order(mc_results)
+
+design_matrix <- data.frame(read_csv(proc_path("full_design_matrix.csv")))
 
 dm_heatmap(design_matrix[mc_order, ], fig_path("dm_reordered.png", date = TRUE))
 
@@ -144,7 +149,8 @@ write_csv(top_om_rows, proc_path("top_om_rows.csv", date = TRUE))
 ## Picking new top rows based on each cluster size
 
 ```{r}
-output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
+#output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
+output_matrix_full <- read_csv(proc_path("2023_03_27_om.csv"))
 
 min(output_matrix_full$min_p_val) #3.2 e-08
 min(output_matrix_full$mean_p_val) #0.00414
@@ -157,7 +163,21 @@ top_oms$"significance"
 
 top_oms
 
+top_oms |>
+    dplyr::select(c("significance", "row_id"))
+
 write_csv(top_oms, proc_path("top_om_rows_all_nclust.csv", date = TRUE))
+
+top_oms_rerun <-  read_csv(proc_path("2023_03_27_top_om_rows_all_nclust.csv"))
+
+top_oms_og <-  read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
+
+identical(colnames(top_oms_rerun), colnames(top_oms_og)) # The names are same
+
+# But the actual clustering solutions are not...
+Q <- 30
+all.equal(top_oms_rerun[1:7, 1:Q], top_oms_og[1:7, 1:Q])
+colnames(top_oms_rerun[1:7, 1:30])
 
 om_scatter(top_oms, save = fig_path("top_oms_all_nclust.png", date = TRUE))
 ```
