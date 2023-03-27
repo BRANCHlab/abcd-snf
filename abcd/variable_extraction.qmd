@@ -315,32 +315,19 @@ Previously, these measures were found in variables containing the string "rsindw
 A change anounced in the ABCD 4.0 MRI release notes indicates that neurite density is now referred to as "restricted normalized directional" and that the relevant white matter variables contain the string "rsirndwm" within the file `abcd_drsip201.txt`.
 
 ```{r}
-## DMRI dataframe
+# DMRI dataframe
 drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 
-## White matter neurite densities
-dm_wmnd <- get_wmnd(drsip201, mtbi_subjects_0, t = 0)
+# White matter neurite densities
+## Only peri-cortical regions (see appendix)
+dm_wmnd_0 <- get_wmnd(drsip201, mtbi_subjects_0, t = 0)
 
+# White matte rnueri
+dm_all_wmnd_0 <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
 
-dm_wmnd_full <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
+write_csv(dm_all_wmnd_0, input_path("dm_all_wmnd_0.csv", date = TRUE))
 
-dm_wmnd_full
-
-
-dm_wmndf <- col_to_num_all_possible(dm_wmndf)
-
-all.equal(dm_wmndf, dm_wmndf_og_saved, check.attributes = FALSE)
-
-dm_wmnd_full
-```
-
-```{r}
-#write_csv(dm_wmndf, here("data/abcd/inputs/dm_wmndf.csv"))
-
-write_csv(dm_wmnd_full, input_path("dm_wmnd.csv", date = TRUE)
-
-write_csv(dm_wmndf, here("data/abcd/inputs/dm_wmndf.csv"))
-dm_wmndf_og_saved <- read_csv(here("data/abcd/inputs/dm_wmndf.csv"))
+write_csv(dm_wmnd_0, input_path("dm_wmnd_0.csv", date = TRUE))
 ```
 
 
