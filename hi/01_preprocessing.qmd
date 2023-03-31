@@ -1,0 +1,816 @@
+# Imputation, QCing, and CBCL thresholding
+
+This script is used to:
+
+1. Impute missing data for non-neuroimaging input variables
+2. Remove neuroimaging data for participants who do not meet ABCD's QC
+3. Threshold CBCL behaviour measures (raw scores into normal (0), borderline (1), and clinical (2))
+
+
+## Loading in data
+
+```{r}
+library(mice)
+library(dplyr)
+library(abcdutils)
+library(readr)
+library(purrr)
+library(here)
+
+
+# Place the location of your input data here
+input_data <- path_maker(here(paste0("data/abcd/inputs")))
+raw_data <- path_maker(here(paste0("data/abcd/raw")))
+
+
+# Inputs
+as_mtbi_loc <- read_csv(input_data("as_mtbi_loc.csv"))
+as_mtbi_mechanism <- read_csv(input_data("as_mtbi_mechanism.csv"))
+as_mtbi_mem_daze <- read_csv(input_data("as_mtbi_mem_daze.csv"))
+d_income <- read_csv(input_data("d_income.csv"))
+d_interview_age <- read_csv(input_data("d_interview_age.csv"))
+d_mtbi_age <- read_csv(input_data("d_mtbi_age.csv"))
+d_pubertal_status <- read_csv(input_data("d_pubertal_status.csv"))
+d_race <- read_csv(input_data("d_race_cu.csv"))
+d_sex <- read_csv(input_data("d_sex.csv"))
+mh_headaches <- read_csv(input_data("mh_headaches.csv"))
+mh_mtbi_count <- read_csv(input_data("mh_mtbi_count.csv"))
+
+dm_wmndf <- read_csv(input_data("dm_wmndf.csv")) # Just peri-cortical
+dm_all_wmnd_0 <- read_csv(input_data("2023_03_27_dm_all_wmnd_0.csv")) # All WM
+
+rm_gord_cor <- read_csv(input_data("rm_gord_cor.csv"))
+rm_gord_var <- read_csv(input_data("rm_gord_var.csv"))
+rm_subc_cor <- read_csv(input_data("rm_subc_cor.csv"))
+rm_subc_var <- read_csv(input_data("rm_subc_var.csv"))
+sm_cort_sa <- read_csv(input_data("sm_cort_sa.csv"))
+sm_cort_t <- read_csv(input_data("sm_cort_t.csv"))
+sm_subc_v <- read_csv(input_data("sm_subc_v.csv"))
+p_loneliness <- read_csv(input_data("p_loneliness.csv"))
+p_screen_time <- read_csv(input_data("p_screen_time.csv"))
+p_family_function <- read_csv(input_data("p_family_function.csv"))
+p_sports <- read_csv(input_data("p_sports.csv"))
+p_prosocial <- read_csv(input_data("p_prosocial.csv"))
+p_parent_psych <- read_csv(input_data("p_parent_psych.csv"))
+p_exercise <- read_csv(input_data("p_exercise.csv"))
+cbcl_headaches <- read_csv(input_data("cbcl_headaches.csv"))
+cbcl_nausea <- read_csv(input_data("cbcl_nausea.csv"))
+cbcl_vomiting <- read_csv(input_data("cbcl_vomiting.csv"))
+cbcl_dizzy <- read_csv(input_data("cbcl_dizzy.csv"))
+cbcl_overtired <- read_csv(input_data("cbcl_overtired.csv"))
+cbcl_sleeping_more <- read_csv(input_data("cbcl_sleeping_more.csv"))
+cbcl_sleeping_less <- read_csv(input_data("cbcl_sleeping_less.csv"))
+cbcl_depress_r <- read_csv(input_data("cbcl_depress_r.csv"))
+cbcl_anxiety_r <- read_csv(input_data("cbcl_anxiety_r.csv"))
+cbcl_attention_r <- read_csv(input_data("cbcl_attention_r.csv"))
+cbcl_aggressive_r <- read_csv(input_data("cbcl_aggressive_r.csv"))
+sds_sleep <- read_csv(input_data("sds_sleep_df.csv"))
+nihtbx_list_fc <- read_csv(input_data("nihtbx_list_fc.csv"))
+nihtbx_pattern_fc <- read_csv(input_data("nihtbx_pattern_fc.csv"))
+nihtbx_cardsort_fc <- read_csv(input_data("nihtbx_cardsort_fc.csv"))
+```
+
+
+## Neuroimaging quality control
+
+```{r eval = FALSE}
+mriqcrp10301 <- read_delim(raw_data("mriqcrp10301.txt"))
+
+
+# Obtaining the QC'd subjects with complete neuroimaging data
+rm_gord_cor_qc <- qc_rsfmri(rm_gord_cor, mriqcrp10301, t = 0, no_na = TRUE)
+rm_gord_var_qc <- qc_rsfmri(rm_gord_var, mriqcrp10301, t = 0, no_na = TRUE)
+rm_subc_cor_qc <- qc_rsfmri(rm_subc_cor, mriqcrp10301, t = 0, no_na = TRUE)
+rm_subc_var_qc <- qc_rsfmri(rm_subc_var, mriqcrp10301, t = 0, no_na = TRUE)
+dm_wmndf_qc <- qc_dmri(dm_wmndf, mriqcrp10301, t = 0, no_na = TRUE)
+dm_all_wmnd_0_qc <- qc_dmri(dm_all_wmnd_0, mriqcrp10301, t = 0, no_na = TRUE)
+sm_cort_sa_qc <- qc_smri(sm_cort_sa, mriqcrp10301, t = 0, no_na = TRUE)
+sm_cort_t_qc <- qc_smri(sm_cort_t, mriqcrp10301, t = 0, no_na = TRUE)
+sm_subc_v_qc <- qc_smri(sm_subc_v, mriqcrp10301, t = 0, no_na = TRUE)
+```
+
+```{r eval = FALSE}
+write_csv(rm_gord_cor_qc, input_data("rm_gord_cor_qc.csv"))
+write_csv(rm_gord_var_qc, input_data("rm_gord_var_qc.csv"))
+write_csv(rm_subc_cor_qc, input_data("rm_subc_cor_qc.csv"))
+write_csv(rm_subc_var_qc, input_data("rm_subc_var_qc.csv"))
+write_csv(dm_wmndf_qc, input_data("dm_wmndf_qc.csv"))
+write_csv(dm_all_wmnd_0_qc, input_data("dm_all_wmnd_0_qc.csv", date = TRUE))
+write_csv(sm_cort_sa_qc, input_data("sm_cort_sa_qc.csv"))
+write_csv(sm_cort_t_qc, input_data("sm_cort_t_qc.csv"))
+write_csv(sm_subc_v_qc, input_data("sm_subc_v_qc.csv"))
+```
+
+
+## Imputing missing data 
+
+Here, I only impute the non-neuroimaging data.
+
+Code is based on Eman's imputation script.
+Thanks Eman!
+
+While this choice was made largely for the sake of time, it was also partially because imputing neuroimaging data doesn't seem to be a common practice.
+
+
+```{r eval = FALSE}
+# put all data frames into a named list
+df_list <- list(
+    "loss of consciousness" = as_mtbi_loc,
+    "mechanism of injury" = as_mtbi_mechanism,
+    "memory loss / dazed" = as_mtbi_mem_daze,
+    "income" = d_income,
+    "interview_age" = d_interview_age,
+    "mtbi_age" = d_mtbi_age,
+    "pubertal_status" = d_pubertal_status,
+    "race" = d_race,
+    "sex" = d_sex,
+    "headaches" = mh_headaches,
+    "mtbi_count" = mh_mtbi_count,
+    "wmndf" = dm_wmndf,
+    "gord correlations" = rm_gord_cor,
+    "gord variances" = rm_gord_var,
+    "subc corrrelations" = rm_subc_cor,
+    "subc variances" = rm_subc_var,
+    "cortical surface area" = sm_cort_sa,
+    "cortical thickness" = sm_cort_t,
+    "subcortical volume" = sm_subc_v,
+    "loneliness" = p_loneliness,
+    "screen time" = p_screen_time,
+    "family function" = p_family_function,
+    "sports" = p_sports,
+    "prosocial" = p_prosocial,
+    "parent psych" = p_parent_psych,
+    "exercise" = p_exercise,
+    "cbcl headaches" = cbcl_headaches,
+    "cbcl nausea" = cbcl_nausea,
+    "cbcl vomiting" = cbcl_vomiting,
+    "cbcl dizzy" = cbcl_dizzy,
+    "cbcl overtired" = cbcl_overtired,
+    "cbcl sleeping more" = cbcl_sleeping_more,
+    "cbcl sleeping less" = cbcl_sleeping_less,
+    "cbcl depress r" = cbcl_depress_r,
+    "cbcl anxiety r" = cbcl_anxiety_r,
+    "cbcl attention r" = cbcl_attention_r,
+    "cbcl aggressive r" = cbcl_aggressive_r,
+    "sds sleep" = sds_sleep,
+    "nihtbx list fc" = nihtbx_list_fc,
+    "nihtbx pattern fc" = nihtbx_pattern_fc,
+    "nihtbx cardsort fc" = nihtbx_cardsort_fc)
+
+vis_missing_by_df(df_list)
+
+df_list_no_neuroimaging <- list(
+    "loss of consciousness" = as_mtbi_loc,
+    "mechanism of injury" = as_mtbi_mechanism,
+    "memory loss / dazed" = as_mtbi_mem_daze,
+    "income" = d_income,
+    "interview_age" = d_interview_age,
+    "mtbi_age" = d_mtbi_age,
+    "pubertal_status" = d_pubertal_status,
+    "race" = d_race,
+    "sex" = d_sex,
+    "headaches" = mh_headaches,
+    "mtbi_count" = mh_mtbi_count,
+    "loneliness" = p_loneliness,
+    "screen time" = p_screen_time,
+    "family function" = p_family_function,
+    "sports" = p_sports,
+    "prosocial" = p_prosocial,
+    "parent psych" = p_parent_psych,
+    "exercise" = p_exercise,
+    "cbcl headaches" = cbcl_headaches,
+    "cbcl nausea" = cbcl_nausea,
+    "cbcl vomiting" = cbcl_vomiting,
+    "cbcl dizzy" = cbcl_dizzy,
+    "cbcl overtired" = cbcl_overtired,
+    "cbcl sleeping more" = cbcl_sleeping_more,
+    "cbcl sleeping less" = cbcl_sleeping_less,
+    "cbcl depress r" = cbcl_depress_r,
+    "cbcl anxiety r" = cbcl_anxiety_r,
+    "cbcl attention r" = cbcl_attention_r,
+    "cbcl aggressive r" = cbcl_aggressive_r,
+    "sds sleep" = sds_sleep,
+    "nihtbx list fc" = nihtbx_list_fc,
+    "nihtbx pattern fc" = nihtbx_pattern_fc,
+    "nihtbx cardsort fc" = nihtbx_cardsort_fc)
+
+
+full_df <- df_list_no_neuroimaging |>
+    purrr::reduce(dplyr::full_join, by = "subjectkey")
+full_df$household_income <- as.factor(full_df$household_income)
+full_df$race <- as.factor(full_df$race)
+
+# m = 5 and maxit = 10 are default settings
+imputed <- mice(full_df, m = 5, maxit = 10, seed = 42)
+
+# View a summary of which variables were added by the imputation
+imputed$imp
+
+# Isolate the imputed data
+imputed_non_imaging <- complete(imputed)
+
+as_mtbi_loc_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "latest_mtbi_loc")
+as_mtbi_mechanism_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "latest_mtbi_mechanism")
+as_mtbi_mem_daze_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "latest_mtbi_mem_daze")
+d_income_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "household_income")
+d_interview_age_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "interview_age")
+d_mtbi_age_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "latest_mtbi_age")
+d_pubertal_status_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "pubertal_status")
+d_race_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "race")
+d_sex_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "M")
+mh_headaches_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "headache")
+mh_mtbi_count_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "mtbi_count")
+p_loneliness_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "ss_friend":"os_close_friend")
+p_screen_time_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", dplyr::contains("screentime"))
+p_family_function_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "q1_fight":"q9_yell")
+p_sports_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", dplyr::contains("activities"))
+p_prosocial_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "q1":"q3")
+p_parent_psych_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", dplyr::contains("asr_scr"))
+p_exercise_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", dplyr::contains("physical_activity"))
+cbcl_headaches_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_headaches")
+cbcl_nausea_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_nausea")
+cbcl_vomiting_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_vomiting")
+cbcl_dizzy_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_dizzy")
+cbcl_overtired_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_overtired")
+cbcl_sleeping_more_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_sleeping_more")
+cbcl_sleeping_less_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_sleeping_less")
+cbcl_depress_r_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_depress_r")
+cbcl_anxiety_r_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_anxiety_r")
+cbcl_attention_r_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_attention_r")
+cbcl_aggressive_r_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "cbcl_aggressive_r")
+sds_sleep_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", dplyr::starts_with("sleep"))
+nihtbx_list_fc_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "nihtbx_list_fc")
+nihtbx_pattern_fc_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "nihtbx_pattern_fc")
+nihtbx_cardsort_fc_imp <- imputed_non_imaging |>
+    dplyr::select("subjectkey", "nihtbx_cardsort_fc")
+
+write_csv(as_mtbi_loc_imp, input_data("as_mtbi_loc_imp.csv"))
+write_csv(as_mtbi_mechanism_imp, input_data("as_mtbi_mechanism_imp.csv"))
+write_csv(as_mtbi_mem_daze_imp, input_data("as_mtbi_mem_daze_imp.csv"))
+write_csv(d_income_imp, input_data("d_income_imp.csv"))
+write_csv(d_interview_age_imp, input_data("d_interview_age_imp.csv"))
+write_csv(d_mtbi_age_imp, input_data("d_mtbi_age_imp.csv"))
+write_csv(d_pubertal_status_imp, input_data("d_pubertal_status_imp.csv"))
+write_csv(d_race_imp, input_data("d_race_imp.csv"))
+write_csv(d_sex_imp, input_data("d_sex_imp.csv"))
+write_csv(mh_headaches_imp, input_data("mh_headaches_imp.csv"))
+write_csv(mh_mtbi_count_imp, input_data("mh_mtbi_count_imp.csv"))
+write_csv(p_loneliness_imp, input_data("p_loneliness_imp.csv"))
+write_csv(p_screen_time_imp, input_data("p_screen_time_imp.csv"))
+write_csv(p_family_function_imp, input_data("p_family_function_imp.csv"))
+write_csv(p_sports_imp, input_data("p_sports_imp.csv"))
+write_csv(p_prosocial_imp, input_data("p_prosocial_imp.csv"))
+write_csv(p_parent_psych_imp, input_data("p_parent_psych_imp.csv"))
+write_csv(p_exercise_imp, input_data("p_exercise_imp.csv"))
+write_csv(cbcl_headaches_imp, input_data("cbcl_headaches_imp.csv"))
+write_csv(cbcl_nausea_imp, input_data("cbcl_nausea_imp.csv"))
+write_csv(cbcl_vomiting_imp, input_data("cbcl_vomiting_imp.csv"))
+write_csv(cbcl_dizzy_imp, input_data("cbcl_dizzy_imp.csv"))
+write_csv(cbcl_overtired_imp, input_data("cbcl_overtired_imp.csv"))
+write_csv(cbcl_sleeping_more_imp, input_data("cbcl_sleeping_more_imp.csv"))
+write_csv(cbcl_sleeping_less_imp, input_data("cbcl_sleeping_less_imp.csv"))
+write_csv(cbcl_depress_r_imp, input_data("cbcl_depress_r_imp.csv"))
+write_csv(cbcl_anxiety_r_imp, input_data("cbcl_anxiety_r_imp.csv"))
+write_csv(cbcl_attention_r_imp, input_data("cbcl_attention_r_imp.csv"))
+write_csv(cbcl_aggressive_r_imp, input_data("cbcl_aggressive_r_imp.csv"))
+write_csv(sds_sleep_imp, input_data("sds_sleep_imp.csv"))
+write_csv(nihtbx_list_fc_imp, input_data("nihtbx_list_fc_imp.csv"))
+write_csv(nihtbx_pattern_fc_imp, input_data("nihtbx_pattern_fc_imp.csv"))
+write_csv(nihtbx_cardsort_fc_imp, input_data("nihtbx_cardsort_fc_imp.csv"))
+```
+
+## Convert the raw CBCL scores into thresholded ones
+```{r}
+cbcl_depress_r_imp <- read_csv(input_data("cbcl_depress_r_imp.csv"))
+cbcl_anxiety_r_imp <- read_csv(input_data("cbcl_anxiety_r_imp.csv"))
+cbcl_attention_r_imp <- read_csv(input_data("cbcl_attention_r_imp.csv"))
+cbcl_aggressive_r_imp <- read_csv(input_data("cbcl_aggressive_r_imp.csv"))
+
+cbcl_depress_imp <- cbcl_raw_to_thresh(cbcl_depress_r_imp)
+cbcl_anxiety_imp <- cbcl_raw_to_thresh(cbcl_anxiety_r_imp)
+cbcl_attention_imp <- cbcl_raw_to_thresh(cbcl_attention_r_imp)
+cbcl_aggressive_imp <- cbcl_raw_to_thresh(cbcl_aggressive_r_imp)
+
+write_csv(cbcl_depress_imp, input_data("cbcl_depress_imp.csv"))
+write_csv(cbcl_anxiety_imp, input_data("cbcl_anxiety_imp.csv"))
+write_csv(cbcl_attention_imp, input_data("cbcl_attention_imp.csv"))
+write_csv(cbcl_aggressive_imp, input_data("cbcl_aggressive_imp.csv"))
+```
+
+
+## Training and testing data splits
+
+```{r eval = FALSE}
+library(abcdutils)
+library(scabcd)
+library(readr)
+library(here)
+
+
+# Functions to import data from carbon
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+
+# Importing data
+as_mtbi_loc <- read_csv(input_path("as_mtbi_loc_imp.csv"))
+as_mtbi_mechanism <- read_csv(input_path("as_mtbi_mechanism_imp.csv"))
+as_mtbi_mem_daze <- read_csv(input_path("as_mtbi_mem_daze_imp.csv"))
+d_income <- read_csv(input_path("d_income_imp.csv"))
+d_interview_age <- read_csv(input_path("d_interview_age_imp.csv"))
+d_mtbi_age <- read_csv(input_path("d_mtbi_age_imp.csv"))
+d_pubertal_status <- read_csv(input_path("d_pubertal_status_imp.csv"))
+d_race <- read_csv(input_path("d_race_imp.csv"))
+d_sex <- read_csv(input_path("d_sex_imp.csv"))
+mh_headaches <- read_csv(input_path("mh_headaches_imp.csv"))
+mh_mtbi_count <- read_csv(input_path("mh_mtbi_count_imp.csv"))
+dm_wmndf_qc <- read_csv(input_path("dm_wmndf_qc.csv"))
+dm_all_wmnd_0_qc <- read_csv(input_path("2023_03_27_dm_all_wmnd_0_qc.csv"))
+rm_gord_cor_qc <- read_csv(input_path("rm_gord_cor_qc.csv"))
+rm_gord_var_qc <- read_csv(input_path("rm_gord_var_qc.csv"))
+rm_subc_cor_qc <- read_csv(input_path("rm_subc_cor_qc.csv"))
+rm_subc_var_qc <- read_csv(input_path("rm_subc_var_qc.csv"))
+sm_cort_sa_qc <- read_csv(input_path("sm_cort_sa_qc.csv"))
+sm_cort_t_qc <- read_csv(input_path("sm_cort_t_qc.csv"))
+sm_subc_v_qc <- read_csv(input_path("sm_subc_v_qc.csv"))
+p_loneliness <- read_csv(input_path("p_loneliness_imp.csv"))
+p_screen_time <- read_csv(input_path("p_screen_time_imp.csv"))
+p_family_function <- read_csv(input_path("p_family_function_imp.csv"))
+p_sports <- read_csv(input_path("p_sports_imp.csv"))
+p_prosocial <- read_csv(input_path("p_prosocial_imp.csv"))
+p_parent_psych <- read_csv(input_path("p_parent_psych_imp.csv"))
+p_exercise <- read_csv(input_path("p_exercise_imp.csv"))
+cbcl_headaches <- read_csv(input_path("cbcl_headaches_imp.csv"))
+cbcl_nausea <- read_csv(input_path("cbcl_nausea_imp.csv"))
+cbcl_vomiting <- read_csv(input_path("cbcl_vomiting_imp.csv"))
+cbcl_dizzy <- read_csv(input_path("cbcl_dizzy_imp.csv"))
+cbcl_overtired <- read_csv(input_path("cbcl_overtired_imp.csv"))
+cbcl_sleeping_more <- read_csv(input_path("cbcl_sleeping_more_imp.csv"))
+cbcl_sleeping_less <- read_csv(input_path("cbcl_sleeping_less_imp.csv"))
+cbcl_depress <- read_csv(input_path("cbcl_depress_imp.csv"))
+cbcl_anxiety <- read_csv(input_path("cbcl_anxiety_imp.csv"))
+cbcl_attention <- read_csv(input_path("cbcl_attention_imp.csv"))
+cbcl_aggressive <- read_csv(input_path("cbcl_aggressive_imp.csv"))
+sds_sleep <- read_csv(input_path("sds_sleep_imp.csv"))
+nihtbx_list_fc <- read_csv(input_path("nihtbx_list_fc_imp.csv"))
+nihtbx_pattern_fc <- read_csv(input_path("nihtbx_pattern_fc_imp.csv"))
+nihtbx_cardsort_fc <- read_csv(input_path("nihtbx_cardsort_fc_imp.csv"))
+
+
+# Filtering to common subjects
+common_subs <- common_subjects(list(mtbi_loc = as_mtbi_loc,
+    as_mtbi_mechanism,
+    as_mtbi_mem_daze,
+    d_income,
+    d_interview_age,
+    d_mtbi_age,
+    d_pubertal_status,
+    d_race,
+    d_sex,
+    mh_headaches,
+    mh_mtbi_count,
+    dm_wmndf_qc,
+    dm_all_wmnd_0_qc,
+    rm_gord_cor_qc,
+    rm_gord_var_qc,
+    rm_subc_cor_qc,
+    rm_subc_var_qc,
+    sm_cort_sa_qc,
+    sm_cort_t_qc,
+    sm_subc_v_qc,
+    p_loneliness,
+    p_screen_time,
+    p_family_function,
+    p_sports,
+    p_prosocial,
+    p_parent_psych,
+    p_exercise,
+    cbcl_headaches,
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive,
+    sds_sleep))
+
+# Assigning common subjects into training and testing sets
+assigned_df <- train_test_assign(train_frac = 0.8, subjects = common_subs)
+
+# Generate training set
+as_mtbi_loc_train <- keep_split(as_mtbi_loc, assigned_df, "train")
+as_mtbi_mechanism_train <- keep_split(as_mtbi_mechanism, assigned_df, "train")
+as_mtbi_mem_daze_train <- keep_split(as_mtbi_mem_daze, assigned_df, "train")
+d_income_train <- keep_split(d_income, assigned_df, "train")
+d_interview_age_train <- keep_split(d_interview_age, assigned_df, "train")
+d_mtbi_age_train <- keep_split(d_mtbi_age, assigned_df, "train")
+d_pubertal_status_train <- keep_split(d_pubertal_status, assigned_df, "train")
+d_race_train <- keep_split(d_race, assigned_df, "train")
+d_sex_train <- keep_split(d_sex, assigned_df, "train")
+mh_headaches_train <- keep_split(mh_headaches, assigned_df, "train")
+mh_mtbi_count_train <- keep_split(mh_mtbi_count, assigned_df, "train")
+dm_wmndf_qc_train <- keep_split(dm_wmndf_qc, assigned_df, "train")
+dm_all_wmnd_0_qc_train <- keep_split(dm_all_wmnd_0_qc, assigned_df, "train")
+rm_gord_cor_qc_train <- keep_split(rm_gord_cor_qc, assigned_df, "train")
+rm_gord_var_qc_train <- keep_split(rm_gord_var_qc, assigned_df, "train")
+rm_subc_cor_qc_train <- keep_split(rm_subc_cor_qc, assigned_df, "train")
+rm_subc_var_qc_train <- keep_split(rm_subc_var_qc, assigned_df, "train")
+sm_cort_sa_qc_train <- keep_split(sm_cort_sa_qc, assigned_df, "train")
+sm_cort_t_qc_train <- keep_split(sm_cort_t_qc, assigned_df, "train")
+sm_subc_v_qc_train <- keep_split(sm_subc_v_qc, assigned_df, "train")
+p_loneliness_train <- keep_split(p_loneliness, assigned_df, "train")
+p_screen_time_train <- keep_split(p_screen_time, assigned_df, "train")
+p_family_function_train <- keep_split(p_family_function, assigned_df, "train")
+p_sports_train <- keep_split(p_sports, assigned_df, "train")
+p_prosocial_train <- keep_split(p_prosocial, assigned_df, "train")
+p_parent_psych_train <- keep_split(p_parent_psych, assigned_df, "train")
+p_exercise_train <- keep_split(p_exercise, assigned_df, "train")
+cbcl_headaches_train <- keep_split(cbcl_headaches, assigned_df, "train")
+cbcl_nausea_train <- keep_split(cbcl_nausea, assigned_df, "train")
+cbcl_vomiting_train <- keep_split(cbcl_vomiting, assigned_df, "train")
+cbcl_dizzy_train <- keep_split(cbcl_dizzy, assigned_df, "train")
+cbcl_overtired_train <- keep_split(cbcl_overtired, assigned_df, "train")
+cbcl_sleeping_more_train <- keep_split(cbcl_sleeping_more, assigned_df, "train")
+cbcl_sleeping_less_train <- keep_split(cbcl_sleeping_less, assigned_df, "train")
+cbcl_depress_train <- keep_split(cbcl_depress, assigned_df, "train")
+cbcl_anxiety_train <- keep_split(cbcl_anxiety, assigned_df, "train")
+cbcl_attention_train <- keep_split(cbcl_attention, assigned_df, "train")
+cbcl_aggressive_train <- keep_split(cbcl_aggressive, assigned_df, "train")
+sds_sleep_train <- keep_split(sds_sleep, assigned_df, "train")
+
+# Generate testing set
+as_mtbi_loc_test <- keep_split(as_mtbi_loc, assigned_df, "test")
+as_mtbi_mechanism_test <- keep_split(as_mtbi_mechanism, assigned_df, "test")
+as_mtbi_mem_daze_test <- keep_split(as_mtbi_mem_daze, assigned_df, "test")
+d_income_test <- keep_split(d_income, assigned_df, "test")
+d_interview_age_test <- keep_split(d_interview_age, assigned_df, "test")
+d_mtbi_age_test <- keep_split(d_mtbi_age, assigned_df, "test")
+d_pubertal_status_test <- keep_split(d_pubertal_status, assigned_df, "test")
+d_race_test <- keep_split(d_race, assigned_df, "test")
+d_sex_test <- keep_split(d_sex, assigned_df, "test")
+mh_headaches_test <- keep_split(mh_headaches, assigned_df, "test")
+mh_mtbi_count_test <- keep_split(mh_mtbi_count, assigned_df, "test")
+dm_wmndf_qc_test <- keep_split(dm_wmndf_qc, assigned_df, "test")
+dm_all_wmnd_0_qc_test <- keep_split(dm_all_wmnd_0_qc, assigned_df, "test")
+rm_gord_cor_qc_test <- keep_split(rm_gord_cor_qc, assigned_df, "test")
+rm_gord_var_qc_test <- keep_split(rm_gord_var_qc, assigned_df, "test")
+rm_subc_cor_qc_test <- keep_split(rm_subc_cor_qc, assigned_df, "test")
+rm_subc_var_qc_test <- keep_split(rm_subc_var_qc, assigned_df, "test")
+sm_cort_sa_qc_test <- keep_split(sm_cort_sa_qc, assigned_df, "test")
+sm_cort_t_qc_test <- keep_split(sm_cort_t_qc, assigned_df, "test")
+sm_subc_v_qc_test <- keep_split(sm_subc_v_qc, assigned_df, "test")
+p_loneliness_test <- keep_split(p_loneliness, assigned_df, "test")
+p_screen_time_test <- keep_split(p_screen_time, assigned_df, "test")
+p_family_function_test <- keep_split(p_family_function, assigned_df, "test")
+p_sports_test <- keep_split(p_sports, assigned_df, "test")
+p_prosocial_test <- keep_split(p_prosocial, assigned_df, "test")
+p_parent_psych_test <- keep_split(p_parent_psych, assigned_df, "test")
+p_exercise_test <- keep_split(p_exercise, assigned_df, "test")
+cbcl_headaches_test <- keep_split(cbcl_headaches, assigned_df, "test")
+cbcl_nausea_test <- keep_split(cbcl_nausea, assigned_df, "test")
+cbcl_vomiting_test <- keep_split(cbcl_vomiting, assigned_df, "test")
+cbcl_dizzy_test <- keep_split(cbcl_dizzy, assigned_df, "test")
+cbcl_overtired_test <- keep_split(cbcl_overtired, assigned_df, "test")
+cbcl_sleeping_more_test <- keep_split(cbcl_sleeping_more, assigned_df, "test")
+cbcl_sleeping_less_test <- keep_split(cbcl_sleeping_less, assigned_df, "test")
+cbcl_depress_test <- keep_split(cbcl_depress, assigned_df, "test")
+cbcl_anxiety_test <- keep_split(cbcl_anxiety, assigned_df, "test")
+cbcl_attention_test <- keep_split(cbcl_attention, assigned_df, "test")
+cbcl_aggressive_test <- keep_split(cbcl_aggressive, assigned_df, "test")
+sds_sleep_test <- keep_split(sds_sleep, assigned_df, "test")
+
+# Generate full set (note that this is structured specifically in row order of
+#  training subjects followed by testing subjects)
+as_mtbi_loc_full <- rbind(as_mtbi_loc_train, as_mtbi_loc_test)
+as_mtbi_mechanism_full <- rbind(as_mtbi_mechanism_train, as_mtbi_mechanism_test)
+as_mtbi_mem_daze_full <- rbind(as_mtbi_mem_daze_train, as_mtbi_mem_daze_test)
+d_income_full <- rbind(d_income_train, d_income_test)
+d_interview_age_full <- rbind(d_interview_age_train, d_interview_age_test)
+d_mtbi_age_full <- rbind(d_mtbi_age_train, d_mtbi_age_test)
+d_pubertal_status_full <- rbind(d_pubertal_status_train, d_pubertal_status_test)
+d_race_full <- rbind(d_race_train, d_race_test)
+d_sex_full <- rbind(d_sex_train, d_sex_test)
+mh_headaches_full <- rbind(mh_headaches_train, mh_headaches_test)
+mh_mtbi_count_full <- rbind(mh_mtbi_count_train, mh_mtbi_count_test)
+dm_wmndf_qc_full <- rbind(dm_wmndf_qc_train, dm_wmndf_qc_test)
+dm_all_wmnd_0_qc_full <- rbind(dm_all_wmnd_0_qc_train, dm_all_wmnd_0_qc_test)
+rm_gord_cor_qc_full <- rbind(rm_gord_cor_qc_train, rm_gord_cor_qc_test)
+rm_gord_var_qc_full <- rbind(rm_gord_var_qc_train, rm_gord_var_qc_test)
+rm_subc_cor_qc_full <- rbind(rm_subc_cor_qc_train, rm_subc_cor_qc_test)
+rm_subc_var_qc_full <- rbind(rm_subc_var_qc_train, rm_subc_var_qc_test)
+sm_cort_sa_qc_full <- rbind(sm_cort_sa_qc_train, sm_cort_sa_qc_test)
+sm_cort_t_qc_full <- rbind(sm_cort_t_qc_train, sm_cort_t_qc_test)
+sm_subc_v_qc_full <- rbind(sm_subc_v_qc_train, sm_subc_v_qc_test)
+p_loneliness_full <- rbind(p_loneliness_train, p_loneliness_test)
+p_screen_time_full <- rbind(p_screen_time_train, p_screen_time_test)
+p_family_function_full <- rbind(p_family_function_train, p_family_function_test)
+p_sports_full <- rbind(p_sports_train, p_sports_test)
+p_prosocial_full <- rbind(p_prosocial_train, p_prosocial_test)
+p_parent_psych_full <- rbind(p_parent_psych_train, p_parent_psych_test)
+p_exercise_full <- rbind(p_exercise_train, p_exercise_test)
+cbcl_headaches_full <- rbind(cbcl_headaches_train, cbcl_headaches_test)
+cbcl_nausea_full <- rbind(cbcl_nausea_train, cbcl_nausea_test)
+cbcl_vomiting_full <- rbind(cbcl_vomiting_train, cbcl_vomiting_test)
+cbcl_dizzy_full <- rbind(cbcl_dizzy_train, cbcl_dizzy_test)
+cbcl_overtired_full <- rbind(cbcl_overtired_train, cbcl_overtired_test)
+cbcl_sleeping_more_full <-
+    rbind(cbcl_sleeping_more_train, cbcl_sleeping_more_test)
+cbcl_sleeping_less_full <-
+    rbind(cbcl_sleeping_less_train, cbcl_sleeping_less_test)
+cbcl_depress_full <- rbind(cbcl_depress_train, cbcl_depress_test)
+cbcl_anxiety_full <- rbind(cbcl_anxiety_train, cbcl_anxiety_test)
+cbcl_attention_full <- rbind(cbcl_attention_train, cbcl_attention_test)
+cbcl_aggressive_full <- rbind(cbcl_aggressive_train, cbcl_aggressive_test)
+
+
+# Export training set. The ', 1' replaces date = TRUE to add a date prefix
+write_csv(as_mtbi_loc_train, proc_path("as_mtbi_loc_train.csv"))
+write_csv(as_mtbi_mechanism_train, proc_path("as_mtbi_mechanism_train.csv"))
+write_csv(as_mtbi_mem_daze_train, proc_path("as_mtbi_mem_daze_train.csv"))
+write_csv(d_income_train, proc_path("d_income_train.csv"))
+write_csv(d_interview_age_train, proc_path("d_interview_age_train.csv"))
+write_csv(d_mtbi_age_train, proc_path("d_mtbi_age_train.csv"))
+write_csv(d_pubertal_status_train, proc_path("d_pubertal_status_train.csv"))
+write_csv(d_race_train, proc_path("d_race_train.csv"))
+write_csv(d_sex_train, proc_path("d_sex_train.csv"))
+write_csv(mh_headaches_train, proc_path("mh_headaches_train.csv"))
+write_csv(mh_mtbi_count_train, proc_path("mh_mtbi_count_train.csv"))
+write_csv(dm_wmndf_qc_train, proc_path("dm_wmndf_qc_train.csv"))
+write_csv(dm_all_wmnd_0_qc_train, proc_path("dm_all_wmnd_0_qc_train.csv", 1))
+write_csv(rm_gord_cor_qc_train, proc_path("rm_gord_cor_qc_train.csv"))
+write_csv(rm_gord_var_qc_train, proc_path("rm_gord_var_qc_train.csv"))
+write_csv(rm_subc_cor_qc_train, proc_path("rm_subc_cor_qc_train.csv"))
+write_csv(rm_subc_var_qc_train, proc_path("rm_subc_var_qc_train.csv"))
+write_csv(sm_cort_sa_qc_train, proc_path("sm_cort_sa_qc_train.csv"))
+write_csv(sm_cort_t_qc_train, proc_path("sm_cort_t_qc_train.csv"))
+write_csv(sm_subc_v_qc_train, proc_path("sm_subc_v_qc_train.csv"))
+write_csv(p_loneliness_train, proc_path("p_loneliness_train.csv"))
+write_csv(p_screen_time_train, proc_path("p_screen_time_train.csv"))
+write_csv(p_family_function_train, proc_path("p_family_function_train.csv"))
+write_csv(p_sports_train, proc_path("p_sports_train.csv"))
+write_csv(p_prosocial_train, proc_path("p_prosocial_train.csv"))
+write_csv(p_parent_psych_train, proc_path("p_parent_psych_train.csv"))
+write_csv(p_exercise_train, proc_path("p_exercise_train.csv"))
+write_csv(cbcl_headaches_train, proc_path("cbcl_headaches_train.csv"))
+write_csv(cbcl_nausea_train, proc_path("cbcl_nausea_train.csv"))
+write_csv(cbcl_vomiting_train, proc_path("cbcl_vomiting_train.csv"))
+write_csv(cbcl_dizzy_train, proc_path("cbcl_dizzy_train.csv"))
+write_csv(cbcl_overtired_train, proc_path("cbcl_overtired_train.csv"))
+write_csv(cbcl_sleeping_more_train, proc_path("cbcl_sleeping_more_train.csv"))
+write_csv(cbcl_sleeping_less_train, proc_path("cbcl_sleeping_less_train.csv"))
+write_csv(cbcl_depress_train, proc_path("cbcl_depress_train.csv"))
+write_csv(cbcl_anxiety_train, proc_path("cbcl_anxiety_train.csv"))
+write_csv(cbcl_attention_train, proc_path("cbcl_attention_train.csv"))
+write_csv(cbcl_aggressive_train, proc_path("cbcl_aggressive_train.csv"))
+write_csv(sds_sleep_train, proc_path("sds_sleep_train.csv"))
+
+# Export testing set
+write_csv(as_mtbi_loc_test, proc_path("as_mtbi_loc_test.csv"))
+write_csv(as_mtbi_mechanism_test, proc_path("as_mtbi_mechanism_test.csv"))
+write_csv(as_mtbi_mem_daze_test, proc_path("as_mtbi_mem_daze_test.csv"))
+write_csv(d_income_test, proc_path("d_income_test.csv"))
+write_csv(d_interview_age_test, proc_path("d_interview_age_test.csv"))
+write_csv(d_mtbi_age_test, proc_path("d_mtbi_age_test.csv"))
+write_csv(d_pubertal_status_test, proc_path("d_pubertal_status_test.csv"))
+write_csv(d_race_test, proc_path("d_race_test.csv"))
+write_csv(d_sex_test, proc_path("d_sex_test.csv"))
+write_csv(mh_headaches_test, proc_path("mh_headaches_test.csv"))
+write_csv(mh_mtbi_count_test, proc_path("mh_mtbi_count_test.csv"))
+write_csv(dm_wmndf_qc_test, proc_path("dm_wmndf_qc_test.csv"))
+write_csv(dm_all_wmnd_0_qc_test, proc_path("dm_all_wmnd_0_qc_test.csv", 1))
+write_csv(rm_gord_cor_qc_test, proc_path("rm_gord_cor_qc_test.csv"))
+write_csv(rm_gord_var_qc_test, proc_path("rm_gord_var_qc_test.csv"))
+write_csv(rm_subc_cor_qc_test, proc_path("rm_subc_cor_qc_test.csv"))
+write_csv(rm_subc_var_qc_test, proc_path("rm_subc_var_qc_test.csv"))
+write_csv(sm_cort_sa_qc_test, proc_path("sm_cort_sa_qc_test.csv"))
+write_csv(sm_cort_t_qc_test, proc_path("sm_cort_t_qc_test.csv"))
+write_csv(sm_subc_v_qc_test, proc_path("sm_subc_v_qc_test.csv"))
+write_csv(p_loneliness_test, proc_path("p_loneliness_test.csv"))
+write_csv(p_screen_time_test, proc_path("p_screen_time_test.csv"))
+write_csv(p_family_function_test, proc_path("p_family_function_test.csv"))
+write_csv(p_sports_test, proc_path("p_sports_test.csv"))
+write_csv(p_prosocial_test, proc_path("p_prosocial_test.csv"))
+write_csv(p_parent_psych_test, proc_path("p_parent_psych_test.csv"))
+write_csv(p_exercise_test, proc_path("p_exercise_test.csv"))
+write_csv(cbcl_headaches_test, proc_path("cbcl_headaches_test.csv"))
+write_csv(cbcl_nausea_test, proc_path("cbcl_nausea_test.csv"))
+write_csv(cbcl_vomiting_test, proc_path("cbcl_vomiting_test.csv"))
+write_csv(cbcl_dizzy_test, proc_path("cbcl_dizzy_test.csv"))
+write_csv(cbcl_overtired_test, proc_path("cbcl_overtired_test.csv"))
+write_csv(cbcl_sleeping_more_test, proc_path("cbcl_sleeping_more_test.csv"))
+write_csv(cbcl_sleeping_less_test, proc_path("cbcl_sleeping_less_test.csv"))
+write_csv(cbcl_depress_test, proc_path("cbcl_depress_test.csv"))
+write_csv(cbcl_anxiety_test, proc_path("cbcl_anxiety_test.csv"))
+write_csv(cbcl_attention_test, proc_path("cbcl_attention_test.csv"))
+write_csv(cbcl_aggressive_test, proc_path("cbcl_aggressive_test.csv"))
+write_csv(sds_sleep_test, proc_path("sds_sleep_test.csv"))
+
+# Full data
+write_csv(as_mtbi_loc_full, proc_path("as_mtbi_loc_full.csv"))
+write_csv(as_mtbi_mechanism_full, proc_path("as_mtbi_mechanism_full.csv"))
+write_csv(as_mtbi_mem_daze_full, proc_path("as_mtbi_mem_daze_full.csv"))
+write_csv(d_income_full, proc_path("d_income_full.csv"))
+write_csv(d_interview_age_full, proc_path("d_interview_age_full.csv"))
+write_csv(d_mtbi_age_full, proc_path("d_mtbi_age_full.csv"))
+write_csv(d_pubertal_status_full, proc_path("d_pubertal_status_full.csv"))
+write_csv(d_race_full, proc_path("d_race_full.csv"))
+write_csv(d_sex_full, proc_path("d_sex_full.csv"))
+write_csv(mh_headaches_full, proc_path("mh_headaches_full.csv"))
+write_csv(mh_mtbi_count_full, proc_path("mh_mtbi_count_full.csv"))
+write_csv(dm_wmndf_qc_full, proc_path("dm_wmndf_qc_full.csv"))
+write_csv(dm_all_wmnd_0_qc_full, proc_path("dm_all_wmnd_0_qc_full.csv", 1))
+write_csv(rm_gord_cor_qc_full, proc_path("rm_gord_cor_qc_full.csv"))
+write_csv(rm_gord_var_qc_full, proc_path("rm_gord_var_qc_full.csv"))
+write_csv(rm_subc_cor_qc_full, proc_path("rm_subc_cor_qc_full.csv"))
+write_csv(rm_subc_var_qc_full, proc_path("rm_subc_var_qc_full.csv"))
+write_csv(sm_cort_sa_qc_full, proc_path("sm_cort_sa_qc_full.csv"))
+write_csv(sm_cort_t_qc_full, proc_path("sm_cort_t_qc_full.csv"))
+write_csv(sm_subc_v_qc_full, proc_path("sm_subc_v_qc_full.csv"))
+write_csv(p_loneliness_full, proc_path("p_loneliness_full.csv"))
+write_csv(p_screen_time_full, proc_path("p_screen_time_full.csv"))
+write_csv(p_family_function_full, proc_path("p_family_function_full.csv"))
+write_csv(p_sports_full, proc_path("p_sports_full.csv"))
+write_csv(p_prosocial_full, proc_path("p_prosocial_full.csv"))
+write_csv(p_parent_psych_full, proc_path("p_parent_psych_full.csv"))
+write_csv(p_exercise_full, proc_path("p_exercise_full.csv"))
+write_csv(cbcl_headaches_full, proc_path("cbcl_headaches_full.csv"))
+write_csv(cbcl_nausea_full, proc_path("cbcl_nausea_full.csv"))
+write_csv(cbcl_vomiting_full, proc_path("cbcl_vomiting_full.csv"))
+write_csv(cbcl_dizzy_full, proc_path("cbcl_dizzy_full.csv"))
+write_csv(cbcl_overtired_full, proc_path("cbcl_overtired_full.csv"))
+write_csv(cbcl_sleeping_more_full, proc_path("cbcl_sleeping_more_full.csv"))
+write_csv(cbcl_sleeping_less_full, proc_path("cbcl_sleeping_less_full.csv"))
+write_csv(cbcl_depress_full, proc_path("cbcl_depress_full.csv"))
+write_csv(cbcl_anxiety_full, proc_path("cbcl_anxiety_full.csv"))
+write_csv(cbcl_attention_full, proc_path("cbcl_attention_full.csv"))
+write_csv(cbcl_aggressive_full, proc_path("cbcl_aggressive_full.csv"))
+```
+
+
+## Data and outcome lists
+
+Subsequent analyses make use of custom `data_list` and `outcome_list` objects that store information about all input variables and outcome (CBCL) measures used for SNF and cluster characterization.
+I also store make use of a `cbcl_list` object, which is simply a list of cbcl dataframes and does not keep a track of the same amount of metadata as used in the highly nested `outcome_list` object.
+Instead of loading each individual file and building these lists, we can build the lists here and export them for later use.
+
+```{r}
+library(rlist)
+
+# Training data list
+data_list_0_train <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_train,
+    mtbi_mechanism = as_mtbi_mechanism_train,
+    mtbi_mem_daze = as_mtbi_mem_daze_train,
+    income = d_income_train,
+    interview_age = d_interview_age_train,
+    mtbi_age = d_mtbi_age_train,
+    pubertal_status = d_pubertal_status_train,
+    race = d_race_train,
+    sex = d_sex_train,
+    headaches = mh_headaches_train,
+    mtbi_count = mh_mtbi_count_train,
+    wmndf = dm_all_wmnd_0_qc_train,
+    gord_cor = rm_gord_cor_qc_train,
+    gord_var = rm_gord_var_qc_train,
+    subc_cor = rm_subc_cor_qc_train,
+    subc_var = rm_subc_var_qc_train,
+    cort_sa = sm_cort_sa_qc_train,
+    cort_t = sm_cort_t_qc_train,
+    subc_v = sm_subc_v_qc_train,
+    loneliness = p_loneliness_train,
+    screen_time = p_screen_time_train,
+    family_function = p_family_function_train,
+    sports = p_sports_train,
+    prosocial = p_prosocial_train,
+    parent_psych = p_parent_psych_train,
+    exercise = p_exercise_train)
+list.save(data_list_0_train, proc_path("data_list_0_train.rdata", date = TRUE))
+
+
+# Testing data list
+data_list_0_test <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_test,
+    mtbi_mechanism = as_mtbi_mechanism_test,
+    mtbi_mem_daze = as_mtbi_mem_daze_test,
+    income = d_income_test,
+    interview_age = d_interview_age_test,
+    mtbi_age = d_mtbi_age_test,
+    pubertal_status = d_pubertal_status_test,
+    race = d_race_test,
+    sex = d_sex_test,
+    headaches = mh_headaches_test,
+    mtbi_count = mh_mtbi_count_test,
+    wmndf = dm_all_wmnd_0_qc_test,
+    gord_cor = rm_gord_cor_qc_test,
+    gord_var = rm_gord_var_qc_test,
+    subc_cor = rm_subc_cor_qc_test,
+    subc_var = rm_subc_var_qc_test,
+    cort_sa = sm_cort_sa_qc_test,
+    cort_t = sm_cort_t_qc_test,
+    subc_v = sm_subc_v_qc_test,
+    loneliness = p_loneliness_test,
+    screen_time = p_screen_time_test,
+    family_function = p_family_function_test,
+    sports = p_sports_test,
+    prosocial = p_prosocial_test,
+    parent_psych = p_parent_psych_test,
+    exercise = p_exercise_test)
+list.save(data_list_0_test, proc_path("data_list_0_test.rdata", date = TRUE))
+
+
+# Full data list
+data_list_0_full <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_full,
+    mtbi_mechanism = as_mtbi_mechanism_full,
+    mtbi_mem_daze = as_mtbi_mem_daze_full,
+    income = d_income_full,
+    interview_age = d_interview_age_full,
+    mtbi_age = d_mtbi_age_full,
+    pubertal_status = d_pubertal_status_full,
+    race = d_race_full,
+    sex = d_sex_full,
+    headaches = mh_headaches_full,
+    mtbi_count = mh_mtbi_count_full,
+    wmndf = dm_all_wmnd_0_qc_full,
+    gord_cor = rm_gord_cor_qc_full,
+    gord_var = rm_gord_var_qc_full,
+    subc_cor = rm_subc_cor_qc_full,
+    subc_var = rm_subc_var_qc_full,
+    cort_sa = sm_cort_sa_qc_full,
+    cort_t = sm_cort_t_qc_full,
+    subc_v = sm_subc_v_qc_full,
+    loneliness = p_loneliness_full,
+    screen_time = p_screen_time_full,
+    family_function = p_family_function_full,
+    sports = p_sports_full,
+    prosocial = p_prosocial_full,
+    parent_psych = p_parent_psych_full,
+    exercise = p_exercise_full)
+list.save(data_list_0_full, proc_path("data_list_0_full.rdata", date = TRUE))
+
+
+# Training CBCL list
+cbcl_list_train <- list(
+    cbcl_nausea_train,
+    cbcl_vomiting_train,
+    cbcl_dizzy_train,
+    cbcl_overtired_train,
+    cbcl_sleeping_more_train,
+    cbcl_sleeping_less_train,
+    cbcl_depress_train,
+    cbcl_anxiety_train,
+    cbcl_attention_train,
+    cbcl_aggressive_train)
+list.save(cbcl_list_train, proc_path("cbcl_list_train.rdata", date = TRUE))
+
+
+cbcl_list_full <- list(
+    cbcl_nausea_full,
+    cbcl_vomiting_full,
+    cbcl_dizzy_full,
+    cbcl_overtired_full,
+    cbcl_sleeping_more_full,
+    cbcl_sleeping_less_full,
+    cbcl_depress_full,
+    cbcl_anxiety_full,
+    cbcl_attention_full,
+    cbcl_aggressive_full)
+list.save(cbcl_list_full, proc_path("cbcl_list_full.rdata", date = TRUE))
+```

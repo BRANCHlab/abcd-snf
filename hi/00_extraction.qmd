@@ -1,0 +1,542 @@
+# Data extraction
+
+## Subjects
+
+All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the `abcd_otbi01.txt` file, and in the `abcd_lpohstbi01.txt` file for longitudinal data.
+To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
+
+* identifying which head injuries were mTBIs
+* identifying the time since the most recent mTBI
+
+The structure of the Ohio State TBI screen as used for ABCD data collection was not completely compatible with the most commonly used definition of mTBI @WYA25C6X#Blennow_Etal_2016, which requires at least one of the following:
+
+* Any period of loss of consciousness
+* Any loss of memory
+* Any alteration in mental state
+* Focal neurological deficits
+
+but none of the following:
+
+* LOC over 30 minutes
+* A Glasgow Coma Scale score below 13
+* Post-traumatic amnesia (PTA) greater than 24 hours
+
+A few aspects of the data collection process in the ABCD study precluded the usage of this definition:
+
+* No information was collected regarding the GCS
+* Feeling dazed and PTA were combined into a single variable, making it unclear which combination of symptoms was present
+* No information was collected regarding the duration of feeling dazed or experiencing PTA
+
+Consequently, I defined mTBI as any injury that resulted in **either**:
+
+1. LOC for less than 30 minutes (including 0 minutes) **AND** any duration of memory loss / feeling dazed
+2. LOC for less than 30 minutes but greater than 0 minutes
+ 
+The fixed nature of the questionnaire also meant that some information about multiple mTBIs sustained in the same way or about a very large number of mTBIs throughout a child's life could have been lost (see the previous section on identifying children with a history of mTBI).
+For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(knitr)
+library(abcdutils)
+
+raw_path <- path_maker(here(paste0("data/abcd/raw")))
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+
+# Import baseline TBI dataset
+abcd_otbi01 <- read_delim(raw_path("abcd_otbi01.txt"))
+# Longitudinal subjects
+abcd_lpohstbi01 <- read_delim(raw_path("abcd_lpohstbi01.txt"))
+
+# mTBI subjects
+## Baseline at chronic stage post-mTBI (> 3 months) for analyses
+mtbi_subjects_0 <- get_mtbi_subjects(abcd_otbi01, min_mpi = 3, t = 0)
+## Baseline including recent mTBIs to exclude from longitudinal data
+mtbi_subjects_0_no_min <- get_mtbi_subjects(abcd_otbi01, t = 0)
+## Year 1 follow-up - assessments will just be taken from 2 yr follow up time
+mtbi_subjects_1 <- get_mtbi_subjects(abcd_lpohstbi01, t = 1)
+## Year 2 follow-up
+mtbi_subjects_2 <- get_mtbi_subjects(abcd_lpohstbi01, min_mpi = 3, t = 2)
+
+## Those with injuries in year 1 + 2
+mtbi_subjects_1_2 <-
+    dplyr::full_join(mtbi_subjects_1, mtbi_subjects_2, by = "subjectkey")
+
+## Those with injuries in year 1 + 2, but not year 0 (eXclusively Longitudinal)
+mtbi_subjects_xl <- mtbi_subjects_1_2[which(!(
+    mtbi_subjects_1_2$"subjectkey" %in%
+        mtbi_subjects_0_no_min$"subjectkey")), ]
+
+# Control subjects (those with no injuries in year 1, 2, or 3)
+uninjured_subjects <- get_uninjured_subjects(abcd_otbi01, abcd_lpohstbi01)
+
+# Within mtbi_subjects xl, I need to keep track of which subjects had their
+#  latest injury in year 1 and which ones had their latest injury in year 2.
+#  This is only so that the mTBI specific variables, like memory loss, are
+#  recorded for the most recent injury.
+mtbi_subjects_1_not_0 <- dplyr::semi_join(mtbi_subjects_1, mtbi_subjects_xl)
+mtbi_subjects_2_not_0 <- dplyr::semi_join(mtbi_subjects_2, mtbi_subjects_xl)
+
+# Note that the longitudinal subjects have not been filtered in any way based on
+#  whether or not they also had an mTBI at bsaeline or another timepoint
+write_csv(mtbi_subjects_0, sub_path("mtbi_subjects_0.csv", date = TRUE))
+write_csv(mtbi_subjects_1, sub_path("mtbi_subjects_1.csv", date = TRUE))
+write_csv(mtbi_subjects_2, sub_path("mtbi_subjects_2.csv", date = TRUE))
+write_csv(mtbi_subjects_1_2, sub_path("mtbi_subjects_1_2.csv", date = TRUE))
+write_csv(mtbi_subjects_xl, sub_path("mtbi_subjects_xl.csv", date = TRUE))
+write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
+
+mtbi_subjects_0 <- read_csv(sub_path("2023_03_23_mtbi_subjects_0.csv"))
+mtbi_subjects_1 <- read_csv(sub_path("2023_03_23_mtbi_subjects_1.csv"))
+mtbi_subjects_2 <- read_csv(sub_path("2023_03_23_mtbi_subjects_2.csv"))
+mtbi_subjects_xl <- read_csv(sub_path("2023_03_23_mtbi_subjects_xl.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_03_23_uninjured_subjects.csv"))
+```
+
+
+A few types of injuries were handled differently from the rest in the above code.
+For the `other_loc` injury type, the questionnaire asked for a total number of injuries with LOC as well as a total number of injuries with LOC above 30 minutes.
+If their difference was above 0, they were labelled as having had an mTBI.
+For the `other_multi` and `other_other_multi` injury types, insufficient information was provided to determine the severity of the associated injuries.
+
+For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
+
+## Input variables
+
+### Acute symptoms
+
+The acute symptom data is found within the TBI dataset.
+We are interesed in the following acute symptoms:
+
+* mechanism of injury
+* age
+* LOC information
+* Feeling dazed or having memory loss
+
+A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
+
+```{r}
+# Subjects with injuries prior to baseline
+as_mem_daze_0 <- get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects_0, t = 0)
+as_mech_0 <- get_mtbi_mechanism(abcd_otbi01, mtbi_subjects_0, t = 0)
+as_loc_0 <- get_mtbi_loc(abcd_otbi01, mtbi_subjects_0, t = 0)
+
+# Baseline values of subjects who received injuries between baseline and 2yfu
+as_mem_daze_xl_0 <- get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects_xl, t = 0)
+as_mech_xl_0 <- get_mtbi_mechanism(abcd_otbi01, mtbi_subjects_xl, t = 0)
+as_loc_xl_0 <- get_mtbi_loc(abcd_otbi01, mtbi_subjects_xl, t = 0)
+
+# Year 1 values of subjects who received injuries between baseline and 2yfu
+as_mem_daze_xl_1 <- get_mtbi_mem_daze(abcd_lpohstbi01, mtbi_subjects_xl, t = 1)
+as_mech_xl_1 <- get_mtbi_mechanism(abcd_lpohstbi01, mtbi_subjects_xl, t = 1)
+as_loc_xl_1 <- get_mtbi_loc(abcd_lpohstbi01, mtbi_subjects_xl, t = 1)
+
+# Year 2 values of subjects who received injuries between baseline and 2yfu
+as_mem_daze_xl_2 <- get_mtbi_mem_daze(abcd_lpohstbi01, mtbi_subjects_xl, t = 2)
+as_mech_xl_2 <- get_mtbi_mechanism(abcd_lpohstbi01, mtbi_subjects_xl, t = 2)
+as_loc_xl_2 <- get_mtbi_loc(abcd_lpohstbi01, mtbi_subjects_xl, t = 2)
+
+colnames(as_mem_daze_xl_0) <- c("subjectkey", "mem_daze_0")
+colnames(as_mem_daze_xl_1) <- c("subjectkey", "mem_daze_1")
+colnames(as_mem_daze_xl_2) <- c("subjectkey", "mem_daze_2")
+
+a <- merge_df_list(list(as_mem_daze_xl_0, as_mem_daze_xl_1, as_mem_daze_xl_2))
+
+a
+```
+
+```{r}
+write_csv(as_mtbi_mem_daze, here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
+write_csv(as_mtbi_mechanism, here("data/abcd/inputs/as_mtbi_mechanism.csv"))
+write_csv(as_mtbi_loc, here("data/abcd/inputs/as_mtbi_loc.csv"))
+```
+
+
+### Demographics
+
+Demographic variables included in the analyses are:
+
+Aspects of the NIH Toolbox probe different forms of IQ @7HIU42K2#Zhao_Etal_2022 and are used in this study as an out-of-model outcome measure rather than as an input. 
+
+Age and sex are commonly included in the ABCD study's data files.
+
+* Age
+* Sex
+* Race
+* Household income
+* Pubertal development status
+
+```{r}
+## Demographic dataframes
+ssphp01 <- read_delim(here("data/abcd/raw/abcd_ssphp01.txt"))
+ssphy01 <- read_delim(here("data/abcd/raw/abcd_ssphy01.txt"))
+pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
+
+## Pubertal status
+d_pubertal_status <- get_pubertal_status(ssphp01, ssphy01, mtbi_subjects, t = 0)
+
+## Age on interview
+d_interview_age <- get_interview_age(abcd_otbi01, mtbi_subjects, t = 0)
+
+## Age on injury
+d_mtbi_age <- get_mtbi_age(abcd_otbi01, mtbi_subjects, t = 0)
+
+## Sex
+d_sex <- get_sex(abcd_otbi01, mtbi_subjects, t = 0)
+
+## Household income
+d_income <- get_income(pdem02, mtbi_subjects, t = 0)
+```
+
+I will be trying two separate categorizations:
+
+1. White, black, mixed/other
+2. White, black, hispanic, asian/other pacific islander, native american
+
+The rationale for this decision can be found at (@sec-racebreakdown).
+
+
+### Race
+```{r}
+d_race_condensed <-
+    get_race(pdem02, mtbi_subjects, "condensed_dummied", t = 0)
+d_race_expanded <-
+    get_race(pdem02, mtbi_subjects, "expanded_dummied", t = 0)
+d_race_undummied <-
+    get_race(pdem02, mtbi_subjects, "condensed_undummied", t = 0)
+```
+
+Subset and export the demographic input variables:
+
+```{r}
+write_csv(d_pubertal_status,
+    here("data/abcd/inputs/d_pubertal_status.csv"))
+write_csv(d_interview_age,
+    here("data/abcd/inputs/d_interview_age.csv"))
+write_csv(d_mtbi_age,
+    here("data/abcd/inputs/d_mtbi_age.csv"))
+write_csv(d_sex,
+    here("data/abcd/inputs/d_sex.csv"))
+write_csv(d_income,
+    here("data/abcd/inputs/d_income.csv"))
+write_csv(d_race_condensed,
+    here("data/abcd/inputs/d_race_cd.csv"))
+write_csv(d_race_expanded,
+    here("data/abcd/inputs/d_race_ed.csv"))
+write_csv(d_race_undummied,
+    here("data/abcd/inputs/d_race_cu.csv"))
+```
+
+
+### Medical history
+
+Medical history variables of interest include:
+
+1. Number of previous head injuries
+    * discrete variable `mtbi_count` from the processed file `abcd_otbi01_detailed.csv`
+2. History of headaches 
+    * binary variable `medhx_2q` from the file ABCD Parent Medical History Questionnaire (`abcd_mx01.txt`; category Med History; release 2.0)
+        * checks if subject has ever gone to doctor for bad headaches
+
+Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as an important covariate by the original A-CAP study (@8VF7JUXL##Yeates_Etal_2017), was not a part of ABCD's baseline data collection.
+
+```{r}
+mx01 <- read_delim(here("data/abcd/raw/abcd_mx01.txt"))
+
+## History of headaches
+mh_headaches <- get_headaches(mx01, mtbi_subjects, t = 0)
+
+## Number of previous mTBIs
+mh_mtbi_count <- get_mtbi_count(abcd_otbi01, mtbi_subjects, t = 0)
+```
+
+Subset and export the medical history variables:
+
+```{r}
+write_csv(mh_headaches,
+    here("data/abcd/inputs/mh_headaches.csv"))
+write_csv(mh_mtbi_count,
+    here("data/abcd/inputs/mh_mtbi_count.csv"))
+```
+
+
+### Neuroimaging
+
+Variables of interest related to brain structure and function include:
+
+* Structural: T1-weighted multishell diffusion-weighted MRI data
+* Diffusion: Neurite density (restricted spectrum imaging)
+* Functional: resting-state functional MRI data
+
+The 2019 publication by Hagler et al. @UD6THTQZ##Hagler_Etal_2019 outlines the neuroimaging data present in the ABCD dataset in detail.
+
+
+#### Structural MRI
+
+The sMRI variables of interest include subcortical volumes, and cortical thicknesses, and cortical surface areas.
+
+For cortical surface areas, the relevant file is abcd_mrisdp10201, which contains the cortical surface areas of ~150 regions (variables `mrisdp_*` where * ranges from 1 to 151).
+
+For cortical thicknesses, the relevant file is abcd_mrisdp10201, which contains the cortical thickness of ~150 regions (variables `mrisdp_*` where * ranges from 303 to 453).
+
+
+```{r}
+## SMRI dataframes
+smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
+mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
+
+## Subcortical volumes
+sm_subc_v <- get_subc_v(smrip10201, mtbi_subjects, t = 0)
+
+## Cortical thickness
+sm_cort_t <- get_cort_t(mrisdp10201, mtbi_subjects, t = 0)
+
+## Cortical volumes
+sm_cort_sa <- get_cort_sa(mrisdp10201, mtbi_subjects, t = 0)
+
+### Checking for missing subjects
+smrip10201_bl <- smrip10201 |> filter_timepoint(0)
+which(!(mtbi_subjects$subjectkey %in% smrip10201_bl$subjectkey))
+mtbi_subjects$subjectkey[c(24, 327)]
+### "NDAR_INV1ZY11ZP0" and "NDAR_INVRV742U1M" have no baseline sMRI
+
+```
+
+```{r}
+write_csv(sm_subc_v,
+    here("data/abcd/inputs/sm_subc_v.csv"))
+write_csv(sm_cort_t,
+    here("data/abcd/inputs/sm_cort_t.csv"))
+write_csv(sm_cort_sa,
+    here("data/abcd/inputs/sm_cort_sa.csv"))
+```
+
+
+#### Diffusion MRI
+
+We are interested in the neurite density measures of white matter regions in the brain.
+Previously, these measures were found in variables containing the string "rsindwm_cdk" within the file `mri_rsi_p102.txt`.
+A change anounced in the ABCD 4.0 MRI release notes indicates that neurite density is now referred to as "restricted normalized directional" and that the relevant white matter variables contain the string "rsirndwm" within the file `abcd_drsip201.txt`.
+
+See diffusion MRI chapter in appendix for full details.
+
+```{r}
+# DMRI dataframe
+drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
+
+# White matter neurite densities
+## Only peri-cortical regions (see appendix)
+dm_wmnd_0 <- get_wmnd(drsip201, mtbi_subjects_0, t = 0)
+
+# White matte rnueri
+dm_all_wmnd_0 <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
+
+write_csv(dm_all_wmnd_0, input_path("dm_all_wmnd_0.csv", date = TRUE))
+
+write_csv(dm_wmnd_0, input_path("dm_wmnd_0.csv", date = TRUE))
+```
+
+
+#### Resting-state functional MRI
+
+We are interested in the following rs-fMRI measures:
+
+- Gordon network (cortical) correlations 
+- Subcortical correlations
+- Gordon and subcortical temporal variances
+
+```{r}
+betnet02 <- read_delim(here("data/abcd/raw/abcd_betnet02.txt"))
+mrirscor02 <- read_delim(here("data/abcd/raw/mrirscor02.txt"))
+mrirstv02 <- read_delim(here("data/abcd/raw/abcd_mrirstv02.txt"))
+
+
+## Cortical parcellation network correlations
+rm_gord_cor <- get_gord_cor(betnet02, mtbi_subjects, t = 0)
+
+## Subcortical parcellation network correlations
+rm_subc_cor <- get_subc_cor(mrirscor02, mtbi_subjects, t = 0)
+
+## Temporal variances - cortical parcellations
+rm_gord_var <- get_gord_var(mrirstv02, mtbi_subjects, t = 0)
+
+## Subcortical temporal variances
+rm_subc_var <- get_subc_var(mrirstv02, mtbi_subjects, t = 0)
+```
+
+```{r}
+write_csv(rm_gord_cor,
+    here("data/abcd/inputs/rm_gord_cor.csv"))
+write_csv(rm_subc_cor,
+    here("data/abcd/inputs/rm_subc_cor.csv"))
+write_csv(rm_subc_var,
+    here("data/abcd/inputs/rm_subc_var.csv"))
+write_csv(rm_gord_var,
+    here("data/abcd/inputs/rm_gord_var.csv"))
+```
+
+
+### Psychosocial resilience
+
+Psychosocial factors of interest include:
+
+* loneliness
+* healthy behaviours
+* family function
+* prosocial behaviour
+* parent psychopathology
+
+```{r}
+abcd_ysr01 <- read_delim(here("data/abcd/raw/abcd_ysr01.txt"))
+stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
+fes02 <- read_delim(here("data/abcd/raw/fes02.txt"))
+abcd_fes01 <- read_delim(here("data/abcd/raw/abcd_fes01.txt"))
+abcd_saiq02 <- read_delim(here("data/abcd/raw/abcd_saiq02.txt"))
+psb01 <- read_delim(here("data/abcd/raw/psb01.txt"))
+abcd_psb01 <- read_delim(here("data/abcd/raw/abcd_psb01.txt"))
+abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
+abcd_yrb01 <- read_delim(here("data/abcd/raw/abcd_yrb01.txt"))
+
+
+p_loneliness <- get_loneliness(abcd_ysr01, mtbi_subjects, t = 0)
+p_loneliness
+
+p_screen_time <- get_screen_time(stq01, mtbi_subjects, t = 0)
+p_screen_time
+
+p_family_function <-
+    get_family_function(fes02, abcd_fes01, mtbi_subjects, t = 0)
+p_family_function
+
+p_sports <- get_sports_and_activities(abcd_saiq02, mtbi_subjects, t = 0)
+p_sports
+
+p_prosocial <- get_prosocial_behaviour(psb01, abcd_psb01, mtbi_subjects, t = 0)
+p_prosocial
+
+p_parent_psych <- get_parent_psychopathology(abcd_asrs01, mtbi_subjects, t = 0)
+p_parent_psych
+
+p_exercise <- get_exercise(abcd_yrb01, mtbi_subjects, t = 0)
+p_exercise
+```
+
+Subset and export the psychosocial resilience variables:
+
+```{r}
+write_csv(p_loneliness,
+    here("data/abcd/inputs/p_loneliness.csv"))
+write_csv(p_screen_time,
+    here("data/abcd/inputs/p_screen_time.csv"))
+write_csv(p_family_function,
+    here("data/abcd/inputs/p_family_function.csv"))
+write_csv(p_sports,
+    here("data/abcd/inputs/p_sports.csv"))
+write_csv(p_prosocial,
+    here("data/abcd/inputs/p_prosocial.csv"))
+write_csv(p_parent_psych,
+    here("data/abcd/inputs/p_parent_psych.csv"))
+write_csv(p_exercise,
+    here("data/abcd/inputs/p_exercise.csv"))
+```
+
+
+## Output variables
+
+### Child behaviour checklist
+
+```{r}
+abcd_cbcl01 <- read_delim(here("data/abcd/raw/abcd_cbcl01.txt"))
+abcd_cbcls01 <- read_delim(here("data/abcd/raw/abcd_cbcls01.txt"))
+
+cbcl_headaches <- get_cbcl_headaches(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_nausea <- get_cbcl_nausea(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_vomiting <- get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_dizzy <- get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_overtired <- get_cbcl_overtired(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_sleeping_more <- get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_sleeping_less <- get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects, t = 0)
+cbcl_depress_r <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects, t = 0)
+cbcl_anxiety_r <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects, t = 0)
+cbcl_attention_r <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects, t = 0)
+cbcl_aggressive_r <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects, t = 0)
+# Borderline/clinical thresholded instead of raw scores
+cbcl_depress <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects, t = 0,
+                                 raw = FALSE)
+cbcl_anxiety <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects, t = 0,
+                                 raw = FALSE)
+cbcl_attention <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects, t = 0,
+                                     raw = FALSE)
+cbcl_aggressive <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects, t = 0,
+                                       raw = FALSE)
+
+```
+
+```{r}
+write_csv(cbcl_headaches,
+    here("data/abcd/outputs/cbcl_headaches.csv"))
+write_csv(cbcl_nausea,
+    here("data/abcd/outputs/cbcl_nausea.csv"))
+write_csv(cbcl_vomiting,
+    here("data/abcd/outputs/cbcl_vomiting.csv"))
+write_csv(cbcl_dizzy,
+    here("data/abcd/outputs/cbcl_dizzy.csv"))
+write_csv(cbcl_overtired,
+    here("data/abcd/outputs/cbcl_overtired.csv"))
+write_csv(cbcl_sleeping_more,
+    here("data/abcd/outputs/cbcl_sleeping_more.csv"))
+write_csv(cbcl_sleeping_less,
+    here("data/abcd/outputs/cbcl_sleeping_less.csv"))
+write_csv(cbcl_depress_r,
+    here("data/abcd/outputs/cbcl_depress_r.csv"))
+write_csv(cbcl_anxiety_r,
+    here("data/abcd/outputs/cbcl_anxiety_r.csv"))
+write_csv(cbcl_attention_r,
+    here("data/abcd/outputs/cbcl_attention_r.csv"))
+write_csv(cbcl_aggressive_r,
+    here("data/abcd/outputs/cbcl_aggressive_r.csv"))
+write_csv(cbcl_depress,
+    here("data/abcd/outputs/cbcl_depress.csv"))
+write_csv(cbcl_anxiety,
+    here("data/abcd/outputs/cbcl_anxiety.csv"))
+write_csv(cbcl_attention,
+    here("data/abcd/outputs/cbcl_attention.csv"))
+write_csv(cbcl_aggressive,
+    here("data/abcd/outputs/cbcl_aggressive.csv"))
+```
+
+### NIH Toolbox
+
+```{r}
+abcd_tbss01 <- read_delim(here("data/abcd/raw/abcd_tbss01.txt"))
+
+nihtbx_list_fc <- get_nihtbx_list_fc(abcd_tbss01, mtbi_subjects, t = 0)
+nihtbx_pattern_fc <- get_nihtbx_pattern_fc(abcd_tbss01, mtbi_subjects, t = 0)
+nihtbx_cardsort_fc <- get_nihtbx_cardsort_fc(abcd_tbss01, mtbi_subjects, t = 0)
+```
+
+```{r}
+write_csv(nihtbx_list_fc,
+    here("data/abcd/outputs/nihtbx_list_fc.csv"))
+write_csv(nihtbx_pattern_fc,
+    here("data/abcd/outputs/nihtbx_pattern_fc.csv"))
+write_csv(nihtbx_cardsort_fc,
+    here("data/abcd/outputs/nihtbx_cardsort_fc.csv"))
+```
+
+### Sleep disturbance scale
+
+```{r}
+abcd_sds01 <- read_delim(here("data/abcd/raw/abcd_sds01.txt"))
+
+sds_sleep_df <- get_full_sleep_df(abcd_sds01, mtbi_subjects, t = 0)
+```
+
+```{r}
+write_csv(sds_sleep_df,
+    here("data/abcd/outputs/sds_sleep_df.csv"))
+```

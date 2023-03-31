@@ -70,11 +70,34 @@ Some notable file versions are `2023_03_13_nmi_df.csv` (the first run of the `om
 
 
 ```{r}
+library(scabcd)
+library(abcdutils)
+library(here)
+library(readr)
+library(gt)
+library(gtExtras)
+library(webshot2)
+library(rlist)
+
 nmi_df <- om_to_nmi_df(top_oms, data_list_train)
 
 write_csv(nmi_df, proc_path("nmi_df_sk.csv", date = TRUE))
 
 nmi_df <- data.frame(read_csv(proc_path("2023_03_16_nmi_df_sk.csv")))
+
+
+# A bonus section that needs to be tidied up
+top_om_all <- read_csv(proc_path("2023_03_27_top_om_rows_all_nclust.csv"))
+
+data_list_train <- list.load(proc_path("2023_03_27_data_list_0_train.rdata"))
+
+for (row in seq_len(nrow(top_om_all))) {
+    calc_nmi(top_om_all[row, ], data_list_train) |>
+        gt() |>
+        gt_theme_538() |>
+        gtsave(fig_path(paste0(top_om_all[row, ]$"significance", "_nmis.png"),
+                date = TRUE))
+}
 ```
 
 

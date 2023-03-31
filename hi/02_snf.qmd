@@ -1,0 +1,2270 @@
+# Repeated SNF
+
+## Loading Data
+
+```{r eval = FALSE}
+library(dplyr)
+library(abcdutils)
+library(scabcd)
+library(readr)
+library(here)
+library(ggplot2)
+library(pheatmap)
+
+# Functions to import data from carbon
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+# Load training data
+as_mtbi_loc_train <- read_csv(proc_path("as_mtbi_loc_train.csv"))
+as_mtbi_mechanism_train <- read_csv(proc_path("as_mtbi_mechanism_train.csv"))
+as_mtbi_mem_daze_train <- read_csv(proc_path("as_mtbi_mem_daze_train.csv"))
+d_income_train <- read_csv(proc_path("d_income_train.csv"))
+d_interview_age_train <- read_csv(proc_path("d_interview_age_train.csv"))
+d_mtbi_age_train <- read_csv(proc_path("d_mtbi_age_train.csv"))
+d_pubertal_status_train <- read_csv(proc_path("d_pubertal_status_train.csv"))
+d_race_train <- read_csv(proc_path("d_race_train.csv"))
+d_sex_train <- read_csv(proc_path("d_sex_train.csv"))
+mh_headaches_train <- read_csv(proc_path("mh_headaches_train.csv"))
+mh_mtbi_count_train <- read_csv(proc_path("mh_mtbi_count_train.csv"))
+dm_all_wmnd_0_qc_train <-
+    read_csv(proc_path("2023_03_27_dm_all_wmnd_0_qc_train.csv"))
+rm_gord_cor_qc_train <- read_csv(proc_path("rm_gord_cor_qc_train.csv"))
+rm_gord_var_qc_train <- read_csv(proc_path("rm_gord_var_qc_train.csv"))
+rm_subc_cor_qc_train <- read_csv(proc_path("rm_subc_cor_qc_train.csv"))
+rm_subc_var_qc_train <- read_csv(proc_path("rm_subc_var_qc_train.csv"))
+sm_cort_sa_qc_train <- read_csv(proc_path("sm_cort_sa_qc_train.csv"))
+sm_cort_t_qc_train <- read_csv(proc_path("sm_cort_t_qc_train.csv"))
+sm_subc_v_qc_train <- read_csv(proc_path("sm_subc_v_qc_train.csv"))
+p_loneliness_train <- read_csv(proc_path("p_loneliness_train.csv"))
+p_screen_time_train <- read_csv(proc_path("p_screen_time_train.csv"))
+p_family_function_train <- read_csv(proc_path("p_family_function_train.csv"))
+p_sports_train <- read_csv(proc_path("p_sports_train.csv"))
+p_prosocial_train <- read_csv(proc_path("p_prosocial_train.csv"))
+p_parent_psych_train <- read_csv(proc_path("p_parent_psych_train.csv"))
+p_exercise_train <- read_csv(proc_path("p_exercise_train.csv"))
+cbcl_headaches_train <- read_csv(proc_path("cbcl_headaches_train.csv"))
+cbcl_nausea_train <- read_csv(proc_path("cbcl_nausea_train.csv"))
+cbcl_vomiting_train <- read_csv(proc_path("cbcl_vomiting_train.csv"))
+cbcl_dizzy_train <- read_csv(proc_path("cbcl_dizzy_train.csv"))
+cbcl_overtired_train <- read_csv(proc_path("cbcl_overtired_train.csv"))
+cbcl_sleeping_more_train <- read_csv(proc_path("cbcl_sleeping_more_train.csv"))
+cbcl_sleeping_less_train <- read_csv(proc_path("cbcl_sleeping_less_train.csv"))
+cbcl_depress_train <- read_csv(proc_path("cbcl_depress_train.csv"))
+cbcl_anxiety_train <- read_csv(proc_path("cbcl_anxiety_train.csv"))
+cbcl_attention_train <- read_csv(proc_path("cbcl_attention_train.csv"))
+cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
+sds_sleep_train <- read_csv(proc_path("sds_sleep_train.csv"))
+```
+
+## SNF
+
+```{r}
+set.seed(42)
+design_matrix_base <- build_design_matrix_base()
+design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
+
+write_csv(design_matrix, proc_path("full_design_matrix.csv", date = TRUE))
+
+design_matrix <- data.frame(read_csv(proc_path("full_design_matrix.csv")))
+
+
+# Structure containing all input data
+# These data should not contain any NAs, but need not have the same subjects
+data_list <- generate_data_list(
+    mtbi_loc = as_mtbi_loc_train,
+    mtbi_mechanism = as_mtbi_mechanism_train,
+    mtbi_mem_daze = as_mtbi_mem_daze_train,
+    income = d_income_train,
+    interview_age = d_interview_age_train,
+    mtbi_age = d_mtbi_age_train,
+    pubertal_status = d_pubertal_status_train,
+    race = d_race_train,
+    sex = d_sex_train,
+    headaches = mh_headaches_train,
+    mtbi_count = mh_mtbi_count_train,
+    wmndf = dm_all_wmnd_0_qc_train,
+    gord_cor = rm_gord_cor_qc_train,
+    gord_var = rm_gord_var_qc_train,
+    subc_cor = rm_subc_cor_qc_train,
+    subc_var = rm_subc_var_qc_train,
+    cort_sa = sm_cort_sa_qc_train,
+    cort_t = sm_cort_t_qc_train,
+    subc_v = sm_subc_v_qc_train,
+    loneliness = p_loneliness_train,
+    screen_time = p_screen_time_train,
+    family_function = p_family_function_train,
+    sports = p_sports_train,
+    prosocial = p_prosocial_train,
+    parent_psych = p_parent_psych_train,
+    exercise = p_exercise_train)
+
+# Structure containing all outcome data
+outcome_list <- generate_outcome_list(
+    cbcl_nausea = cbcl_nausea_train,
+    cbcl_vomiting = cbcl_vomiting_train,
+    cbcl_dizzy = cbcl_dizzy_train,
+    cbcl_overtired = cbcl_overtired_train,
+    cbcl_sleeping_more = cbcl_sleeping_more_train,
+    cbcl_sleeping_less = cbcl_sleeping_less_train,
+    cbcl_depress = cbcl_depress_train,
+    cbcl_anxiety = cbcl_anxiety_train,
+    cbcl_attention = cbcl_attention_train,
+    cbcl_aggressive = cbcl_aggressive_train)
+
+output_matrix_full <-
+    execute_design_matrix(data_list, design_matrix, outcome_list)
+
+dm_all_wmnd_0_qc_train
+
+output_matrix_full_pre_run <- read_csv(proc_path("2023_02_22_om.csv"))
+
+om <- data.frame(output_matrix_full) |>
+    col_to_num_all_possible()
+
+omp <- data.frame(output_matrix_full_pre_run)
+
+all.equal(om, omp) # Things are different with the new WM
+
+write_csv(output_matrix_full, proc_path("om.csv", date = TRUE))
+
+#write_csv(output_matrix_full,
+#    here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))
+```
+
+The following code chunk is where I left off with cleaning.
+It is in meta_clustering.qmd.
+
+```{r}
+#output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
+#
+#min(output_matrix_full$min_p_val) #3.2 e-08
+#min(output_matrix_full$mean_p_val) #0.00414
+#
+#mc_results <- meta_cluster(output_matrix_full)
+#
+#write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
+#
+#mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
+#
+#colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+#rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
+#
+## Visualizing the meta-clustering results
+#mc_heatmap(mc_results, save = fig_path("mc_results.png", date = TRUE))
+#
+## Pretty art
+#pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
+#
+## Trying to plot the input design matrix as a heatmap
+#mc_order <- get_pheatmap_order(mc_results)
+#
+#dm_heatmap(design_matrix[mc_order, ], fig_path("dm_reordered.png", date = TRUE))
+#
+#mc_pvals <- p_val_select(output_matrix_full)
+#
+#mc_pvals
+#
+#mc_pvals_reordered <- mc_pvals[mc_order, ]
+#
+## This is the actual important graph
+#pvals_pheatmap(mc_pvals_reordered, save = fig_path("mc_pvals.png", date = TRUE))
+#
+#
+### Distribution of cluster assignment
+#
+## A selection based on the main visual meta cluster and the p-values
+#om_reordered <- output_matrix_full[mc_order, ]
+#best_mc <- om_reordered[6:41, ]
+#best_mc_clusters <- as.matrix(subs(best_mc)[, -1])
+
+## Visualization of cluster assignments
+#pheatmap(best_mc_clusters,
+#    cluster_rows = FALSE,
+#    show_rownames = FALSE,
+#    show_colnames = FALSE,
+#    legend = FALSE,
+#    cellwidth = 2.2)
+#
+#pheatmap(best_mc_clusters,
+#    cluster_rows = FALSE,
+#    show_rownames = FALSE,
+#    show_colnames = FALSE,
+#    legend = FALSE,
+#    cellwidth = 2.2,
+#    filename = fig_path("2023_02_22_cluster_assignment_heatmap.png"))
+#dev.off()
+#
+## Alternative visualizations
+#best_mc_subs <- best_mc |>
+#    dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
+#    t()
+#colnames(best_mc_subs) <- best_mc_subs["row_id", ]
+#best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
+#best_mc_subs <- as.data.frame(best_mc_subs)
+#best_mc_subs <- sapply(best_mc_subs, as.numeric)
+#row_means <- apply(X = best_mc_subs, MARGIN = 1, FUN = mean, na.rm = TRUE)
+#names(row_means) <- colnames(subs(best_mc))[-1]
+#
+## Shows how consistently a subject was assigned to a particular cluster
+#png(fig_path("2023_02_22_avg_cluster.png"),
+#    height = 5,
+#    width = 5,
+#    units = "in",
+#    res = 300)
+#plot(row_means,
+#    xlab = "Subject",
+#    ylab = "Mean assigned cluster")
+#dev.off()
+#
+#
+## Histogram form
+#png(fig_path("2023_02_22_avg_cluster_hist.png"),
+#    height = 5,
+#    width = 5,
+#    units = "in",
+#    res = 300)
+#hist(row_means,
+#    xlab = "Mean assigned cluster",
+#    main = NULL)
+#dev.off()
+#
+#
+### Choosing top solution
+#
+#om_reordered
+#
+## Next steps are to evaluate a few options:
+## A consensus cluster row (nah)
+## A row containing everybody
+## Consensus cluster row without problematic patients
+## A row containing everybody without problematic patients
+#
+## Or perhaps:
+## 1. The consensus results
+## 2. The best results
+#
+## Best MC Subs: finding some dm rows to work with
+#best_mc_df <- data.frame(best_mc_subs)
+#colnames(best_mc_df) <- colnames(best_mc_subs)
+#best_mc_df$subjectkey <- rownames(best_mc_df)
+#rownames(grDevices::best_mc_df) <- NULL
+#
+## Choosing a row to characterize by p-value
+#best_mc_copy <- best_mc
+#best_mc_copy$inc_var_count <- best_mc_copy |>
+#    dplyr::select(dplyr::starts_with("inc")) |>
+#    rowSums()
+#
+#best_mc_copy
+#
+#ggplot(best_mc_copy,
+#    aes(x = min_p_val, y = mean_p_val, label = row_id,
+#        color = (inc_var_count == 25))) +
+#    geom_point() +
+#    scale_x_continuous(trans = "log10") +
+#    scale_y_continuous(trans = "log10") +
+#    geom_text(hjust = 0, vjust = 0) +
+#    xlab("Minimum CBCL log(p-value)") +
+#    ylab("Mean CBCL log(p-value)") +
+#    labs(color = "All variables included?") +
+#    theme_bw() +
+#    theme(text = element_text(size = 15))
+## ggsave(fig_path("2023_02_22_solutions_by_pvals.png"))
+#
+#top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
+#
+#
+#
+#om_scatter(output_matrix_full)
+```
+
+This should be a separate file
+
+# Cluster characterization
+
+## CBCL measures
+
+```{r}
+# Pick a row
+
+
+#top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
+#
+#top_om_rows
+#
+#om_row <- 34 # Corresponds to row_id 84, the lowest min/mean p value
+#best_mc$row_id[om_row] == 84
+#
+#
+## DF with row_id and subjects as columns and cluster as rows)
+#clustered_subjects <- subs(best_mc[om_row, ])
+#
+#clusters <- data.frame(t(clustered_subjects))
+#clusters$id <- rownames(clusters)
+#rownames(clusters) <- NULL
+#colnames(clusters) <- c("cluster", "subjectkey")
+#clusters <- clusters[2:nrow(clusters), ]
+#clusters
+#
+#groups <- clusters$cluster
+#groups
+#
+#outcome_list <- list(
+#    clusters,
+#    cbcl_nausea,
+#    cbcl_vomiting,
+#    cbcl_dizzy,
+#    cbcl_overtired,
+#    cbcl_sleeping_more,
+#    cbcl_sleeping_less,
+#    cbcl_depress,
+#    cbcl_anxiety,
+#    cbcl_attention,
+#    cbcl_aggressive)
+#
+#comparison_df <-
+#    outcome_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
+#
+#comparison_df$cluster <- as.factor(comparison_df$cluster)
+#
+## Using ordinal regression, the p-values are very low
+#8 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
+#8 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy")
+#8 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired")
+#8 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
+#8 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
+#8 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety")
+#8 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention")
+#8 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive")
+
+#nausea_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_nausea) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#nausea_summary$cbcl_nausea <-
+#    factor(nausea_summary$cbcl_nausea, levels = c("2", "1", "0"))
+#ggplot(nausea_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_nausea)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+# ggsave(fig_path("cbcl_nausea.png", date = TRUE), height = 6, dpi = 300)
+# p = 0.015
+
+#dizzy_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_dizzy) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#dizzy_summary$cbcl_dizzy <-
+#    factor(dizzy_summary$cbcl_dizzy, levels = c("2", "1", "0"))
+#ggplot(dizzy_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_dizzy)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL dizzy Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_dizzy.png", date = TRUE), height = 6, dpi = 300)
+# p = 0.12 (NS)
+
+#overtired_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_overtired) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#overtired_summary$cbcl_overtired <-
+#    factor(overtired_summary$cbcl_overtired, levels = c("2", "1", "0"))
+#ggplot(overtired_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_overtired)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL overtired Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_overtired.png", date = TRUE), height = 6, dpi = 300)
+# p = 0.037
+
+#sleeping_more_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_sleeping_more) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#sleeping_more_summary$cbcl_sleeping_more <-
+#    factor(sleeping_more_summary$cbcl_sleeping_more, levels = c("2", "1", "0"))
+#ggplot(sleeping_more_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_sleeping_more)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_more Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_sleeping_more.png", date = TRUE), height = 6, dpi = 300)
+## p = 0.024
+#
+#sleeping_less_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_sleeping_less) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#sleeping_less_summary$cbcl_sleeping_less <-
+#    factor(sleeping_less_summary$cbcl_sleeping_less, levels = c("2", "1", "0"))
+#ggplot(sleeping_less_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_sleeping_less)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_less Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_sleeping_less.png", date = TRUE), height = 6, dpi = 300)
+## p = 0.06 (NS)
+#
+#anxiety_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_anxiety) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#anxiety_summary$cbcl_anxiety <-
+#    factor(anxiety_summary$cbcl_anxiety, levels = c("2", "1", "0"))
+#ggplot(anxiety_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_anxiety)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL anxiety Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_anxiety.png", date = TRUE), height = 6, dpi = 300)
+## p = 0.00025
+#
+#attention_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_attention) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#attention_summary$cbcl_attention <-
+#    factor(attention_summary$cbcl_attention, levels = c("2", "1", "0"))
+#ggplot(attention_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_attention)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL attention Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_attention.png", date = TRUE), height = 6, dpi = 300)
+## p = 2e-05
+#
+#aggressive_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_aggressive) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#aggressive_summary$cbcl_aggressive <-
+#    factor(aggressive_summary$cbcl_aggressive, levels = c("2", "1", "0"))
+#ggplot(aggressive_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_aggressive)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL aggressive Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_aggressive.png", date = TRUE), height = 6, dpi = 300)
+## p = 2e-05
+
+#depress_summary <- comparison_df |>
+#    group_by(cluster) |>
+#    count(cbcl_depress) |>
+#    mutate(Percent = round(n / sum(n) * 100, 1))
+#depress_summary$cbcl_depress <-
+#    factor(depress_summary$cbcl_depress, levels = c("2", "1", "0"))
+#ggplot(depress_summary,
+#    aes(x = cluster, y = Percent, fill = cbcl_depress)) +
+#    geom_bar(stat = "identity", position = position_stack()) +
+#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+#            position = position_stack(vjust = 0.5)) +
+#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+#    labs(x = "Cluster", y = "Percentage", fill = "CBCL Depress Grade") +
+#    theme_bw() +
+#    theme(text = element_text(size = 20))
+#ggsave(fig_path("cbcl_depress.png", date = TRUE), height = 6, dpi = 300)
+
+
+#pval_vec <- c(
+#    8 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea"), # 0.0001365547 raw
+#    8 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy"),
+#    8 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired"),
+#    8 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more"),
+#    8 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less"),
+#    8 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety"),
+#    8 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention"),
+#    8 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive"))
+
+mean(pval_vec)
+
+c1_df <- comparison_df |> dplyr::filter(cluster == 1)
+c2_df <- comparison_df |> dplyr::filter(cluster == 2)
+
+nrow(c1_df) # 111
+nrow(c2_df) # 142
+
+# How many borderline/clinical patients in each cluster?
+length(which(c1_df$cbcl_nausea > 0))
+length(which(c1_df$cbcl_dizzy > 0))
+length(which(c1_df$cbcl_overtired > 0))
+length(which(c1_df$cbcl_sleeping_more > 0))
+length(which(c1_df$cbcl_sleeping_less > 0))
+length(which(c1_df$cbcl_depress > 0))
+length(which(c1_df$cbcl_anxiety > 0))
+length(which(c1_df$cbcl_attention > 0))
+length(which(c1_df$cbcl_aggressive > 0))
+
+length(which(c2_df$cbcl_nausea > 0))
+length(which(c2_df$cbcl_dizzy > 0))
+length(which(c2_df$cbcl_overtired > 0))
+length(which(c2_df$cbcl_sleeping_more > 0))
+length(which(c2_df$cbcl_sleeping_less > 0))
+length(which(c2_df$cbcl_depress > 0))
+length(which(c2_df$cbcl_anxiety > 0))
+length(which(c2_df$cbcl_attention > 0))
+length(which(c2_df$cbcl_aggressive > 0))
+
+
+# Proportions:
+length(which(c1_df$cbcl_nausea > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_dizzy > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_overtired > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_sleeping_more > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_sleeping_less > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_depress > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_anxiety > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_attention > 0)) / nrow(c1_df) * 100
+length(which(c1_df$cbcl_aggressive > 0)) / nrow(c1_df) * 100
+
+length(which(c2_df$cbcl_nausea > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_dizzy > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_overtired > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_sleeping_more > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_sleeping_less > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_depress > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_anxiety > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_attention > 0)) / nrow(c2_df) * 100
+length(which(c2_df$cbcl_aggressive > 0)) / nrow(c2_df) * 100
+
+
+c1_df$cbcl_total <- c1_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+c2_df$cbcl_total <- c2_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+library("RColorBrewer")
+
+color
+
+# create matrix
+colours <- c("#2274e0", "#FFFFBF", "#db0f1d")
+
+# Obtain the heatmap of c1_df so we can extract the right column order
+cbcl_pheatmap <- c1_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix() |>
+    pheatmap(cellheight = 3,
+             color = colours,
+             legend_breaks = c(0, 1, 2),
+             cellwidth = 30)
+
+# This is the clustered column order from c1_df
+cbcl_outcome_clustering <- cbcl_pheatmap$tree_col[["order"]]
+
+# Prep the two dataframes in matrix form so we don't need the many pipes
+c1_df_matrix <- c1_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+c2_df_matrix <- c2_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+
+# Reorder the matrices to match the column order from the original c1_df
+c1_df_matrix <- c1_df_matrix[, cbcl_outcome_clustering]
+c2_df_matrix <- c2_df_matrix[, cbcl_outcome_clustering]
+
+# Plots
+pheatmap(c1_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+# Same thing, but saved
+pheatmap(c1_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = fig_path("cbcl_train_matrix_c1.png", date = TRUE))
+dev.off()
+
+pheatmap(c2_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+# Same thing, but saved
+pheatmap(c2_df_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = fig_path("cbcl_train_matrix_c2.png", date = TRUE))
+dev.off()
+
+
+c1_df_total <- c1_df |>
+    dplyr::select(subjectkey, cbcl_total)
+c2_df_total <- c2_df |>
+    dplyr::select(subjectkey, cbcl_total)
+c1_df_total$cluster <- 1
+c2_df_total$cluster <- 2
+train_total_c_df <- rbind(c1_df_total, c2_df_total)
+train_total_c_df$cluster <- as.factor(train_total_c_df$cluster)
+
+ggplot(train_total_c_df,
+    aes(x = cbcl_total,
+        fill = cluster)) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+    geom_density(alpha = 0.6) +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+ggsave(fig_path("cbcl_total_problems_train.png", date = TRUE), height = 6, dpi = 300)
+
+
+# Rather than looking at the sum (which treats 1 and 2 differently,
+#  examine the density of whether or not a child is borderline+ (i.e., above 0)
+c1_df_no_total <- c1_df |>
+    dplyr::select(dplyr::contains("cbcl"), -cbcl_total)
+c1_df_no_total[c1_df_no_total == 2] <- 1
+c1_df_no_total$total_any <- rowSums(c1_df_no_total)
+
+c2_df_no_total <- c2_df |>
+    dplyr::select(dplyr::contains("cbcl"), -cbcl_total)
+c2_df_no_total[c2_df_no_total == 2] <- 1
+c2_df_no_total$total_any <- rowSums(c2_df_no_total)
+
+c1_df_total_binary <- c1_df_no_total |>
+    dplyr::select(total_any)
+c2_df_total_binary <- c2_df_no_total |>
+    dplyr::select(total_any)
+c1_df_total_binary$cluster <- 1
+c2_df_total_binary$cluster <- 2
+
+train_total_c_binary_df <- rbind(c1_df_total_binary, c2_df_total_binary)
+train_total_c_binary_df$cluster <- as.factor(train_total_c_df$cluster)
+
+ggplot(train_total_c_binary_df,
+    aes(x = total_any,
+        fill = cluster)) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+    geom_density(alpha = 0.6) +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+# ggsave(fig_path("cbcl_any_problems_train.png", date = TRUE),
+#     height = 6, dpi = 300)
+
+
+c1_df$cbcl_total[c1_df$cbcl_total > 0] <- 1
+c2_df$cbcl_total[c2_df$cbcl_total > 0] <- 1
+
+# Consider fleshing out these odds ratios more later
+
+# Odds ratio calcs
+c1_bad <- length(which(c1_df$cbcl_total > 0))
+c1_good <- length(which(c1_df$cbcl_total == 0))
+c2_bad <- length(which(c2_df$cbcl_total > 0))
+c2_good <- length(which(c2_df$cbcl_total == 0))
+# C2 ~ Not exposed
+# C1 ~ Exposed
+# good ~ Healthy
+# bad ~ Diseased
+odds_ratio <- function(DE, HE, DN, HN) {
+    numerator <- DE / HE
+    denominator <- DN / HN
+    return(numerator / denominator)
+}
+true_or <- odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good)
+true_or
+ors <- vector()
+set.seed(42)
+for (i in 1:1000) {
+    bootstrap_c1 <- sample(c1_df$cbcl_total, replace = TRUE)
+    bootstrap_c2 <- sample(c2_df$cbcl_total, replace = TRUE)
+    c1_bad <- length(which(bootstrap_c1 > 0))
+    c1_good <- length(which(bootstrap_c1 == 0))
+    c2_bad <- length(which(bootstrap_c2 > 0))
+    c2_good <- length(which(bootstrap_c2 == 0))
+    ors <- c(ors,
+             odds_ratio(DE = c1_bad, HE = c1_good, DN = c2_bad, HN = c2_good))
+}
+ci <- quantile(ors, probs = c(0.05, 0.95))
+ci
+
+
+c1_and_c2_df <- rbind(c1_df, c2_df)
+c1_and_c2_df$cluster <- as.factor(c1_and_c2_df$cluster)
+c1_and_c2_df$cbcl_total <- as.factor(c1_and_c2_df$cbcl_total)
+c1_and_c2_df <- c1_and_c2_df |>
+    group_by(cluster) |>
+    count(cbcl_total) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+c1_and_c2_df$cbcl_total <-
+    factor(c1_and_c2_df$cbcl_total, levels = c("1", "0"))
+ggplot(c1_and_c2_df,
+    aes(x = cluster, y = Percent, fill = cbcl_total)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+    labs(x = "Cluster", y = "Percentage", fill = "Has any CBCL impairment") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+ggsave(fig_path("any_cbcl_impairment.png", date = TRUE), height = 6, dpi = 300)
+true_or
+ci
+```
+
+# Label propagation
+```{r}
+# I have to re-import because of the 'keep_split' that happened early in script
+# Once the keep training split data is renamed to end in train, won't need to
+#  do this double importing.
+as_mtbi_loc <- load_data("as_mtbi_loc_imp.csv", type = "inputs")
+as_mtbi_mechanism <- load_data("as_mtbi_mechanism_imp.csv", type = "inputs")
+as_mtbi_mem_daze <- load_data("as_mtbi_mem_daze_imp.csv", type = "inputs")
+d_income <- load_data("d_income_imp.csv", type = "inputs")
+d_interview_age <- load_data("d_interview_age_imp.csv", type = "inputs")
+d_mtbi_age <- load_data("d_mtbi_age_imp.csv", type = "inputs")
+d_pubertal_status <- load_data("d_pubertal_status_imp.csv", type = "inputs")
+d_race <- load_data("d_race_imp.csv", type = "inputs")
+d_sex <- load_data("d_sex_imp.csv", type = "inputs")
+mh_headaches <- load_data("mh_headaches_imp.csv", type = "inputs")
+mh_mtbi_count <- load_data("mh_mtbi_count_imp.csv", type = "inputs")
+dm_wmndf_qc <- load_data("dm_wmndf_qc.csv", imputed = FALSE, type = "inputs")
+rm_gord_cor_qc <-
+    load_data("rm_gord_cor_qc.csv", imputed = FALSE, type = "inputs")
+rm_gord_var_qc <-
+    load_data("rm_gord_var_qc.csv", imputed = FALSE, type = "inputs")
+rm_subc_cor_qc <-
+    load_data("rm_subc_cor_qc.csv", imputed = FALSE, type = "inputs")
+rm_subc_var_qc <-
+    load_data("rm_subc_var_qc.csv", imputed = FALSE, type = "inputs")
+sm_cort_sa_qc <-
+    load_data("sm_cort_sa_qc.csv", imputed = FALSE, type = "inputs")
+sm_cort_t_qc <-
+    load_data("sm_cort_t_qc.csv", imputed = FALSE, type = "inputs")
+sm_subc_v_qc <-
+    load_data("sm_subc_v_qc.csv", imputed = FALSE, type = "inputs")
+p_loneliness <- load_data("p_loneliness_imp.csv", type = "inputs")
+p_screen_time <- load_data("p_screen_time_imp.csv", type = "inputs")
+p_family_function <- load_data("p_family_function_imp.csv", type = "inputs")
+p_sports <- load_data("p_sports_imp.csv", type = "inputs")
+p_prosocial <- load_data("p_prosocial_imp.csv", type = "inputs")
+p_parent_psych <- load_data("p_parent_psych_imp.csv", type = "inputs")
+p_exercise <- load_data("p_exercise_imp.csv", type = "inputs")
+# Outcomes
+cbcl_headaches <- load_data("cbcl_headaches_imp.csv", type = "outputs")
+cbcl_nausea <- load_data("cbcl_nausea_imp.csv", type = "outputs")
+cbcl_vomiting <- load_data("cbcl_vomiting_imp.csv", type = "outputs")
+cbcl_dizzy <- load_data("cbcl_dizzy_imp.csv", type = "outputs")
+cbcl_overtired <- load_data("cbcl_overtired_imp.csv", type = "outputs")
+cbcl_sleeping_more <- load_data("cbcl_sleeping_more_imp.csv", type = "outputs")
+cbcl_sleeping_less <- load_data("cbcl_sleeping_less_imp.csv", type = "outputs")
+cbcl_depress <- load_data("cbcl_depress_imp.csv", type = "outputs")
+cbcl_anxiety <- load_data("cbcl_anxiety_imp.csv", type = "outputs")
+cbcl_attention <- load_data("cbcl_attention_imp.csv", type = "outputs")
+cbcl_aggressive <- load_data("cbcl_aggressive_imp.csv", type = "outputs")
+sds_sleep <- load_data("sds_sleep_imp.csv", type = "outputs")
+nihtbx_list_fc <- load_data("nihtbx_list_fc_imp.csv", type = "outputs")
+nihtbx_pattern_fc <- load_data("nihtbx_pattern_fc_imp.csv", type = "outputs")
+nihtbx_cardsort_fc <- load_data("nihtbx_cardsort_fc_imp.csv", type = "outputs")
+
+as_mtbi_loc_train <- keep_split(as_mtbi_loc, assigned_df, "train")
+as_mtbi_mechanism_train <- keep_split(as_mtbi_mechanism, assigned_df, "train")
+as_mtbi_mem_daze_train <- keep_split(as_mtbi_mem_daze, assigned_df, "train")
+d_income_train <- keep_split(d_income, assigned_df, "train")
+d_interview_age_train <- keep_split(d_interview_age, assigned_df, "train")
+d_mtbi_age_train <- keep_split(d_mtbi_age, assigned_df, "train")
+d_pubertal_status_train <- keep_split(d_pubertal_status, assigned_df, "train")
+d_race_train <- keep_split(d_race, assigned_df, "train")
+d_sex_train <- keep_split(d_sex, assigned_df, "train")
+mh_headaches_train <- keep_split(mh_headaches, assigned_df, "train")
+mh_mtbi_count_train <- keep_split(mh_mtbi_count, assigned_df, "train")
+dm_wmndf_qc_train <- keep_split(dm_wmndf_qc, assigned_df, "train")
+rm_gord_cor_qc_train <- keep_split(rm_gord_cor_qc, assigned_df, "train")
+rm_gord_var_qc_train <- keep_split(rm_gord_var_qc, assigned_df, "train")
+rm_subc_cor_qc_train <- keep_split(rm_subc_cor_qc, assigned_df, "train")
+rm_subc_var_qc_train <- keep_split(rm_subc_var_qc, assigned_df, "train")
+sm_cort_sa_qc_train <- keep_split(sm_cort_sa_qc, assigned_df, "train")
+sm_cort_t_qc_train <- keep_split(sm_cort_t_qc, assigned_df, "train")
+sm_subc_v_qc_train <- keep_split(sm_subc_v_qc, assigned_df, "train")
+p_loneliness_train <- keep_split(p_loneliness, assigned_df, "train")
+p_screen_time_train <- keep_split(p_screen_time, assigned_df, "train")
+p_family_function_train <- keep_split(p_family_function, assigned_df, "train")
+p_sports_train <- keep_split(p_sports, assigned_df, "train")
+p_prosocial_train <- keep_split(p_prosocial, assigned_df, "train")
+p_parent_psych_train <- keep_split(p_parent_psych, assigned_df, "train")
+p_exercise_train <- keep_split(p_exercise, assigned_df, "train")
+cbcl_headaches_train <- keep_split(cbcl_headaches, assigned_df, "train")
+cbcl_nausea_train <- keep_split(cbcl_nausea, assigned_df, "train")
+cbcl_vomiting_train <- keep_split(cbcl_vomiting, assigned_df, "train")
+cbcl_dizzy_train <- keep_split(cbcl_dizzy, assigned_df, "train")
+cbcl_overtired_train <- keep_split(cbcl_overtired, assigned_df, "train")
+cbcl_sleeping_more_train <- keep_split(cbcl_sleeping_more, assigned_df, "train")
+cbcl_sleeping_less_train <- keep_split(cbcl_sleeping_less, assigned_df, "train")
+cbcl_depress_train <- keep_split(cbcl_depress, assigned_df, "train")
+cbcl_anxiety_train <- keep_split(cbcl_anxiety, assigned_df, "train")
+cbcl_attention_train <- keep_split(cbcl_attention, assigned_df, "train")
+cbcl_aggressive_train <- keep_split(cbcl_aggressive, assigned_df, "train")
+sds_sleep_train <- keep_split(sds_sleep, assigned_df, "train")
+
+nihtbx_list_fc_train <- keep_split(nihtbx_list_fc, assigned_df, "train")
+nihtbx_pattern_fc_train <- keep_split(nihtbx_pattern_fc, assigned_df, "train")
+nihtbx_cardsort_fc_train <- keep_split(nihtbx_cardsort_fc, assigned_df, "train")
+
+as_mtbi_loc_test <- keep_split(as_mtbi_loc, assigned_df, "test")
+as_mtbi_mechanism_test <- keep_split(as_mtbi_mechanism, assigned_df, "test")
+as_mtbi_mem_daze_test <- keep_split(as_mtbi_mem_daze, assigned_df, "test")
+d_income_test <- keep_split(d_income, assigned_df, "test")
+d_interview_age_test <- keep_split(d_interview_age, assigned_df, "test")
+d_mtbi_age_test <- keep_split(d_mtbi_age, assigned_df, "test")
+d_pubertal_status_test <- keep_split(d_pubertal_status, assigned_df, "test")
+d_race_test <- keep_split(d_race, assigned_df, "test")
+d_sex_test <- keep_split(d_sex, assigned_df, "test")
+mh_headaches_test <- keep_split(mh_headaches, assigned_df, "test")
+mh_mtbi_count_test <- keep_split(mh_mtbi_count, assigned_df, "test")
+dm_wmndf_qc_test <- keep_split(dm_wmndf_qc, assigned_df, "test")
+rm_gord_cor_qc_test <- keep_split(rm_gord_cor_qc, assigned_df, "test")
+rm_gord_var_qc_test <- keep_split(rm_gord_var_qc, assigned_df, "test")
+rm_subc_cor_qc_test <- keep_split(rm_subc_cor_qc, assigned_df, "test")
+rm_subc_var_qc_test <- keep_split(rm_subc_var_qc, assigned_df, "test")
+sm_cort_sa_qc_test <- keep_split(sm_cort_sa_qc, assigned_df, "test")
+sm_cort_t_qc_test <- keep_split(sm_cort_t_qc, assigned_df, "test")
+sm_subc_v_qc_test <- keep_split(sm_subc_v_qc, assigned_df, "test")
+p_loneliness_test <- keep_split(p_loneliness, assigned_df, "test")
+p_screen_time_test <- keep_split(p_screen_time, assigned_df, "test")
+p_family_function_test <- keep_split(p_family_function, assigned_df, "test")
+p_sports_test <- keep_split(p_sports, assigned_df, "test")
+p_prosocial_test <- keep_split(p_prosocial, assigned_df, "test")
+p_parent_psych_test <- keep_split(p_parent_psych, assigned_df, "test")
+p_exercise_test <- keep_split(p_exercise, assigned_df, "test")
+cbcl_headaches_test <- keep_split(cbcl_headaches, assigned_df, "test")
+cbcl_nausea_test <- keep_split(cbcl_nausea, assigned_df, "test")
+cbcl_vomiting_test <- keep_split(cbcl_vomiting, assigned_df, "test")
+cbcl_dizzy_test <- keep_split(cbcl_dizzy, assigned_df, "test")
+cbcl_overtired_test <- keep_split(cbcl_overtired, assigned_df, "test")
+cbcl_sleeping_more_test <- keep_split(cbcl_sleeping_more, assigned_df, "test")
+cbcl_sleeping_less_test <- keep_split(cbcl_sleeping_less, assigned_df, "test")
+cbcl_depress_test <- keep_split(cbcl_depress, assigned_df, "test")
+cbcl_anxiety_test <- keep_split(cbcl_anxiety, assigned_df, "test")
+cbcl_attention_test <- keep_split(cbcl_attention, assigned_df, "test")
+cbcl_aggressive_test <- keep_split(cbcl_aggressive, assigned_df, "test")
+sds_sleep_test <- keep_split(sds_sleep, assigned_df, "test")
+
+as_mtbi_loc_full <- rbind(as_mtbi_loc_train, as_mtbi_loc_test)
+as_mtbi_mechanism_full <- rbind(as_mtbi_mechanism_train, as_mtbi_mechanism_test)
+as_mtbi_mem_daze_full <- rbind(as_mtbi_mem_daze_train, as_mtbi_mem_daze_test)
+d_income_full <- rbind(d_income_train, d_income_test)
+d_interview_age_full <- rbind(d_interview_age_train, d_interview_age_test)
+d_mtbi_age_full <- rbind(d_mtbi_age_train, d_mtbi_age_test)
+d_pubertal_status_full <- rbind(d_pubertal_status_train, d_pubertal_status_test)
+d_race_full <- rbind(d_race_train, d_race_test)
+d_sex_full <- rbind(d_sex_train, d_sex_test)
+mh_headaches_full <- rbind(mh_headaches_train, mh_headaches_test)
+mh_mtbi_count_full <- rbind(mh_mtbi_count_train, mh_mtbi_count_test)
+dm_wmndf_qc_full <- rbind(dm_wmndf_qc_train, dm_wmndf_qc_test)
+rm_gord_cor_qc_full <- rbind(rm_gord_cor_qc_train, rm_gord_cor_qc_test)
+rm_gord_var_qc_full <- rbind(rm_gord_var_qc_train, rm_gord_var_qc_test)
+rm_subc_cor_qc_full <- rbind(rm_subc_cor_qc_train, rm_subc_cor_qc_test)
+rm_subc_var_qc_full <- rbind(rm_subc_var_qc_train, rm_subc_var_qc_test)
+sm_cort_sa_qc_full <- rbind(sm_cort_sa_qc_train, sm_cort_sa_qc_test)
+sm_cort_t_qc_full <- rbind(sm_cort_t_qc_train, sm_cort_t_qc_test)
+sm_subc_v_qc_full <- rbind(sm_subc_v_qc_train, sm_subc_v_qc_test)
+p_loneliness_full <- rbind(p_loneliness_train, p_loneliness_test)
+p_screen_time_full <- rbind(p_screen_time_train, p_screen_time_test)
+p_family_function_full <- rbind(p_family_function_train, p_family_function_test)
+p_sports_full <- rbind(p_sports_train, p_sports_test)
+p_prosocial_full <- rbind(p_prosocial_train, p_prosocial_test)
+p_parent_psych_full <- rbind(p_parent_psych_train, p_parent_psych_test)
+p_exercise_full <- rbind(p_exercise_train, p_exercise_test)
+cbcl_headaches_full <- rbind(cbcl_headaches_train, cbcl_headaches_test)
+cbcl_nausea_full <- rbind(cbcl_nausea_train, cbcl_nausea_test)
+cbcl_vomiting_full <- rbind(cbcl_vomiting_train, cbcl_vomiting_test)
+cbcl_dizzy_full <- rbind(cbcl_dizzy_train, cbcl_dizzy_test)
+cbcl_overtired_full <- rbind(cbcl_overtired_train, cbcl_overtired_test)
+cbcl_sleeping_more_full <-
+    rbind(cbcl_sleeping_more_train, cbcl_sleeping_more_test)
+cbcl_sleeping_less_full <-
+    rbind(cbcl_sleeping_less_train, cbcl_sleeping_less_test)
+cbcl_depress_full <- rbind(cbcl_depress_train, cbcl_depress_test)
+cbcl_anxiety_full <- rbind(cbcl_anxiety_train, cbcl_anxiety_test)
+cbcl_attention_full <- rbind(cbcl_attention_train, cbcl_attention_test)
+cbcl_aggressive_full <- rbind(cbcl_aggressive_train, cbcl_aggressive_test)
+sds_sleep_full <- rbind(sds_sleep_train, sds_sleep_test)
+
+full_data_list <- generate_data_list(
+                                mtbi_loc = as_mtbi_loc_full,
+                                mtbi_mechanism = as_mtbi_mechanism_full,
+                                mtbi_mem_daze = as_mtbi_mem_daze_full,
+                                income = d_income_full,
+                                interview_age = d_interview_age_full,
+                                mtbi_age = d_mtbi_age_full,
+                                pubertal_status = d_pubertal_status_full,
+                                sex = d_sex_full,
+                                race = d_race_full,
+                                headaches = mh_headaches_full,
+                                mtbi_count = mh_mtbi_count_full,
+                                wmndf = dm_wmndf_qc_full,
+                                gord_cor = rm_gord_cor_qc_full,
+                                gord_var = rm_gord_var_qc_full,
+                                subc_cor = rm_subc_cor_qc_full,
+                                subc_var = rm_subc_var_qc_full,
+                                cort_sa = sm_cort_sa_qc_full,
+                                cort_t = sm_cort_t_qc_full,
+                                subc_v = sm_subc_v_qc_full,
+                                loneliness = p_loneliness_full,
+                                screen_time = p_screen_time_full,
+                                family_function = p_family_function_full,
+                                sports = p_sports_full,
+                                prosocial = p_prosocial_full,
+                                parent_psych = p_parent_psych_full,
+                                exercise = p_exercise_full)
+
+outcome_list_full <- generate_outcome_list(
+    cbcl_nausea = cbcl_nausea_full,
+    cbcl_vomiting = cbcl_vomiting_full,
+    cbcl_dizzy = cbcl_dizzy_full,
+    cbcl_overtired = cbcl_overtired_full,
+    cbcl_sleeping_more = cbcl_sleeping_more_full,
+    cbcl_sleeping_less = cbcl_sleeping_less_full,
+    cbcl_depress = cbcl_depress_full,
+    cbcl_anxiety = cbcl_anxiety_full,
+    cbcl_attention = cbcl_attention_full,
+    cbcl_aggressive = cbcl_aggressive_full)
+
+
+
+# Options we've previously collected
+# The best row (from the output matrix, which isn't really needed here)
+top_om_row
+
+# The best row (from the design matrix)
+top_dm_row <- design_matrix |>
+    dplyr::filter(row_id %in% top_om_row$row_id)
+top_dm_row
+
+write_csv(top_om_row, proc_path("top_om_row.csv", date = TRUE))
+write_csv(top_dm_row, proc_path("top_dm_row.csv", date = TRUE))
+
+top_om_row <- read_delim(proc_path("top_om_row.csv", date = "2023_02_23"))
+top_dm_row <- read_delim(proc_path("top_dm_row.csv", date = "2023_02_23"))
+
+
+# This formality is in preparation for looping this chunk through many rows
+current_dm_row <- top_dm_row
+current_om_row <- top_om_row
+
+current_data_list <- execute_inclusion(full_data_list, current_dm_row)
+current_K <- current_dm_row$K
+current_alpha <- current_dm_row$alpha
+
+full_fused_network <- snf_step(current_data_list,
+                          "individual",
+                          K = current_K,
+                          alpha = current_alpha)
+
+# Make sure the order between OM and fused network match
+clustered_subs <- colnames(subs(current_om_row))[-1]
+
+test_subs <- as_mtbi_loc_test$subjectkey
+ordered_subs <- c(clustered_subs, test_subs)
+full_fused_network <- full_fused_network[ordered_subs, ordered_subs]
+
+identical(colnames(full_fused_network)[seq_along(clustered_subs)],
+          clustered_subs)
+
+clustered_subjects <- subs(current_om_row) # keep row_id and subj cluster info
+clusters <- data.frame(t(clustered_subjects))
+clusters$id <- rownames(clusters)
+rownames(clusters) <- NULL
+colnames(clusters) <- c("cluster", "subjectkey")
+clusters <- clusters[2:nrow(clusters), ]
+clusters # reformatted for label prop
+
+groups <- clusters$cluster
+groups
+# Another sanity check that everything is in order
+identical(colnames(full_fused_network)[seq_along(clustered_subs)],
+          clusters$subjectkey)
+
+# Label propagation from SNFtool's source code
+Y0 <- matrix(0, nrow(full_fused_network), as.numeric(max(groups)))
+Y0
+groups <- as.numeric(groups)
+for (i in 1:length(groups)){
+    Y0[i,groups[i]] <- 1
+}
+## Need their internal prediction function:
+.csPrediction <- function(W,Y0,method){
+  alpha=0.9;
+  P= W/rowSums(W)
+  if(method==0){
+    Y= (1-alpha)* solve( diag(dim(P)[1])- alpha*P)%*%Y0;
+  } else {
+    NLabel=which(rowSums(Y0)==0)[1]-1;
+    Y=Y0;
+    for (i in 1:1000){
+      Y=P%*%Y;
+      Y[1:NLabel,]=Y0[1:NLabel,];
+    }
+  }
+  return(Y);
+}
+### End of their internal function
+Y <- .csPrediction(W = full_fused_network,Y0,method = TRUE)
+newgroups <- rep(0,nrow(full_fused_network))
+for (i in 1:nrow(Y)){
+    newgroups[i] <- which(Y[i,] == max(Y[i,]))
+}
+newgroups
+
+full_clusters <- as_mtbi_loc_full |> dplyr::select("subjectkey")
+full_clusters$cluster <- newgroups
+testing_subs <- as_mtbi_loc_test$subjectkey
+labeled_test <- full_clusters[full_clusters$subjectkey %in% testing_subs, ]
+test_evaluation_list <- list(
+    labeled_test,
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive)
+test_evaluation_df <- test_evaluation_list |>
+    purrr::reduce(dplyr::inner_join, by = "subjectkey")
+test_evaluation_df$cluster <- as.numeric(test_evaluation_df$cluster)
+test_clusters <- test_evaluation_df |>
+    dplyr::select("subjectkey", "cluster") |>
+    data.frame()
+ord_reg_p(test_clusters, cbcl_dizzy, "cbcl_dizzy")
+ord_reg_p(test_clusters, cbcl_nausea, "cbcl_nausea")
+ord_reg_p(test_clusters, cbcl_overtired, "cbcl_overtired")
+ord_reg_p(test_clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
+ord_reg_p(test_clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
+ord_reg_p(test_clusters, cbcl_anxiety, "cbcl_anxiety")
+ord_reg_p(test_clusters, cbcl_attention, "cbcl_attention")
+ord_reg_p(test_clusters, cbcl_aggressive, "cbcl_aggressive")
+c1_test_df <- test_evaluation_df |> dplyr::filter(cluster == 1)
+c2_test_df <- test_evaluation_df |> dplyr::filter(cluster == 2)
+nrow(c1_test_df) # 6
+nrow(c2_test_df) # 61
+
+write_csv(c1_test_df, proc_path("label_propagated_c1.csv", date = TRUE))
+write_csv(c2_test_df, proc_path("label_propagated_c2.csv", date = TRUE))
+write_csv(test_evaluation_df, proc_path("test_evaluation_df.csv", date = TRUE))
+
+c1_test_df <- data.frame(read_delim(proc_path("label_propagated_c1.csv",
+    date = "2023_02_23")))
+c2_test_df <- data.frame(read_delim(proc_path("label_propagated_c2.csv",
+    date = "2023_02_23")))
+test_evaluation_df <- data.frame(read_delim(proc_path("test_evaluation_df.csv",
+    date = "2023_02_23")))
+
+c1_test_df$cbcl_total <- c1_test_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+c2_test_df$cbcl_total <- c2_test_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+# A new thing thrown in for testing
+c1_test_df <- c1_test_df |>
+    rowwise() |>
+    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))
+c2_test_df <- c2_test_df |>
+    rowwise() |>
+    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))
+
+
+c1_impaired_frac <- length(which(c1_test_df$max_impair > 1)) / nrow(c1_test_df)
+c2_impaired_frac <- length(which(c2_test_df$max_impair > 1)) / nrow(c2_test_df)
+true_diff <- c1_impaired_frac - c2_impaired_frac
+
+c1_border_frac <- length(which(c1_test_df$max_impair > 0)) / nrow(c1_test_df)
+c2_border_frac <- length(which(c2_test_df$max_impair > 0)) / nrow(c2_test_df)
+true_diff_border <- c1_border_frac - c2_border_frac
+
+test_evaluation_df$cbcl_total <- test_evaluation_df |>
+    dplyr::select(dplyr::contains("cbcl")) |>
+    rowSums()
+
+test_evaluation_df <- test_evaluation_df |>
+    rowwise() |>
+    dplyr::mutate(max_impair=max(c_across(cbcl_nausea:cbcl_aggressive)))
+```
+
+## Permutation testing
+
+### CBCL proportions
+
+```{r}
+# Permutation testing difference in proportion
+vector_uniform <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- sample.int(66, 1)
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 1)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 1)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_uniform <- c(vector_uniform, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_uniform)
+1 - percentile(true_diff) # The p-value
+
+png(fig_path("difference_in_proportion_cbcl_uniform_lp.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+# This is an essential plot
+hist(vector_uniform,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of children with clinical CBCL impairment")
+abline(v = true_diff,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
+dev.off()
+
+# Preserving the 6 and 61 split size
+vector_6_61 <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- 6
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 1)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 1)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_6_61 <- c(vector_6_61, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_6_61)
+1 - percentile(true_diff) # The p-value
+
+png(fig_path("difference_in_proportion_cbcl_6_61_lp.png"),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+hist(vector_6_61,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of children with clinical CBCL impairment")
+abline(v = true_diff,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
+dev.off()
+
+# Permutation testing difference in proportion borderline OR clinical
+vector_uniform <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- sample.int(66, 1)
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 0)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 0)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_uniform <- c(vector_uniform, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_uniform)
+1 - percentile(true_diff_border) # The p-value is 0.0341
+
+png(fig_path("difference_in_proportion_any_cbcl_uniform_lp.png", date = TRUE),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+# This is an essential plot
+hist(vector_uniform,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of any CBCL impairment")
+abline(v = true_diff_border,
+    col = "red")
+axis(1,at=seq(-1,1,by=0.5))
+dev.off()
+
+# Preserving the 6 and 61 split size
+vector_6_61 <- c()
+set.seed(42)
+for (i in 1:10000) {
+    number_in_c1 <- 6
+    c1_indices <- sample(67, size = number_in_c1)
+    c2_indices <- which(!(1:67 %in% c1_indices))
+    mock_c1_df <- test_evaluation_df[c1_indices, c("cluster", "max_impair")]
+    mock_c2_df <- test_evaluation_df[c2_indices, c("cluster", "max_impair")]
+    c1_impaired_frac <-
+        length(which(mock_c1_df$max_impair > 0)) / nrow(mock_c1_df)
+    c2_impaired_frac <-
+        length(which(mock_c2_df$max_impair > 0)) / nrow(mock_c2_df)
+    difference <- c1_impaired_frac - c2_impaired_frac
+    print(i)
+    vector_6_61 <- c(vector_6_61, difference)
+    if (is.nan(difference)) {
+        print(c1_impaired_frac)
+        print(c2_impaired_frac)
+        print(number_in_c1)
+    }
+}
+percentile <- ecdf(vector_6_61)
+1 - percentile(true_diff_border) # The p-value
+
+png(fig_path("difference_in_proportion_any_cbcl_6_61_lp.png", date = TRUE),
+    height = 5,
+    width = 5,
+    units = "in",
+    res = 300)
+
+hist(vector_6_61,
+    col = "gray",
+    las = 1,
+    main = "",
+    breaks = 30,
+    xlab = "Difference in proportion of any CBCL impairment")
+abline(v = true_diff_border,
+    col = "red")
+
+dev.off()
+```
+
+## CBCL relationships
+
+```{r}
+
+c1_df
+
+test_evaluation_df
+
+c1_test_matrix <- c1_test_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+c1_test_matrix <- c1_test_matrix[, cbcl_outcome_clustering]
+
+
+c2_test_matrix <- c2_test_df |>
+    dplyr::select(dplyr::starts_with("cbcl"), -cbcl_total) |>
+    as.matrix()
+c2_test_matrix <- c2_test_matrix[, cbcl_outcome_clustering]
+
+
+pheatmap(c1_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+pheatmap(c2_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE)
+
+pheatmap(c1_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = fig_path("cbcl_test_matrix_c1.png", date = TRUE))
+dev.off()
+
+pheatmap(c2_test_matrix,
+    cellheight = 3,
+    color = colours,
+    legend_breaks = c(0, 1, 2),
+    cellwidth = 30,
+    cluster_cols = FALSE,
+    filename = fig_path("cbcl_test_matrix_c2.png", date = TRUE))
+dev.off()
+
+```
+
+
+
+## Odds ratios
+```{r}
+
+# Training subjects only
+cbcl_outcomes <- list(
+    cbcl_nausea,
+    cbcl_vomiting,
+    cbcl_dizzy,
+    cbcl_overtired,
+    cbcl_sleeping_more,
+    cbcl_sleeping_less,
+    cbcl_depress,
+    cbcl_anxiety,
+    cbcl_attention,
+    cbcl_aggressive)
+
+top_om_row
+
+
+or_om_row <- function(om_row, outcome_list) {
+    om_row_subs <- subs(om_row)
+    clusters_df <- data.frame(t(om_row_subs))
+    clusters_df$cluster <- rownames(clusters_df)
+    rownames(clusters_df) <- NULL
+    colnames(clusters_df) <- c("cluster", "subjectkey")
+    clusters_df <- clusters_df[2:nrow(clusters_df), ]
+    clusters_and_outcomes_list <- append(list(clusters_df), outcome_list)
+    clusters_and_outcomes_df <- clusters_and_outcomes_list |>
+        purrr::reduce(dplyr::inner_join, by = "subjectkey")
+    return(clusters_and_outcomes_df)
+}
+train_evaluation_df <- or_om_row(top_om_row, cbcl_outcomes)
+
+train_evaluation_df
+
+
+odds_ratio <- function(de, he, dn, hn) {
+    numerator <- de / he
+    denominator <- dn / hn
+    return(numerator / denominator)
+}
+
+
+cbcl_or <- function(evaluation_df) {
+    or_df <- data.frame(outcome = as.character(),
+                        or = as.numeric(),
+                        ci_low = as.numeric(),
+                        ci_high = as.numeric())
+    outcome_names <- evaluation_df |>
+        dplyr::select(dplyr::starts_with("cbcl")) |>
+        colnames()
+    for (i in seq_along(outcome_names)) {
+        current_outcome <- outcome_names[i]
+        or_summary <- evaluation_df |>
+            group_by(cluster) |>
+            count(evaluation_df[, current_outcome] > 0)
+        colnames(or_summary) <- c("cluster", "bad_outcome", "n")
+        # Calculating odds ratios
+        de_bad_c1 <- or_summary |>
+            dplyr::filter(cluster == 1 & bad_outcome == TRUE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        he_good_c1 <- or_summary |>
+            dplyr::filter(cluster == 1 & bad_outcome == FALSE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        dn_bad_c2 <- or_summary |>
+            dplyr::filter(cluster == 2 & bad_outcome == TRUE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        hn_good_c2 <- or_summary |>
+            dplyr::filter(cluster == 2 & bad_outcome == FALSE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        or <- odds_ratio(de = de_bad_c1,
+            he = he_good_c1,
+            dn = dn_bad_c2,
+            hn = hn_good_c2)
+        # Calculating upper and lower bounds
+        a_val <- de_bad_c1
+        c_val <- dn_bad_c2
+        b_val <- he_good_c1
+        d_val <- hn_good_c2
+        num <- a_val/b_val
+        den <- c_val/d_val
+        se_ln_or <- sqrt((1/a_val + 1/b_val + 1/c_val + 1/d_val))
+        ln_or <- log(num/den)
+        lower <- exp(ln_or - 1.96 * se_ln_or)
+        upper <- exp(ln_or + 1.96 * se_ln_or)
+        current_df <- data.frame(outcome = current_outcome,
+                              or = or,
+                              ci_low = lower,
+                              ci_high = upper)
+        or_df <- rbind(or_df, current_df)
+    }
+    return(or_df)
+}
+
+test_evaluation_df <- data.frame(test_evaluation_df)
+
+train_cbcl_ors <- cbcl_or(train_evaluation_df)
+
+test_cbcl_ors <- cbcl_or(test_evaluation_df) |>
+    dplyr::filter(!(outcome == "cbcl_total"))
+
+
+outcome_order <- train_cbcl_ors$outcome[cbcl_outcome_clustering]
+
+train_cbcl_ors <- train_cbcl_ors |>
+    arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
+    mutate(row = row_number())
+
+test_cbcl_ors <- test_cbcl_ors |>
+    arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
+    mutate(row = row_number())
+
+test_cbcl_ors
+
+train_cbcl_ors$outcome <- as.factor(train_cbcl_ors$outcome)
+
+
+ggplot(train_cbcl_ors, aes(y = reorder(outcome, rev(row)),
+                          x = or,
+                          color = ci_low > 1)) +
+    geom_point(shape = 18, size = 10, show.legend = FALSE) +
+    geom_errorbarh(aes(xmin = ci_low, xmax = ci_high),
+                   height = 0.5, size = 1.5, show.legend = FALSE) +
+    geom_vline(xintercept = 1,
+             linetype = "dashed",
+             cex = 1,
+             alpha = 0.5) +
+    xlab("Odds Ratio (95% CI)") +
+    ylab(" ") +
+    scale_x_continuous(trans = 'log10') +
+    scale_y_discrete(labels = c("Undersleeping",
+                                "Nauseous",
+                                "Overtired",
+                                "Vomiting",
+                                "Dizzy",
+                                "Oversleeping",
+                                "Anxious",
+                                "Depressed",
+                                "Aggressive",
+                                "Attention issues")) +
+    scale_colour_manual(values = "#F8766D") +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(colour = "black"),
+        axis.title.x = element_text(colour = "black",
+                                    margin = margin(t = 15,
+                                                    r = 20, b = 0, l = 0)),
+        axis.text.x.bottom = element_text(colour = "black"),
+        text = element_text(size = 30))
+#    labs(colour = "Significant OR") +
+ggsave(fig_path("training_cbcl_ors.png", date = TRUE), height = 6, dpi = 300)
+
+ggplot(test_cbcl_ors, aes(y = reorder(outcome, rev(row)),
+                          x = or,
+                          color = ci_low > 1)) +
+    geom_point(shape = 18, size = 10, show.legend = FALSE) +
+    geom_errorbarh(aes(xmin = ci_low, xmax = ci_high),
+                   height = 0.5, size = 1.5, show.legend = FALSE) +
+    geom_vline(xintercept = 1,
+             linetype = "dashed",
+             cex = 1,
+             alpha = 0.5) +
+    xlab("Odds Ratio (95% CI)") +
+    ylab(" ") +
+    scale_x_continuous(trans = 'log10') +
+    scale_y_discrete(labels = c("Undersleeping",
+                                "Nauseous",
+                                "Overtired",
+                                "Vomiting",
+                                "Dizzy",
+                                "Oversleeping",
+                                "Anxious",
+                                "Depressed",
+                                "Aggressive",
+                                "Attention issues")) +
+    scale_colour_manual(values = c("darkgray", "#F8766D")) +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(colour = "black"),
+        axis.title.x = element_text(colour = "black",
+                                    margin = margin(t = 15,
+                                                    r = 20, b = 0, l = 0)),
+        axis.text.x.bottom = element_text(colour = "black"),
+        text = element_text(size = 30))
+#    labs(colour = "Significant OR") +
+
+ggsave(fig_path("testing_cbcl_ors.png", date = TRUE), height = 6, dpi = 300)
+
+
+```
+
+
+## Individual CBCL measures as bar charts
+
+```{r}
+test_comparison_df <- rbind(c1_test_df, c2_test_df) 
+
+test_comparison_df$cluster <- as.factor(test_comparison_df$cluster)
+
+nausea_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_nausea) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+nausea_summary$cbcl_nausea <-
+    factor(nausea_summary$cbcl_nausea, levels = c("2", "1", "0"))
+ggplot(nausea_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_nausea)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_nausea_lp.png"))
+
+dizzy_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_dizzy) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+dizzy_summary$cbcl_dizzy <-
+    factor(dizzy_summary$cbcl_dizzy, levels = c("2", "1", "0"))
+ggplot(dizzy_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_dizzy)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL dizzy Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_dizzy_lp.png"))
+
+overtired_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_overtired) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+overtired_summary$cbcl_overtired <-
+    factor(overtired_summary$cbcl_overtired, levels = c("2", "1", "0"))
+ggplot(overtired_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_overtired)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL overtired Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_overtired_lp.png"))
+
+sleeping_more_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_sleeping_more) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+sleeping_more_summary$cbcl_sleeping_more <-
+    factor(sleeping_more_summary$cbcl_sleeping_more, levels = c("2", "1", "0"))
+ggplot(sleeping_more_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_sleeping_more)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_more Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_sleeping_more_lp.png"))
+
+sleeping_less_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_sleeping_less) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+sleeping_less_summary$cbcl_sleeping_less <-
+    factor(sleeping_less_summary$cbcl_sleeping_less, levels = c("2", "1", "0"))
+ggplot(sleeping_less_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_sleeping_less)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_less Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_sleeping_less_lp.png"))
+
+anxiety_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_anxiety) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+anxiety_summary$cbcl_anxiety <-
+    factor(anxiety_summary$cbcl_anxiety, levels = c("2", "1", "0"))
+ggplot(anxiety_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_anxiety)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL anxiety Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_anxiety_lp.png"))
+
+attention_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_attention) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+attention_summary$cbcl_attention <-
+    factor(attention_summary$cbcl_attention, levels = c("2", "1", "0"))
+ggplot(attention_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_attention)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL attention Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_attention_lp.png"))
+
+aggressive_summary <- test_comparison_df |>
+    group_by(cluster) |>
+    count(cbcl_aggressive) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+aggressive_summary$cbcl_aggressive <-
+    factor(aggressive_summary$cbcl_aggressive, levels = c("2", "1", "0"))
+ggplot(aggressive_summary,
+    aes(x = cluster, y = Percent, fill = cbcl_aggressive)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5)) +
+    labs(x = "Cluster", y = "Percentage", fill = "CBCL aggressive Grade") +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+ggsave(fig_path("2023_02_22_cbcl_aggressive_lp.png"))
+
+```
+
+## Input variable characterization
+
+```{r}
+
+train_input_char <- list(train_evaluation_df,
+    as_mtbi_loc_train,
+    as_mtbi_mechanism_train,
+    as_mtbi_mem_daze_train,
+    d_income_train,
+    d_interview_age_train,
+    d_mtbi_age_train,
+    d_pubertal_status_train,
+    d_race_train,
+    d_sex_train,
+    mh_headaches_train,
+    mh_mtbi_count_train,
+    p_loneliness_train,
+    p_screen_time_train,
+    p_family_function_train,
+    p_sports_train,
+    p_prosocial_train,
+    p_parent_psych_train,
+    p_exercise_train,
+    nihtbx_list_fc,
+    nihtbx_pattern_fc,
+    nihtbx_cardsort_fc)
+
+
+test_input_char <- list(test_evaluation_df,
+    as_mtbi_loc_test,
+    as_mtbi_mechanism_test,
+    as_mtbi_mem_daze_test,
+    d_income_test,
+    d_interview_age_test,
+    d_mtbi_age_test,
+    d_pubertal_status_test,
+    d_race_test,
+    d_sex_test,
+    mh_headaches_test,
+    mh_mtbi_count_test,
+    p_loneliness_test,
+    p_screen_time_test,
+    p_family_function_test,
+    p_sports_test,
+    p_prosocial_test,
+    p_parent_psych_test,
+    p_exercise_test)
+
+
+input_train_df <- train_input_char |>
+    purrr::reduce(dplyr::inner_join, by = "subjectkey")
+
+input_test_df <- test_input_char |>
+    purrr::reduce(dplyr::inner_join, by = "subjectkey")
+
+input_train_df <- input_train_df |>
+    dplyr::mutate(
+        F = dplyr::case_when(M == 0 ~ 1, TRUE ~ 0),
+        pubertal = dplyr::case_when(pubertal_status > 2 ~ 1, TRUE ~ 0),
+        non_white = dplyr::case_when(race != "white" ~ 1, TRUE ~ 0),
+        parent_psych = dplyr::case_when(asr_scr_totprob_r > 63 ~ 1, TRUE ~ 0))
+input_train_df$cluster <- as.factor(input_train_df$cluster)
+
+# Participants scoring above 63 on the ASR scales are considered to be in the
+#  clinical range (Achenbach and Rescorla 2003).
+input_test_df <- input_test_df |>
+    dplyr::mutate(
+        F = dplyr::case_when(M == 0 ~ 1, TRUE ~ 0),
+        pubertal = dplyr::case_when(pubertal_status > 2 ~ 1, TRUE ~ 0),
+        non_white = dplyr::case_when(race != "white" ~ 1, TRUE ~ 0),
+        parent_psych = dplyr::case_when(asr_scr_totprob_r > 63 ~ 1, TRUE ~ 0))
+input_test_df$cluster <- as.factor(input_test_df$cluster)
+
+input_train_df$total_family_env <- input_train_df |>
+    dplyr::select(cluster, "q1_fight":"q9_yell") |>
+    sapply(as.numeric) |>
+    rowSums()
+
+input_test_df$total_family_env <- input_test_df |>
+    dplyr::select(cluster, "q1_fight":"q9_yell") |>
+    sapply(as.numeric) |>
+    rowSums()
+
+
+c1in <- input_train_df[input_train_df$cluster == 1, ]
+c2in <- input_train_df[input_train_df$cluster == 2, ]
+
+c1in_test <- input_test_df[input_test_df$cluster == 1, ]
+c2in_test <- input_test_df[input_test_df$cluster == 2, ]
+
+# More females in c1
+length(which(c1in$M == 0)) / length(c1in$M) # 50% F
+length(which(c2in$M == 0)) / length(c2in$M) # 33% F
+
+odds_ratio_and_ci <- function(dataframe, outcome) {
+    summary_df <- dataframe |>
+        dplyr::group_by_at("cluster") |>
+        dplyr::count(dataframe[, outcome])
+    colnames(summary_df) <- c("cluster", as.character(outcome), "n")
+    a_val <- summary_df$"n"[1]
+    c_val <- summary_df$"n"[2]
+    b_val <- summary_df$"n"[3]
+    d_val <- summary_df$"n"[4]
+    summary_df$exposure <- c("exposed", "exposed", "control", "control")
+    summary_df$health <- c("healthy", "diseased", "healthy", "diseased")
+    print(summary_df)
+    or <- odds_ratio(he = a_val, de = c_val, hn = b_val, dn = d_val)
+    se_ln_or <- sqrt((1/a_val + 1/b_val + 1/c_val + 1/d_val))
+    ln_or <- log(or)
+    lower <- exp(ln_or - 1.96 * se_ln_or)
+    upper <- exp(ln_or + 1.96 * se_ln_or)
+    or_df <- data.frame(outcome = as.character(outcome),
+                        or = as.numeric(round(or, 2)),
+                        ci_low = as.numeric(round(lower, 2)),
+                        ci_high = as.numeric(round(upper, 2)))
+    print(or_df)
+}
+
+
+colnames(input_train_df)
+
+# S checks (train)
+odds_ratio_and_ci(input_train_df, "F") # S
+odds_ratio_and_ci(input_train_df, "non_white") # S
+odds_ratio_and_ci(input_train_df, "pubertal") # S
+odds_ratio_and_ci(input_train_df, "parent_psych") # S (clinical range parent)
+t.test(c1in$screentime_wknd_hrs, c2in$screentime_wknd_hrs)
+t.test(c1in$screentime_wkday_hrs, c2in$screentime_wkday_hrs)
+
+t.test(c1in$nihtbx_list_fc, c2in$nihtbx_list_fc)
+t.test(c1in$nihtbx_pattern_fc, c2in$nihtbx_pattern_fc)
+t.test(c1in$nihtbx_cardsort_fc, c2in$nihtbx_cardsort_fc)
+
+
+# NS checks (train)
+odds_ratio_and_ci(input_train_df, "latest_mtbi_loc")
+odds_ratio_and_ci(input_train_df, "latest_mtbi_mem_daze")
+t.test(c1in$interview_age, c2in$interview_age)
+t.test(c1in$latest_mtbi_age, c2in$latest_mtbi_age)
+t.test(c1in$mtbi_count, c2in$mtbi_count)
+t.test(c1in$ss_friend, c2in$ss_friend)
+t.test(c1in$os_friend, c2in$os_friend)
+t.test(c1in$os_close_friend, c2in$os_close_friend)
+t.test(c1in$ss_close_friend, c2in$ss_close_friend)
+
+# S checks (test)
+odds_ratio_and_ci(input_test_df, "pubertal")
+t.test(c1in_test$ss_friend, c2in_test$ss_friend) # Not in original
+t.test(c1in_test$latest_mtbi_age, c2in_test$latest_mtbi_age) # not in original
+
+
+# Trending checks (test)
+odds_ratio_and_ci(input_test_df, "non_white")
+odds_ratio_and_ci(input_test_df, "parent_psych")
+
+# NS checks (test)
+odds_ratio_and_ci(input_test_df, "F") # NS
+odds_ratio_and_ci(input_test_df, "latest_mtbi_loc")
+odds_ratio_and_ci(input_test_df, "latest_mtbi_mem_daze")
+
+
+t.test(c1in_test$screentime_wknd_hrs, c2in_test$screentime_wknd_hrs)
+t.test(c1in_test$screentime_wkday_hrs, c2in_test$screentime_wkday_hrs)
+t.test(c1in_test$interview_age, c2in_test$interview_age)
+t.test(c1in_test$mtbi_count, c2in_test$mtbi_count)
+t.test(c1in_test$os_friend, c2in_test$os_friend)
+t.test(c1in_test$os_close_friend, c2in_test$os_close_friend)
+t.test(c1in_test$ss_close_friend, c2in_test$ss_close_friend)
+
+
+head(input_test_df)
+
+input_train_ors <- do.call("rbind", list(
+    train_cbcl_ors[, 1:4],
+    odds_ratio_and_ci(input_train_df, "F"),
+    odds_ratio_and_ci(input_train_df, "non_white"),
+    odds_ratio_and_ci(input_train_df, "pubertal"),
+    odds_ratio_and_ci(input_train_df, "parent_psych"),
+    odds_ratio_and_ci(input_test_df, "latest_mtbi_loc"),
+    odds_ratio_and_ci(input_test_df, "latest_mtbi_mem_daze")))
+
+input_train_ors <- input_train_ors |>
+    arrange(sapply(outcome, function(y) which(y == outcome_order))) |>
+    mutate(row = row_number())
+
+ggplot(input_train_ors,
+        aes(y = reorder(outcome, rev(row)),
+            x = or,
+            color = ci_low > 1)) +
+    geom_point(shape = 18, size = 10, show.legend = FALSE) +
+    geom_errorbarh(aes(xmin = ci_low, xmax = ci_high),
+                   height = 0.5, size = 1.5, show.legend = FALSE) +
+    geom_vline(xintercept = 1,
+             linetype = "dashed",
+             cex = 1,
+             alpha = 0.5) +
+    geom_hline(yintercept = 6.5, cex = 0.3) +
+    xlab("Odds Ratio (95% CI)") +
+    ylab(" ") +
+    scale_x_continuous(trans = "log10") +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.y = element_text(colour = "black"),
+        axis.title.x = element_text(colour = "black",
+                                    margin = margin(t = 15,
+                                                    r = 20, b = 0, l = 0)),
+        axis.text.x.bottom = element_text(colour = "black"),
+        text = element_text(size = 30))
+
+ggsave(fig_path("training_input_ors.png", date = TRUE), height = 6, dpi = 300)
+
+
+ggplot(input_train_df, mapping = aes(x = cluster, y = screentime_wkday_hrs)) +
+    geom_boxplot() +
+    geom_jitter(height = 0, width = 0.1, alpha = 0.5)
+
+ggplot(input_train_df, mapping = aes(x = cluster, y = screentime_wknd_hrs)) +
+    geom_boxplot() +
+    geom_jitter(height = 0, width = 0.1, alpha = 0.5)
+
+
+# This is actually fire emoji
+pvals <- c(
+    t.test(c1in$asr_scr_perstr_r, c2in$asr_scr_perstr_r)$p.value,
+    t.test(c1in$asr_scr_anxdep_r, c2in$asr_scr_anxdep_r)$p.value,
+    t.test(c1in$asr_scr_withdrawn_r, c2in$asr_scr_withdrawn_r)$p.value,
+    t.test(c1in$asr_scr_somatic_r, c2in$asr_scr_somatic_r)$p.value,
+    t.test(c1in$asr_scr_thought_r, c2in$asr_scr_thought_r)$p.value,
+    t.test(c1in$asr_scr_attention_r, c2in$asr_scr_attention_r)$p.value,
+    t.test(c1in$asr_scr_aggressive_r, c2in$asr_scr_aggressive_r)$p.value,
+    t.test(c1in$asr_scr_rulebreak_r, c2in$asr_scr_rulebreak_r)$p.value,
+    t.test(c1in$asr_scr_intrusive_r, c2in$asr_scr_intrusive_r)$p.value,
+    t.test(c1in$asr_scr_internal_r, c2in$asr_scr_internal_r)$p.value,
+    t.test(c1in$asr_scr_external_r, c2in$asr_scr_external_r)$p.value,
+    t.test(c1in$asr_scr_totprob_r, c2in$asr_scr_totprob_r)$p.value,
+    t.test(c1in$asr_scr_depress_r, c2in$asr_scr_depress_r)$p.value,
+    t.test(c1in$asr_scr_anxdisord_r, c2in$asr_scr_anxdisord_r)$p.value,
+    t.test(c1in$asr_scr_somaticpr_r, c2in$asr_scr_somaticpr_r)$p.value,
+    t.test(c1in$asr_scr_avoidant_r, c2in$asr_scr_avoidant_r)$p.value,
+    t.test(c1in$asr_scr_adhd_r, c2in$asr_scr_adhd_r)$p.value,
+    t.test(c1in$asr_scr_antisocial_r, c2in$asr_scr_antisocial_r)$p.value,
+    t.test(c1in$asr_scr_inattention_r, c2in$asr_scr_inattention_r)$p.value,
+    t.test(c1in$asr_scr_hyperactive_r, c2in$asr_scr_hyperactive_r)$p.value)
+mean(pvals)
+
+
+
+f_summary <- input_test_df |>
+    group_by(cluster) |>
+    count(F) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+f_summary$F <- factor(f_summary$F)
+ggplot(f_summary,
+    aes(x = cluster, y = Percent, fill = F)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5), size = 6) +
+    labs(x = "Cluster", y = "Percentage", fill = "Sex") +
+    theme_bw() +
+    theme(text = element_text(size = 30)) +
+    scale_fill_discrete(labels = c("F", "M"))
+
+ggsave(fig_path("test_sex_bar.png", date = TRUE), height = 6, width = 8, dpi = 300)
+
+
+colnames(input_test_df)
+
+white_summary <- input_test_df |>
+    group_by(cluster) |>
+    count(non_white) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+white_summary$non_white <- factor(white_summary$non_white, levels = c(1, 0))
+ggplot(white_summary,
+    aes(x = cluster, y = Percent, fill = non_white)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5), size = 6) +
+    labs(x = "Cluster", y = "Percentage", fill = "Race") +
+    theme_bw() +
+    theme(text = element_text(size = 30)) +
+    scale_fill_discrete(labels = c("Non-white", "White"))
+ggsave(fig_path("test_white_bar.png", date = TRUE), height = 6, width = 8, dpi = 300)
+
+
+parent_psych_summary <- input_test_df |>
+    group_by(cluster) |>
+    count(parent_psych) |>
+    mutate(Percent = round(n / sum(n) * 100, 1))
+parent_psych_summary$parent_psych <-
+    factor(parent_psych_summary$parent_psych, levels = c(1, 0))
+ggplot(parent_psych_summary,
+    aes(x = cluster, y = Percent, fill = parent_psych)) +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_text(aes(label = paste(Percent, "%"), y = Percent),
+            position = position_stack(vjust = 0.5), size = 6) +
+    labs(x = "Cluster",
+         y = "Percentage",
+         fill = "Parent\nPsychopathology\nScore") +
+    theme_bw() +
+    theme(text = element_text(size = 30)) +
+    scale_fill_discrete(labels = c("Clinical", "Normal"))
+
+ggsave(fig_path("test_parent_psych_bar.png", date = TRUE), height = 6, dpi = 300)
+
+```
+
+
+# Permutation testing the inputs again
+
+```{r}
+permutation_test <- function(df, param, title, save_plot = FALSE) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    true_diff <- mean(vals1) - mean(vals2)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:10000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mean_difference <- mean(mock_c1) - mean(mock_c2)
+        results <- c(results, mean_difference)
+    }
+    percentile <- ecdf(results)
+    print(paste0("The true mean difference: ", signif(true_diff, 2)))
+    print("The 5% and 95% percentiles:")
+    print(quantile(results, probs = c(0.05, 0.95)))
+    p_value <- length(which(results >= true_diff)) / (length(results))
+    print(paste0("p-value: ", p_value))
+    if (save_plot) {
+        png(fig_path(paste0("lp_ptest_", param, ".png"), date = TRUE),
+            height = 5,
+            width = 5,
+            units = "in",
+            res = 300)
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+        dev.off()
+    } else {
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+    }
+}
+
+permutation_test(input_test_df, "cbcl_nausea", "Nauseous")
+
+permutation_test(input_test_df, "cbcl_vomiting", "Vomiting")
+
+permutation_test(input_test_df, "cbcl_dizzy", "Dizzy")
+
+permutation_test(input_test_df, "cbcl_overtired", "Overtired")
+
+permutation_test(input_test_df, "cbcl_sleeping_less", "Oversleeping")
+
+permutation_test(input_test_df, "cbcl_sleeping_more", "Undersleeping")
+
+permutation_test(input_test_df, "cbcl_depress", "Depressed") # 0.010
+
+permutation_test(input_test_df, "cbcl_anxiety", "Anxious") # 0.0098
+
+permutation_test(input_test_df, "cbcl_attention", "Attention issues") # 0.0013
+
+permutation_test(input_test_df, "cbcl_aggressive", "Aggressive") # 0.0010
+
+permutation_test(input_test_df, "F", "Female") # 0.53
+
+permutation_test(input_test_df, "non_white", "Non-white") # 0.0018
+
+permutation_test(input_test_df, "pubertal", "Pubertal") # 0.014
+
+permutation_test(input_test_df,
+                 "parent_psych",
+                 "Clinical Parent\nPsychopathology") # 0.25
+
+
+permutation_test_prop <- function(df, param, title, save_plot = FALSE) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    prop1 <- length(which(vals1 > 0)) / length(vals1)
+    prop2 <- length(which(vals2 > 0)) / length(vals2)
+    prop_diff <- prop1 - prop2
+    print(prop_diff)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:1000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mock_prop1 <- length(which(mock_c1 > 0)) / length(mock_c1)
+        mock_prop2 <- length(which(mock_c2 > 0)) / length(mock_c2)
+        mock_prop_diff <- mock_prop1 - mock_prop2
+        results <- c(results, mock_prop_diff)
+    }
+    p_value <- length(which(results >= prop_diff)) / (length(results))
+    print(p_value)
+    if (save_plot) {
+        png(fig_path(paste0("lp_ptest_", param, ".png"), date = TRUE),
+            height = 5,
+            width = 5,
+            units = "in",
+            res = 300)
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Difference in Proportion",
+             main = title)
+        abline(v = prop_diff,
+            col = "red")
+        dev.off()
+    } else {
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Difference in Proportion",
+             main = title)
+        abline(v = prop_diff,
+            col = "red")
+    }
+}
+
+permutation_test_prop(input_test_df, "non_white", "Non-white")
+
+permutation_test_prop(input_test_df, "F", "Female") # 0.53
+
+permutation_test_prop(input_test_df, "non_white", "Non-white") # 0.0018
+
+permutation_test_prop(input_test_df, "pubertal", "Pubertal") # 0.014
+
+permutation_test_prop(input_test_df,
+                 "parent_psych",
+                 "Clinical Parent\nPsychopathology") # 0.25
+
+
+
+
+permutation_test_prop(input_test_df, "non_white", "Non-white",
+                      save_plot = TRUE)
+
+permutation_test_prop(input_test_df, "F", "Female",
+                      save_plot = TRUE) # 0.53
+
+permutation_test_prop(input_test_df, "non_white", "Non-white",
+                      save_plot = TRUE) # 0.0018
+
+permutation_test_prop(input_test_df, "pubertal", "Pubertal",
+                      save_plot = TRUE) # 0.014
+
+permutation_test_prop(input_test_df,
+                 "parent_psych",
+                 "Clinical Parent\nPsychopathology", save_plot = TRUE) # 0.25
+
+# Function for debugging
+permutation_test_d <- function(df, param, title) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    prop1 <- length(which(vals1 > 0)) / length(vals1)
+    prop2 <- length(which(vals2 > 0)) / length(vals2)
+    prop_diff <- prop1 - prop2
+    print(prop_diff)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:1000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mock_prop1 <- length(which(mock_c1 > 0)) / length(mock_c1)
+        mock_prop2 <- length(which(mock_c2 > 0)) / length(mock_c2)
+        mock_prop_diff <- mock_prop1 - mock_prop2
+        results <- c(results, mock_prop_diff)
+    }
+    p_value <- length(which(results >= prop_diff)) / (length(results))
+    print(p_value)
+    print(which(results == prop_diff))
+}
+
+permutation_test_d(input_test_df, "pubertal", "Pubertal") # 0.014
+
+
+```
+
+# Cohen's d
+
+```{r}
+
+cohens_d <- function(df, param) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    mean1 <- mean(vals1)
+    print(mean1)
+    mean2 <- mean(vals2)
+    print(mean2)
+    n1 <- length(vals1)
+    n2 <- length(vals2)
+    std1 <- sd(vals1)
+    std2 <- sd(vals2)
+    sdp <- sqrt((std1^2 + std2^2)/2)
+    d <- (mean1 - mean2) / sdp
+    return(d)
+}
+cohens_d(input_test_df, "non_white")
+
+```
+
+
+
+
+# Neuroimaging things
+
+```{r}
+
+input_train_df
+
+```
+
+
+
+
