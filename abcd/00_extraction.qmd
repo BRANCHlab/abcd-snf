@@ -66,8 +66,8 @@ mtbi_subjects_2 <- get_mtbi_subjects(abcd_lpohstbi01, min_mpi = 3, t = 2)
 mtbi_subjects_1_2 <-
     dplyr::full_join(mtbi_subjects_1, mtbi_subjects_2, by = "subjectkey")
 
-## Those with injuries in year 1 + 2, but not year 0 (eXclusively Longitudinal)
-mtbi_subjects_xl <- mtbi_subjects_1_2[which(!(
+## Those with injuries in year 1 + 2, but not year 0 (exclusively longitudinal)
+mtbi_subjects_l <- mtbi_subjects_1_2[which(!(
     mtbi_subjects_1_2$"subjectkey" %in%
         mtbi_subjects_0_no_min$"subjectkey")), ]
 
@@ -78,8 +78,8 @@ uninjured_subjects <- get_uninjured_subjects(abcd_otbi01, abcd_lpohstbi01)
 #  latest injury in year 1 and which ones had their latest injury in year 2.
 #  This is only so that the mTBI specific variables, like memory loss, are
 #  recorded for the most recent injury.
-mtbi_subjects_1_not_0 <- dplyr::semi_join(mtbi_subjects_1, mtbi_subjects_xl)
-mtbi_subjects_2_not_0 <- dplyr::semi_join(mtbi_subjects_2, mtbi_subjects_xl)
+mtbi_subjects_1_not_0 <- dplyr::semi_join(mtbi_subjects_1, mtbi_subjects_l)
+mtbi_subjects_2_not_0 <- dplyr::semi_join(mtbi_subjects_2, mtbi_subjects_l)
 
 # Note that the longitudinal subjects have not been filtered in any way based on
 #  whether or not they also had an mTBI at bsaeline or another timepoint
@@ -87,14 +87,14 @@ write_csv(mtbi_subjects_0, sub_path("mtbi_subjects_0.csv", date = TRUE))
 write_csv(mtbi_subjects_1, sub_path("mtbi_subjects_1.csv", date = TRUE))
 write_csv(mtbi_subjects_2, sub_path("mtbi_subjects_2.csv", date = TRUE))
 write_csv(mtbi_subjects_1_2, sub_path("mtbi_subjects_1_2.csv", date = TRUE))
-write_csv(mtbi_subjects_xl, sub_path("mtbi_subjects_xl.csv", date = TRUE))
+write_csv(mtbi_subjects_l, sub_path("mtbi_subjects_l.csv", date = TRUE))
 write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
-mtbi_subjects_0 <- read_csv(sub_path("2023_03_23_mtbi_subjects_0.csv"))
-mtbi_subjects_1 <- read_csv(sub_path("2023_03_23_mtbi_subjects_1.csv"))
-mtbi_subjects_2 <- read_csv(sub_path("2023_03_23_mtbi_subjects_2.csv"))
-mtbi_subjects_xl <- read_csv(sub_path("2023_03_23_mtbi_subjects_xl.csv"))
-uninjured_subjects <- read_csv(sub_path("2023_03_23_uninjured_subjects.csv"))
+mtbi_subjects_0 <- read_csv(sub_path("2023_04_03_mtbi_subjects_0.csv"))
+mtbi_subjects_1 <- read_csv(sub_path("2023_04_03_mtbi_subjects_1.csv"))
+mtbi_subjects_2 <- read_csv(sub_path("2023_04_03_mtbi_subjects_2.csv"))
+mtbi_subjects_l <- read_csv(sub_path("2023_04_03_mtbi_subjects_l.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_04_03_uninjured_subjects.csv"))
 ```
 
 
@@ -106,6 +106,14 @@ For the `other_multi` and `other_other_multi` injury types, insufficient informa
 For my analyses, I consider 3 months to be the threshold at which an mTBI patient enters a chronic stage post-injury.
 
 ## Input variables
+
+Notation for organizing baseline and longitudinal data:
+
+variable_name + (when subject had mTBI) + (when data was collected from)
+
+Fields in brackets could be 0 (baseline) or 1 or 2 for 1yfu or 2yfu.
+
+For example, `as_mtbi_mem_daze_l_0` would describe baseline mem/daze data for children who had their mTBIs at a longitudinal timepoint.
 
 ### Acute symptoms
 
@@ -120,39 +128,64 @@ We are interesed in the following acute symptoms:
 A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
 
 ```{r}
-# Subjects with injuries prior to baseline
-as_mem_daze_0 <- get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects_0, t = 0)
-as_mech_0 <- get_mtbi_mechanism(abcd_otbi01, mtbi_subjects_0, t = 0)
-as_loc_0 <- get_mtbi_loc(abcd_otbi01, mtbi_subjects_0, t = 0)
+# Baseline values of subjects with injuries prior to baseline
+as_mtbi_mem_daze_0_0 <-
+    get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects_0, t = 0)
+as_mtbi_mechanism_0_0 <-
+    get_mtbi_mechanism(abcd_otbi01, mtbi_subjects_0, t = 0)
+as_mtbi_loc_0_0 <-
+    get_mtbi_loc(abcd_otbi01, mtbi_subjects_0, t = 0)
 
 # Baseline values of subjects who received injuries between baseline and 2yfu
-as_mem_daze_xl_0 <- get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects_xl, t = 0)
-as_mech_xl_0 <- get_mtbi_mechanism(abcd_otbi01, mtbi_subjects_xl, t = 0)
-as_loc_xl_0 <- get_mtbi_loc(abcd_otbi01, mtbi_subjects_xl, t = 0)
+as_mtbi_mem_daze_l_0 <-
+    get_mtbi_mem_daze(abcd_otbi01, mtbi_subjects_l, t = 0)
+as_mtbi_mechanism_l_0 <-
+    get_mtbi_mechanism(abcd_otbi01, mtbi_subjects_l, t = 0)
+as_mtbi_loc_l_0 <-
+    get_mtbi_loc(abcd_otbi01, mtbi_subjects_l, t = 0)
 
-# Year 1 values of subjects who received injuries between baseline and 2yfu
-as_mem_daze_xl_1 <- get_mtbi_mem_daze(abcd_lpohstbi01, mtbi_subjects_xl, t = 1)
-as_mech_xl_1 <- get_mtbi_mechanism(abcd_lpohstbi01, mtbi_subjects_xl, t = 1)
-as_loc_xl_1 <- get_mtbi_loc(abcd_lpohstbi01, mtbi_subjects_xl, t = 1)
+# Longitudinal values of subjects who received injuries between bl and 2yfu
+as_mtbi_mem_daze_l_l <- get_mtbi_mem_daze_l(
+                    abcd_lpohstbi01,
+                    mtbi_subjects_l,
+                    mtbi_subjects_1,
+                    mtbi_subjects_2)
 
-# Year 2 values of subjects who received injuries between baseline and 2yfu
-as_mem_daze_xl_2 <- get_mtbi_mem_daze(abcd_lpohstbi01, mtbi_subjects_xl, t = 2)
-as_mech_xl_2 <- get_mtbi_mechanism(abcd_lpohstbi01, mtbi_subjects_xl, t = 2)
-as_loc_xl_2 <- get_mtbi_loc(abcd_lpohstbi01, mtbi_subjects_xl, t = 2)
+as_mtbi_mechanism_l_l <- get_mtbi_mechanism_l(
+                    abcd_lpohstbi01,
+                    mtbi_subjects_l,
+                    mtbi_subjects_1,
+                    mtbi_subjects_2)
 
-colnames(as_mem_daze_xl_0) <- c("subjectkey", "mem_daze_0")
-colnames(as_mem_daze_xl_1) <- c("subjectkey", "mem_daze_1")
-colnames(as_mem_daze_xl_2) <- c("subjectkey", "mem_daze_2")
+as_mtbi_loc_l_l <- get_mtbi_loc_l(
+                    abcd_lpohstbi01,
+                    mtbi_subjects_l,
+                    mtbi_subjects_1,
+                    mtbi_subjects_2)
 
-a <- merge_df_list(list(as_mem_daze_xl_0, as_mem_daze_xl_1, as_mem_daze_xl_2))
+# Baseline subjects, baseline data
+write_csv(as_mtbi_mem_daze_0_0,
+    input_path("as_mtbi_mem_daze_0_0.csv", date = TRUE))
+write_csv(as_mtbi_mechanism_0_0,
+    input_path("as_mtbi_mechanism_0_0.csv", date = TRUE))
+write_csv(as_mtbi_loc_0_0,
+    input_path("as_mtbi_loc_0_0.csv", date = TRUE))
 
-a
-```
+# Longitudinal subjects, baseline data
+write_csv(as_mtbi_mem_daze_l_0,
+    input_path("as_mtbi_mem_daze_l_0.csv", date = TRUE))
+write_csv(as_mtbi_mechanism_l_0,
+    input_path("as_mtbi_mechanism_l_0.csv", date = TRUE))
+write_csv(as_mtbi_loc_l_0,
+    input_path("as_mtbi_loc_l_0.csv", date = TRUE))
 
-```{r}
-write_csv(as_mtbi_mem_daze, here("data/abcd/inputs/as_mtbi_mem_daze.csv"))
-write_csv(as_mtbi_mechanism, here("data/abcd/inputs/as_mtbi_mechanism.csv"))
-write_csv(as_mtbi_loc, here("data/abcd/inputs/as_mtbi_loc.csv"))
+# Longitudinal subjects, longitudinal data
+write_csv(as_mtbi_mem_daze_l_l,
+    input_path("as_mtbi_mem_daze_l_l.csv", date = TRUE))
+write_csv(as_mtbi_mechanism_l_l,
+    input_path("as_mtbi_mechanism_l_l.csv", date = TRUE))
+write_csv(as_mtbi_loc_l_l,
+    input_path("as_mtbi_loc_l_l.csv", date = TRUE))
 ```
 
 
@@ -177,19 +210,64 @@ ssphy01 <- read_delim(here("data/abcd/raw/abcd_ssphy01.txt"))
 pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
 
 ## Pubertal status
-d_pubertal_status <- get_pubertal_status(ssphp01, ssphy01, mtbi_subjects, t = 0)
+(d_pubertal_status_0_0 <-
+    get_pubertal_status(ssphp01, ssphy01, mtbi_subjects_0, t = 0))
+(d_pubertal_status_l_0 <-
+    get_pubertal_status(ssphp01, ssphy01, mtbi_subjects_l, t = 0))
 
 ## Age on interview
-d_interview_age <- get_interview_age(abcd_otbi01, mtbi_subjects, t = 0)
+(d_interview_age_0_0 <- get_interview_age(ssphp01, mtbi_subjects_0, t = 0))
+(d_interview_age_l_0 <- get_interview_age(ssphp01, mtbi_subjects_l, t = 0))
 
 ## Age on injury
-d_mtbi_age <- get_mtbi_age(abcd_otbi01, mtbi_subjects, t = 0)
+(d_mtbi_age_0_0 <- get_mtbi_age(abcd_otbi01, mtbi_subjects_0, t = 0))
+
+(d_mtbi_age_l_0 <- get_mtbi_age(abcd_otbi01, mtbi_subjects_l, t = 0))
+
+a <- detail_mtbi(abcd_otbi01) |>
+    dplyr::filter(subjectkey %in% mtbi_subjects_l$"subjectkey")
+
+# There is a mistake here - see how identifying mTBI times doesn't quite work out
+# Many subjects have a labeled latest mTBI type and agee when they should not have any mTBI info.
+# This is due to sloppiness in identify_mtbi_times function and latest mTBI mechanism fn
+a
+
+
+mock <- data.frame(id = c("n1", "n2", "n3", "n4"),
+                   a_age = c(10, 13, 9, 14),
+                   b_age = c(11, 11.5, 20, 3),
+                   c_age = c(NA, 3, 5, 9),
+                   a_mtbi = c(1, 0, 0, 0),
+                   b_mtbi = c(0, 1, 0, 0),
+                   c_mtbi = c(0, 1, 0, 0))
+mock_goal <- data.frame(id = c("n1", "n2", "n3", "n4"),
+                   a_age = c(10, 13, 9, 14),
+                   b_age = c(11, 11.5, 20, 3),
+                   c_age = c(NA, 3, 5, 9),
+                   a_mtbi = c(1, 0, 0, 0),
+                   b_mtbi = c(0, 1, 0, 0),
+                   c_mtbi = c(0, 1, 0, 0),
+                   latest_mtbi_age = c(10, 11.5, NA, NA))
+mock
+mock_goal
+
+l1 <- list((mock$"a_age" * mock$"a_mtbi"),
+           (mock$"b_age" * mock$"b_mtbi"),
+           (mock$"c_age" * mock$"c_mtbi"))
+
+do.call(pmax, c(l1, na.rm = TRUE))
+
+
+
+
+###
 
 ## Sex
-d_sex <- get_sex(abcd_otbi01, mtbi_subjects, t = 0)
+(d_sex <- get_sex(abcd_otbi01, mtbi_subjects_0, t = 0))
 
 ## Household income
-d_income <- get_income(pdem02, mtbi_subjects, t = 0)
+(d_income <- get_income(pdem02, mtbi_subjects_0, t = 0))
+
 ```
 
 I will be trying two separate categorizations:
