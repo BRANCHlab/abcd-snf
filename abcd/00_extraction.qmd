@@ -222,51 +222,17 @@ pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
 ## Age on injury
 (d_mtbi_age_0_0 <- get_mtbi_age(abcd_otbi01, mtbi_subjects_0, t = 0))
 
+# This should be all NAs
 (d_mtbi_age_l_0 <- get_mtbi_age(abcd_otbi01, mtbi_subjects_l, t = 0))
-
-a <- detail_mtbi(abcd_otbi01) |>
-    dplyr::filter(subjectkey %in% mtbi_subjects_l$"subjectkey")
-
-# There is a mistake here - see how identifying mTBI times doesn't quite work out
-# Many subjects have a labeled latest mTBI type and agee when they should not have any mTBI info.
-# This is due to sloppiness in identify_mtbi_times function and latest mTBI mechanism fn
-a
-
-
-mock <- data.frame(id = c("n1", "n2", "n3", "n4"),
-                   a_age = c(10, 13, 9, 14),
-                   b_age = c(11, 11.5, 20, 3),
-                   c_age = c(NA, 3, 5, 9),
-                   a_mtbi = c(1, 0, 0, 0),
-                   b_mtbi = c(0, 1, 0, 0),
-                   c_mtbi = c(0, 1, 0, 0))
-mock_goal <- data.frame(id = c("n1", "n2", "n3", "n4"),
-                   a_age = c(10, 13, 9, 14),
-                   b_age = c(11, 11.5, 20, 3),
-                   c_age = c(NA, 3, 5, 9),
-                   a_mtbi = c(1, 0, 0, 0),
-                   b_mtbi = c(0, 1, 0, 0),
-                   c_mtbi = c(0, 1, 0, 0),
-                   latest_mtbi_age = c(10, 11.5, NA, NA))
-mock
-mock_goal
-
-l1 <- list((mock$"a_age" * mock$"a_mtbi"),
-           (mock$"b_age" * mock$"b_mtbi"),
-           (mock$"c_age" * mock$"c_mtbi"))
-
-do.call(pmax, c(l1, na.rm = TRUE))
-
-
-
-
-###
+unique(d_mtbi_age_l_0$"latest_mtbi_age")
 
 ## Sex
-(d_sex <- get_sex(abcd_otbi01, mtbi_subjects_0, t = 0))
+(d_sex_0_0 <- get_sex(abcd_otbi01, mtbi_subjects_0, t = 0))
+(d_sex_l_0 <- get_sex(abcd_otbi01, mtbi_subjects_l, t = 0))
 
 ## Household income
-(d_income <- get_income(pdem02, mtbi_subjects_0, t = 0))
+(d_income_0_0 <- get_income(pdem02, mtbi_subjects_0, t = 0))
+(d_income_l_0 <- get_income(pdem02, mtbi_subjects_l, t = 0))
 
 ```
 
@@ -279,7 +245,9 @@ The rationale for this decision can be found at (@sec-racebreakdown).
 
 
 ### Race
+
 ```{r}
+# This is where I am leaving off - 2023-04-03
 d_race_condensed <-
     get_race(pdem02, mtbi_subjects, "condensed_dummied", t = 0)
 d_race_expanded <-
