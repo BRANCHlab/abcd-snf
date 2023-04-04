@@ -90,11 +90,11 @@ write_csv(mtbi_subjects_1_2, sub_path("mtbi_subjects_1_2.csv", date = TRUE))
 write_csv(mtbi_subjects_l, sub_path("mtbi_subjects_l.csv", date = TRUE))
 write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
-mtbi_subjects_0 <- read_csv(sub_path("2023_04_03_mtbi_subjects_0.csv"))
-mtbi_subjects_1 <- read_csv(sub_path("2023_04_03_mtbi_subjects_1.csv"))
-mtbi_subjects_2 <- read_csv(sub_path("2023_04_03_mtbi_subjects_2.csv"))
-mtbi_subjects_l <- read_csv(sub_path("2023_04_03_mtbi_subjects_l.csv"))
-uninjured_subjects <- read_csv(sub_path("2023_04_03_uninjured_subjects.csv"))
+mtbi_subjects_0 <- read_csv(sub_path("2023_04_04_mtbi_subjects_0.csv"))
+mtbi_subjects_1 <- read_csv(sub_path("2023_04_04_mtbi_subjects_1.csv"))
+mtbi_subjects_2 <- read_csv(sub_path("2023_04_04_mtbi_subjects_2.csv"))
+mtbi_subjects_l <- read_csv(sub_path("2023_04_04_mtbi_subjects_l.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_04_04_uninjured_subjects.csv"))
 ```
 
 
@@ -114,6 +114,15 @@ variable_name + (when subject had mTBI) + (when data was collected from)
 Fields in brackets could be 0 (baseline) or 1 or 2 for 1yfu or 2yfu.
 
 For example, `as_mtbi_mem_daze_l_0` would describe baseline mem/daze data for children who had their mTBIs at a longitudinal timepoint.
+
+For baseline analyses, I collect baseline data for those who had their mTBI prior to baseline data collection.
+
+For my longitudinal analysis #1 (does clustering at baseline data predict post-concussion change in impairment?), I collect baseline (non-injury) data for longitudinal subjects, with the exception of CBCL outcome measures, which get baseline and 2yfu time points collected. This analysis does leave the question: is this pattern concussion specific? Or general to all children?
+
+To address the concussion-specific question, we need to examine a matched cohort of uninjured children.
+
+I collect mtbi-specific data at the first post-mTBI timepoint (e.g., if the injury was between baseline and 1yfu, mtbi data is collected at 1yfu rather than 2yfu).
+
 
 ### Acute symptoms
 
@@ -222,9 +231,9 @@ pdem02 <- read_delim(here("data/abcd/raw/pdem02.txt"))
 ## Age on injury
 (d_mtbi_age_0_0 <- get_mtbi_age(abcd_otbi01, mtbi_subjects_0, t = 0))
 
-# This should be all NAs
-(d_mtbi_age_l_0 <- get_mtbi_age(abcd_otbi01, mtbi_subjects_l, t = 0))
-unique(d_mtbi_age_l_0$"latest_mtbi_age")
+# As this is one of the mTBI injury variables, it is not needed for the
+#  longitudinal analysis checking to see if baseline pre-injury data predicts
+#  post-injury change in behavioural scores.
 
 ## Sex
 (d_sex_0_0 <- get_sex(abcd_otbi01, mtbi_subjects_0, t = 0))
@@ -234,47 +243,30 @@ unique(d_mtbi_age_l_0$"latest_mtbi_age")
 (d_income_0_0 <- get_income(pdem02, mtbi_subjects_0, t = 0))
 (d_income_l_0 <- get_income(pdem02, mtbi_subjects_l, t = 0))
 
-```
 
-I will be trying two separate categorizations:
+## Race
+d_race_0_0 <-
+    get_race(pdem02, mtbi_subjects_0, "condensed_undummied", t = 0)
 
-1. White, black, mixed/other
-2. White, black, hispanic, asian/other pacific islander, native american
-
-The rationale for this decision can be found at (@sec-racebreakdown).
-
-
-### Race
-
-```{r}
-# This is where I am leaving off - 2023-04-03
-d_race_condensed <-
-    get_race(pdem02, mtbi_subjects, "condensed_dummied", t = 0)
-d_race_expanded <-
-    get_race(pdem02, mtbi_subjects, "expanded_dummied", t = 0)
-d_race_undummied <-
-    get_race(pdem02, mtbi_subjects, "condensed_undummied", t = 0)
+d_race_l_0 <-
+    get_race(pdem02, mtbi_subjects_l, "condensed_undummied", t = 0)
 ```
 
 Subset and export the demographic input variables:
 
 ```{r}
-write_csv(d_pubertal_status,
-    here("data/abcd/inputs/d_pubertal_status.csv"))
-write_csv(d_interview_age,
-    here("data/abcd/inputs/d_interview_age.csv"))
-write_csv(d_mtbi_age,
-    here("data/abcd/inputs/d_mtbi_age.csv"))
-write_csv(d_sex,
-    here("data/abcd/inputs/d_sex.csv"))
-write_csv(d_income,
-    here("data/abcd/inputs/d_income.csv"))
-write_csv(d_race_condensed,
-    here("data/abcd/inputs/d_race_cd.csv"))
-write_csv(d_race_expanded,
-    here("data/abcd/inputs/d_race_ed.csv"))
-write_csv(d_race_undummied,
-    here("data/abcd/inputs/d_race_cu.csv"))
+write_csv(d_pubertal_status_0_0, input_path("d_pubertal_status_0_0.csv", TRUE))
+write_csv(d_interview_age_0_0, input_path("d_interview_age_0_0.csv", TRUE))
+write_csv(d_mtbi_age_0_0, input_path("d_mtbi_age_0_0.csv", TRUE))
+write_csv(d_sex_0_0, input_path("d_sex_0_0.csv", TRUE))
+write_csv(d_income_0_0, input_path("d_income_0_0.csv", TRUE))
+write_csv(d_race_0_0, input_path("d_race_0_0.csv", TRUE))
+
+write_csv(d_pubertal_status_l_0, input_path("d_pubertal_status_l_0.csv", TRUE))
+write_csv(d_interview_age_l_0, input_path("d_interview_age_l_0.csv", TRUE))
+write_csv(d_sex_l_0, input_path("d_sex_l_0.csv", TRUE))
+write_csv(d_income_l_0, input_path("d_income_l_0.csv", TRUE))
+write_csv(d_race_l_0, input_path("d_race_l_0.csv", TRUE))
 ```
 
 
@@ -294,19 +286,22 @@ Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as
 mx01 <- read_delim(here("data/abcd/raw/abcd_mx01.txt"))
 
 ## History of headaches
-mh_headaches <- get_headaches(mx01, mtbi_subjects, t = 0)
+(mh_headaches_0_0 <- get_headaches(mx01, mtbi_subjects_0, t = 0))
+(mh_headaches_l_0 <- get_headaches(mx01, mtbi_subjects_l, t = 0))
 
 ## Number of previous mTBIs
-mh_mtbi_count <- get_mtbi_count(abcd_otbi01, mtbi_subjects, t = 0)
+(mh_mtbi_count_0_0 <- get_mtbi_count(abcd_otbi01, mtbi_subjects_0, t = 0))
+(mh_mtbi_count_l_0 <- get_mtbi_count(abcd_otbi01, mtbi_subjects_l, t = 0))
 ```
 
 Subset and export the medical history variables:
 
 ```{r}
-write_csv(mh_headaches,
-    here("data/abcd/inputs/mh_headaches.csv"))
-write_csv(mh_mtbi_count,
-    here("data/abcd/inputs/mh_mtbi_count.csv"))
+write_csv(mh_headaches_0_0, input_path("mh_headaches_0_0.csv", date = TRUE))
+write_csv(mh_mtbi_count_0_0, input_path("mh_mtbi_count_0_0.csv", date = TRUE))
+
+write_csv(mh_headaches_l_0, input_path("mh_headaches_l_0.csv", date = TRUE))
+write_csv(mh_mtbi_count_l_0, input_path("mh_mtbi_count_l_0.csv", date = TRUE))
 ```
 
 
@@ -336,29 +331,26 @@ smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
 mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
 
 ## Subcortical volumes
-sm_subc_v <- get_subc_v(smrip10201, mtbi_subjects, t = 0)
+sm_subc_v_0_0 <- get_subc_v(smrip10201, mtbi_subjects_0, t = 0)
+sm_subc_v_l_0 <- get_subc_v(smrip10201, mtbi_subjects_l, t = 0)
 
 ## Cortical thickness
-sm_cort_t <- get_cort_t(mrisdp10201, mtbi_subjects, t = 0)
+sm_cort_t_0_0 <- get_cort_t(mrisdp10201, mtbi_subjects_0, t = 0)
+sm_cort_t_l_0 <- get_cort_t(mrisdp10201, mtbi_subjects_l, t = 0)
 
 ## Cortical volumes
-sm_cort_sa <- get_cort_sa(mrisdp10201, mtbi_subjects, t = 0)
-
-### Checking for missing subjects
-smrip10201_bl <- smrip10201 |> filter_timepoint(0)
-which(!(mtbi_subjects$subjectkey %in% smrip10201_bl$subjectkey))
-mtbi_subjects$subjectkey[c(24, 327)]
-### "NDAR_INV1ZY11ZP0" and "NDAR_INVRV742U1M" have no baseline sMRI
-
+sm_cort_sa_0_0 <- get_cort_sa(mrisdp10201, mtbi_subjects_0, t = 0)
+sm_cort_sa_l_0 <- get_cort_sa(mrisdp10201, mtbi_subjects_l, t = 0)
 ```
 
 ```{r}
-write_csv(sm_subc_v,
-    here("data/abcd/inputs/sm_subc_v.csv"))
-write_csv(sm_cort_t,
-    here("data/abcd/inputs/sm_cort_t.csv"))
-write_csv(sm_cort_sa,
-    here("data/abcd/inputs/sm_cort_sa.csv"))
+write_csv(sm_subc_v_0_0, input_path("sm_subc_v_0_0.csv", date = TRUE))
+write_csv(sm_cort_t_0_0, input_path("sm_cort_t_0_0.csv", date = TRUE))
+write_csv(sm_cort_sa_0_0, input_path("sm_cort_sa_0_0.csv", date = TRUE))
+
+write_csv(sm_subc_v_l_0, input_path("sm_subc_v_l_0.csv", date = TRUE))
+write_csv(sm_cort_t_l_0, input_path("sm_cort_t_l_0.csv", date = TRUE))
+write_csv(sm_cort_sa_l_0, input_path("sm_cort_sa_l_0.csv", date = TRUE))
 ```
 
 
@@ -375,15 +367,11 @@ See diffusion MRI chapter in appendix for full details.
 drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
 
 # White matter neurite densities
-## Only peri-cortical regions (see appendix)
-dm_wmnd_0 <- get_wmnd(drsip201, mtbi_subjects_0, t = 0)
+dm_all_wmnd_0_0 <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
+dm_all_wmnd_l_0 <- get_all_wmnd(drsip201, mtbi_subjects_l, t = 0)
 
-# White matte rnueri
-dm_all_wmnd_0 <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
-
-write_csv(dm_all_wmnd_0, input_path("dm_all_wmnd_0.csv", date = TRUE))
-
-write_csv(dm_wmnd_0, input_path("dm_wmnd_0.csv", date = TRUE))
+write_csv(dm_all_wmnd_0_0, input_path("dm_all_wmnd_0_0.csv", date = TRUE))
+write_csv(dm_all_wmnd_l_0, input_path("dm_all_wmnd_l_0.csv", date = TRUE))
 ```
 
 
@@ -402,27 +390,32 @@ mrirstv02 <- read_delim(here("data/abcd/raw/abcd_mrirstv02.txt"))
 
 
 ## Cortical parcellation network correlations
-rm_gord_cor <- get_gord_cor(betnet02, mtbi_subjects, t = 0)
+rm_gord_cor_0_0 <- get_gord_cor(betnet02, mtbi_subjects_0, t = 0)
+rm_gord_cor_l_0 <- get_gord_cor(betnet02, mtbi_subjects_l, t = 0)
 
 ## Subcortical parcellation network correlations
-rm_subc_cor <- get_subc_cor(mrirscor02, mtbi_subjects, t = 0)
+rm_subc_cor_0_0 <- get_subc_cor(mrirscor02, mtbi_subjects_0, t = 0)
+rm_subc_cor_l_0 <- get_subc_cor(mrirscor02, mtbi_subjects_l, t = 0)
 
 ## Temporal variances - cortical parcellations
-rm_gord_var <- get_gord_var(mrirstv02, mtbi_subjects, t = 0)
+rm_gord_var_0_0 <- get_gord_var(mrirstv02, mtbi_subjects_0, t = 0)
+rm_gord_var_l_0 <- get_gord_var(mrirstv02, mtbi_subjects_l, t = 0)
 
 ## Subcortical temporal variances
-rm_subc_var <- get_subc_var(mrirstv02, mtbi_subjects, t = 0)
+rm_subc_var_0_0 <- get_subc_var(mrirstv02, mtbi_subjects_0, t = 0)
+rm_subc_var_l_0 <- get_subc_var(mrirstv02, mtbi_subjects_l, t = 0)
 ```
 
 ```{r}
-write_csv(rm_gord_cor,
-    here("data/abcd/inputs/rm_gord_cor.csv"))
-write_csv(rm_subc_cor,
-    here("data/abcd/inputs/rm_subc_cor.csv"))
-write_csv(rm_subc_var,
-    here("data/abcd/inputs/rm_subc_var.csv"))
-write_csv(rm_gord_var,
-    here("data/abcd/inputs/rm_gord_var.csv"))
+write_csv(rm_gord_cor_0_0, input_path("rm_gord_cor_0_0.csv", date = TRUE))
+write_csv(rm_subc_cor_0_0, input_path("rm_subc_cor_0_0.csv", date = TRUE))
+write_csv(rm_subc_var_0_0, input_path("rm_subc_var_0_0.csv", date = TRUE))
+write_csv(rm_gord_var_0_0, input_path("rm_gord_var_0_0.csv", date = TRUE))
+
+write_csv(rm_gord_cor_l_0, input_path("rm_gord_cor_l_0.csv", date = TRUE))
+write_csv(rm_subc_cor_l_0, input_path("rm_subc_cor_l_0.csv", date = TRUE))
+write_csv(rm_subc_var_l_0, input_path("rm_subc_var_l_0.csv", date = TRUE))
+write_csv(rm_gord_var_l_0, input_path("rm_gord_var_l_0.csv", date = TRUE))
 ```
 
 
@@ -448,46 +441,62 @@ abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
 abcd_yrb01 <- read_delim(here("data/abcd/raw/abcd_yrb01.txt"))
 
 
-p_loneliness <- get_loneliness(abcd_ysr01, mtbi_subjects, t = 0)
-p_loneliness
+p_loneliness_0_0 <-
+    get_loneliness(abcd_ysr01, mtbi_subjects_0, t = 0)
+p_loneliness_l_0 <-
+    get_loneliness(abcd_ysr01, mtbi_subjects_l, t = 0)
 
-p_screen_time <- get_screen_time(stq01, mtbi_subjects, t = 0)
-p_screen_time
+p_screen_time_0_0 <-
+    get_screen_time(stq01, mtbi_subjects_0, t = 0)
+p_screen_time_l_0 <-
+    get_screen_time(stq01, mtbi_subjects_l, t = 0)
 
-p_family_function <-
-    get_family_function(fes02, abcd_fes01, mtbi_subjects, t = 0)
-p_family_function
+p_family_function_0_0 <-
+    get_family_function(fes02, abcd_fes01, mtbi_subjects_0, t = 0)
+p_family_function_l_0 <-
+    get_family_function(fes02, abcd_fes01, mtbi_subjects_l, t = 0)
 
-p_sports <- get_sports_and_activities(abcd_saiq02, mtbi_subjects, t = 0)
-p_sports
+p_sports_0_0 <-
+    get_sports_and_activities(abcd_saiq02, mtbi_subjects_0, t = 0)
+p_sports_l_0 <-
+    get_sports_and_activities(abcd_saiq02, mtbi_subjects_l, t = 0)
 
-p_prosocial <- get_prosocial_behaviour(psb01, abcd_psb01, mtbi_subjects, t = 0)
-p_prosocial
+p_prosocial_0_0 <-
+    get_prosocial_behaviour(psb01, abcd_psb01, mtbi_subjects_0, t = 0)
+p_prosocial_l_0 <-
+    get_prosocial_behaviour(psb01, abcd_psb01, mtbi_subjects_l, t = 0)
 
-p_parent_psych <- get_parent_psychopathology(abcd_asrs01, mtbi_subjects, t = 0)
-p_parent_psych
+p_parent_psych_0_0 <-
+    get_parent_psychopathology(abcd_asrs01, mtbi_subjects_0, t = 0)
+p_parent_psych_l_0 <-
+    get_parent_psychopathology(abcd_asrs01, mtbi_subjects_l, t = 0)
 
-p_exercise <- get_exercise(abcd_yrb01, mtbi_subjects, t = 0)
-p_exercise
+p_exercise_0_0 <-
+    get_exercise(abcd_yrb01, mtbi_subjects_0, t = 0)
+p_exercise_l_0 <-
+    get_exercise(abcd_yrb01, mtbi_subjects_l, t = 0)
 ```
 
 Subset and export the psychosocial resilience variables:
 
 ```{r}
-write_csv(p_loneliness,
-    here("data/abcd/inputs/p_loneliness.csv"))
-write_csv(p_screen_time,
-    here("data/abcd/inputs/p_screen_time.csv"))
-write_csv(p_family_function,
-    here("data/abcd/inputs/p_family_function.csv"))
-write_csv(p_sports,
-    here("data/abcd/inputs/p_sports.csv"))
-write_csv(p_prosocial,
-    here("data/abcd/inputs/p_prosocial.csv"))
-write_csv(p_parent_psych,
-    here("data/abcd/inputs/p_parent_psych.csv"))
-write_csv(p_exercise,
-    here("data/abcd/inputs/p_exercise.csv"))
+write_csv(p_loneliness_0_0, input_path("p_loneliness_0_0.csv", date = TRUE))
+write_csv(p_screen_time_0_0, input_path("p_screen_time_0_0.csv", date = TRUE))
+write_csv(p_family_function_0_0,
+          input_path("p_family_function_0_0.csv", date = TRUE))
+write_csv(p_sports_0_0, input_path("p_sports_0_0.csv", date = TRUE))
+write_csv(p_prosocial_0_0, input_path("p_prosocial_0_0.csv", date = TRUE))
+write_csv(p_parent_psych_0_0, input_path("p_parent_psych_0_0.csv", date = TRUE))
+write_csv(p_exercise_0_0, input_path("p_exercise_0_0.csv", date = TRUE))
+
+write_csv(p_loneliness_l_0, input_path("p_loneliness_l_0.csv", date = TRUE))
+write_csv(p_screen_time_l_0, input_path("p_screen_time_l_0.csv", date = TRUE))
+write_csv(p_family_function_l_0,
+          input_path("p_family_function_l_0.csv", date = TRUE))
+write_csv(p_sports_l_0, input_path("p_sports_l_0.csv", date = TRUE))
+write_csv(p_prosocial_l_0, input_path("p_prosocial_l_0.csv", date = TRUE))
+write_csv(p_parent_psych_l_0, input_path("p_parent_psych_l_0.csv", date = TRUE))
+write_csv(p_exercise_l_0, input_path("p_exercise_l_0.csv", date = TRUE))
 ```
 
 
@@ -495,30 +504,149 @@ write_csv(p_exercise,
 
 ### Child behaviour checklist
 
+These are needed at both baseline and longitudinal timepoints.
+
 ```{r}
 abcd_cbcl01 <- read_delim(here("data/abcd/raw/abcd_cbcl01.txt"))
 abcd_cbcls01 <- read_delim(here("data/abcd/raw/abcd_cbcls01.txt"))
 
-cbcl_headaches <- get_cbcl_headaches(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_nausea <- get_cbcl_nausea(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_vomiting <- get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_dizzy <- get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_overtired <- get_cbcl_overtired(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_sleeping_more <- get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_sleeping_less <- get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects, t = 0)
-cbcl_depress_r <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects, t = 0)
-cbcl_anxiety_r <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects, t = 0)
-cbcl_attention_r <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects, t = 0)
-cbcl_aggressive_r <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects, t = 0)
+# Baseline subjects, baseline time point
+cbcl_headaches_0_0 <-
+    get_cbcl_headaches(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_nausea_0_0 <-
+    get_cbcl_nausea(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_vomiting_0_0 <-
+    get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_dizzy_0_0 <-
+    get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_overtired_0_0 <-
+    get_cbcl_overtired(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_sleeping_more_0_0 <-
+    get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_sleeping_less_0_0 <-
+    get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects_0, t = 0)
+cbcl_depress_r_0_0 <-
+    get_cbcl_depress(abcd_cbcls01, mtbi_subjects_0, t = 0)
+cbcl_anxiety_r_0_0 <-
+    get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_0, t = 0)
+cbcl_attention_r_0_0 <-
+    get_cbcl_attention(abcd_cbcls01, mtbi_subjects_0, t = 0)
+cbcl_aggressive_r_0_0 <-
+    get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_0, t = 0)
 # Borderline/clinical thresholded instead of raw scores
-cbcl_depress <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects, t = 0,
-                                 raw = FALSE)
-cbcl_anxiety <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects, t = 0,
-                                 raw = FALSE)
-cbcl_attention <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects, t = 0,
-                                     raw = FALSE)
-cbcl_aggressive <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects, t = 0,
-                                       raw = FALSE)
+cbcl_depress_0_0 <-
+    get_cbcl_depress(abcd_cbcls01, mtbi_subjects_0, t = 0, raw = FALSE)
+cbcl_anxiety_0_0 <-
+    get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_0, t = 0, raw = FALSE)
+cbcl_attention_0_0 <-
+    get_cbcl_attention(abcd_cbcls01, mtbi_subjects_0, t = 0, raw = FALSE)
+cbcl_aggressive_0_0 <-
+    get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_0, t = 0, raw = FALSE)
+
+# Longitudinal subjects, baseline time point
+cbcl_headaches_l_0 <-
+    get_cbcl_headaches(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_nausea_l_0 <-
+    get_cbcl_nausea(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_vomiting_l_0 <-
+    get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_dizzy_l_0 <-
+    get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_overtired_l_0 <-
+    get_cbcl_overtired(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_sleeping_more_l_0 <-
+    get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_sleeping_less_l_0 <-
+    get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects_l, t = 0)
+cbcl_depress_r_l_0 <-
+    get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 0)
+cbcl_anxiety_r_l_0 <-
+    get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 0)
+cbcl_attention_r_l_0 <-
+    get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 0)
+cbcl_aggressive_r_l_0 <-
+    get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 0)
+# Borderline/clinical thresholded instead of raw scores
+cbcl_depress_l_0 <-
+    get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 0, raw = FALSE)
+cbcl_anxiety_l_0 <-
+    get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 0, raw = FALSE)
+cbcl_attention_l_0 <-
+    get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 0, raw = FALSE)
+cbcl_aggressive_l_0 <-
+    get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 0, raw = FALSE)
+
+# Longitudinal subjects, 2yfu time point
+cbcl_headaches_l_2 <-
+    get_cbcl_headaches(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_nausea_l_2 <-
+    get_cbcl_nausea(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_vomiting_l_2 <-
+    get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_dizzy_l_2 <-
+    get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_overtired_l_2 <-
+    get_cbcl_overtired(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_sleeping_more_l_2 <-
+    get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_sleeping_less_l_2 <-
+    get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_depress_r_l_2 <-
+    get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_anxiety_r_l_2 <-
+    get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_attention_r_l_2 <-
+    get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_aggressive_r_l_2 <-
+    get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2)
+# Borderline/clinical thresholded instead of raw scores
+cbcl_depress_l_2 <-
+    get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+cbcl_anxiety_l_2 <-
+    get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+cbcl_attention_l_2 <-
+    get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+cbcl_aggressive_l_2 <-
+    get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+
+# I AM HERE
+
+cbcl_delta <- function(t_0, t_2) {
+    t_0 <- col_to_num_all_possible(t_0)
+    t_2 <- col_to_num_all_possible(t_2)
+    og_names <- colnames(t_0)
+    og_names[[2]] <- paste0(og_names[[2]], "_delta")
+    colnames(t_0) <- c("subjectkey", "cbcl0")
+    colnames(t_2) <- c("subjectkey", "cbcl2")
+    merged_df <- dplyr::inner_join(t_0, t_2, by = "subjectkey")
+    merged_df$"delta" <- merged_df$"cbcl0" - merged_df$"cbcl2"
+    merged_df <- merged_df |> dplyr::select("subjectkey", "delta")
+    colnames(merged_df) <- og_names
+    return(merged_df)
+}
+
+cbcl_headaches_delta_l
+
+# Longitudinal subjects, 2yfu time point
+cbcl_headaches_l_2 <- get_cbcl_headaches(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_nausea_l_2 <- get_cbcl_nausea(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_vomiting_l_2 <- get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_dizzy_l_2 <- get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_overtired_l_2 <- get_cbcl_overtired(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_sleeping_more_l_2 <- get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_sleeping_less_l_2 <- get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects_l, t = 2)
+cbcl_depress_r_l_2 <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_anxiety_r_l_2 <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_attention_r_l_2 <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_aggressive_r_l_2 <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2)
+cbcl_depress_l_2 <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+cbcl_anxiety_l_2 <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+cbcl_attention_l_2 <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+cbcl_aggressive_l_2 <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+
+
+cbcl_headaches_delta <- cbcl_delta(cbcl_headaches_l_2, cbcl_headaches_l_0)
+
 
 ```
 
