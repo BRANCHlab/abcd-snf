@@ -609,108 +609,263 @@ cbcl_attention_l_2 <-
 cbcl_aggressive_l_2 <-
     get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
 
-# I AM HERE
 
-cbcl_delta <- function(t_0, t_2) {
-    t_0 <- col_to_num_all_possible(t_0)
-    t_2 <- col_to_num_all_possible(t_2)
-    og_names <- colnames(t_0)
-    og_names[[2]] <- paste0(og_names[[2]], "_delta")
-    colnames(t_0) <- c("subjectkey", "cbcl0")
-    colnames(t_2) <- c("subjectkey", "cbcl2")
-    merged_df <- dplyr::inner_join(t_0, t_2, by = "subjectkey")
-    merged_df$"delta" <- merged_df$"cbcl0" - merged_df$"cbcl2"
-    merged_df <- merged_df |> dplyr::select("subjectkey", "delta")
-    colnames(merged_df) <- og_names
-    return(merged_df)
+calc_delta <- function(df0, df2) {
+    common_subs <- common_subjects(list(df0, df2))
+    df0 <- df0 |> dplyr::filter(df0$"subjectkey" %in% common_subs)
+    df2 <- df2 |> dplyr::filter(df2$"subjectkey" %in% common_subs)
+    df_delta <- df0
+    features <- colnames(df0)[-1]
+    for (feature in features) {
+        df_delta[, feature] <- df2[, feature] - df0[, feature]
+    }
+    colnames(df_delta) <-
+        c("subjectkey", paste0(colnames(df_delta[-1]), "_delta"))
+    return(df_delta)
 }
 
-cbcl_headaches_delta_l
 
-# Longitudinal subjects, 2yfu time point
-cbcl_headaches_l_2 <- get_cbcl_headaches(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_nausea_l_2 <- get_cbcl_nausea(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_vomiting_l_2 <- get_cbcl_vomiting(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_dizzy_l_2 <- get_cbcl_dizzy(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_overtired_l_2 <- get_cbcl_overtired(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_sleeping_more_l_2 <- get_cbcl_sleeping_more(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_sleeping_less_l_2 <- get_cbcl_sleeping_less(abcd_cbcl01, mtbi_subjects_l, t = 2)
-cbcl_depress_r_l_2 <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 2)
-cbcl_anxiety_r_l_2 <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 2)
-cbcl_attention_r_l_2 <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 2)
-cbcl_aggressive_r_l_2 <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2)
-cbcl_depress_l_2 <- get_cbcl_depress(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
-cbcl_anxiety_l_2 <- get_cbcl_anxiety(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
-cbcl_attention_l_2 <- get_cbcl_attention(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
-cbcl_aggressive_l_2 <- get_cbcl_aggressive(abcd_cbcls01, mtbi_subjects_l, t = 2, raw = FALSE)
+# Calculating change in CBCL score from pre-injury to post-injury time points
+cbcl_headaches_delta_l <-
+    calc_delta(cbcl_headaches_l_0, cbcl_headaches_l_2)
+cbcl_nausea_delta_l <-
+    calc_delta(cbcl_nausea_l_0, cbcl_nausea_l_2)
+cbcl_vomiting_delta_l <-
+    calc_delta(cbcl_vomiting_l_0, cbcl_vomiting_l_2)
+cbcl_dizzy_delta_l <-
+    calc_delta(cbcl_dizzy_l_0, cbcl_dizzy_l_2)
+cbcl_overtired_delta_l <-
+    calc_delta(cbcl_overtired_l_0, cbcl_overtired_l_2)
+cbcl_sleeping_more_delta_l <-
+    calc_delta(cbcl_sleeping_more_l_0, cbcl_sleeping_more_l_2)
+cbcl_sleeping_less_delta_l <-
+    calc_delta(cbcl_sleeping_less_l_0, cbcl_sleeping_less_l_2)
+cbcl_depress_r_delta_l <-
+    calc_delta(cbcl_depress_r_l_0, cbcl_depress_r_l_2)
+cbcl_anxiety_r_delta_l <-
+    calc_delta(cbcl_anxiety_r_l_0, cbcl_anxiety_r_l_2)
+cbcl_attention_r_delta_l <-
+    calc_delta(cbcl_attention_r_l_0, cbcl_attention_r_l_2)
+cbcl_aggressive_r_delta_l <-
+    calc_delta(cbcl_aggressive_r_l_0, cbcl_aggressive_r_l_2)
+cbcl_depress_delta_l <-
+    calc_delta(cbcl_depress_l_0, cbcl_depress_l_2)
+cbcl_anxiety_delta_l <-
+    calc_delta(cbcl_anxiety_l_0, cbcl_anxiety_l_2)
+cbcl_attention_delta_l <-
+    calc_delta(cbcl_attention_l_0, cbcl_attention_l_2)
+cbcl_aggressive_delta_l <-
+    calc_delta(cbcl_aggressive_l_0, cbcl_aggressive_l_2)
 
 
-cbcl_headaches_delta <- cbcl_delta(cbcl_headaches_l_2, cbcl_headaches_l_0)
+# Quick and dirty check to see how these measures change for the l subjects
+a <- list(
+    cbcl_headaches_delta_l,
+    cbcl_nausea_delta_l,
+    cbcl_vomiting_delta_l,
+    cbcl_dizzy_delta_l,
+    cbcl_overtired_delta_l,
+    cbcl_sleeping_more_delta_l,
+    cbcl_sleeping_less_delta_l,
+    cbcl_depress_r_delta_l,
+    cbcl_anxiety_r_delta_l,
+    cbcl_attention_r_delta_l,
+    cbcl_aggressive_r_delta_l,
+    cbcl_depress_delta_l,
+    cbcl_anxiety_delta_l,
+    cbcl_attention_delta_l,
+    cbcl_aggressive_delta_l)
 
+b <- merge_df_list(a) |>
+    na.omit() |>
+    dplyr::select(-dplyr::contains(c("subjectkey", "r")))
 
-```
+pheatmap(b)
 
-```{r}
-write_csv(cbcl_headaches,
-    here("data/abcd/outputs/cbcl_headaches.csv"))
-write_csv(cbcl_nausea,
-    here("data/abcd/outputs/cbcl_nausea.csv"))
-write_csv(cbcl_vomiting,
-    here("data/abcd/outputs/cbcl_vomiting.csv"))
-write_csv(cbcl_dizzy,
-    here("data/abcd/outputs/cbcl_dizzy.csv"))
-write_csv(cbcl_overtired,
-    here("data/abcd/outputs/cbcl_overtired.csv"))
-write_csv(cbcl_sleeping_more,
-    here("data/abcd/outputs/cbcl_sleeping_more.csv"))
-write_csv(cbcl_sleeping_less,
-    here("data/abcd/outputs/cbcl_sleeping_less.csv"))
-write_csv(cbcl_depress_r,
-    here("data/abcd/outputs/cbcl_depress_r.csv"))
-write_csv(cbcl_anxiety_r,
-    here("data/abcd/outputs/cbcl_anxiety_r.csv"))
-write_csv(cbcl_attention_r,
-    here("data/abcd/outputs/cbcl_attention_r.csv"))
-write_csv(cbcl_aggressive_r,
-    here("data/abcd/outputs/cbcl_aggressive_r.csv"))
-write_csv(cbcl_depress,
-    here("data/abcd/outputs/cbcl_depress.csv"))
-write_csv(cbcl_anxiety,
-    here("data/abcd/outputs/cbcl_anxiety.csv"))
-write_csv(cbcl_attention,
-    here("data/abcd/outputs/cbcl_attention.csv"))
-write_csv(cbcl_aggressive,
-    here("data/abcd/outputs/cbcl_aggressive.csv"))
+write_csv(cbcl_headaches_0_0,
+    input_path("cbcl_headaches_0_0.csv", date = TRUE))
+write_csv(cbcl_nausea_0_0,
+    input_path("cbcl_nausea_0_0.csv", date = TRUE))
+write_csv(cbcl_vomiting_0_0,
+    input_path("cbcl_vomiting_0_0.csv", date = TRUE))
+write_csv(cbcl_dizzy_0_0,
+    input_path("cbcl_dizzy_0_0.csv", date = TRUE))
+write_csv(cbcl_overtired_0_0,
+    input_path("cbcl_overtired_0_0.csv", date = TRUE))
+write_csv(cbcl_sleeping_more_0_0,
+    input_path("cbcl_sleeping_more_0_0.csv", date = TRUE))
+write_csv(cbcl_sleeping_less_0_0,
+    input_path("cbcl_sleeping_less_0_0.csv", date = TRUE))
+write_csv(cbcl_depress_r_0_0,
+    input_path("cbcl_depress_r_0_0.csv", date = TRUE))
+write_csv(cbcl_anxiety_r_0_0,
+    input_path("cbcl_anxiety_r_0_0.csv", date = TRUE))
+write_csv(cbcl_attention_r_0_0,
+    input_path("cbcl_attention_r_0_0.csv", date = TRUE))
+write_csv(cbcl_aggressive_r_0_0,
+    input_path("cbcl_aggressive_r_0_0.csv", date = TRUE))
+write_csv(cbcl_depress_0_0,
+    input_path("cbcl_depress_0_0.csv", date = TRUE))
+write_csv(cbcl_anxiety_0_0,
+    input_path("cbcl_anxiety_0_0.csv", date = TRUE))
+write_csv(cbcl_attention_0_0,
+    input_path("cbcl_attention_0_0.csv", date = TRUE))
+write_csv(cbcl_aggressive_0_0,
+    input_path("cbcl_aggressive_0_0.csv", date = TRUE))
+
+write_csv(cbcl_headaches_l_0,
+    input_path("cbcl_headaches_l_0.csv", date = TRUE))
+write_csv(cbcl_nausea_l_0,
+    input_path("cbcl_nausea_l_0.csv", date = TRUE))
+write_csv(cbcl_vomiting_l_0,
+    input_path("cbcl_vomiting_l_0.csv", date = TRUE))
+write_csv(cbcl_dizzy_l_0,
+    input_path("cbcl_dizzy_l_0.csv", date = TRUE))
+write_csv(cbcl_overtired_l_0,
+    input_path("cbcl_overtired_l_0.csv", date = TRUE))
+write_csv(cbcl_sleeping_more_l_0,
+    input_path("cbcl_sleeping_more_l_0.csv", date = TRUE))
+write_csv(cbcl_sleeping_less_l_0,
+    input_path("cbcl_sleeping_less_l_0.csv", date = TRUE))
+write_csv(cbcl_depress_r_l_0,
+    input_path("cbcl_depress_r_l_0.csv", date = TRUE))
+write_csv(cbcl_anxiety_r_l_0,
+    input_path("cbcl_anxiety_r_l_0.csv", date = TRUE))
+write_csv(cbcl_attention_r_l_0,
+    input_path("cbcl_attention_r_l_0.csv", date = TRUE))
+write_csv(cbcl_aggressive_r_l_0,
+    input_path("cbcl_aggressive_r_l_0.csv", date = TRUE))
+write_csv(cbcl_depress_l_0,
+    input_path("cbcl_depress_l_0.csv", date = TRUE))
+write_csv(cbcl_anxiety_l_0,
+    input_path("cbcl_anxiety_l_0.csv", date = TRUE))
+write_csv(cbcl_attention_l_0,
+    input_path("cbcl_attention_l_0.csv", date = TRUE))
+write_csv(cbcl_aggressive_l_0,
+    input_path("cbcl_aggressive_l_0.csv", date = TRUE))
+
+write_csv(cbcl_headaches_l_2,
+    input_path("cbcl_headaches_l_2.csv", date = TRUE))
+write_csv(cbcl_nausea_l_2,
+    input_path("cbcl_nausea_l_2.csv", date = TRUE))
+write_csv(cbcl_vomiting_l_2,
+    input_path("cbcl_vomiting_l_2.csv", date = TRUE))
+write_csv(cbcl_dizzy_l_2,
+    input_path("cbcl_dizzy_l_2.csv", date = TRUE))
+write_csv(cbcl_overtired_l_2,
+    input_path("cbcl_overtired_l_2.csv", date = TRUE))
+write_csv(cbcl_sleeping_more_l_2,
+    input_path("cbcl_sleeping_more_l_2.csv", date = TRUE))
+write_csv(cbcl_sleeping_less_l_2,
+    input_path("cbcl_sleeping_less_l_2.csv", date = TRUE))
+write_csv(cbcl_depress_r_l_2,
+    input_path("cbcl_depress_r_l_2.csv", date = TRUE))
+write_csv(cbcl_anxiety_r_l_2,
+    input_path("cbcl_anxiety_r_l_2.csv", date = TRUE))
+write_csv(cbcl_attention_r_l_2,
+    input_path("cbcl_attention_r_l_2.csv", date = TRUE))
+write_csv(cbcl_aggressive_r_l_2,
+    input_path("cbcl_aggressive_r_l_2.csv", date = TRUE))
+write_csv(cbcl_depress_l_2,
+    input_path("cbcl_depress_l_2.csv", date = TRUE))
+write_csv(cbcl_anxiety_l_2,
+    input_path("cbcl_anxiety_l_2.csv", date = TRUE))
+write_csv(cbcl_attention_l_2,
+    input_path("cbcl_attention_l_2.csv", date = TRUE))
+write_csv(cbcl_aggressive_l_2,
+    input_path("cbcl_aggressive_l_2.csv", date = TRUE))
+
+write_csv(cbcl_headaches_delta_l,
+    input_path("cbcl_headaches_delta_l.csv", date = TRUE))
+write_csv(cbcl_nausea_delta_l,
+    input_path("cbcl_nausea_delta_l.csv", date = TRUE))
+write_csv(cbcl_vomiting_delta_l,
+    input_path("cbcl_vomiting_delta_l.csv", date = TRUE))
+write_csv(cbcl_dizzy_delta_l,
+    input_path("cbcl_dizzy_delta_l.csv", date = TRUE))
+write_csv(cbcl_overtired_delta_l,
+    input_path("cbcl_overtired_delta_l.csv", date = TRUE))
+write_csv(cbcl_sleeping_more_delta_l,
+    input_path("cbcl_sleeping_more_delta_l.csv", date = TRUE))
+write_csv(cbcl_sleeping_less_delta_l,
+    input_path("cbcl_sleeping_less_delta_l.csv", date = TRUE))
+write_csv(cbcl_depress_r_delta_l,
+    input_path("cbcl_depress_r_delta_l.csv", date = TRUE))
+write_csv(cbcl_anxiety_r_delta_l,
+    input_path("cbcl_anxiety_r_delta_l.csv", date = TRUE))
+write_csv(cbcl_attention_r_delta_l,
+    input_path("cbcl_attention_r_delta_l.csv", date = TRUE))
+write_csv(cbcl_aggressive_r_delta_l,
+    input_path("cbcl_aggressive_r_delta_l.csv", date = TRUE))
+write_csv(cbcl_depress_delta_l,
+    input_path("cbcl_depress_delta_l.csv", date = TRUE))
+write_csv(cbcl_anxiety_delta_l,
+    input_path("cbcl_anxiety_delta_l.csv", date = TRUE))
+write_csv(cbcl_attention_delta_l,
+    input_path("cbcl_attention_delta_l.csv", date = TRUE))
+write_csv(cbcl_aggressive_delta_l,
+    input_path("cbcl_aggressive_delta_l.csv", date = TRUE))
 ```
 
 ### NIH Toolbox
 
 ```{r}
-abcd_tbss01 <- read_delim(here("data/abcd/raw/abcd_tbss01.txt"))
+abcd_tbss01 <- read_delim(raw_path("abcd_tbss01.txt"))
 
-nihtbx_list_fc <- get_nihtbx_list_fc(abcd_tbss01, mtbi_subjects, t = 0)
-nihtbx_pattern_fc <- get_nihtbx_pattern_fc(abcd_tbss01, mtbi_subjects, t = 0)
-nihtbx_cardsort_fc <- get_nihtbx_cardsort_fc(abcd_tbss01, mtbi_subjects, t = 0)
+# Baseline subjects, baseline data
+nihtbx_list_fc_0_0 <-
+    get_nihtbx_list_fc(abcd_tbss01, mtbi_subjects_0, t = 0)
+nihtbx_pattern_fc_0_0 <-
+    get_nihtbx_pattern_fc(abcd_tbss01, mtbi_subjects_0, t = 0)
+nihtbx_cardsort_fc_0_0 <-
+    get_nihtbx_cardsort_fc(abcd_tbss01, mtbi_subjects_0, t = 0)
+
+# Longitudinal subjects, baseline data
+(nihtbx_list_fc_l_0 <-
+    get_nihtbx_list_fc(abcd_tbss01, mtbi_subjects_l, t = 0))
+(nihtbx_pattern_fc_l_0 <-
+    get_nihtbx_pattern_fc(abcd_tbss01, mtbi_subjects_l, t = 0))
+(nihtbx_cardsort_fc_l_0 <-
+    get_nihtbx_cardsort_fc(abcd_tbss01, mtbi_subjects_l, t = 0))
+
+# Longitudinal subjects, longitudinal data - only pattern test is present
+(nihtbx_pattern_fc_l_2 <-
+    get_nihtbx_pattern_fc(abcd_tbss01, mtbi_subjects_l, t = 2))
+
+# Change in pattern test score:
+nihtbx_pattern_fc_delta_l <-
+    calc_delta(nihtbx_pattern_fc_l_0, nihtbx_pattern_fc_l_2)
+
+write_csv(nihtbx_list_fc_0_0, input_path("nihtbx_list_fc_0_0.csv", 1))
+write_csv(nihtbx_pattern_fc_0_0, input_path("nihtbx_pattern_fc_0_0.csv", 1))
+write_csv(nihtbx_cardsort_fc_0_0, input_path("nihtbx_cardsort_fc_0_0.csv", 1))
+
+write_csv(nihtbx_list_fc_l_0, input_path("nihtbx_list_fc_l_0.csv", 1))
+write_csv(nihtbx_pattern_fc_l_0, input_path("nihtbx_pattern_fc_l_0.csv", 1))
+write_csv(nihtbx_cardsort_fc_l_0, input_path("nihtbx_cardsort_fc_l_0.csv", 1))
+
+write_csv(nihtbx_pattern_fc_l_2, input_path("nihtbx_pattern_fc_l_2.csv", 1))
+
+write_csv(nihtbx_pattern_fc_delta_l,
+          input_path("nihtbx_pattern_fc_delta_l.csv", 1))
 ```
 
-```{r}
-write_csv(nihtbx_list_fc,
-    here("data/abcd/outputs/nihtbx_list_fc.csv"))
-write_csv(nihtbx_pattern_fc,
-    here("data/abcd/outputs/nihtbx_pattern_fc.csv"))
-write_csv(nihtbx_cardsort_fc,
-    here("data/abcd/outputs/nihtbx_cardsort_fc.csv"))
-```
 
 ### Sleep disturbance scale
 
 ```{r}
 abcd_sds01 <- read_delim(here("data/abcd/raw/abcd_sds01.txt"))
 
-sds_sleep_df <- get_full_sleep_df(abcd_sds01, mtbi_subjects, t = 0)
-```
+(sds_sleep_df_0_0 <- get_full_sleep_df(abcd_sds01, mtbi_subjects_0, t = 0))
 
-```{r}
-write_csv(sds_sleep_df,
-    here("data/abcd/outputs/sds_sleep_df.csv"))
+(sds_sleep_df_l_0 <- get_full_sleep_df(abcd_sds01, mtbi_subjects_l, t = 0))
+
+(sds_sleep_df_l_2 <- get_full_sleep_df(abcd_sds01, mtbi_subjects_l, t = 2))
+
+sds_sleep_df_delta_l <- calc_delta(sds_sleep_df_l_0, sds_sleep_df_l_2)
+
+write_csv(sds_sleep_df_0_0, input_path("sds_sleep_df_0_0.csv", date = TRUE))
+write_csv(sds_sleep_df_l_0, input_path("sds_sleep_df_l_0.csv", date = TRUE))
+write_csv(sds_sleep_df_l_2, input_path("sds_sleep_df_l_2.csv", date = TRUE))
+write_csv(sds_sleep_df_delta_l, input_path("sds_sleep_df_delta_l.csv", TRUE))
 ```
