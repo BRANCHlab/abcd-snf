@@ -100,6 +100,7 @@ data_list <- generate_data_list(
     parent_psych = p_parent_psych_train,
     exercise = p_exercise_train)
 
+
 # Structure containing all outcome data
 outcome_list <- generate_outcome_list(
     cbcl_nausea = cbcl_nausea_train,
@@ -116,18 +117,30 @@ outcome_list <- generate_outcome_list(
 output_matrix_full <-
     execute_design_matrix(data_list, design_matrix, outcome_list)
 
-dm_all_wmnd_0_qc_train
+library(rlist)
 
-output_matrix_full_pre_run <- read_csv(proc_path("2023_02_22_om.csv"))
+data_list_0_0_train <-
+    list.load(proc_path("2023_04_05_data_list_0_0_train.rdata"))
+outcome_list_0_0_train <-
+    list.load(proc_path("2023_04_05_outcome_list_0_0_train.rdata"))
 
-om <- data.frame(output_matrix_full) |>
-    col_to_num_all_possible()
+om_0_0_train <- execute_design_matrix(data_list_0_0_train,
+                                design_matrix, outcome_list_0_0_train)
 
-omp <- data.frame(output_matrix_full_pre_run)
+om_0_0_train
 
-all.equal(om, omp) # Things are different with the new WM
+#dm_all_wmnd_0_qc_train
+#
+#output_matrix_full_pre_run <- read_csv(proc_path("2023_02_22_om.csv"))
+#
+#om <- data.frame(output_matrix_full) |>
+#    col_to_num_all_possible()
+#
+#omp <- data.frame(output_matrix_full_pre_run)
+#
+#all.equal(om, omp) # Things are different with the new WM
 
-write_csv(output_matrix_full, proc_path("om.csv", date = TRUE))
+write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
 
 #write_csv(output_matrix_full,
 #    here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))

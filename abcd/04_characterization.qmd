@@ -23,11 +23,17 @@ input_reader <- make_reader(input_path)
 #data_list_full <- list.load(proc_path("2023_03_15_data_list_full.rdata"))
 #cbcl_list_full <- list.load(proc_path("2023_03_15_cbcl_list_full.rdata"))
 
-data_list_train <- list.load(proc_path("2023_03_27_data_list_0_train.rdata"))
-data_list_test <- list.load(proc_path("2023_03_27_data_list_0_test.rdata"))
-data_list_full <- list.load(proc_path("2023_03_27_data_list_0_full.rdata"))
-cbcl_list_train <- list.load(proc_path("2023_03_15_cbcl_list_train.rdata"))
-cbcl_list_full <- list.load(proc_path("2023_03_15_cbcl_list_full.rdata"))
+#data_list_train <- list.load(proc_path("2023_03_27_data_list_0_train.rdata"))
+#data_list_test <- list.load(proc_path("2023_03_27_data_list_0_test.rdata"))
+#data_list_full <- list.load(proc_path("2023_03_27_data_list_0_full.rdata"))
+#cbcl_list_train <- list.load(proc_path("2023_03_15_cbcl_list_train.rdata"))
+#cbcl_list_full <- list.load(proc_path("2023_03_15_cbcl_list_full.rdata"))
+
+data_list_train <- list.load(proc_path("2023_04_05_data_list_0_0_train.rdata"))
+data_list_test <- list.load(proc_path("2023_04_05_data_list_0_0_test.rdata"))
+data_list_full <- list.load(proc_path("2023_04_05_data_list_0_0_full.rdata"))
+cbcl_list_train <- list.load(proc_path("2023_04_05_cbcl_list_0_0_train.rdata"))
+cbcl_list_full <- list.load(proc_path("2023_04_05_cbcl_list_0_0_full.rdata"))
 
 nihtbx_pattern <- input_reader("nihtbx_pattern_fc_imp.csv")
 nihtbx_list <- input_reader("nihtbx_list_fc_imp.csv")
@@ -37,7 +43,7 @@ sds_sleep_df <- input_reader("sds_sleep_df.csv")
 #top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
 #propagated_labels <- proc_reader("2023_03_16_top_oms_lp.csv")
 
-top_oms <- read_csv(proc_path("2023_03_27_top_om_rows_all_nclust.csv"))
+top_oms_0_0_train <- read_csv(proc_path("2023_04_05_top_oms_0_0_train.csv"))
 ```
 
 
@@ -46,15 +52,11 @@ top_oms <- read_csv(proc_path("2023_03_27_top_om_rows_all_nclust.csv"))
 The function below generates a grid of CBCL impairment plots for each cluster solution and saves them using a provided `path_maker` function.
 
 ```{r}
-# Last generated on 2023-04-03
-om_plot_all_cbcl(top_oms, cbcl_list_train, fig_path)
+# Last generated on 2023-04-05
+om_plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
 
-cbcl_ord_reg_from_om(top_oms[1, ], cbcl_list_train)
-
-cbcl_ord_reg_from_om(top_oms[2, ], cbcl_list_train)
-
-for (row in seq_len(nrow(top_oms))) {
-    current_row <- top_oms[row, ]
+for (row in seq_len(nrow(top_oms_0_0_train))) {
+    current_row <- top_oms_0_0_train[row, ]
     print(current_row$"significance")
     print(cbcl_ord_reg_from_om(current_row, cbcl_list_train))
 }
@@ -79,24 +81,19 @@ library(gtExtras)
 library(webshot2)
 library(rlist)
 
-nmi_df <- om_to_nmi_df(top_oms, data_list_train)
+nmi_df <- om_to_nmi_df(top_oms_0_0_train, data_list_train)
 
-write_csv(nmi_df, proc_path("nmi_df_sk.csv", date = TRUE))
+write_csv(nmi_df, proc_path("nmi_df_0_0_train.csv", date = TRUE))
 
-nmi_df <- data.frame(read_csv(proc_path("2023_04_03_nmi_df_sk.csv")))
+nmi_df <- data.frame(read_csv(proc_path("2023_04_05_nmi_df_0_0_train.csv")))
 
-
-# A bonus section that needs to be tidied up
-top_om_all <- read_csv(proc_path("2023_03_27_top_om_rows_all_nclust.csv"))
-
-data_list_train <- list.load(proc_path("2023_03_27_data_list_0_train.rdata"))
-
-for (row in seq_len(nrow(top_om_all))) {
-    calc_nmi(top_om_all[row, ], data_list_train) |>
+# Saving a pretty table png of each row's NMIs
+for (row in seq_len(nrow(top_oms_0_0_train))) {
+    calc_nmi(top_oms_0_0_train[row, ], data_list_train) |>
         gt() |>
         gt_theme_538() |>
-        gtsave(fig_path(paste0(top_om_all[row, ]$"significance", "_nmis.png"),
-                date = TRUE))
+        gtsave(fig_path(paste0(top_oms_0_0_train[row, ]$"significance",
+                               "_nmis.png"), date = TRUE))
 }
 ```
 
@@ -104,11 +101,18 @@ for (row in seq_len(nrow(top_om_all))) {
 ## Label propagation
 
 ```{r}
-propagated_labels <- lp_om(top_oms, data_list_full)
+propagated_labels <- lp_om(top_oms_0_0_train, data_list_full)
 
-write_csv(propagated_labels, proc_path("top_oms_lp.csv", date = TRUE))
 
-propagated_labels <- proc_reader("2023_04_03_top_oms_lp.csv")
+propagated_labels
+
+
+write_csv(propagated_labels, proc_path("top_oms_0_0_test_lp.csv", date = TRUE))
+
+propagated_labels <- proc_reader("2023_04_05_top_oms_0_0_test_lp.csv")
+
+top_oms_0_0_train |>
+    dplyr::select("row_id", "significance")
 ```
 
 ## CBCL plotting in the label propagated group
@@ -127,6 +131,13 @@ test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {
         dplyr::select(-dplyr::starts_with(c("subject", "cbcl"))) |>
         colnames()
     for (solution in solutions) {
+        print(solution)
+        nclust <- dplyr::case_when(
+            as.logical(length(grep("two", solution))) ~ 2,
+            as.logical(length(grep("three", solution))) ~ 3,
+            as.logical(length(grep("four", solution))) ~ 4,
+            as.logical(length(grep("five", solution))) ~ 5,
+            TRUE ~ NA)
         cluster_df <- eval_df |>
             dplyr::select(!!solution, "subjectkey") |>
             data.frame()
@@ -136,11 +147,17 @@ test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {
             cluster_df,
             current_sig,
             full_cbcl_list,
+            nclust = nclust,
             save = fig_path_fn(paste0(current_sig, "_lp.png"), date = TRUE))
     }
 }
 
 test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)
+
+test_eval_df
+
+
+
 ```
 
 ## NMI characterization
@@ -178,7 +195,8 @@ plot_om_bar <- function(om_row, input_df, feature, featname, save = NULL) {
     } else {
         summary$"keycol" <- factor(summary$"keycol")
     }
-    summary$"cluster" <- factor(summary$"cluster")
+    summary$"cluster" <-
+        factor(summary$"cluster", levels = as.character(1:om_row$"nclust"))
     summary <- summary |>
         dplyr::mutate(n_thresh = dplyr::case_when(
             n < 5 ~ "",
@@ -192,16 +210,19 @@ plot_om_bar <- function(om_row, input_df, feature, featname, save = NULL) {
             fill = keycol)) +
         ggplot2::geom_bar(
             stat = "identity",
-            position = ggplot2::position_stack()) +
+            position = ggplot2::position_stack(),
+            width = 0.8) +
         ggplot2::geom_text(
             #data = subset(summary, percent > 10),
             mapping = ggplot2::aes(
-                label = n_thresh,
+                #label = n_thresh,
+                label = n,
                 y = percent),
             size = 8,
             position = ggplot2::position_stack(vjust = 0.5)) +
         ggplot2::scale_y_continuous(
             expand = ggplot2::expansion(mult = c(0, .1))) +
+        ggplot2::scale_x_discrete(drop = FALSE) +
         ggplot2::labs(
             x = "Cluster",
             y = "Percentage",
@@ -216,6 +237,7 @@ plot_om_bar <- function(om_row, input_df, feature, featname, save = NULL) {
         return(plot)
     }
 }
+
 pheatmap_om_matrix <- function(om_row, input_df, binary = FALSE, save = NULL,
                                main = "", show_row = FALSE, legend = TRUE,
                                cw = 100, ch = 2) {
@@ -233,7 +255,7 @@ pheatmap_om_matrix <- function(om_row, input_df, binary = FALSE, save = NULL,
         dplyr::select("cluster") |>
         unlist() |>
         names()
-    cluster_names <- as.character(1:om_row$"nclust")
+    cluster_names <- as.character(sort(unique(characterization_df$"cluster")))
     matrix <- characterization_df |>
         dplyr::group_by(cluster) |>
         dplyr::select(-"subjectkey") |>
@@ -273,6 +295,7 @@ pheatmap_om_matrix <- function(om_row, input_df, binary = FALSE, save = NULL,
                                   border_color = NA))
     }
 }
+
 plot_om_cont <- function(om_row, input_df, feature, featname, save = NULL) {
     if (is.null(input_df)) {
         return(NULL)
@@ -296,6 +319,7 @@ plot_om_cont <- function(om_row, input_df, feature, featname, save = NULL) {
         ggplot2::geom_jitter(height = 0, size = 3, alpha = 1) +
         ggplot2::scale_y_continuous(
             expand = ggplot2::expansion(mult = c(0, .1))) +
+        ggplot2::scale_x_discrete(limits = as.character(1:om_row$"nclust")) +
         ggplot2::labs(
             x = "Cluster",
             y = featname) +
@@ -432,7 +456,7 @@ input_characterization_plots_g <- function(om,
         proso_p3 <- plot_om_bar(row_i, prosocial, "q3",
                     "Often offer\nto help")
         # rsFMRI
-        ## gord_cor
+        # gord_cor
         gord_cor_p <- pheatmap_om_matrix(row_i, gord_cor, binary = TRUE,
             legend = FALSE,
             cw = 50,
@@ -462,7 +486,7 @@ input_characterization_plots_g <- function(om,
             row_i, wmnd, binary = FALSE,
             legend = FALSE,
             cw = 50,
-            ch = 3,
+            ch = 2,
             main = "White Matter Neurite Densities")[[4]]
         ## cort_sa
         cort_sa_p <- pheatmap_om_matrix(row_i, cort_sa,
@@ -612,12 +636,9 @@ input_characterization_plots_g(top_oms,
     other_mri_path = fig_path("other_mri_train.png", date = TRUE),
     other_heatmap_path = fig_path("other_input_train.png", date = TRUE))
 
-
-
 test_dfs <- lapply(data_list_test, function(x) x$"data")
 
-propagated_labels
-
+### OLD
 # Conversion of propagated labels into an om format
 propagated_om <- propagated_labels |>
     dplyr::select(-"group") |>
@@ -634,8 +655,29 @@ if (all(top_oms$"significance" == propagated_om$"significance")) {
     propagated_om$"nclust" <- top_oms$"nclust"
 }
 propagated_om <- col_to_num_all_possible(propagated_om)
+### END OF OLD
 
-input_characterization_plots_g(propagated_om,
+
+pl_new <- propagated_labels
+pl_new <- pl_new |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-"group") |>
+    t()
+colnames(pl_new) <- pl_new[1, ]
+pl_new <- tibble(data.frame(pl_new[-1, ]))
+pl_new$"significance" <- propagated_labels |>
+    dplyr::select(-c("subjectkey", "group")) |>
+    colnames()
+rownames(pl_new) <- NULL
+top_oms$"row_id"
+if (all(top_oms$"significance" == pl_new$"significance")) {
+    pl_new$"row_id" <- top_oms$"row_id"
+    pl_new$"nclust" <- top_oms$"nclust"
+}
+pl_new <- col_to_num_all_possible(pl_new)
+
+
+input_characterization_plots_g(pl_new,
     loc = test_dfs[[1]],
     mechanism = test_dfs[[2]],
     dazed = test_dfs[[3]],
@@ -670,8 +712,14 @@ input_characterization_plots_g(propagated_om,
     other_mri_path = fig_path("other_mri_test.png", date = TRUE),
     other_heatmap_path = fig_path("other_input_test.png", date = TRUE))
 
-str(propagated_om)
 
-str(top_oms)
+plot_om_bar(pl_new[2, ], test_dfs[[1]], "latest_mtbi_loc", "LOC")
+
+
+
+
+
+pl_new |>
+    dplyr::select("significance", "row_id")
 
 ```

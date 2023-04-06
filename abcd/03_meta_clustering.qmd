@@ -15,134 +15,41 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
 #output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
-output_matrix_full <- read_csv(proc_path("2023_03_27_om.csv"))
+om_0_0_train <- read_csv(proc_path("2023_04_05_om_0_0_train.csv"))
 
-min(output_matrix_full$min_p_val) #3.2 e-08
-min(output_matrix_full$mean_p_val) #0.00414
+min(om_0_0_train$min_p_val) #4.6e-08
+min(om_0_0_train$mean_p_val) #0.0016
 
-mc_results <- meta_cluster(output_matrix_full)
+mc_results_0_0_train <- meta_cluster(om_0_0_train)
 
-#write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
-write_csv(data.frame(mc_results), proc_path("mc_results.csv", date = TRUE))
+write_csv(data.frame(mc_results_0_0_train),
+          proc_path("mc_results_0_0_train.csv", date = TRUE))
 
-#mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
-mc_results <- as.matrix(read_csv(proc_path("2023_03_27_mc_results.csv")))
+mc_results_0_0_train <-
+    as.matrix(read_csv(proc_path("2023_04_05_mc_results_0_0_train.csv")))
 
 colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
 
 # Visualizing the meta-clustering results
-mc_heatmap(mc_results, save = fig_path("mc_results.png", date = TRUE))
+mc_heatmap(mc_results_0_0_train,
+           save = fig_path("mc_results_0_0_train.png", date = TRUE))
 
 # Trying to plot the input design matrix as a heatmap
-mc_order <- get_pheatmap_order(mc_results)
+mc_order_0_0_train <- get_pheatmap_order(mc_results_0_0_train)
 
 design_matrix <- data.frame(read_csv(proc_path("full_design_matrix.csv")))
 
-dm_heatmap(design_matrix[mc_order, ], fig_path("dm_reordered.png", date = TRUE))
+dm_heatmap(design_matrix[mc_order_0_0_train, ],
+           fig_path("dm_reordered_0_0_train.png", date = TRUE))
 
-mc_pvals <- p_val_select(output_matrix_full)
+mc_pvals_0_0_train <- p_val_select(om_0_0_train)
 
-mc_pvals_reordered <- mc_pvals[mc_order, ]
+mc_pvals_reordered_0_0_train <- mc_pvals_0_0_train[mc_order_0_0_train, ]
 
 # This is the actual important graph
-pvals_pheatmap(mc_pvals_reordered, save = fig_path("mc_pvals.png", date = TRUE))
-
-
-# A selection based on the main visual meta cluster and the p-values
-om_reordered <- output_matrix_full[mc_order, ]
-
-om_reordered
-
-# The first meta cluster includes row_ids 26 to 60. This mc describes a 2
-#  cluster solution driven by the individual SNF scheme. It had the lowest
-#  p-values, which may in part be due to 2-cluster solutions having the highest
-#  power.
-mc1 <- om_reordered[6:41, ]
-
-# The complete second meta cluster, including row_ids 41 to 20. This mc contains
-#  a 5 cluster solution driven by using a two-step merge as well as including
-#  all variables.
-mc2 <- om_reordered[42:59, ]
-
-mc2
-
-# Changing things from here
-best_mc <- om_reordered[6:41, ]
-```
-
-## Characterization of best meta-cluster
-
-### Distribution of subjects
-
-```{r}
-
-# Visualization of cluster assignments
-assigned_clust_pheatmap(mc1, fig_path("mc1_assignment.png", date = TRUE))
-
-assigned_clust_pheatmap(mc2, fig_path("mc2_assignment.png", date = TRUE))
-
-
-# Alternative visualizations
-
-assigned_clust_scatter(mc1, save = fig_path("mc1_scatter.png", date = TRUE))
-
-assigned_clust_scatter(mc2, save = fig_path("mc2_scatter.png", date = TRUE))
-
-assigned_clust_hist(mc1, save = fig_path("mc1_hist.png", date = TRUE))
-
-assigned_clust_hist(mc2, save = fig_path("mc2_hist.png", date = TRUE))
-
-
-best_mc_subs <- t(subs(best_mc))
-
-colnames(best_mc_subs) <- best_mc_subs["row_id", ]
-
-best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
-
-best_mc_subs <- as.data.frame(best_mc_subs)
-best_mc_subs <- sapply(best_mc_subs, as.numeric)
-row_means <- apply(X = best_mc_subs, MARGIN = 1, FUN = mean, na.rm = TRUE)
-names(row_means) <- colnames(subs(best_mc))[-1]
-
-## Choosing top solution
-
-om_reordered
-
-
-# Best MC Subs: finding some dm rows to work with
-best_mc_df <- data.frame(best_mc_subs)
-colnames(best_mc_df) <- colnames(best_mc_subs)
-best_mc_df$subjectkey <- rownames(best_mc_df)
-rownames(best_mc_df) <- NULL
-
-# Choosing a row to characterize by p-value
-best_mc_copy <- best_mc
-best_mc_copy$inc_var_count <- best_mc_copy |>
-    dplyr::select(dplyr::starts_with("inc")) |>
-    rowSums()
-
-best_mc_copy
-
-
-
-om_scatter(mc1)
-
-om_scatter(mc2)
-
-
-ggsave(fig_path("solutions_by_pvals.png", date = TRUE))
-
-
-selected_row_ids <- c(84, # The top performing row in mc1
-                      96, # One of the all-variable rows in mc2
-                      20) # The top performing row in mc2
-
-top_om_rows <- select_om(output_matrix_full, selected_row_ids)
-
-top_om_rows
-
-write_csv(top_om_rows, proc_path("top_om_rows.csv", date = TRUE))
+pvals_pheatmap(mc_pvals_reordered_0_0_train,
+               save = fig_path("mc_pvals_0_0_train.png", date = TRUE))
 ```
 
 
@@ -150,14 +57,11 @@ write_csv(top_om_rows, proc_path("top_om_rows.csv", date = TRUE))
 
 ```{r}
 #output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
-output_matrix_full <- read_csv(proc_path("2023_03_27_om.csv"))
+om_0_0_train <- read_csv(proc_path("2023_04_05_om_0_0_train.csv"))
 
-min(output_matrix_full$min_p_val) #3.2 e-08
-min(output_matrix_full$mean_p_val) #0.00414
+unique(om_0_0_train$nclust)
 
-unique(output_matrix_full$nclust)
-
-top_oms <- top_om_per_cluster(output_matrix_full)
+top_oms <- top_om_per_cluster(om_0_0_train)
 
 top_oms$"significance"
 
@@ -166,18 +70,8 @@ top_oms
 top_oms |>
     dplyr::select(c("significance", "row_id"))
 
-write_csv(top_oms, proc_path("top_om_rows_all_nclust.csv", date = TRUE))
+write_csv(top_oms, proc_path("top_oms_0_0_train.csv", date = TRUE))
 
-top_oms_rerun <-  read_csv(proc_path("2023_03_27_top_om_rows_all_nclust.csv"))
-
-top_oms_og <-  read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
-
-identical(colnames(top_oms_rerun), colnames(top_oms_og)) # The names are same
-
-# But the actual clustering solutions are not...
-Q <- 30
-all.equal(top_oms_rerun[1:7, 1:Q], top_oms_og[1:7, 1:Q])
-colnames(top_oms_rerun[1:7, 1:30])
-
-om_scatter(top_oms, save = fig_path("top_oms_all_nclust.png", date = TRUE))
+om_scatter(top_oms,
+           save = fig_path("top_oms_0_0_train_scatter.png", date = TRUE))
 ```
