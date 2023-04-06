@@ -33,6 +33,7 @@ data_list_train <- list.load(proc_path("2023_04_05_data_list_0_0_train.rdata"))
 data_list_test <- list.load(proc_path("2023_04_05_data_list_0_0_test.rdata"))
 data_list_full <- list.load(proc_path("2023_04_05_data_list_0_0_full.rdata"))
 cbcl_list_train <- list.load(proc_path("2023_04_05_cbcl_list_0_0_train.rdata"))
+cbcl_list_train <- list.load(proc_path("2023_04_05_cbcl_list_0_0_test.rdata"))
 cbcl_list_full <- list.load(proc_path("2023_04_05_cbcl_list_0_0_full.rdata"))
 
 nihtbx_pattern <- input_reader("nihtbx_pattern_fc_imp.csv")
@@ -42,6 +43,8 @@ sds_sleep_df <- input_reader("sds_sleep_df.csv")
 
 #top_oms <- read_csv(proc_path("2023_03_09_top_om_rows_all_nclust.csv"))
 #propagated_labels <- proc_reader("2023_03_16_top_oms_lp.csv")
+
+
 
 top_oms_0_0_train <- read_csv(proc_path("2023_04_05_top_oms_0_0_train.csv"))
 ```
@@ -54,12 +57,6 @@ The function below generates a grid of CBCL impairment plots for each cluster so
 ```{r}
 # Last generated on 2023-04-05
 om_plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
-
-for (row in seq_len(nrow(top_oms_0_0_train))) {
-    current_row <- top_oms_0_0_train[row, ]
-    print(current_row$"significance")
-    print(cbcl_ord_reg_from_om(current_row, cbcl_list_train))
-}
 ```
 
 
@@ -657,6 +654,7 @@ if (all(top_oms$"significance" == propagated_om$"significance")) {
 propagated_om <- col_to_num_all_possible(propagated_om)
 ### END OF OLD
 
+library(tibble)
 
 pl_new <- propagated_labels
 pl_new <- pl_new |>
@@ -669,10 +667,10 @@ pl_new$"significance" <- propagated_labels |>
     dplyr::select(-c("subjectkey", "group")) |>
     colnames()
 rownames(pl_new) <- NULL
-top_oms$"row_id"
-if (all(top_oms$"significance" == pl_new$"significance")) {
-    pl_new$"row_id" <- top_oms$"row_id"
-    pl_new$"nclust" <- top_oms$"nclust"
+top_oms_0_0_train$"row_id"
+if (all(top_oms_0_0_train$"significance" == pl_new$"significance")) {
+    pl_new$"row_id" <- top_oms_0_0_train$"row_id"
+    pl_new$"nclust" <- top_oms_0_0_train$"nclust"
 }
 pl_new <- col_to_num_all_possible(pl_new)
 
@@ -723,3 +721,368 @@ pl_new |>
     dplyr::select("significance", "row_id")
 
 ```
+
+Here is a summary of the plots derived above:
+
+- Two-cluster, lowest mean (10):
+    - cluster one is consistently worse, but has 3 subjects in impaired cluster
+    - general patterns found in previous solutions are still present
+- Two-cluster, lowest min (1):
+    - same as before, but has 5 subjects in impaired cluster
+- Three-cluster, lowest min & mean (60):
+    - Only clusters 2 and 3 were predicted in the propagated group
+    - **discard this solution**
+- Four-cluster, lowest min p-value (71):
+    - doesn't seem to generalize well (2 is worst in train, 4 is worst in test)
+    - **discard this solution**
+- Four-cluster, lowest mean p-value (92):
+    - doesn't generalize well, only clusters 2 and 4 were in propagated group
+    - **discard this solution**
+- Five-cluster, lowest min and mean (98)
+    - doesn't generalize well
+    - **discard this solution**
+
+So we are left with the 2-cluster solutions only.
+
+The cluster-comparison-tool paper can revisit this and try to select a solution based on optimal generalization. That would lead into cross-validation for clustering quite well!
+
+## Significance testing
+
+```{r}
+# Training subjects
+cbcl_pvals_0_0_train <- cbcl_ord_reg_from_om(top_oms_0_0_train, cbcl_list_train)
+
+
+# Testing subjects
+cbcl_ord_reg_from_om(pl_new, cbcl_list_full)
+```
+
+Because the sample sizes in the allocated test groups are so small, traditional significance testing approaches don't work very well. I use permutation testing moving forward.
+
+
+```{r}
+library(dplyr)
+
+# The solutions of interest based on plots:
+two_clust_min <- propagated_labels |>
+    dplyr::filter(propagated_labels$"group" == "test") |>
+    dplyr::select(-"group") |>
+    dplyr::select("subjectkey", "two_clust_min")
+colnames(two_clust_min) <- c("subjectkey", "cluster")
+
+two_clust_mean <- propagated_labels |>
+    dplyr::filter(propagated_labels$"group" == "test") |>
+    dplyr::select(-"group") |>
+    dplyr::select("subjectkey", "two_clust_mean")
+colnames(two_clust_mean) <- c("subjectkey", "cluster")
+
+
+
+two_clust_perm_test_lp <- function(cluster_df, cbcl_list) {
+    df_list <- append(list(data.frame(cluster_df)), cbcl_list)
+    merged_df <- tibble(merge_df_list(df_list))
+    return(merged_df)
+}
+
+a <- two_clust_perm_test_lp(two_clust_min, cbcl_list_full)
+b <- two_clust_perm_test_lp(two_clust_mean, cbcl_list_full)
+
+# good ~ Healthy
+# bad ~ Diseased
+# C1 ~ Exposed
+# C2 ~ Not exposed
+
+he_good_c1 <- length(which(a$cluster == 1 & a$cbcl_nausea == 0))
+de_bad_c1 <- length(which(a$cluster == 1 & a$cbcl_nausea > 0))
+hn_good_c2 <- length(which(a$cluster == 2 & a$cbcl_nausea == 0))
+dn_bad_c2 <- length(which(a$cluster == 2 & a$cbcl_nausea > 0))
+
+odds_ratio(de = de_bad_c1,
+           he = he_good_c1,
+           dn = dn_bad_c2,
+           hn = hn_good_c2)
+
+odds_ratio <- function(de, he, dn, hn) { # {~
+    numerator <- de / he
+    denominator <- dn / hn
+    return(numerator / denominator)
+}
+cbcl_or <- function(evaluation_df) {
+    cluster <- ""
+    bad_outcome <- ""
+    or_df <- data.frame(outcome = as.character(),
+                        or = as.numeric(),
+                        ci_low = as.numeric(),
+                        ci_high = as.numeric())
+    outcome_names <- evaluation_df |>
+        dplyr::select(dplyr::starts_with("cbcl")) |>
+        colnames()
+    for (i in seq_along(outcome_names)) {
+        current_outcome <- outcome_names[i]
+        or_summary <- evaluation_df |>
+            dplyr::group_by(cluster) |>
+            dplyr::count(evaluation_df[, current_outcome] > 0)
+        colnames(or_summary) <- c("cluster", "bad_outcome", "n")
+        # Calculating odds ratios
+        de_bad_c1 <- or_summary |>
+            dplyr::filter(cluster == 1 & bad_outcome == TRUE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        he_good_c1 <- or_summary |>
+            dplyr::filter(cluster == 1 & bad_outcome == FALSE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        dn_bad_c2 <- or_summary |>
+            dplyr::filter(cluster == 2 & bad_outcome == TRUE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        hn_good_c2 <- or_summary |>
+            dplyr::filter(cluster == 2 & bad_outcome == FALSE) |>
+            dplyr::ungroup() |>
+            dplyr::select("n") |>
+            as.numeric()
+        or <- odds_ratio(de = de_bad_c1,
+            he = he_good_c1,
+            dn = dn_bad_c2,
+            hn = hn_good_c2)
+        # Calculating upper and lower bounds
+        a_val <- de_bad_c1
+        c_val <- dn_bad_c2
+        b_val <- he_good_c1
+        d_val <- hn_good_c2
+        num <- a_val / b_val
+        den <- c_val / d_val
+        se_ln_or <- sqrt((1 / a_val + 1 / b_val + 1 / c_val + 1 / d_val))
+        ln_or <- log(num / den)
+        lower <- exp(ln_or - 1.96 * se_ln_or)
+        upper <- exp(ln_or + 1.96 * se_ln_or)
+        current_df <- data.frame(outcome = current_outcome,
+                              or = or,
+                              ci_low = lower,
+                              ci_high = upper)
+        or_df <- rbind(or_df, current_df)
+    }
+    return(or_df)
+} # ~}
+
+# Two clust min
+cbcl_or(a)
+
+# Two clust mean
+cbcl_or(b)
+
+
+# Now let's try the permutation testing way
+
+permutation_test <- function(df, param, title = "", save_plot = FALSE) {
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    true_diff <- mean(vals1) - mean(vals2)
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:10000) {
+        number_in_c1 <- 6
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        mean_difference <- mean(mock_c1) - mean(mock_c2)
+        results <- c(results, mean_difference)
+    }
+    print(paste0("The true mean difference: ", signif(true_diff, 2)))
+    print("The 5% and 95% percentiles:")
+    print(quantile(results, probs = c(0.05, 0.95)))
+    p_value <- length(which(results >= true_diff)) / (length(results))
+    print(paste0("p-value: ", p_value))
+    if (save_plot) {
+        png(fig_path(paste0("lp_ptest_", param, ".png"), date = TRUE),
+            height = 5,
+            width = 5,
+            units = "in",
+            res = 300)
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+        dev.off()
+    } else {
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+    }
+}
+
+permutation_test_prop <- function(df, param, title = "", save_plot = FALSE,
+                                  prop = FALSE, detail = FALSE) {
+    number_in_c1 <- length(which(df$"cluster" == 1))
+    vals1 <- df[, param][df[, "cluster"] == 1]
+    vals2 <- df[, param][df[, "cluster"] == 2]
+    if (prop) {
+        prop1 <- (length(which(vals1 > 0))) / (length(vals1))
+        prop2 <- (length(which(vals2 > 0))) / (length(vals2))
+        true_diff <- prop1 - prop2
+    } else {
+        true_diff <- mean(vals1) - mean(vals2)
+    }
+    results <- c()
+    all_vals <- c(vals1, vals2)
+    set.seed(42)
+    for (i in 1:10000) {
+        c1_indices <- sample(67, size = number_in_c1)
+        c2_indices <- which(!(1:67 %in% c1_indices))
+        mock_c1 <- all_vals[c1_indices]
+        mock_c2 <- all_vals[c2_indices]
+        if (prop) {
+            mock_prop1 <- (length(which(mock_c1 > 0))) / (length(mock_c1))
+            mock_prop2 <- (length(which(mock_c2 > 0))) / (length(mock_c2))
+            mean_difference <- mock_prop1 - mock_prop2
+        } else {
+            mean_difference <- mean(mock_c1) - mean(mock_c2)
+        }
+        results <- c(results, mean_difference)
+    }
+    p_value <- length(which(results >= true_diff)) / (length(results))
+    print(paste0("p-value: ", p_value))
+    if (detail == TRUE) {
+        print(paste0("The true mean difference: ", signif(true_diff, 2)))
+        print("The 5% and 95% percentiles:")
+        print(quantile(results, probs = c(0.05, 0.95)))
+    }
+    if (save_plot) {
+        png(fig_path(paste0("lp_ptest_", param, ".png"), date = TRUE),
+            height = 5,
+            width = 5,
+            units = "in",
+            res = 300)
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+        dev.off()
+    } else {
+        par(mar=c(5,6,4,1)+.1)
+        hist(results,
+             cex.lab = 2,
+             cex.axis = 2,
+             cex.main = 2,
+             cex.sub = 2,
+             xlab = "Mean Difference",
+             main = title)
+        abline(v = true_diff,
+            col = "red")
+    }
+    return(p_value)
+}
+
+perm_test_all_cbcl <- function(df, prop, detail = FALSE) {
+    cbcl_names <- colnames(df)[-c(1, 2)]
+    nsig <- 0
+    for (name in cbcl_names) {
+        print(name)
+        pval <- permutation_test_prop(df, name, prop = prop)
+        if (pval < 0.05) nsig <- nsig + 1
+        cat("\n")
+    }
+    print(nsig)
+}
+
+perm_test_all_cbcl(a, TRUE)
+
+perm_test_all_cbcl(b, TRUE)
+
+perm_test_all_cbcl(a, FALSE)
+
+# Best so far
+perm_test_all_cbcl(b, FALSE)
+
+# sleeping more
+main_vec <- c(rep(0, 65), rep(1, 2))
+
+all_diffs <- vector()
+for (i in 1:10000) {
+    this_sample <- sample(main_vec)
+    c1 <- this_sample[1:3]
+    c2 <- this_sample[4:67]
+    l1 <- length(which(c1 > 0)) / length(c1)
+    l2 <- length(which(c2 > 0)) / length(c2)
+    all_diffs <- c(all_diffs, l1 - l2)
+}
+
+length(which(all_diffs > 0)) / length(all_diffs)
+
+all_diffs
+
+
+1/3
+
+1/64
+
+1/3 - 1/64
+
+this_sample <- sample(main_vec)
+c1 <- this_sample[1:3]
+c2 <- this_sample[4:67]
+
+
+l1 - l2
+
+
+permutation_test_prop(a, "cbcl_aggressive", prop = TRUE)
+```
+
+An important next step: calculate mean WM rois per subject so that i can do cluster significance tests and plots in a normal way
+
+Framing the presentation for SNF meeting:
+- given a dataset of size N and C clusters to divide them into, there are C^N/C! possible solutions
+
+4 people divided into 2 groups, 2^4
+
+1 1 1 1
+1 1 1 2
+1 1 2 1
+1 1 2 2
+...
+2 2 2 2
+
+- divide by 2 because half of the solutions are redundant
+- subtract off a bunch because of unpopulated solutions
+- 80 subjects divided into 2 clusters is on the order of 10^24 (number of stars in the universe)
+- chess (shannon estimate) of 10^120 states
+
+- clustering algorithms try to find the best solutions
+
+
+- discuss the dreaded 'median split'
+
+biologically relevant
+physiologically relevant
+clustering
+p-hacking
+
+```{r}
+print(5)
+```
+
