@@ -1,6 +1,6 @@
 # Repeated SNF
 
-## Loading Data
+All is resolved in the chunk below.
 
 ```{r eval = FALSE}
 library(dplyr)
@@ -10,520 +10,77 @@ library(readr)
 library(here)
 library(ggplot2)
 library(pheatmap)
+library(rlist)
 
 # Functions to import data from carbon
-input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
-fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
-# Load training data
-as_mtbi_loc_train <- read_csv(proc_path("as_mtbi_loc_train.csv"))
-as_mtbi_mechanism_train <- read_csv(proc_path("as_mtbi_mechanism_train.csv"))
-as_mtbi_mem_daze_train <- read_csv(proc_path("as_mtbi_mem_daze_train.csv"))
-d_income_train <- read_csv(proc_path("d_income_train.csv"))
-d_interview_age_train <- read_csv(proc_path("d_interview_age_train.csv"))
-d_mtbi_age_train <- read_csv(proc_path("d_mtbi_age_train.csv"))
-d_pubertal_status_train <- read_csv(proc_path("d_pubertal_status_train.csv"))
-d_race_train <- read_csv(proc_path("d_race_train.csv"))
-d_sex_train <- read_csv(proc_path("d_sex_train.csv"))
-mh_headaches_train <- read_csv(proc_path("mh_headaches_train.csv"))
-mh_mtbi_count_train <- read_csv(proc_path("mh_mtbi_count_train.csv"))
-dm_all_wmnd_0_qc_train <-
-    read_csv(proc_path("2023_03_27_dm_all_wmnd_0_qc_train.csv"))
-rm_gord_cor_qc_train <- read_csv(proc_path("rm_gord_cor_qc_train.csv"))
-rm_gord_var_qc_train <- read_csv(proc_path("rm_gord_var_qc_train.csv"))
-rm_subc_cor_qc_train <- read_csv(proc_path("rm_subc_cor_qc_train.csv"))
-rm_subc_var_qc_train <- read_csv(proc_path("rm_subc_var_qc_train.csv"))
-sm_cort_sa_qc_train <- read_csv(proc_path("sm_cort_sa_qc_train.csv"))
-sm_cort_t_qc_train <- read_csv(proc_path("sm_cort_t_qc_train.csv"))
-sm_subc_v_qc_train <- read_csv(proc_path("sm_subc_v_qc_train.csv"))
-p_loneliness_train <- read_csv(proc_path("p_loneliness_train.csv"))
-p_screen_time_train <- read_csv(proc_path("p_screen_time_train.csv"))
-p_family_function_train <- read_csv(proc_path("p_family_function_train.csv"))
-p_sports_train <- read_csv(proc_path("p_sports_train.csv"))
-p_prosocial_train <- read_csv(proc_path("p_prosocial_train.csv"))
-p_parent_psych_train <- read_csv(proc_path("p_parent_psych_train.csv"))
-p_exercise_train <- read_csv(proc_path("p_exercise_train.csv"))
-cbcl_headaches_train <- read_csv(proc_path("cbcl_headaches_train.csv"))
-cbcl_nausea_train <- read_csv(proc_path("cbcl_nausea_train.csv"))
-cbcl_vomiting_train <- read_csv(proc_path("cbcl_vomiting_train.csv"))
-cbcl_dizzy_train <- read_csv(proc_path("cbcl_dizzy_train.csv"))
-cbcl_overtired_train <- read_csv(proc_path("cbcl_overtired_train.csv"))
-cbcl_sleeping_more_train <- read_csv(proc_path("cbcl_sleeping_more_train.csv"))
-cbcl_sleeping_less_train <- read_csv(proc_path("cbcl_sleeping_less_train.csv"))
-cbcl_depress_train <- read_csv(proc_path("cbcl_depress_train.csv"))
-cbcl_anxiety_train <- read_csv(proc_path("cbcl_anxiety_train.csv"))
-cbcl_attention_train <- read_csv(proc_path("cbcl_attention_train.csv"))
-cbcl_aggressive_train <- read_csv(proc_path("cbcl_aggressive_train.csv"))
-sds_sleep_train <- read_csv(proc_path("sds_sleep_train.csv"))
-```
+# Building the design matrix which contains all settings for 100 SNF runs
+design_matrix <- build_design_matrix(nrow = 100, seed = 42)
+write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
 
-## SNF
-
-```{r}
-set.seed(42)
-design_matrix_base <- build_design_matrix_base()
-design_matrix <- add_design_matrix_rows(design_matrix_base, 100)
-
-write_csv(design_matrix, proc_path("full_design_matrix.csv", date = TRUE))
-
-design_matrix <- data.frame(read_csv(proc_path("full_design_matrix.csv")))
-
+design_matrix <- read_csv(proc_path("2023_04_06_design_matrix.csv"))
 
 # Structure containing all input data
-# These data should not contain any NAs, but need not have the same subjects
-data_list <- generate_data_list(
-    mtbi_loc = as_mtbi_loc_train,
-    mtbi_mechanism = as_mtbi_mechanism_train,
-    mtbi_mem_daze = as_mtbi_mem_daze_train,
-    income = d_income_train,
-    interview_age = d_interview_age_train,
-    mtbi_age = d_mtbi_age_train,
-    pubertal_status = d_pubertal_status_train,
-    race = d_race_train,
-    sex = d_sex_train,
-    headaches = mh_headaches_train,
-    mtbi_count = mh_mtbi_count_train,
-    wmndf = dm_all_wmnd_0_qc_train,
-    gord_cor = rm_gord_cor_qc_train,
-    gord_var = rm_gord_var_qc_train,
-    subc_cor = rm_subc_cor_qc_train,
-    subc_var = rm_subc_var_qc_train,
-    cort_sa = sm_cort_sa_qc_train,
-    cort_t = sm_cort_t_qc_train,
-    subc_v = sm_subc_v_qc_train,
-    loneliness = p_loneliness_train,
-    screen_time = p_screen_time_train,
-    family_function = p_family_function_train,
-    sports = p_sports_train,
-    prosocial = p_prosocial_train,
-    parent_psych = p_parent_psych_train,
-    exercise = p_exercise_train)
+#data_list_0_0_train <-
+#    list.load(proc_path("2023_03_27_data_list_0_train.rdata"))
+
+data_list_0_0_train <-
+    list.load(proc_path("2023_04_06_data_list_0_0_train.rdata"))
 
 
 # Structure containing all outcome data
-outcome_list <- generate_outcome_list(
-    cbcl_nausea = cbcl_nausea_train,
-    cbcl_vomiting = cbcl_vomiting_train,
-    cbcl_dizzy = cbcl_dizzy_train,
-    cbcl_overtired = cbcl_overtired_train,
-    cbcl_sleeping_more = cbcl_sleeping_more_train,
-    cbcl_sleeping_less = cbcl_sleeping_less_train,
-    cbcl_depress = cbcl_depress_train,
-    cbcl_anxiety = cbcl_anxiety_train,
-    cbcl_attention = cbcl_attention_train,
-    cbcl_aggressive = cbcl_aggressive_train)
+#outcome_list_0_0_train <-
+#    list.load(proc_path("2023_04_05_outcome_list_0_0_train.rdata"))
 
-output_matrix_full <-
-    execute_design_matrix(data_list, design_matrix, outcome_list)
 
-library(rlist)
-
-data_list_0_0_train <-
-    list.load(proc_path("2023_04_05_data_list_0_0_train.rdata"))
 outcome_list_0_0_train <-
-    list.load(proc_path("2023_04_05_outcome_list_0_0_train.rdata"))
+    list.load(proc_path("2023_04_06_outcome_list_0_0_train.rdata"))
 
+# Output matrix storing results from multiple SNF iterations
 om_0_0_train <- execute_design_matrix(data_list_0_0_train,
-                                design_matrix, outcome_list_0_0_train)
+                                      design_matrix,
+                                      outcome_list_0_0_train)
 
-om_0_0_train
-
-#dm_all_wmnd_0_qc_train
-#
-#output_matrix_full_pre_run <- read_csv(proc_path("2023_02_22_om.csv"))
-#
-#om <- data.frame(output_matrix_full) |>
-#    col_to_num_all_possible()
-#
-#omp <- data.frame(output_matrix_full_pre_run)
-#
-#all.equal(om, omp) # Things are different with the new WM
-
+# 2023_04_06
 write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
 
-#write_csv(output_matrix_full,
-#    here(paste0("data/abcd/results/processed/2023_02_22_om.csv")))
+om_0_0_train <- read_csv(proc_path("2023_04_06_om_0_0_train.csv"))
+
+min(om_0_0_train$min_p_val) # 3.2e-08
+min(om_0_0_train$mean_p_val) #0.00414
+
+# Top rows by minimum and mean p-values across CBCL measures
+top_oms <- top_om_per_cluster(om_0_0_train)
+top_oms |> dplyr::select(c("significance", "row_id"))
+
+# 2023_04_06
+write_csv(top_oms, proc_path("top_oms_0_0_train.csv", date = TRUE))
 ```
 
 The following code chunk is where I left off with cleaning.
 It is in meta_clustering.qmd.
 
-```{r}
-#output_matrix_full <- read_csv(proc_path("2023_02_22_om.csv"))
-#
-#min(output_matrix_full$min_p_val) #3.2 e-08
-#min(output_matrix_full$mean_p_val) #0.00414
-#
-#mc_results <- meta_cluster(output_matrix_full)
-#
-#write_csv(data.frame(mc_results), proc_path("2023_02_22_mc_results.csv"))
-#
-#mc_results <- as.matrix(read_csv(proc_path("2023_02_22_mc_results.csv")))
-#
-#colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-#rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-#
-## Visualizing the meta-clustering results
-#mc_heatmap(mc_results, save = fig_path("mc_results.png", date = TRUE))
-#
-## Pretty art
-#pheatmap(mc_results, cluster_rows = FALSE, cluster_cols = FALSE)
-#
-## Trying to plot the input design matrix as a heatmap
-#mc_order <- get_pheatmap_order(mc_results)
-#
-#dm_heatmap(design_matrix[mc_order, ], fig_path("dm_reordered.png", date = TRUE))
-#
-#mc_pvals <- p_val_select(output_matrix_full)
-#
-#mc_pvals
-#
-#mc_pvals_reordered <- mc_pvals[mc_order, ]
-#
-## This is the actual important graph
-#pvals_pheatmap(mc_pvals_reordered, save = fig_path("mc_pvals.png", date = TRUE))
-#
-#
-### Distribution of cluster assignment
-#
-## A selection based on the main visual meta cluster and the p-values
-#om_reordered <- output_matrix_full[mc_order, ]
-#best_mc <- om_reordered[6:41, ]
-#best_mc_clusters <- as.matrix(subs(best_mc)[, -1])
+As of 2023_04_06, everything from here and before has been very rigorously re-run.
 
-## Visualization of cluster assignments
-#pheatmap(best_mc_clusters,
-#    cluster_rows = FALSE,
-#    show_rownames = FALSE,
-#    show_colnames = FALSE,
-#    legend = FALSE,
-#    cellwidth = 2.2)
-#
-#pheatmap(best_mc_clusters,
-#    cluster_rows = FALSE,
-#    show_rownames = FALSE,
-#    show_colnames = FALSE,
-#    legend = FALSE,
-#    cellwidth = 2.2,
-#    filename = fig_path("2023_02_22_cluster_assignment_heatmap.png"))
-#dev.off()
-#
-## Alternative visualizations
-#best_mc_subs <- best_mc |>
-#    dplyr::select(row_id, dplyr::starts_with("NDAR")) |>
-#    t()
-#colnames(best_mc_subs) <- best_mc_subs["row_id", ]
-#best_mc_subs <- best_mc_subs[2:nrow(best_mc_subs), ]
-#best_mc_subs <- as.data.frame(best_mc_subs)
-#best_mc_subs <- sapply(best_mc_subs, as.numeric)
-#row_means <- apply(X = best_mc_subs, MARGIN = 1, FUN = mean, na.rm = TRUE)
-#names(row_means) <- colnames(subs(best_mc))[-1]
-#
-## Shows how consistently a subject was assigned to a particular cluster
-#png(fig_path("2023_02_22_avg_cluster.png"),
-#    height = 5,
-#    width = 5,
-#    units = "in",
-#    res = 300)
-#plot(row_means,
-#    xlab = "Subject",
-#    ylab = "Mean assigned cluster")
-#dev.off()
-#
-#
-## Histogram form
-#png(fig_path("2023_02_22_avg_cluster_hist.png"),
-#    height = 5,
-#    width = 5,
-#    units = "in",
-#    res = 300)
-#hist(row_means,
-#    xlab = "Mean assigned cluster",
-#    main = NULL)
-#dev.off()
-#
-#
-### Choosing top solution
-#
-#om_reordered
-#
-## Next steps are to evaluate a few options:
-## A consensus cluster row (nah)
-## A row containing everybody
-## Consensus cluster row without problematic patients
-## A row containing everybody without problematic patients
-#
-## Or perhaps:
-## 1. The consensus results
-## 2. The best results
-#
-## Best MC Subs: finding some dm rows to work with
-#best_mc_df <- data.frame(best_mc_subs)
-#colnames(best_mc_df) <- colnames(best_mc_subs)
-#best_mc_df$subjectkey <- rownames(best_mc_df)
-#rownames(grDevices::best_mc_df) <- NULL
-#
-## Choosing a row to characterize by p-value
-#best_mc_copy <- best_mc
-#best_mc_copy$inc_var_count <- best_mc_copy |>
-#    dplyr::select(dplyr::starts_with("inc")) |>
-#    rowSums()
-#
-#best_mc_copy
-#
-#ggplot(best_mc_copy,
-#    aes(x = min_p_val, y = mean_p_val, label = row_id,
-#        color = (inc_var_count == 25))) +
-#    geom_point() +
-#    scale_x_continuous(trans = "log10") +
-#    scale_y_continuous(trans = "log10") +
-#    geom_text(hjust = 0, vjust = 0) +
-#    xlab("Minimum CBCL log(p-value)") +
-#    ylab("Mean CBCL log(p-value)") +
-#    labs(color = "All variables included?") +
-#    theme_bw() +
-#    theme(text = element_text(size = 15))
-## ggsave(fig_path("2023_02_22_solutions_by_pvals.png"))
-#
-#top_om_row <- best_mc[best_mc$row_id == 84, ] # just try this one based on graph
-#
-#
-#
-#om_scatter(output_matrix_full)
-```
 
-This should be a separate file
 
-# Cluster characterization
 
-## CBCL measures
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
-# Pick a row
-
-
-#top_om_rows <- read_csv(proc_path("2023_03_08_top_om_rows.csv"))
-#
-#top_om_rows
-#
-#om_row <- 34 # Corresponds to row_id 84, the lowest min/mean p value
-#best_mc$row_id[om_row] == 84
-#
-#
-## DF with row_id and subjects as columns and cluster as rows)
-#clustered_subjects <- subs(best_mc[om_row, ])
-#
-#clusters <- data.frame(t(clustered_subjects))
-#clusters$id <- rownames(clusters)
-#rownames(clusters) <- NULL
-#colnames(clusters) <- c("cluster", "subjectkey")
-#clusters <- clusters[2:nrow(clusters), ]
-#clusters
-#
-#groups <- clusters$cluster
-#groups
-#
-#outcome_list <- list(
-#    clusters,
-#    cbcl_nausea,
-#    cbcl_vomiting,
-#    cbcl_dizzy,
-#    cbcl_overtired,
-#    cbcl_sleeping_more,
-#    cbcl_sleeping_less,
-#    cbcl_depress,
-#    cbcl_anxiety,
-#    cbcl_attention,
-#    cbcl_aggressive)
-#
-#comparison_df <-
-#    outcome_list |> purrr::reduce(dplyr::inner_join, by = "subjectkey")
-#
-#comparison_df$cluster <- as.factor(comparison_df$cluster)
-#
-## Using ordinal regression, the p-values are very low
-#8 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea") # 0.0001365547
-#8 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy")
-#8 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired")
-#8 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more")
-#8 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less")
-#8 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety")
-#8 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention")
-#8 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive")
-
-#nausea_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_nausea) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#nausea_summary$cbcl_nausea <-
-#    factor(nausea_summary$cbcl_nausea, levels = c("2", "1", "0"))
-#ggplot(nausea_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_nausea)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL Nausea Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-# ggsave(fig_path("cbcl_nausea.png", date = TRUE), height = 6, dpi = 300)
-# p = 0.015
-
-#dizzy_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_dizzy) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#dizzy_summary$cbcl_dizzy <-
-#    factor(dizzy_summary$cbcl_dizzy, levels = c("2", "1", "0"))
-#ggplot(dizzy_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_dizzy)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL dizzy Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_dizzy.png", date = TRUE), height = 6, dpi = 300)
-# p = 0.12 (NS)
-
-#overtired_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_overtired) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#overtired_summary$cbcl_overtired <-
-#    factor(overtired_summary$cbcl_overtired, levels = c("2", "1", "0"))
-#ggplot(overtired_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_overtired)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL overtired Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_overtired.png", date = TRUE), height = 6, dpi = 300)
-# p = 0.037
-
-#sleeping_more_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_sleeping_more) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#sleeping_more_summary$cbcl_sleeping_more <-
-#    factor(sleeping_more_summary$cbcl_sleeping_more, levels = c("2", "1", "0"))
-#ggplot(sleeping_more_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_sleeping_more)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_more Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_sleeping_more.png", date = TRUE), height = 6, dpi = 300)
-## p = 0.024
-#
-#sleeping_less_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_sleeping_less) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#sleeping_less_summary$cbcl_sleeping_less <-
-#    factor(sleeping_less_summary$cbcl_sleeping_less, levels = c("2", "1", "0"))
-#ggplot(sleeping_less_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_sleeping_less)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL sleeping_less Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_sleeping_less.png", date = TRUE), height = 6, dpi = 300)
-## p = 0.06 (NS)
-#
-#anxiety_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_anxiety) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#anxiety_summary$cbcl_anxiety <-
-#    factor(anxiety_summary$cbcl_anxiety, levels = c("2", "1", "0"))
-#ggplot(anxiety_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_anxiety)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL anxiety Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_anxiety.png", date = TRUE), height = 6, dpi = 300)
-## p = 0.00025
-#
-#attention_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_attention) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#attention_summary$cbcl_attention <-
-#    factor(attention_summary$cbcl_attention, levels = c("2", "1", "0"))
-#ggplot(attention_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_attention)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL attention Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_attention.png", date = TRUE), height = 6, dpi = 300)
-## p = 2e-05
-#
-#aggressive_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_aggressive) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#aggressive_summary$cbcl_aggressive <-
-#    factor(aggressive_summary$cbcl_aggressive, levels = c("2", "1", "0"))
-#ggplot(aggressive_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_aggressive)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL aggressive Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_aggressive.png", date = TRUE), height = 6, dpi = 300)
-## p = 2e-05
-
-#depress_summary <- comparison_df |>
-#    group_by(cluster) |>
-#    count(cbcl_depress) |>
-#    mutate(Percent = round(n / sum(n) * 100, 1))
-#depress_summary$cbcl_depress <-
-#    factor(depress_summary$cbcl_depress, levels = c("2", "1", "0"))
-#ggplot(depress_summary,
-#    aes(x = cluster, y = Percent, fill = cbcl_depress)) +
-#    geom_bar(stat = "identity", position = position_stack()) +
-#    geom_text(aes(label = paste(Percent, "%"), y = Percent),
-#            position = position_stack(vjust = 0.5)) +
-#    scale_y_continuous(expand = expansion(mult = c(0, .1))) +
-#    labs(x = "Cluster", y = "Percentage", fill = "CBCL Depress Grade") +
-#    theme_bw() +
-#    theme(text = element_text(size = 20))
-#ggsave(fig_path("cbcl_depress.png", date = TRUE), height = 6, dpi = 300)
-
-
-#pval_vec <- c(
-#    8 * ord_reg_p(clusters, cbcl_nausea, "cbcl_nausea"), # 0.0001365547 raw
-#    8 * ord_reg_p(clusters, cbcl_dizzy, "cbcl_dizzy"),
-#    8 * ord_reg_p(clusters, cbcl_overtired, "cbcl_overtired"),
-#    8 * ord_reg_p(clusters, cbcl_sleeping_more, "cbcl_sleeping_more"),
-#    8 * ord_reg_p(clusters, cbcl_sleeping_less, "cbcl_sleeping_less"),
-#    8 * ord_reg_p(clusters, cbcl_anxiety, "cbcl_anxiety"),
-#    8 * ord_reg_p(clusters, cbcl_attention, "cbcl_attention"),
-#    8 * ord_reg_p(clusters, cbcl_aggressive, "cbcl_aggressive"))
-
 mean(pval_vec)
 
 c1_df <- comparison_df |> dplyr::filter(cluster == 1)

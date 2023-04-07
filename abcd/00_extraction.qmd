@@ -331,16 +331,16 @@ smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
 mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
 
 ## Subcortical volumes
-sm_subc_v_0_0 <- get_subc_v(smrip10201, mtbi_subjects_0, t = 0)
-sm_subc_v_l_0 <- get_subc_v(smrip10201, mtbi_subjects_l, t = 0)
+sm_subc_v_0_0 <- abcdutils::get_subc_v(smrip10201, mtbi_subjects_0, t = 0)
+sm_subc_v_l_0 <- abcdutils::get_subc_v(smrip10201, mtbi_subjects_l, t = 0)
 
 ## Cortical thickness
-sm_cort_t_0_0 <- get_cort_t(mrisdp10201, mtbi_subjects_0, t = 0)
-sm_cort_t_l_0 <- get_cort_t(mrisdp10201, mtbi_subjects_l, t = 0)
+sm_cort_t_0_0 <- abcdutils::get_cort_t(mrisdp10201, mtbi_subjects_0, t = 0)
+sm_cort_t_l_0 <- abcdutils::get_cort_t(mrisdp10201, mtbi_subjects_l, t = 0)
 
 ## Cortical volumes
-sm_cort_sa_0_0 <- get_cort_sa(mrisdp10201, mtbi_subjects_0, t = 0)
-sm_cort_sa_l_0 <- get_cort_sa(mrisdp10201, mtbi_subjects_l, t = 0)
+sm_cort_sa_0_0 <- abcdutils::get_cort_sa(mrisdp10201, mtbi_subjects_0, t = 0)
+sm_cort_sa_l_0 <- abcdutils::get_cort_sa(mrisdp10201, mtbi_subjects_l, t = 0)
 ```
 
 ```{r}
@@ -612,8 +612,10 @@ cbcl_aggressive_l_2 <-
 
 calc_delta <- function(df0, df2) {
     common_subs <- common_subjects(list(df0, df2))
-    df0 <- df0 |> dplyr::filter(df0$"subjectkey" %in% common_subs)
-    df2 <- df2 |> dplyr::filter(df2$"subjectkey" %in% common_subs)
+    df0 <- df0 |> dplyr::filter(df0$"subjectkey" %in% common_subs) |>
+        col_to_num_all_possible()
+    df2 <- df2 |> dplyr::filter(df2$"subjectkey" %in% common_subs) |>
+        col_to_num_all_possible()
     df_delta <- df0
     features <- colnames(df0)[-1]
     for (feature in features) {
@@ -680,7 +682,7 @@ b <- merge_df_list(a) |>
     na.omit() |>
     dplyr::select(-dplyr::contains(c("subjectkey", "r")))
 
-pheatmap(b)
+pheatmap::pheatmap(b)
 
 write_csv(cbcl_headaches_0_0,
     input_path("cbcl_headaches_0_0.csv", date = TRUE))
