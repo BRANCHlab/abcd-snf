@@ -96,7 +96,7 @@ make_summary_tables <- function(data_list_full, fig_path) {
             latest_mtbi_mechanism == "other_loc" ~ "Other injury",
             TRUE ~ latest_mtbi_mechanism)) |>
         `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
-    # Sex table    
+    # Sex table    # {~
     sex_table <- data_list_full$"sex"$"data" |>
         dplyr::group_by(M) |>
         dplyr::summarize(n = dplyr::n()) |>
@@ -104,7 +104,8 @@ make_summary_tables <- function(data_list_full, fig_path) {
         dplyr::mutate(M = dplyr::case_when(
             M == 0 ~ "F",
             M == 1 ~ "M")) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))
+        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+    # Loc table# {~
     loc_table <- data_list_full$"mtbi_loc"$"data" |>
         dplyr::group_by(latest_mtbi_loc) |>
         dplyr::summarize(n = dplyr::n()) |>
@@ -112,9 +113,17 @@ make_summary_tables <- function(data_list_full, fig_path) {
         dplyr::mutate(latest_mtbi_loc = dplyr::case_when(
             latest_mtbi_loc == 0 ~ "No",
             latest_mtbi_loc == 1 ~ "Yes")) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))
-    print(loc_table)
-    # Putting it all together
+        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+    # Mem daze table# {~
+    mem_daze_table <- data_list_full$"mtbi_mem_daze"$"data" |>
+        dplyr::group_by(latest_mtbi_mem_daze) |>
+        dplyr::summarize(n = dplyr::n()) |>
+        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
+        dplyr::mutate(latest_mtbi_mem_daze = dplyr::case_when(
+            latest_mtbi_mem_daze == 0 ~ "No",
+            latest_mtbi_mem_daze == 1 ~ "Yes")) |>
+        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+    # Putting it all together# {~
     idx1 <- 1
     idx2 <- nrow(race_table)
     idx3 <- idx2 + 1
@@ -123,18 +132,22 @@ make_summary_tables <- function(data_list_full, fig_path) {
     idx6 <- idx4 + nrow(sex_table)
     idx7 <- idx6 + 1
     idx8 <- idx6 + nrow(loc_table)
+    idx9 <- idx8 + 1
+    idx10 <- idx8 + nrow(loc_table)
     full_table <- do.call(rbind, list(race_table,
                                       mechanism_table,
-                                      sex_table,
-                                      loc_table
+                                      mem_daze_table,
+                                      loc_table,
+                                      sex_table
                                       ))
     full_table |>
         gt::gt() |>
         gt::cols_align(align = "center", columns = "n (total = 320)") |>
         gt::tab_row_group(label = "Race", rows = idx1:idx2) |>
-        gt::tab_row_group(label = "Injury Mechanism", rows = idx3:idx4) |>
-        gt::tab_row_group(label = "Sex", rows = idx5:idx6) |>
+        gt::tab_row_group(label = "Injury mechanism", rows = idx3:idx4) |>
+        gt::tab_row_group(label = "Memory loss / Feeling dazed", rows = idx5:idx6) |>
         gt::tab_row_group(label = "LOC", rows = idx7:idx8) |>
+        gt::tab_row_group(label = "Sex", rows = idx9:idx10) |>
         gt::tab_options(
             table.width = 400,
             data_row.padding = px(2),
@@ -149,10 +162,10 @@ make_summary_tables <- function(data_list_full, fig_path) {
             locations = list(
                 cells_row_groups(),
                 cells_column_labels()
-            ))
-    #gtsave(od_path("abcd_mtbi_loc_table_0_0.png", date = TRUE))
+            )) |>
+    gtsave(fig_path("abcd_mtbi_summary_table_0_0.png", date = TRUE))# ~}
 }
-make_summary_tables(data_list_full)
+make_summary_tables(data_list_full, fig_path)
 
 
 
@@ -165,9 +178,6 @@ data_list_full$"mtbi_age"$"data"$"latest_mtbi_age" |> sd()
     gt_theme_538() |>
     gtsave(od_path("abcd_mtbi_loc_table_0_0.png", date = TRUE))
 
-data_list_full$"mtbi_mem_daze"$"data" |>
-    dplyr::group_by(latest_mtbi_mem_daze) |>
-    dplyr::summarize(n = dplyr::n())
 
 ```
 
