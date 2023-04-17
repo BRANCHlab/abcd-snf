@@ -190,6 +190,13 @@ The function below generates a grid of CBCL impairment plots for each cluster so
 ```{r}
 # Last generated on 2023-04-06
 om_plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
+
+top_oms_0_0_train$significance
+
+# The two clust mean solution
+top_om_uhn <- top_oms_0_0_train[2, ]
+
+plot_all_cbcl(top_om_uhn, cbcl_list_train, fig_path, include = c("depress", "anxiety", "attention", "aggressive"), save_suffix = "_train")
 ```
 
 
@@ -202,7 +209,7 @@ Some notable file versions are `2023_03_13_nmi_df.csv` (the first run of the `om
 
 
 ```{r}
-library(scabcd)
+library(scabcd)# {~
 library(abcdutils)
 library(here)
 library(readr)
@@ -224,7 +231,7 @@ for (row in seq_len(nrow(top_oms_0_0_train))) {
         gt_theme_538() |>
         gtsave(fig_path(paste0(top_oms_0_0_train[row, ]$"significance",
                                "_nmis.png"), date = TRUE))
-}
+}# ~}
 ```
 
 
@@ -250,11 +257,35 @@ test_labels <- propagated_labels |>
     dplyr::filter(group == "test") |>
     dplyr::select(-"group")
 
+propagated_labels
+
 outcomes_and_eval_df <- append(list(test_labels), cbcl_list_full)
 
 test_eval_df <- merge_df_list(outcomes_and_eval_df)
 
-test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {
+colnames(top_om_uhn)
+
+pl_to_om <- function(pl, significance) {
+    pl <- pl |>
+        dplyr::filter(pl$"group" == "test") |>
+        dplyr::select("subjectkey", !!significance) |>
+        t() |>
+        data.frame()
+    colnames(pl) <- pl[1, ]
+    pl <- pl[-1, ]
+    pl <- cbind(significance, pl)
+    pl$row_id <- 1:nrow(pl)
+    return(pl)
+}
+pl_om <- pl_to_om(propagated_labels, "two_clust_mean")
+
+plot_all_cbcl(pl_om,
+              cbcl_list_full,
+              fig_path,
+              include = c("depress", "anxiety", "attention", "aggressive"),
+              save_suffix = "_test_lp")
+
+test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {{~
     solutions <- eval_df |>
         dplyr::select(-dplyr::starts_with(c("subject", "cbcl"))) |>
         colnames()
@@ -280,7 +311,7 @@ test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {
     }
 }
 
-test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)
+test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)# ~}
 
 ```
 
