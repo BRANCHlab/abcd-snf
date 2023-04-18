@@ -300,8 +300,6 @@ pl_to_om <- function(pl, significance) {
 }
 pl_om <- pl_to_om(propagated_labels, "two_clust_mean")
 
-pl
-
 plot_all_cbcl(
     pl_om,
     cbcl_list_full,
@@ -783,7 +781,8 @@ input_characterization_plots_g <- function(om,
 }
 
 
-input_characterization_plots_g(top_oms_0_0_train,
+#input_characterization_plots_g(top_oms_0_0_train,
+input_characterization_plots_g(top_om_uhn,
     loc = train_dfs[[1]],
     mechanism = train_dfs[[2]],
     dazed = train_dfs[[3]],
@@ -858,8 +857,10 @@ if (all(top_oms_0_0_train$"significance" == pl_new$"significance")) {
     pl_new$"nclust" <- top_oms_0_0_train$"nclust"
 }
 pl_new <- col_to_num_all_possible(pl_new)
+# Just added 04-18
+pl_new <- pl_new[2, ] 
 
-pl_new
+pl_new$significance
 
 input_characterization_plots_g(pl_new,
     loc = test_dfs[[1]],
@@ -897,14 +898,116 @@ input_characterization_plots_g(pl_new,
     other_heatmap_path = fig_path("other_input_test.png", date = TRUE))
 
 
-plot_om_bar(pl_new[2, ], test_dfs[[1]], "latest_mtbi_loc", "LOC")
+plot_om_bar(pl_new, test_dfs[[1]], "latest_mtbi_loc", "LOC")
+
+
+pl_new
+
+plot_om_bar(pl_new, test_dfs[[9]], "M", "Male")
+
+tibble(test_dfs[[9]])
+
+sex_df <- dplyr::inner_join(get_cluster_df(pl_new), test_dfs[[9]], by = "subjectkey")
+
+sex_df_summary <- sex_df |>
+    dplyr::group_by(cluster, M) |>
+    dplyr::summarize(count = dplyr::n())
+
+chisq_table <- data.frame(cluster = c(1, 2), M = c(3, 35), F = c(3, 26))
+
+sex_df$cluster <- as.factor(sex_df$cluster)
+sex_df$M <- as.factor(sex_df$M)
+
+# n.s.
+chisq.test(sex_df$cluster, sex_df$M, correct=FALSE)
 
 
 
+lapply(test_dfs, function(x) colnames(x)[2])
 
 
 pl_new |>
     dplyr::select("significance", "row_id")
+
+
+sex_df_train <- dplyr::inner_join(get_cluster_df(top_om_uhn), train_dfs[[9]], by = "subjectkey")
+
+sex_df_train
+
+chisq.test(sex_df_train$cluster, sex_df_train$M, correct=FALSE)
+
+# N.S. for sex
+
+# Income
+income_df <- dplyr::inner_join(get_cluster_df(pl_new), test_dfs[[4]], by = "subjectkey")
+
+chisq.test(income_df$cluster, income_df$household_income) # p = 1.137e-06
+
+
+# Pubertal stage
+pubertal_df <- dplyr::inner_join(get_cluster_df(pl_new), test_dfs[[7]], by = "subjectkey")
+
+head(pubertal_df)
+
+t.test(pubertal_df$pubertal_status[pubertal_df$cluster == 1], pubertal_df$pubertal_status[pubertal_df$cluster == 2]) # uncorrected p-value of 0.024
+
+# Acitivites in the last year
+activities_df <- dplyr::inner_join(get_cluster_df(pl_new), test_dfs[[23]], by = "subjectkey")
+
+head(activities_df)
+
+t.test(activities_df$p12_activities[activities_df$cluster == 1], activities_df$p12_activities[activities_df$cluster == 2]) # uncorrected p-value of 0.00056
+
+
+cort_sa_df <- dplyr::inner_join(tibble(test_dfs[[17]]), get_cluster_df(pl_new), by = "subjectkey")
+
+cort_sas <- cort_sa_df |>
+    dplyr::select(dplyr::starts_with("mrisd")) |>
+    rowMeans()
+
+cortsadf <- cbind(get_cluster_df(pl_new), cort_sas)
+
+t_test <- function(df, key_var, group_col, group_1, group_2) {
+    group_1_vals <- df[, key_var][df[, group_col] == group_1]
+    group_2_vals <- df[, key_var][df[, group_col] == group_2]
+    t.test(group_1_vals, group_2_vals)
+}
+
+t_test(cortsadf, "cort_sas", "cluster", 1, 2)
+
+library(ggplot2)
+
+cortsadf$cluster <- as.factor(cortsadf$cluster)
+
+ggplot(cortsadf, mapping = aes(x = cluster, y = cort_sas)) +
+    geom_violin() +
+    geom_jitter(height = 0, width = 0.1)
+
+
+# subcv
+
+cort_sa_df <- dplyr::inner_join(tibble(test_dfs[[19]]), get_cluster_df(pl_new), by = "subjectkey")
+
+
+cort_sas <- cort_sa_df |>
+    dplyr::select(dplyr::starts_with("smri")) |>
+    rowMeans()
+
+cortsadf <- cbind(get_cluster_df(pl_new), cort_sas)
+
+t_test <- function(df, key_var, group_col, group_1, group_2) {
+    group_1_vals <- df[, key_var][df[, group_col] == group_1]
+    group_2_vals <- df[, key_var][df[, group_col] == group_2]
+    t.test(group_1_vals, group_2_vals)
+}
+
+t_test(cortsadf, "cort_sas", "cluster", 1, 2)
+
+cortsadf$cluster <- as.factor(cortsadf$cluster)
+
+ggplot(cortsadf, mapping = aes(x = cluster, y = cort_sas)) +
+    geom_violin() +
+    geom_jitter(height = 0, width = 0.1)
 
 ```
 
