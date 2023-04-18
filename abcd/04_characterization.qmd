@@ -177,8 +177,6 @@ data_list_full$"mtbi_age"$"data"$"latest_mtbi_age" |> sd()
     cols_align(align = "center") |>
     gt_theme_538() |>
     gtsave(od_path("abcd_mtbi_loc_table_0_0.png", date = TRUE))
-
-
 ```
 
 
@@ -189,14 +187,29 @@ The function below generates a grid of CBCL impairment plots for each cluster so
 
 ```{r}
 # Last generated on 2023-04-06
-om_plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
+plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
 
 top_oms_0_0_train$significance
 
 # The two clust mean solution
 top_om_uhn <- top_oms_0_0_train[2, ]
 
-plot_all_cbcl(top_om_uhn, cbcl_list_train, fig_path, include = c("depress", "anxiety", "attention", "aggressive"), save_suffix = "_train")
+plot_all_cbcl(
+    top_om_uhn,
+    cbcl_list_train,
+    fig_path,
+    include = c(
+        "depress",
+        "anxiety",
+        "attention",
+        "aggressive"
+    ),
+    save_suffix = "_train",
+    h = 8,
+    w = 15
+)
+
+
 ```
 
 
@@ -265,6 +278,14 @@ test_eval_df <- merge_df_list(outcomes_and_eval_df)
 
 colnames(top_om_uhn)
 
+#' Convert a propagated label structure to an output-matrix like structure
+#'
+#' @param pl a propagated label dataframe row
+#' @param significance a label for the row
+#'
+#' @return pl_om the converted row
+#'
+#' @export
 pl_to_om <- function(pl, significance) {
     pl <- pl |>
         dplyr::filter(pl$"group" == "test") |>
@@ -279,11 +300,17 @@ pl_to_om <- function(pl, significance) {
 }
 pl_om <- pl_to_om(propagated_labels, "two_clust_mean")
 
-plot_all_cbcl(pl_om,
-              cbcl_list_full,
-              fig_path,
-              include = c("depress", "anxiety", "attention", "aggressive"),
-              save_suffix = "_test_lp")
+pl
+
+plot_all_cbcl(
+    pl_om,
+    cbcl_list_full,
+    fig_path,
+    include = c("depress", "anxiety", "attention", "aggressive"),
+    save_suffix = "_test_lp",
+    h = 8,
+    w = 15
+)
 
 test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {{~
     solutions <- eval_df |>
