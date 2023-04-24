@@ -18,20 +18,19 @@ proc_writer <- make_writer(proc_path)
 proc_reader <- make_reader(proc_path)
 input_reader <- make_reader(input_path)
 
-data_list_train <- list.load(proc_path("2023_04_06_data_list_0_0_train.rdata"))
-data_list_test <- list.load(proc_path("2023_04_06_data_list_0_0_test.rdata"))
-data_list_full <- list.load(proc_path("2023_04_06_data_list_0_0_full.rdata"))
-cbcl_list_train <- list.load(proc_path("2023_04_06_cbcl_list_0_0_train.rdata"))
-cbcl_list_full <- list.load(proc_path("2023_04_06_cbcl_list_0_0_full.rdata"))
+data_list_train <- list.load(proc_path("2023_04_24_data_list_0_0_train.rdata"))
+data_list_test <- list.load(proc_path("2023_04_24_data_list_0_0_test.rdata"))
+data_list_full <- list.load(proc_path("2023_04_24_data_list_0_0_full.rdata"))
+cbcl_list_train <- list.load(proc_path("2023_04_24_cbcl_list_0_0_train.rdata"))
+cbcl_list_full <- list.load(proc_path("2023_04_24_cbcl_list_0_0_full.rdata"))
 
-nihtbx_pattern <- input_reader("2023_04_06_nihtbx_pattern_fc_imp_0_0.csv")
-nihtbx_list <- input_reader("2023_04_06_nihtbx_list_fc_imp_0_0.csv")
-nihtbx_cardsort <- input_reader("2023_04_06_nihtbx_cardsort_fc_imp_0_0.csv")
-sds_sleep_df <- input_reader("2023_04_06_sds_sleep_df_0_0.csv")
+nihtbx_pattern <- input_reader("2023_04_24_nihtbx_pattern_fc_imp_0_0.csv")
+nihtbx_list <- input_reader("2023_04_24_nihtbx_list_fc_imp_0_0.csv")
+nihtbx_cardsort <- input_reader("2023_04_24_nihtbx_cardsort_fc_imp_0_0.csv")
+sds_sleep_df <- input_reader("2023_04_24_sds_sleep_df_0_0.csv")
 
 
-# As of 2023_04_06, this yields the correct plots
-top_oms_0_0_train <- read_csv(proc_path("2023_04_06_top_oms_0_0_train.csv"))
+top_oms_0_0_train <- read_csv(proc_path("2023_04_24_top_oms_0_0_train.csv"))
 ```
 
 ## Summary of the ABCD sample
@@ -190,6 +189,9 @@ The function below generates a grid of CBCL impairment plots for each cluster so
 ```{r}
 # Last generated on 2023-04-06
 om_plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
+
+
+plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
 ```
 
 
@@ -237,7 +239,7 @@ propagated_labels
 
 write_csv(propagated_labels, proc_path("top_oms_0_0_lp.csv", date = TRUE))
 
-propagated_labels <- proc_reader("2023_04_09_top_oms_0_0_lp.csv")
+propagated_labels <- proc_reader("2023_04_24_top_oms_0_0_lp.csv")
 
 top_oms_0_0_train |>
     dplyr::select("row_id", "significance")
@@ -246,6 +248,100 @@ top_oms_0_0_train |>
 ## CBCL plotting in the label propagated group
 
 ```{r}
+#### NEW STUFF
+
+test_labels <- propagated_labels |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-"group")
+
+propagated_labels
+
+outcomes_and_eval_df <- append(list(test_labels), cbcl_list_full)
+
+test_eval_df <- merge_df_list(outcomes_and_eval_df)
+
+colnames(top_om_uhn)
+
+#' Convert a propagated label structure to an output-matrix like structure
+#'
+#' @param pl a propagated label dataframe row
+#' @param significance a label for the row
+#'
+#' @return pl_om the converted row
+#'
+#' @export
+pl_to_om <- function(pl, significance) {
+    pl <- pl |>
+        dplyr::filter(pl$"group" == "test") |>
+        dplyr::select("subjectkey", !!significance) |>
+        t() |>
+        data.frame()
+    colnames(pl) <- pl[1, ]
+    pl <- pl[-1, ]
+    pl <- cbind(significance, pl)
+    pl$row_id <- 1:nrow(pl)
+    return(pl)
+}
+(pl_om <- pl_to_om(propagated_labels, "two_clust_mean"))
+
+propagated_labels 
+
+propagated_labels
+
+# I AM HERE APRIL 24
+
+a <- propagated_labels |>
+    dplyr::filter(group == "test")
+
+sum(a$two_clust_min == 2) # 59 and 8 split
+
+sum(a$two_clust_mean == 1) # 64 and 3 split
+
+plot_all_cbcl(
+    pl_om,
+    cbcl_list_full,
+    fig_path,
+    include = c("depress", "anxiety", "attention", "aggressive"),
+    save_suffix = "_test_lp",
+    h = 8,
+    w = 15
+)
+
+test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {{~
+    solutions <- eval_df |>
+        dplyr::select(-dplyr::starts_with(c("subject", "cbcl"))) |>
+        colnames()
+    for (solution in solutions) {
+        print(solution)
+        nclust <- dplyr::case_when(
+            as.logical(length(grep("two", solution))) ~ 2,
+            as.logical(length(grep("three", solution))) ~ 3,
+            as.logical(length(grep("four", solution))) ~ 4,
+            as.logical(length(grep("five", solution))) ~ 5,
+            TRUE ~ NA)
+        cluster_df <- eval_df |>
+            dplyr::select(!!solution, "subjectkey") |>
+            data.frame()
+        colnames(cluster_df) <- c("cluster", "subjectkey")
+        current_sig <- solution
+        plot_all_cbcl(
+            cluster_df,
+            current_sig,
+            full_cbcl_list,
+            nclust = nclust,
+            save = fig_path_fn(paste0(current_sig, "_lp.png"), date = TRUE))
+    }
+}
+
+test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)# ~}
+
+
+
+
+#### END OF NEW STUFF
+
+
+
 test_labels <- propagated_labels |>
     dplyr::filter(group == "test") |>
     dplyr::select(-"group")
