@@ -18,166 +18,165 @@ proc_writer <- make_writer(proc_path)
 proc_reader <- make_reader(proc_path)
 input_reader <- make_reader(input_path)
 
-data_list_train <- list.load(proc_path("2023_04_24_data_list_0_0_train.rdata"))
-data_list_test <- list.load(proc_path("2023_04_24_data_list_0_0_test.rdata"))
-data_list_full <- list.load(proc_path("2023_04_24_data_list_0_0_full.rdata"))
-cbcl_list_train <- list.load(proc_path("2023_04_24_cbcl_list_0_0_train.rdata"))
-cbcl_list_full <- list.load(proc_path("2023_04_24_cbcl_list_0_0_full.rdata"))
+data_list_train <- list.load(proc_path("2023_04_27_data_list_0_0_train.rdata"))
+data_list_test <- list.load(proc_path("2023_04_27_data_list_0_0_test.rdata"))
+data_list_full <- list.load(proc_path("2023_04_27_data_list_0_0_full.rdata"))
+cbcl_list_train <- list.load(proc_path("2023_04_27_cbcl_list_0_0_train.rdata"))
+cbcl_list_full <- list.load(proc_path("2023_04_27_cbcl_list_0_0_full.rdata"))
 
-nihtbx_pattern <- input_reader("2023_04_24_nihtbx_pattern_fc_imp_0_0.csv")
-nihtbx_list <- input_reader("2023_04_24_nihtbx_list_fc_imp_0_0.csv")
-nihtbx_cardsort <- input_reader("2023_04_24_nihtbx_cardsort_fc_imp_0_0.csv")
-sds_sleep_df <- input_reader("2023_04_24_sds_sleep_df_0_0.csv")
+nihtbx_pattern <- input_reader("2023_04_27_nihtbx_pattern_fc_imp_0_0.csv")
+nihtbx_list <- input_reader("2023_04_27_nihtbx_list_fc_imp_0_0.csv")
+nihtbx_cardsort <- input_reader("2023_04_27_nihtbx_cardsort_fc_imp_0_0.csv")
+sds_sleep_df <- input_reader("2023_04_26_sds_sleep_df_0_0.csv")
 
 
-top_oms_0_0_train <- read_csv(proc_path("2023_04_24_top_oms_0_0_train.csv"))
+top_oms_0_0_train <- read_csv(proc_path("2023_04_27_top_oms_0_0_train.csv"))
 ```
 
 ## Summary of the ABCD sample
 
 ```{r}
-library(gt)
-library(gtExtras)
-library(webshot2)
-
-sdl(data_list_full)
-
-
-#Base tables
-table1 <- data.frame(
-  Measure = LETTERS[1:2],
-  n = runif(2))
-table2 <- data.frame(
-  Measure = LETTERS[3:5],
-  n = runif(3))
-#Merge tables by row
-fulltable <- rbind(table1, table2)
-#Create the gt object again for the merged table
-gttable <- gt(fulltable) |>
-  tab_row_group(label = "Race", rows = 1:2) |>
-  tab_row_group(label = "Injury Mechanism", rows = 3:5) |>
-  tab_options(table.width = 250)
-gttable
-
-
-
-make_summary_tables <- function(data_list_full, fig_path) {
-    race <- ""
-    # Give the data list accessible names
-    names(data_list_full) <- sdl(data_list_full)$"name"
-    # Race table# {~
-    race_table <- data_list_full$"race"$"data" |>
-        dplyr::group_by(race) |>
-        dplyr::summarize(n = dplyr::n()) |>
-        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
-        dplyr::mutate(race = dplyr::case_when(
-            race == "black" ~ "Black",
-            race == "white" ~ "White",
-            race == "mixed_or_other" ~ "Mixed/Other")) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
-    # Mechanism table# {~
-    mechanism_table <- data_list_full$"mtbi_mechanism"$"data" |>
-        dplyr::mutate(latest_mtbi_mechanism = dplyr::case_when(
-            latest_mtbi_mechanism == "multi" ~ "other_loc",
-            TRUE ~ latest_mtbi_mechanism))
-    print(unique(mechanism_table$latest_mtbi_mechanism))
-    mechanism_table <- mechanism_table |>
-        dplyr::group_by(latest_mtbi_mechanism) |>
-        dplyr::summarize(n = dplyr::n()) |>
-        dplyr::mutate(Percent = round(n / sum(n) * 100, 1))
-    mechanism_table <- mechanism_table |>
-        dplyr::group_by(latest_mtbi_mechanism) |>
-        dplyr::mutate(latest_mtbi_mechanism = dplyr::case_when(
-            latest_mtbi_mechanism == "fall_hit" ~ "Fall",
-            latest_mtbi_mechanism == "hosp_er" ~ "ER visit",
-            latest_mtbi_mechanism == "vehicle" ~ "Vehicle accident",
-            latest_mtbi_mechanism == "violent" ~ "Violent attack",
-            latest_mtbi_mechanism == "other_loc" ~ "Other injury",
-            TRUE ~ latest_mtbi_mechanism)) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
-    # Sex table    # {~
-    sex_table <- data_list_full$"sex"$"data" |>
-        dplyr::group_by(M) |>
-        dplyr::summarize(n = dplyr::n()) |>
-        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
-        dplyr::mutate(M = dplyr::case_when(
-            M == 0 ~ "F",
-            M == 1 ~ "M")) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
-    # Loc table# {~
-    loc_table <- data_list_full$"mtbi_loc"$"data" |>
-        dplyr::group_by(latest_mtbi_loc) |>
-        dplyr::summarize(n = dplyr::n()) |>
-        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
-        dplyr::mutate(latest_mtbi_loc = dplyr::case_when(
-            latest_mtbi_loc == 0 ~ "No",
-            latest_mtbi_loc == 1 ~ "Yes")) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
-    # Mem daze table# {~
-    mem_daze_table <- data_list_full$"mtbi_mem_daze"$"data" |>
-        dplyr::group_by(latest_mtbi_mem_daze) |>
-        dplyr::summarize(n = dplyr::n()) |>
-        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
-        dplyr::mutate(latest_mtbi_mem_daze = dplyr::case_when(
-            latest_mtbi_mem_daze == 0 ~ "No",
-            latest_mtbi_mem_daze == 1 ~ "Yes")) |>
-        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
-    # Putting it all together# {~
-    idx1 <- 1
-    idx2 <- nrow(race_table)
-    idx3 <- idx2 + 1
-    idx4 <- idx2 + nrow(mechanism_table)
-    idx5 <- idx4 + 1
-    idx6 <- idx4 + nrow(sex_table)
-    idx7 <- idx6 + 1
-    idx8 <- idx6 + nrow(loc_table)
-    idx9 <- idx8 + 1
-    idx10 <- idx8 + nrow(loc_table)
-    full_table <- do.call(rbind, list(race_table,
-                                      mechanism_table,
-                                      mem_daze_table,
-                                      loc_table,
-                                      sex_table
-                                      ))
-    full_table |>
-        gt::gt() |>
-        gt::cols_align(align = "center", columns = "n (total = 320)") |>
-        gt::tab_row_group(label = "Race", rows = idx1:idx2) |>
-        gt::tab_row_group(label = "Injury mechanism", rows = idx3:idx4) |>
-        gt::tab_row_group(label = "Memory loss / Feeling dazed", rows = idx5:idx6) |>
-        gt::tab_row_group(label = "LOC", rows = idx7:idx8) |>
-        gt::tab_row_group(label = "Sex", rows = idx9:idx10) |>
-        gt::tab_options(
-            table.width = 400,
-            data_row.padding = px(2),
-            column_labels.padding = px(8),
-            row_group.padding = px(3),
-            table.font.size = "20px",
-            column_labels.font.size = "24px"
-            ) |>
-        gt::tab_style(
-            style = list(
-                gt::cell_text(weight = "bold")),
-            locations = list(
-                cells_row_groups(),
-                cells_column_labels()
-            )) |>
-    gtsave(fig_path("abcd_mtbi_summary_table_0_0.png", date = TRUE))# ~}
-}
-make_summary_tables(data_list_full, fig_path)
-
-
-
-data_list_full$"mtbi_age"$"data"$"latest_mtbi_age" |> mean()
-data_list_full$"mtbi_age"$"data"$"latest_mtbi_age" |> sd()
-
-
-    gt() |>
-    cols_align(align = "center") |>
-    gt_theme_538() |>
-    gtsave(od_path("abcd_mtbi_loc_table_0_0.png", date = TRUE))
-
-
+#library(gt)
+#library(gtExtras)
+#library(webshot2)
+#
+#sdl(data_list_full)
+#
+#
+##Base tables
+#table1 <- data.frame(
+#  Measure = LETTERS[1:2],
+#  n = runif(2))
+#table2 <- data.frame(
+#  Measure = LETTERS[3:5],
+#  n = runif(3))
+##Merge tables by row
+#fulltable <- rbind(table1, table2)
+##Create the gt object again for the merged table
+#gttable <- gt(fulltable) |>
+#  tab_row_group(label = "Race", rows = 1:2) |>
+#  tab_row_group(label = "Injury Mechanism", rows = 3:5) |>
+#  tab_options(table.width = 250)
+#gttable
+#
+#
+#
+#make_summary_tables <- function(data_list_full, fig_path) {
+#    race <- ""
+#    # Give the data list accessible names
+#    names(data_list_full) <- sdl(data_list_full)$"name"
+#    # Race table# {~
+#    race_table <- data_list_full$"race"$"data" |>
+#        dplyr::group_by(race) |>
+#        dplyr::summarize(n = dplyr::n()) |>
+#        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
+#        dplyr::mutate(race = dplyr::case_when(
+#            race == "black" ~ "Black",
+#            race == "white" ~ "White",
+#            race == "mixed_or_other" ~ "Mixed/Other")) |>
+#        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+#    # Mechanism table# {~
+#    mechanism_table <- data_list_full$"mtbi_mechanism"$"data" |>
+#        dplyr::mutate(latest_mtbi_mechanism = dplyr::case_when(
+#            latest_mtbi_mechanism == "multi" ~ "other_loc",
+#            TRUE ~ latest_mtbi_mechanism))
+#    print(unique(mechanism_table$latest_mtbi_mechanism))
+#    mechanism_table <- mechanism_table |>
+#        dplyr::group_by(latest_mtbi_mechanism) |>
+#        dplyr::summarize(n = dplyr::n()) |>
+#        dplyr::mutate(Percent = round(n / sum(n) * 100, 1))
+#    mechanism_table <- mechanism_table |>
+#        dplyr::group_by(latest_mtbi_mechanism) |>
+#        dplyr::mutate(latest_mtbi_mechanism = dplyr::case_when(
+#            latest_mtbi_mechanism == "fall_hit" ~ "Fall",
+#            latest_mtbi_mechanism == "hosp_er" ~ "ER visit",
+#            latest_mtbi_mechanism == "vehicle" ~ "Vehicle accident",
+#            latest_mtbi_mechanism == "violent" ~ "Violent attack",
+#            latest_mtbi_mechanism == "other_loc" ~ "Other injury",
+#            TRUE ~ latest_mtbi_mechanism)) |>
+#        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+#    # Sex table    # {~
+#    sex_table <- data_list_full$"sex"$"data" |>
+#        dplyr::group_by(M) |>
+#        dplyr::summarize(n = dplyr::n()) |>
+#        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
+#        dplyr::mutate(M = dplyr::case_when(
+#            M == 0 ~ "F",
+#            M == 1 ~ "M")) |>
+#        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+#    # Loc table# {~
+#    loc_table <- data_list_full$"mtbi_loc"$"data" |>
+#        dplyr::group_by(latest_mtbi_loc) |>
+#        dplyr::summarize(n = dplyr::n()) |>
+#        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
+#        dplyr::mutate(latest_mtbi_loc = dplyr::case_when(
+#            latest_mtbi_loc == 0 ~ "No",
+#            latest_mtbi_loc == 1 ~ "Yes")) |>
+#        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+#    # Mem daze table# {~
+#    mem_daze_table <- data_list_full$"mtbi_mem_daze"$"data" |>
+#        dplyr::group_by(latest_mtbi_mem_daze) |>
+#        dplyr::summarize(n = dplyr::n()) |>
+#        dplyr::mutate(Percent = round(n / sum(n) * 100, 1)) |>
+#        dplyr::mutate(latest_mtbi_mem_daze = dplyr::case_when(
+#            latest_mtbi_mem_daze == 0 ~ "No",
+#            latest_mtbi_mem_daze == 1 ~ "Yes")) |>
+#        `colnames<-`(c("Measure", "n (total = 320)", "%"))# ~}
+#    # Putting it all together# {~
+#    idx1 <- 1
+#    idx2 <- nrow(race_table)
+#    idx3 <- idx2 + 1
+#    idx4 <- idx2 + nrow(mechanism_table)
+#    idx5 <- idx4 + 1
+#    idx6 <- idx4 + nrow(sex_table)
+#    idx7 <- idx6 + 1
+#    idx8 <- idx6 + nrow(loc_table)
+#    idx9 <- idx8 + 1
+#    idx10 <- idx8 + nrow(loc_table)
+#    full_table <- do.call(rbind, list(race_table,
+#                                      mechanism_table,
+#                                      mem_daze_table,
+#                                      loc_table,
+#                                      sex_table
+#                                      ))
+#    full_table |>
+#        gt::gt() |>
+#        gt::cols_align(align = "center", columns = "n (total = 320)") |>
+#        gt::tab_row_group(label = "Race", rows = idx1:idx2) |>
+#        gt::tab_row_group(label = "Injury mechanism", rows = idx3:idx4) |>
+#        gt::tab_row_group(label = "Memory loss / Feeling dazed", rows = idx5:idx6) |>
+#        gt::tab_row_group(label = "LOC", rows = idx7:idx8) |>
+#        gt::tab_row_group(label = "Sex", rows = idx9:idx10) |>
+#        gt::tab_options(
+#            table.width = 400,
+#            data_row.padding = px(2),
+#            column_labels.padding = px(8),
+#            row_group.padding = px(3),
+#            table.font.size = "20px",
+#            column_labels.font.size = "24px"
+#            ) |>
+#        gt::tab_style(
+#            style = list(
+#                gt::cell_text(weight = "bold")),
+#            locations = list(
+#                cells_row_groups(),
+#                cells_column_labels()
+#            )) |>
+#    gtsave(fig_path("abcd_mtbi_summary_table_0_0.png", date = TRUE))# ~}
+#}
+#make_summary_tables(data_list_full, fig_path)
+#
+#
+#
+#data_list_full$"mtbi_age"$"data"$"latest_mtbi_age" |> mean()
+#data_list_full$"mtbi_age"$"data"$"latest_mtbi_age" |> sd()
+#
+#
+#    gt() |>
+#    cols_align(align = "center") |>
+#    gt_theme_538() |>
+#    gtsave(od_path("abcd_mtbi_loc_table_0_0.png", date = TRUE))
+#
 ```
 
 
@@ -188,10 +187,9 @@ The function below generates a grid of CBCL impairment plots for each cluster so
 
 ```{r}
 # Last generated on 2023-04-06
-om_plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
-
-
 plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
+
+top_oms_0_0_train
 ```
 
 
@@ -204,29 +202,29 @@ Some notable file versions are `2023_03_13_nmi_df.csv` (the first run of the `om
 
 
 ```{r}
-library(scabcd)
-library(abcdutils)
-library(here)
-library(readr)
-library(gt)
-library(gtExtras)
-library(webshot2)
-library(rlist)
-
-nmi_df <- om_to_nmi_df(top_oms_0_0_train, data_list_train)
-
-write_csv(nmi_df, proc_path("nmi_df_0_0_train.csv", date = TRUE))
-
-nmi_df <- data.frame(read_csv(proc_path("2023_04_05_nmi_df_0_0_train.csv")))
-
-# Saving a pretty table png of each row's NMIs
-for (row in seq_len(nrow(top_oms_0_0_train))) {
-    calc_nmi(top_oms_0_0_train[row, ], data_list_train) |>
-        gt() |>
-        gt_theme_538() |>
-        gtsave(fig_path(paste0(top_oms_0_0_train[row, ]$"significance",
-                               "_nmis.png"), date = TRUE))
-}
+#library(scabcd)
+#library(abcdutils)
+#library(here)
+#library(readr)
+#library(gt)
+#library(gtExtras)
+#library(webshot2)
+#library(rlist)
+#
+#nmi_df <- om_to_nmi_df(top_oms_0_0_train, data_list_train)
+#
+#write_csv(nmi_df, proc_path("nmi_df_0_0_train.csv", date = TRUE))
+#
+#nmi_df <- data.frame(read_csv(proc_path("2023_04_05_nmi_df_0_0_train.csv")))
+#
+## Saving a pretty table png of each row's NMIs
+#for (row in seq_len(nrow(top_oms_0_0_train))) {
+#    calc_nmi(top_oms_0_0_train[row, ], data_list_train) |>
+#        gt() |>
+#        gt_theme_538() |>
+#        gtsave(fig_path(paste0(top_oms_0_0_train[row, ]$"significance",
+#                               "_nmis.png"), date = TRUE))
+#}
 ```
 
 
@@ -235,11 +233,11 @@ for (row in seq_len(nrow(top_oms_0_0_train))) {
 ```{r}
 propagated_labels <- lp_om(top_oms_0_0_train, data_list_full)
 
-propagated_labels
-
 write_csv(propagated_labels, proc_path("top_oms_0_0_lp.csv", date = TRUE))
 
-propagated_labels <- proc_reader("2023_04_24_top_oms_0_0_lp.csv")
+propagated_labels <- proc_reader("2023_04_27_top_oms_0_0_lp.csv")
+
+propagated_labels_test <- propagated_labels |> dplyr::filter(group == "test")
 
 top_oms_0_0_train |>
     dplyr::select("row_id", "significance")
@@ -249,18 +247,15 @@ top_oms_0_0_train |>
 
 ```{r}
 #### NEW STUFF
+propagated_labels
 
 test_labels <- propagated_labels |>
     dplyr::filter(group == "test") |>
     dplyr::select(-"group")
 
-propagated_labels
-
 outcomes_and_eval_df <- append(list(test_labels), cbcl_list_full)
 
 test_eval_df <- merge_df_list(outcomes_and_eval_df)
-
-colnames(top_om_uhn)
 
 #' Convert a propagated label structure to an output-matrix like structure
 #'
@@ -282,26 +277,27 @@ pl_to_om <- function(pl, significance) {
     pl$row_id <- 1:nrow(pl)
     return(pl)
 }
-(pl_om <- pl_to_om(propagated_labels, "two_clust_mean"))
 
-propagated_labels 
+pl_om <- pl_to_om(propagated_labels, "two_clust_min")
 
-propagated_labels
-
-# I AM HERE APRIL 24
-
-a <- propagated_labels |>
-    dplyr::filter(group == "test")
-
-sum(a$two_clust_min == 2) # 59 and 8 split
-
-sum(a$two_clust_mean == 1) # 64 and 3 split
+pl_om
 
 plot_all_cbcl(
     pl_om,
     cbcl_list_full,
     fig_path,
     include = c("depress", "anxiety", "attention", "aggressive"),
+    save_suffix = "_test_lp",
+    h = 8,
+    w = 15
+)
+
+# Here now
+
+plot_all_cbcl(
+    pl_om,
+    cbcl_list_full,
+    fig_path,
     save_suffix = "_test_lp",
     h = 8,
     w = 15
