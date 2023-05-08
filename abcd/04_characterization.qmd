@@ -194,6 +194,15 @@ top_oms_0_0_train$significance
 # The two clust mean solution
 top_om_uhn <- top_oms_0_0_train[2, ]
 
+# All solutions, all cbcl vars
+plot_all_cbcl(
+    top_oms_0_0_train,
+    cbcl_list_train,
+    fig_path,
+    save_suffix = "_cbcl_train"
+)
+
+# Top solution, depress, anxiety, attention, and aggression
 plot_all_cbcl(
     top_om_uhn,
     cbcl_list_train,
@@ -204,15 +213,10 @@ plot_all_cbcl(
         "attention",
         "aggressive"
     ),
-    save_suffix = "_train",
+    save_suffix = "_cbcl_short_train",
     h = 8,
     w = 15
 )
-
-
-plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
-
-top_oms_0_0_train
 ```
 
 
@@ -225,7 +229,7 @@ Some notable file versions are `2023_03_13_nmi_df.csv` (the first run of the `om
 
 
 ```{r}
-library(scabcd)# {~
+library(metasnf)# {~
 library(abcdutils)
 library(here)
 library(readr)
@@ -258,9 +262,7 @@ propagated_labels <- lp_om(top_oms_0_0_train, data_list_full)
 
 write_csv(propagated_labels, proc_path("top_oms_0_0_lp.csv", date = TRUE))
 
-propagated_labels <- proc_reader("2023_04_27_top_oms_0_0_lp.csv")
-
-propagated_labels_test <- propagated_labels |> dplyr::filter(group == "test")
+propagated_labels <- proc_reader("2023_05_08_top_oms_0_0_lp.csv")
 
 top_oms_0_0_train |>
     dplyr::select("row_id", "significance")
@@ -288,151 +290,42 @@ test_eval_df <- merge_df_list(outcomes_and_eval_df)
 #' @return pl_om the converted row
 #'
 #' @export
-pl_to_om <- function(pl, significance) {
-    pl <- pl |>
-        dplyr::filter(pl$"group" == "test") |>
-        dplyr::select("subjectkey", !!significance) |>
+pl_to_om <- function(pl, original_om) {
+    pl_om <- pl |>
+        dplyr::filter(group == "test") |>
         t() |>
         data.frame()
-    colnames(pl) <- pl[1, ]
-    pl <- pl[-1, ]
-    pl <- cbind(significance, pl)
-    pl$row_id <- 1:nrow(pl)
-    return(pl)
+    colnames(pl_om) <- pl_om[1, ]
+    pl_om <- pl_om[3:nrow(pl_om), ]
+    pl_om <- cbind(rownames(pl_om), pl_om)
+    pl_om <- cbind(original_om$"row_id", pl_om)
+    colnames(pl_om) <- c("row_id", "significance", colnames(pl_om)[3:length(colnames(pl_om))])
+    rownames(pl_om) <- NULL
+    pl_om <- pl_om |>
+        dplyr::mutate(
+            nclust = dplyr::case_when(
+                grepl("two", pl_om$"significance") ~ 2,
+                grepl("three", pl_om$"significance") ~ 3,
+                grepl("four", pl_om$"significance") ~ 4,
+                grepl("five", pl_om$"significance") ~ 5,
+                TRUE ~ NA
+            )
+        )
+    return(pl_om)
 }
 
-pl_om <- pl_to_om(propagated_labels, "two_clust_min")
-
-pl_om
+pl_om <- pl_to_om(propagated_labels, top_oms_0_0_train)
 
 plot_all_cbcl(
     pl_om,
     cbcl_list_full,
     fig_path,
-    include = c("depress", "anxiety", "attention", "aggressive"),
-    save_suffix = "_test_lp",
-    h = 8,
-    w = 15
+    save_suffix = "_cbcl_test"
 )
 
-# Here now
-
-plot_all_cbcl(
-    pl_om,
-    cbcl_list_full,
-    fig_path,
-    save_suffix = "_test_lp",
-    h = 8,
-    w = 15
-)
-
-test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {{~
-    solutions <- eval_df |>
-        dplyr::select(-dplyr::starts_with(c("subject", "cbcl"))) |>
-        colnames()
-    for (solution in solutions) {
-        print(solution)
-        nclust <- dplyr::case_when(
-            as.logical(length(grep("two", solution))) ~ 2,
-            as.logical(length(grep("three", solution))) ~ 3,
-            as.logical(length(grep("four", solution))) ~ 4,
-            as.logical(length(grep("five", solution))) ~ 5,
-            TRUE ~ NA)
-        cluster_df <- eval_df |>
-            dplyr::select(!!solution, "subjectkey") |>
-            data.frame()
-        colnames(cluster_df) <- c("cluster", "subjectkey")
-        current_sig <- solution
-        plot_all_cbcl(
-            cluster_df,
-            current_sig,
-            full_cbcl_list,
-            nclust = nclust,
-            save = fig_path_fn(paste0(current_sig, "_lp.png"), date = TRUE))
-    }
-}
-
-test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)# ~}
-
-
-
-
-#### END OF NEW STUFF
-
-
-
-test_labels <- propagated_labels |>
-    dplyr::filter(group == "test") |>
-    dplyr::select(-"group")
-
-propagated_labels
-
-outcomes_and_eval_df <- append(list(test_labels), cbcl_list_full)
-
-test_eval_df <- merge_df_list(outcomes_and_eval_df)
-
-colnames(top_om_uhn)
-
-#' Convert a propagated label structure to an output-matrix like structure
-#'
-#' @param pl a propagated label dataframe row
-#' @param significance a label for the row
-#'
-#' @return pl_om the converted row
-#'
-#' @export
-pl_to_om <- function(pl, significance) {
-    pl <- pl |>
-        dplyr::filter(pl$"group" == "test") |>
-        dplyr::select("subjectkey", !!significance) |>
-        t() |>
-        data.frame()
-    colnames(pl) <- pl[1, ]
-    pl <- pl[-1, ]
-    pl <- cbind(significance, pl)
-    pl$row_id <- 1:nrow(pl)
-    return(pl)
-}
-pl_om <- pl_to_om(propagated_labels, "two_clust_mean")
-
-plot_all_cbcl(
-    pl_om,
-    cbcl_list_full,
-    fig_path,
-    include = c("depress", "anxiety", "attention", "aggressive"),
-    save_suffix = "_test_lp",
-    h = 8,
-    w = 15
-)
-
-test_plot_all_cbcl <- function(eval_df, full_cbcl_list, fig_path_fn) {{~
-    solutions <- eval_df |>
-        dplyr::select(-dplyr::starts_with(c("subject", "cbcl"))) |>
-        colnames()
-    for (solution in solutions) {
-        print(solution)
-        nclust <- dplyr::case_when(
-            as.logical(length(grep("two", solution))) ~ 2,
-            as.logical(length(grep("three", solution))) ~ 3,
-            as.logical(length(grep("four", solution))) ~ 4,
-            as.logical(length(grep("five", solution))) ~ 5,
-            TRUE ~ NA)
-        cluster_df <- eval_df |>
-            dplyr::select(!!solution, "subjectkey") |>
-            data.frame()
-        colnames(cluster_df) <- c("cluster", "subjectkey")
-        current_sig <- solution
-        plot_all_cbcl(
-            cluster_df,
-            current_sig,
-            full_cbcl_list,
-            nclust = nclust,
-            save = fig_path_fn(paste0(current_sig, "_lp.png"), date = TRUE))
-    }
-}
-
-test_plot_all_cbcl(test_eval_df, cbcl_list_full, fig_path)# ~}
-
+#### 2023_05_08 left off here
+# Need to do some uninjured subject comparisons
+# Also seek out solutions that are driven by mTBI variables (see their NMIs)
 ```
 
 ## NMI characterization
@@ -699,12 +592,8 @@ input_characterization_plots_g <- function(om,
         wkd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wkday_hrs",
                      "Weekday\nScreentime")
         # Exercise
-        exercise_p1 <- plot_om_cont(row_i, exercise, "physical_activity1_y",
-            "Days with over 60\n mins activity this week")
-        exercise_p2 <- plot_om_cont(row_i, exercise, "physical_activity2_y",
-            "Days with\nstrength exercise")
-        exercise_p3 <- plot_om_cont(row_i, exercise, "physical_activity5_y",
-            "Days of PE class\n per week")
+        exercise_p <- plot_om_cont(row_i, exercise, "physical_activity",
+            "Exercise level")
         # NIHTBX
         pattern_p <- plot_om_cont(row_i, pattern, "nihtbx_pattern_fc",
                      "NIHTBX\nPattern Comparison")
@@ -856,9 +745,7 @@ input_characterization_plots_g <- function(om,
                 abcdutils::clean_plot(sa_p2, c("x")),
                 abcdutils::clean_plot(sa_p3, c("x")),
                 abcdutils::clean_plot(sa_p4, c("x")),
-                abcdutils::clean_plot(exercise_p1, c("x")),
-                abcdutils::clean_plot(exercise_p2, c("x")),
-                abcdutils::clean_plot(exercise_p3, c("x")),
+                abcdutils::clean_plot(exercise_p, c("x")),
                 abcdutils::clean_plot(interview_age_p, c("x")),
                 abcdutils::clean_plot(injury_age_p, c("x")),
                 abcdutils::clean_plot(friend_p1, c("x")),
@@ -876,8 +763,7 @@ input_characterization_plots_g <- function(om,
 }
 
 
-#input_characterization_plots_g(top_oms_0_0_train,
-input_characterization_plots_g(top_om_uhn,
+input_characterization_plots_g(top_oms_0_0_train,
     loc = train_dfs[[1]],
     mechanism = train_dfs[[2]],
     dazed = train_dfs[[3]],
@@ -914,26 +800,27 @@ input_characterization_plots_g(top_om_uhn,
 
 test_dfs <- lapply(data_list_test, function(x) x$"data")
 
-### OLD
-# Conversion of propagated labels into an om format
-propagated_om <- propagated_labels |>
-    dplyr::select(-"group") |>
-    t()
-colnames(propagated_om) <- propagated_om[1, ]
-propagated_om <- data.frame(propagated_om[-1, ])
-propagated_om$"significance" <- propagated_labels |>
-    dplyr::select(-c("subjectkey", "group")) |>
-    colnames()
-rownames(propagated_om) <- NULL
-top_oms$"row_id"
-if (all(top_oms$"significance" == propagated_om$"significance")) {
-    propagated_om$"row_id" <- top_oms$"row_id"
-    propagated_om$"nclust" <- top_oms$"nclust"
-}
-propagated_om <- col_to_num_all_possible(propagated_om)
-### END OF OLD
+#### OLD
+## Conversion of propagated labels into an om format
+#propagated_om <- propagated_labels |>
+#    dplyr::select(-"group") |>
+#    t()
+#colnames(propagated_om) <- propagated_om[1, ]
+#propagated_om <- data.frame(propagated_om[-1, ])
+#propagated_om$"significance" <- propagated_labels |>
+#    dplyr::select(-c("subjectkey", "group")) |>
+#    colnames()
+#rownames(propagated_om) <- NULL
+#top_oms$"row_id"
+#if (all(top_oms$"significance" == propagated_om$"significance")) {
+#    propagated_om$"row_id" <- top_oms$"row_id"
+#    propagated_om$"nclust" <- top_oms$"nclust"
+#}
+#propagated_om <- col_to_num_all_possible(propagated_om)
+#### END OF OLD
+#
+#library(tibble)
 
-library(tibble)
 
 pl_new <- propagated_labels
 pl_new <- pl_new |>
@@ -955,9 +842,52 @@ pl_new <- col_to_num_all_possible(pl_new)
 # Just added 04-18
 pl_new <- pl_new[2, ] 
 
+
 pl_new$significance
 
-input_characterization_plots_g(pl_new,
+colnames(pl_new)
+
+colnames(pl_om)
+
+#
+#input_characterization_plots_g(pl_new,
+#    loc = test_dfs[[1]],
+#    mechanism = test_dfs[[2]],
+#    dazed = test_dfs[[3]],
+#    income = test_dfs[[4]],
+#    interview_age = test_dfs[[5]],
+#    mtbi_age = test_dfs[[6]],
+#    pubertal = test_dfs[[7]],
+#    race = test_dfs[[8]],
+#    sex = test_dfs[[9]],
+#    headache = test_dfs[[10]],
+#    mtbi_count = test_dfs[[11]],
+#    wmnd = test_dfs[[12]],
+#    gord_cor = test_dfs[[13]],
+#    gord_var = test_dfs[[14]],
+#    subc_cor = test_dfs[[15]],
+#    subc_var = test_dfs[[16]],
+#    cort_sa = test_dfs[[17]],
+#    cort_t = test_dfs[[18]],
+#    subc_v = test_dfs[[19]],
+#    loneliness = test_dfs[[20]],
+#    screentime = test_dfs[[21]],
+#    fam_fn = test_dfs[[22]],
+#    sports = test_dfs[[23]],
+#    prosocial = test_dfs[[24]],
+#    parent_psych = test_dfs[[25]],
+#    exercise = test_dfs[[26]],
+#    pattern = nihtbx_pattern,
+#    cardsort = nihtbx_cardsort,
+#    list = nihtbx_list,
+#    general_inp_path = fig_path("general_inputs_test.png", date = TRUE),
+#    rsfmri_path = fig_path("rsfmri_inputs_test.png", date = TRUE),
+#    other_mri_path = fig_path("other_mri_test.png", date = TRUE),
+#    other_heatmap_path = fig_path("other_input_test.png", date = TRUE))
+
+
+
+input_characterization_plots_g(pl_om,
     loc = test_dfs[[1]],
     mechanism = test_dfs[[2]],
     dazed = test_dfs[[3]],
@@ -1420,11 +1350,6 @@ length(which(all_diffs > 0)) / length(all_diffs)
 all_diffs
 
 
-1/3
-
-1/64
-
-1/3 - 1/64
 
 this_sample <- sample(main_vec)
 c1 <- this_sample[1:3]
@@ -1436,56 +1361,3 @@ l1 - l2
 
 permutation_test_prop(a, "cbcl_aggressive", prop = TRUE)
 ```
-
-An important next step: calculate mean WM rois per subject so that i can do cluster significance tests and plots in a normal way
-
-Framing the presentation for SNF meeting:
-- given a dataset of size N and C clusters to divide them into, there are C^N/C! possible solutions
-
-4 people divided into 2 groups, 2^4
-
-1 1 1 1
-1 1 1 2
-1 1 2 1
-1 1 2 2
-...
-2 2 2 2
-
-- divide by 2 because half of the solutions are redundant
-- subtract off a bunch because of unpopulated solutions
-- 80 subjects divided into 2 clusters is on the order of 10^24 (number of stars in the universe)
-- chess (shannon estimate) of 10^120 states
-
-- clustering algorithms try to find the best solutions
-
-
-- discuss the dreaded 'median split'
-
-biologically relevant
-physiologically relevant
-clustering
-p-hacking
-
-- note that the RL approach would be portable
-
-consider the following situation:
-
-there is a group of people who:
-
-1. eat lots of fast food, or don't eat lots of fast food
-2. have high cholesterol, or don't have high cholesterol
-
-Within these people, there are also those who:
-
-1. like going to the zoo, don't like going to the zoo
-2. had high scores in biology class, had low scores in biology class
-
-1. Traditional approaches are going to maximize separation
-2. Maximized separation may not be what you were looking for
-
-
-
-```{r}
-print(5)
-```
-
