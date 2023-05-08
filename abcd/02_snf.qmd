@@ -17,18 +17,11 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 design_matrix <- build_design_matrix(nrow = 100, seed = 42)
 write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
 
-design_matrix <- read_csv(proc_path("2023_04_27_design_matrix.csv"))
-
-# Exporting table for manuscript
-design_matrix |>
-    dplyr::rename("\u03b7" = "alpha") |>
-    knitr::kable(format = "latex") |>
-    writeLines('/home/prashanth/documents/clustering-abcd-snf/latex/design_matrix.tex')
+design_matrix <- read_csv(proc_path("2023_05_08_design_matrix.csv"))
 
 # Structure containing all input data
 data_list_0_0_train <-
     list.load(proc_path("2023_04_27_data_list_0_0_train.rdata"))
-
 
 # Structure containing all outcome data
 outcome_list_0_0_train <-
@@ -41,16 +34,10 @@ om_0_0_train <- execute_design_matrix(data_list_0_0_train,
 
 write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
 
-om_0_0_train <- read_csv(proc_path("2023_04_27_om_0_0_train.csv"))
+om_0_0_train <- read_csv(proc_path("2023_05_08_om_0_0_train.csv"))
 
-min(om_0_0_train$min_p_val) # 1.77e-09
-min(om_0_0_train$mean_p_val) # 0.003
-
-# Top rows by minimum and mean p-values across CBCL measures
-top_oms <- top_om_per_cluster(om_0_0_train)
-top_oms |> dplyr::select(c("significance", "row_id"))
-
-write_csv(top_oms, proc_path("top_oms_0_0_train.csv", date = TRUE))
+min(om_0_0_train$min_p_val) # 3.41e-07
+min(om_0_0_train$mean_p_val) # 0.005
 ```
 
 The following code chunk is where I left off with cleaning.
