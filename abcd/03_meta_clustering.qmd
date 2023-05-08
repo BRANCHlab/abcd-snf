@@ -15,6 +15,7 @@ library(ggplot2)
 
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+manuscript_path <- path_maker("~/documents/clustering-abcd-snf/latex")
 
 om_0_0_train <- read_csv(proc_path("2023_04_27_om_0_0_train.csv"))
 
@@ -29,30 +30,49 @@ write_csv(top_oms, proc_path("top_oms_0_0_train.csv", date = TRUE))
 
 #om_scatter(top_oms,
 #           save = fig_path("top_oms_0_0_train_scatter.png", date = TRUE))
-#
+om_scatter(top_oms)
+
 mc_results_0_0_train <- meta_cluster(om_0_0_train)
-#
+
 #write_csv(data.frame(mc_results_0_0_train),
 #          proc_path("mc_results_0_0_train.csv", date = TRUE))
 #
-#mc_results_0_0_train <-
-#    as.matrix(read_csv(proc_path("2023_04_05_mc_results_0_0_train.csv")))
-#
-#colnames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-#rownames(mc_results) <- as.character(seq_len(nrow(mc_results)))
-#
-## ARIs between solutions
+
+mc_results_0_0_train <-
+    as.matrix(read_csv(proc_path("2023_04_05_mc_results_0_0_train.csv")))
+
+colnames(mc_results_0_0_train) <- as.character(seq_len(nrow(mc_results_0_0_train)))
+rownames(mc_results_0_0_train) <- as.character(seq_len(nrow(mc_results_0_0_train)))
+
+# ARIs between solutions
 #mc_heatmap(mc_results_0_0_train,
 #           save = fig_path("mc_results_0_0_train.png", date = TRUE))
+mc_heatmap(mc_results_0_0_train)
+
 #
 ## Trying to plot the input design matrix as a heatmap
 #mc_order_0_0_train <- get_pheatmap_order(mc_results_0_0_train)
-#
-#
+
+
 ## Design matrix
-#design_matrix <- data.frame(read_csv(proc_path("full_design_matrix.csv")))
-#dm_heatmap(design_matrix[mc_order_0_0_train, ],
-#           fig_path("dm_reordered_0_0_train.png", date = TRUE))
+design_matrix <- read_csv(proc_path("2023_04_27_design_matrix.csv"))
+    
+design_matrix
+
+dm_heatmap(
+    design_matrix,
+    fig_path("dm_original_0_0_train.png", date = TRUE)
+)
+
+dm_heatmap(
+    design_matrix,
+    manuscript_path("dm_original_0_0_train.png", date = TRUE)
+)
+
+
+dm_heatmap(design_matrix[mc_order_0_0_train, ],
+           fig_path("dm_reordered_0_0_train.png", date = TRUE))
+
 #
 #mc_pvals_0_0_train <- p_val_select(om_0_0_train)
 #
