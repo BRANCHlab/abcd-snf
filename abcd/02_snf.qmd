@@ -13,19 +13,22 @@ library(rlist)
 # Functions to import data from carbon
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
-# Building the design matrix which contains all settings for 100 SNF runs
-design_matrix <- build_design_matrix(nrow = 100, seed = 42)
-write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
-
-design_matrix <- read_csv(proc_path("2023_05_08_design_matrix.csv"))
-
 # Structure containing all input data
 data_list_0_0_train <-
-    list.load(proc_path("2023_04_27_data_list_0_0_train.rdata"))
+    list.load(proc_path("2023_05_09_data_list_0_0_train.rdata"))
 
 # Structure containing all outcome data
 outcome_list_0_0_train <-
-    list.load(proc_path("2023_04_27_outcome_list_0_0_train.rdata"))
+    list.load(proc_path("2023_05_09_outcome_list_0_0_train.rdata"))
+
+# Building the design matrix which contains all settings for 100 SNF runs
+design_matrix <- build_design_matrix_soft(data_list_0_0_train, nrow = 100, seed = 42)
+
+write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
+
+design_matrix <- read_csv(proc_path("2023_05_09_design_matrix.csv"))
+
+# Last checkpoint here
 
 # Output matrix storing results from multiple SNF iterations
 om_0_0_train <- execute_design_matrix(data_list_0_0_train,
