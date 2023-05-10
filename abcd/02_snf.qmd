@@ -22,11 +22,12 @@ outcome_list_0_0_train <-
     list.load(proc_path("2023_05_09_outcome_list_0_0_train.rdata"))
 
 # Building the design matrix which contains all settings for 100 SNF runs
-design_matrix <- build_design_matrix_soft(data_list_0_0_train, nrow = 100, seed = 42)
+#design_matrix <- build_design_matrix(data_list_0_0_train, nrow = 100, seed = 42)
+design_matrix <- build_design_matrix(data_list_0_0_train, nrow = 3, seed = 42) # mini version
 
-write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
-
-design_matrix <- read_csv(proc_path("2023_05_09_design_matrix.csv"))
+#write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
+#
+#design_matrix <- read_csv(proc_path("2023_05_09_design_matrix.csv"))
 
 # Last checkpoint here
 
@@ -35,13 +36,78 @@ om_0_0_train <- execute_design_matrix(data_list_0_0_train,
                                       design_matrix,
                                       outcome_list_0_0_train)
 
-write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
+# This works
+om_0_0_train_soft <- execute_design_matrix_soft(
+    data_list_0_0_train,
+    design_matrix)
 
-om_0_0_train <- read_csv(proc_path("2023_05_08_om_0_0_train.csv"))
+
+
+#write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
+
+#om_0_0_train <- read_csv(proc_path("2023_05_08_om_0_0_train.csv"))
 
 min(om_0_0_train$min_p_val) # 3.41e-07
 min(om_0_0_train$mean_p_val) # 0.005
+
+
+no_subs(om_0_0_train)
+
+### Investigating the creation of the output matrix
+dl <- data_list_0_0_train
+dm <- design_matrix
+
+no_subs(build_output_matrix(dl, dm))
+
+
+no_subs(build_output_matrix_soft(dl, dm))
+
+build_output_matrix_soft(dl, dm)
+
+## investigating the assignment of p-values based on outcome list
+
+
+###############################
+# Currently, there's no more output matrix specific builder function
+
+
+extend_om(om_0_0_train_soft, outcome_list_0_0_train)
+
+
+clustered_subs <- get_clustered_subs(om_0_0_train_soft[1, ])
+# This really shouldn't be different from clustered_subs
+assigned_subs <- clustered_subs |>
+    dplyr::filter(clustered_subs$"cluster" != 0)
+
+assigned_subs
+
+outcome_list_0_0_train
+
+
+        # Assign p-values
+        for (j in seq_along(outcome_list)) {
+            current_outcome_component <- outcome_list[[j]]
+            current_outcome_name <- current_outcome_component$"name"
+            p_value <- get_p(assigned_subs, current_outcome_component)
+            target_col <- grep(current_outcome_name, colnames(output_matrix))
+            output_matrix[i, target_col] <- p_value
+        }
+
+#########################
+
+###
 ```
+
+The logic here, as current inplemented:
+
+generate the output matrix (dm with cols for each subject containing their cluster)
+
+
+
+
+
+
+
 
 The following code chunk is where I left off with cleaning.
 It is in meta_clustering.qmd.
