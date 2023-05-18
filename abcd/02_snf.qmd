@@ -50,15 +50,15 @@ om_0_0_train_soft <- execute_design_matrix(
 min(om_0_0_train$min_p_val) # 3.41e-07
 min(om_0_0_train$mean_p_val) # 0.005
 
-no_subs(om_0_0_train, "NDAR")
+no_subs(om_0_0_train)
 
 ### Investigating the creation of the output matrix
 dl <- data_list_0_0_train
 dm <- design_matrix
 
-no_subs(build_output_matrix(dl, dm), "NDAR")
+no_subs(build_output_matrix(dl, dm))
 
-no_subs(build_output_matrix_soft(dl, dm), "NDAR")
+no_subs(build_output_matrix_soft(dl, dm))
 
 build_output_matrix_soft(dl, dm)
 
@@ -611,7 +611,7 @@ full_fused_network <- snf_step(current_data_list,
                           alpha = current_alpha)
 
 # Make sure the order between OM and fused network match
-clustered_subs <- colnames(subs(current_om_row, "NDAR"))[-1]
+clustered_subs <- colnames(subs(current_om_row))[-1]
 
 test_subs <- as_mtbi_loc_test$subjectkey
 ordered_subs <- c(clustered_subs, test_subs)
@@ -620,7 +620,7 @@ full_fused_network <- full_fused_network[ordered_subs, ordered_subs]
 identical(colnames(full_fused_network)[seq_along(clustered_subs)],
           clustered_subs)
 
-clustered_subjects <- subs(current_om_row, "NDAR") # keep row_id and subj cluster info
+clustered_subjects <- subs(current_om_row) # keep row_id and subj cluster info
 clusters <- data.frame(t(clustered_subjects))
 clusters$id <- rownames(clusters)
 rownames(clusters) <- NULL
@@ -993,7 +993,7 @@ top_om_row
 
 
 or_om_row <- function(om_row, outcome_list) {
-    om_row_subs <- subs(om_row, "NDAR")
+    om_row_subs <- subs(om_row)
     clusters_df <- data.frame(t(om_row_subs))
     clusters_df$cluster <- rownames(clusters_df)
     rownames(clusters_df) <- NULL
