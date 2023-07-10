@@ -71,13 +71,12 @@ abcd_y_lt <- abcd_load(raw_path("abcd_y_lt.csv"))
 (mtbi_subjects_0_no_min <- get_mtbi_subjects_five(ph_p_otbi, abcd_y_lt, t = 0))
 
 ## Year 1 follow-up - assessments will just be taken from 2 yr follow up time
+(mtbi_subjects_1 <- get_mtbi_subjects(abcd_lpohstbi01, t = 1))
+(mtbi_subjects_1 <- get_mtbi_subjects_five(ph_p_otbi, abcd_y_lt, t = 1))
 
-#mtbi_subjects_1 <- get_mtbi_subjects(abcd_lpohstbi01, t = 1)
-mtbi_subjects_1 <- get_mtbi_subjects_five(ph_p_otbi, abcd_y_lt, t = 1)
 ## Year 2 follow-up
-
-#mtbi_subjects_2 <- get_mtbi_subjects(abcd_lpohstbi01, min_mpi = 3, t = 2)
-mtbi_subjects_2 <- get_mtbi_subjects_five(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 2)
+(mtbi_subjects_2 <- get_mtbi_subjects(abcd_lpohstbi01, min_mpi = 3, t = 2))
+(mtbi_subjects_2 <- get_mtbi_subjects_five(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 2))
 
 ## Those with injuries in year 1 + 2
 mtbi_subjects_1_2 <-
@@ -90,20 +89,10 @@ mtbi_subjects_l <- mtbi_subjects_1_2[which(!(
 
 # Control subjects (those with no injuries in year 1, 2, or 3)
 uninjured_subjects <- get_uninjured_subjects(abcd_otbi01, abcd_lpohstbi01)
-
-uninjured_subjects
-
-detail <- detail_mtbi_five(ph_p_otbi, abcd_y_lt, t = 0)
-
-detail <- detail |>
-    dplyr::filter(ph_p_otbi$"mtbi" == 1 &
-                  ph_p_otbi$"moderate_or_severe_tbi" == 0 &
-                  ph_p_otbi$"latest_mtbi_mpi" >= min_mpi) |>
-    dplyr::select("subjectkey")
-
-rename_tbi_five(ph_p_otbi)
-
-
+uninjured_subjects <- get_uninjured_subjects_five(
+    ph_p_otbi,
+    abcd_y_lt
+)
 
 # Within mtbi_subjects xl, I need to keep track of which subjects had their
 #  latest injury in year 1 and which ones had their latest injury in year 2.
