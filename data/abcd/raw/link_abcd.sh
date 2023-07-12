@@ -30,3 +30,9 @@
 # 5.0 Release
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_otbi.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/abcd-general/abcd_y_lt.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_y_pds.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_pds.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_p_gi.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_y_gi.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_p_sex.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_y_sex.csv .
