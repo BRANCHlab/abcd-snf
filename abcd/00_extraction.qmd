@@ -282,7 +282,6 @@ abcd_p_demo <- abcd_load(raw_path("abcd_p_demo.csv"))
 (d_income_0_0 <- get_income(abcd_p_demo, mtbi_subjects_0, t = 0))
 (d_income_l_0 <- get_income(abcd_p_demo, mtbi_subjects_l, t = 0))
 
-colnames(abcd_p_demo)
 
 ## Race
 d_race_0_0 <-
@@ -300,12 +299,16 @@ write_csv(d_pubertal_status_0_0, input_path("d_pubertal_status_0_0.csv", TRUE))
 write_csv(d_interview_age_0_0, input_path("d_interview_age_0_0.csv", TRUE))
 write_csv(d_mtbi_age_0_0, input_path("d_mtbi_age_0_0.csv", TRUE))
 write_csv(d_sex_0_0, input_path("d_sex_0_0.csv", TRUE))
+write_csv(d_p_gender_0_0, input_path("d_p_gender_0_0", TRUE))
+write_csv(d_y_gender_0_4, input_path("d_y_gender_0_4", TRUE))
 write_csv(d_income_0_0, input_path("d_income_0_0.csv", TRUE))
 write_csv(d_race_0_0, input_path("d_race_0_0.csv", TRUE))
 
 write_csv(d_pubertal_status_l_0, input_path("d_pubertal_status_l_0.csv", TRUE))
 write_csv(d_interview_age_l_0, input_path("d_interview_age_l_0.csv", TRUE))
 write_csv(d_sex_l_0, input_path("d_sex_l_0.csv", TRUE))
+write_csv(d_p_gender_l_0, input_path("d_p_gender_l_0", TRUE))
+write_csv(d_y_gender_l_4, input_path("d_y_gender_l_4", TRUE))
 write_csv(d_income_l_0, input_path("d_income_l_0.csv", TRUE))
 write_csv(d_race_l_0, input_path("d_race_l_0.csv", TRUE))
 ```
@@ -370,20 +373,21 @@ For cortical thicknesses, the relevant file is abcd_mrisdp10201, which contains 
 
 ```{r}
 ## SMRI dataframes
-smrip10201 <- read_delim(here("data/abcd/raw/abcd_smrip10201.txt"))
-mrisdp10201 <- read_delim(here("data/abcd/raw/abcd_mrisdp10201.txt"))
+mri_y_smr_vol_aseg <- abcd_load(raw_path("mri_y_smr_vol_aseg.csv"))
+mri_y_smr_thk_dst <- abcd_load(raw_path("mri_y_smr_thk_dst.csv"))
+mri_y_smr_area_dst <- abcd_load(raw_path("mri_y_smr_area_dst.csv"))
 
 ## Subcortical volumes
-sm_subc_v_0_0 <- abcdutils::get_subc_v(smrip10201, mtbi_subjects_0, t = 0)
-sm_subc_v_l_0 <- abcdutils::get_subc_v(smrip10201, mtbi_subjects_l, t = 0)
+sm_subc_v_0_0 <- abcdutils::get_subc_v(mri_y_smr_vol_aseg, mtbi_subjects_0, t = 0)
+sm_subc_v_l_0 <- abcdutils::get_subc_v(mri_y_smr_vol_aseg, mtbi_subjects_l, t = 0)
 
 ## Cortical thickness
-sm_cort_t_0_0 <- abcdutils::get_cort_t(mrisdp10201, mtbi_subjects_0, t = 0)
-sm_cort_t_l_0 <- abcdutils::get_cort_t(mrisdp10201, mtbi_subjects_l, t = 0)
+sm_cort_t_0_0 <- abcdutils::get_cort_t(mri_y_smr_thk_dst, mtbi_subjects_0, t = 0)
+sm_cort_t_l_0 <- abcdutils::get_cort_t(mri_y_smr_thk_dst, mtbi_subjects_l, t = 0)
 
 ## Cortical volumes
-sm_cort_sa_0_0 <- abcdutils::get_cort_sa(mrisdp10201, mtbi_subjects_0, t = 0)
-sm_cort_sa_l_0 <- abcdutils::get_cort_sa(mrisdp10201, mtbi_subjects_l, t = 0)
+sm_cort_sa_0_0 <- abcdutils::get_cort_sa(mri_y_smr_area_dst, mtbi_subjects_0, t = 0)
+sm_cort_sa_l_0 <- abcdutils::get_cort_sa(mri_y_smr_area_dst, mtbi_subjects_l, t = 0)
 ```
 
 ```{r}
@@ -407,11 +411,32 @@ See diffusion MRI chapter in appendix for full details.
 
 ```{r}
 # DMRI dataframe
-drsip201 <- read_delim(here("data/abcd/raw/abcd_drsip201.txt"))
+mri_y_rsi_rnd_at <- abcd_load(raw_path("mri_y_rsi_rnd_at.csv"))
+mri_y_rsi_rnd_wm_dsk <- abcd_load(raw_path("mri_y_rsi_rnd_wm_dsk.csv"))
+mri_y_rsi_rnd_wm_dst <- abcd_load(raw_path("mri_y_rsi_rnd_wm_dst.csv"))
+
+colnames(dm_all_wmnd_0_0) %in% colnames(mri_y_rsi_rnd_at)
+
+colnames(dm_all_wmnd_0_0) %in% colnames(mri_y_rsi_rnd_wm_dst)
+
+colnames(dm_all_wmnd_0_0) %in% colnames(mri_y_rsi_rnd_wm_dsk)
 
 # White matter neurite densities
-dm_all_wmnd_0_0 <- get_all_wmnd(drsip201, mtbi_subjects_0, t = 0)
-dm_all_wmnd_l_0 <- get_all_wmnd(drsip201, mtbi_subjects_l, t = 0)
+dm_all_wmnd_0_0 <- get_all_wmnd(
+    mri_y_rsi_rnd_at,
+    mri_y_rsi_rnd_wm_dst,
+    mri_y_rsi_rnd_wm_dsk,
+    subjects = mtbi_subjects_0,
+    t = 0
+)
+
+dm_all_wmnd_l_0 <- get_all_wmnd(
+    mri_y_rsi_rnd_at,
+    mri_y_rsi_rnd_wm_dst,
+    mri_y_rsi_rnd_wm_dsk,
+    subjects = mtbi_subjects_l,
+    t = 0
+)
 
 write_csv(dm_all_wmnd_0_0, input_path("dm_all_wmnd_0_0.csv", date = TRUE))
 write_csv(dm_all_wmnd_l_0, input_path("dm_all_wmnd_l_0.csv", date = TRUE))
@@ -427,18 +452,28 @@ We are interested in the following rs-fMRI measures:
 - Gordon and subcortical temporal variances
 
 ```{r}
+
+mri_y_rsfmr_cor_gp_gp <- abcd_load(raw_path("mri_y_rsfmr_cor_gp_gp.csv"))
+mri_y_rsfmr_cor_gp_aseg <- abcd_load(raw_path("mri_y_rsfmr_cor_gp_aseg.csv"))
+mri_y_rsfmr_var_gp <- abcd_load(raw_path("mri_y_rsfmr_var_gp.csv"))
+mri_y_rsfmr_var_aseg <- abcd_load(raw_path("mri_y_rsfmr_var_aseg.csv"))
+
 betnet02 <- read_delim(here("data/abcd/raw/abcd_betnet02.txt"))
 mrirscor02 <- read_delim(here("data/abcd/raw/mrirscor02.txt"))
 mrirstv02 <- read_delim(here("data/abcd/raw/abcd_mrirstv02.txt"))
 
 
 ## Cortical parcellation network correlations
-rm_gord_cor_0_0 <- get_gord_cor(betnet02, mtbi_subjects_0, t = 0)
-rm_gord_cor_l_0 <- get_gord_cor(betnet02, mtbi_subjects_l, t = 0)
+rm_gord_cor_0_0 <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, mtbi_subjects_0, t = 0)
+rm_gord_cor_l_0 <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, mtbi_subjects_l, t = 0)
 
 ## Subcortical parcellation network correlations
-rm_subc_cor_0_0 <- get_subc_cor(mrirscor02, mtbi_subjects_0, t = 0)
-rm_subc_cor_l_0 <- get_subc_cor(mrirscor02, mtbi_subjects_l, t = 0)
+rm_subc_cor_0_0 <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, mtbi_subjects_0, t = 0)
+rm_subc_cor_l_0 <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, mtbi_subjects_l, t = 0)
+
+
+# LEFT OFF HERE
+
 
 ## Temporal variances - cortical parcellations
 rm_gord_var_0_0 <- get_gord_var(mrirstv02, mtbi_subjects_0, t = 0)

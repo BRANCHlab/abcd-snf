@@ -38,3 +38,13 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sex
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_y_sex.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/abcd-general/abcd_p_demo.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_mhx.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_smr_vol_aseg.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_smr_thk_dst.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_smr_area_dst.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsi_rnd_at.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsi_rnd_wm_dsk.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsi_rnd_wm_dst.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_cor_gp_gp.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_cor_gp_aseg.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_var_gp.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_var_aseg.csv .
