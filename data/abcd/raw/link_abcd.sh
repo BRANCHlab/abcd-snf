@@ -36,3 +36,5 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sex
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_y_gi.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_p_sex.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/gender-identity-sexual-health/gish_y_sex.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/abcd-general/abcd_p_demo.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_mhx.csv .
