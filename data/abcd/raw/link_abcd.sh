@@ -48,3 +48,15 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_cor_gp_aseg.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_var_gp.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_rsfmr_var_aseg.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/mental-health/mh_y_or.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/novel-technologies/nt_p_stq.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/culture-environment/ce_y_fes.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/culture-environment/ce_p_fes.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_saiq.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/culture-environment/ce_y_psb.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/culture-environment/ce_p_psb.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/mental-health/mh_p_asr.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_y_yrb.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/mental-health/mh_p_cbcl.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/neurocognition/nc_y_nihtb.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_sds.csv .
