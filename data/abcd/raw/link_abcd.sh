@@ -60,3 +60,7 @@ ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/mental-health/mh_p_cbcl.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/neurocognition/nc_y_nihtb.csv .
 ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/physical-health/ph_p_sds.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_qc_raw_rsfmr.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_qc_raw_dmr.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_qc_raw_smr_t1.csv .
+ln -s /home/prashanth/mnt/wheeler-lab/lab-data/abcd/5.0/core/imaging/mri_y_qc_raw_smr_t2.csv .
