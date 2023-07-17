@@ -47,14 +47,6 @@ raw_path <- path_maker(here(paste0("data/abcd/raw")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-## Import baseline TBI dataset
-#abcd_otbi01 <- read_delim(raw_path("abcd_otbi01.txt"))
-#
-## Longitudinal subjects
-#abcd_lpohstbi01 <- read_delim(raw_path("abcd_lpohstbi01.txt"))
-
-# 5.0 Release
-
 ## TBI
 ph_p_otbi <- abcd_load(raw_path("ph_p_otbi.csv"))
 
@@ -75,13 +67,16 @@ abcd_y_lt <- abcd_load(raw_path("abcd_y_lt.csv"))
 (mtbi_subjects_2 <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 2))
 
 ## Those with injuries in year 1 + 2
-mtbi_subjects_1_2 <-
-    dplyr::full_join(mtbi_subjects_1, mtbi_subjects_2, by = "subjectkey")
+(mtbi_subjects_1_2 <-
+    dplyr::full_join(mtbi_subjects_1, mtbi_subjects_2, by = "subjectkey"))
+
 
 ## Those with injuries in year 1 + 2, but not year 0 (exclusively longitudinal)
 mtbi_subjects_l <- mtbi_subjects_1_2[which(!(
     mtbi_subjects_1_2$"subjectkey" %in%
         mtbi_subjects_0_no_min$"subjectkey")), ]
+
+mtbi_subjects_l <- data.frame("subjectkey" = mtbi_subjects_l)
 
 # Control subjects (those with no injuries in year 1, 2, or 3)
 uninjured_subjects <- get_uninjured_subjects(
@@ -108,13 +103,13 @@ write_csv(mtbi_subjects_l, sub_path("mtbi_subjects_l.csv", date = TRUE))
 write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
 
-mtbi_subjects_0 <- read_csv(sub_path("2023_07_14_mtbi_subjects_0.csv"))
-mtbi_subjects_1 <- read_csv(sub_path("2023_07_14_mtbi_subjects_1.csv"))
-mtbi_subjects_2 <- read_csv(sub_path("2023_07_14_mtbi_subjects_2.csv"))
-mtbi_subjects_l <- read_csv(sub_path("2023_07_14_mtbi_subjects_l.csv"))
-mtbi_subjects_1_not_0 <- read_csv(sub_path("2023_07_14_mtbi_subjects_1_not_0.csv"))
-mtbi_subjects_2_not_0 <- read_csv(sub_path("2023_07_14_mtbi_subjects_2_not_0.csv"))
-uninjured_subjects <- read_csv(sub_path("2023_07_14_uninjured_subjects.csv"))
+mtbi_subjects_0 <- read_csv(sub_path("2023_07_17_mtbi_subjects_0.csv"))
+mtbi_subjects_1 <- read_csv(sub_path("2023_07_17_mtbi_subjects_1.csv"))
+mtbi_subjects_2 <- read_csv(sub_path("2023_07_17_mtbi_subjects_2.csv"))
+mtbi_subjects_l <- read_csv(sub_path("2023_07_17_mtbi_subjects_l.csv"))
+mtbi_subjects_1_not_0 <- read_csv(sub_path("2023_07_17_mtbi_subjects_1_not_0.csv"))
+mtbi_subjects_2_not_0 <- read_csv(sub_path("2023_07_17_mtbi_subjects_2_not_0.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_07_17_uninjured_subjects.csv"))
 ```
 
 
@@ -492,7 +487,6 @@ Psychosocial factors of interest include:
 * parent psychopathology
 
 ```{r}
-
 mh_y_or <- abcd_load(raw_path("mh_y_or.csv"))
 nt_p_stq <- abcd_load(raw_path("nt_p_stq.csv"))
 ce_y_fes <- abcd_load(raw_path("ce_y_fes.csv"))
@@ -503,23 +497,14 @@ ce_p_psb <- abcd_load(raw_path("ce_p_psb.csv"))
 mh_p_asr <- abcd_load(raw_path("mh_p_asr.csv"))
 ph_y_yrb <- abcd_load(raw_path("ph_y_yrb.csv"))
 
-#abcd_ysr01 <- read_delim(here("data/abcd/raw/abcd_ysr01.txt"))
-#stq01 <- read_delim(here("data/abcd/raw/stq01.txt"))
-#fes02 <- read_delim(here("data/abcd/raw/fes02.txt"))
-#abcd_fes01 <- read_delim(here("data/abcd/raw/abcd_fes01.txt"))
-#abcd_saiq02 <- read_delim(here("data/abcd/raw/abcd_saiq02.txt"))
-#psb01 <- read_delim(here("data/abcd/raw/psb01.txt"))
-#abcd_psb01 <- read_delim(here("data/abcd/raw/abcd_psb01.txt"))
-abcd_asrs01 <- read_delim(here("data/abcd/raw/abcd_asrs01.txt"))
-abcd_yrb01 <- read_delim(here("data/abcd/raw/abcd_yrb01.txt"))
-
 p_loneliness_0_0 <- get_loneliness(
     mh_y_or,
     gish_p_gi,
     mtbi_subjects_0,
     t = 0
 )
-p_loneliness_0_0 <- get_loneliness(
+
+p_loneliness_l_0 <- get_loneliness(
     mh_y_or,
     gish_p_gi,
     mtbi_subjects_l,
@@ -587,12 +572,7 @@ write_csv(p_exercise_l_0, input_path("p_exercise_l_0.csv", date = TRUE))
 These are needed at both baseline and longitudinal timepoints.
 
 ```{r}
-mh_p_cbcl <- read_delim(here("data/abcd/raw/mh_p_cbcl.txt"))
-mh_p_cbcl <- read_delim(here("data/abcd/raw/mh_p_cbcl.txt"))
-
-
 mh_p_asr <- abcd_load(raw_path("mh_p_asr.csv"))
-
 mh_p_cbcl <- abcd_load(raw_path("mh_p_cbcl.csv"))
 
 # Baseline subjects, baseline time point
