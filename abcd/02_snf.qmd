@@ -24,14 +24,12 @@ outcome_list_0_0_train <-
 
 # Building the design matrix which contains all settings for 100 SNF runs
 
-t1 <- Sys.time()
 design_matrix <- generate_design_matrix(
     data_list_0_0_train,
-    nrow = 3,
+    nrow = 2,
     seed = 42
 )
-t2 <- Sys.time()
-print(t2 - t1)
+
 
 design_matrix
 
@@ -40,22 +38,205 @@ write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
 design_matrix <- read_csv(proc_path("2023_07_18_design_matrix.csv"))
 
 # Output matrix storing results from multiple SNF iterations
+
+dl <- data_list_0_0_train
+
+qdl <- lapply(dl, function(x) {
+    x[[1]] <- data.frame(x[[1]])
+    return(x)
+})
+
 om_0_0_train <- execute_design_matrix(
     data_list_0_0_train,
     design_matrix
 )
 
+
+t1 <- Sys.time()
+om1 <- execute_design_matrix(
+    data_list_0_0_train,
+    design_matrix
+)
+t2 <- Sys.time()
+print(t2 - t1)
+
+om1
+
+t1 <- Sys.time()
+om2 <- edm_high(
+    data_list_0_0_train,
+    design_matrix
+)
+t2 <- Sys.time()
+print(t2 - t1)
+
+
+t1 <- Sys.time()
+om3 <- edm_high(
+    q,
+    design_matrix
+)
+t2 <- Sys.time()
+print(t2 - t1)
+
+dim(om2)
+
+om2
+
+library(future.apply)
+plan(multisession)
+
+
+library(parallel)
+
+
+
+cl <- parallel::makeCluster(detectCores())
+
+cl <- parallel::makeCluster(2)
+
+clusterExport(cl=cl, varlist=c("data_list_0_0_train", "design_matrix"))
+
+t1 <- Sys.time()
+om2 <- edm_high(
+    data_list_0_0_train,
+    design_matrix,
+    cl
+)
+t2 <- Sys.time()
+
+print(t2 - t1)
+
+parallel::stopCluster(cl)
+
+cl <- makeCluster(getOptions("cl.cores", 2))
+
+clusterExport
+
+parallel::parRapply(cl, design_matrix, 1, dm_row_fn, dl = data_list)
+
+
+design_matrix <- generate_design_matrix(
+    data_list_0_0_train,
+    nrow = 2,
+    seed = 42
+)
+
+library(parallel)
+
+# Get number of cores
+n_cores <- detectCores()
+
+# Create cluster
+cl <- makeCluster(n_cores)
+
+# Load libraries and anything 'from scratch'
+clusterEvalQ(
+    cl,
+    {
+        library(dplyr)
+        library(metasnf)
+        library(readr)
+        library(here)
+        library(rlist)
+    }
+)
+
+# Export already created variables to clusters
+
+clusterExport(
+    cl,
+    c(
+      "design_matrix",
+      "data_list_0_0_train",
+      "edm_high"
+    )
+)
+
+# Check that export was successful
+clusterEvalQ(
+    cl,
+    {
+        print(dm_row_fn)
+    }
+)
+
+
+# Example without pp
+ptm <- proc.time()
+q <- apply(design_matrix, 1, dm_row_fn, dl = data_list_0_0_train)
+print(proc.time() - ptm)
+
+
+q <- apply(design_matrix, 1, dm_row_fn, dl = qdl)
+
+
+
+# Example with pp? : ))))
+ptm <- proc.time()
+q <- parApply(cl, design_matrix, 1, dm_row_fn, data_list_0_0_train)
+print(proc.time() - ptm)
+
+stopCluster(cl)
+
+data_list_0_0_train[[1]]$"data"
+
+
+
+
+
+
+
+
+
+
+
+
+cl
+
+q <- apply(design_matrix, 1, dm_row_fn, dl = data_list_0_0_train)
+
+
+om2
+
+
 dl <- data_list_0_0_train
 
 dm <- design_matrix
 
-execute_inclusion(dl, dm[1, ])
 
-apply(dm, 1, dm_row_fn, dl)
+colnames(om_0_0_train) %in% colnames(om)
+colnames(om) == colnames(om_0_0_train)
+
+dim(om)
+
+colnames(om)[which(!colnames(om) %in% colnames(om_0_0_train))]
+
+length(colnames(om))
+
+colnames(om_0_0_train)
+
+colnames(om)
+
+ae(om, om_0_0_train)
+
+om
+
+om <- apply(dm, 1, dm_row_fn, dl=dl)
+om <- do.call("rbind", om)
+
+
+colnames(dm)
+
+dmnames
+
+execute_inclusion
 
 dm_row_fn(dm[1, ], dl)
 
 apply(dm, 1, dm_row_fn, dl=dl)
+
+dm[1, ]
 
 # Consider parallelizing code
 # https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html
