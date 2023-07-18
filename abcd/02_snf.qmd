@@ -89,11 +89,10 @@ plan(multisession)
 
 library(parallel)
 
-
-
 cl <- parallel::makeCluster(detectCores())
 
 cl <- parallel::makeCluster(2)
+
 
 clusterExport(cl=cl, varlist=c("data_list_0_0_train", "design_matrix"))
 
@@ -158,6 +157,7 @@ clusterEvalQ(
     cl,
     {
         print(dm_row_fn)
+        print(edm_high)
     }
 )
 
@@ -172,12 +172,28 @@ q <- apply(design_matrix, 1, dm_row_fn, dl = qdl)
 
 
 
+qdl <- lapply(data_list_0_0_train, function(x) {
+    x[[1]] <- data.frame(x[[1]])
+    return(x)
+})
+
+
+design_matrix <- generate_design_matrix(
+    data_list_0_0_train,
+    nrow = 8,
+    seed = 42
+)
+
+# This may be it! future apply with lots of ram (salloc -c 1 -N 1 --mem 32G --cpu-freq=high)
 # Example with pp? : ))))
 ptm <- proc.time()
-q <- parApply(cl, design_matrix, 1, dm_row_fn, data_list_0_0_train)
+#q <- parApply(cl, design_matrix, 1, dm_row_fn, data_list_0_0_train)
+q <- future_apply(design_matrix, 1, dm_row_fn, qdl)
 print(proc.time() - ptm)
 
 stopCluster(cl)
+
+
 
 data_list_0_0_train[[1]]$"data"
 
