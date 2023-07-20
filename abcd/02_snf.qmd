@@ -34,141 +34,14 @@ design_matrix <- read_csv(proc_path("2023_07_20_design_matrix.csv"))
 
 # Output matrix storing results from multiple SNF iterations
 om_0_0_train <- execute_design_matrix(
-    data_list_0_0_train,
-    design_matrix
+   data_list_0_0_train,
+   design_matrix,
+   processes = "max"
 )
 
-# BENCHMARKING
-# Building the design matrix which contains all settings for 100 SNF runs
-dm <- generate_design_matrix(
-    data_list_0_0_train,
-    nrow = 1,
-    seed = 42
-)
+write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
 
-params_df <- data.frame(
-    rows = as.numeric(),
-    original = as.numeric(),
-    parallel = as.numeric()
-)
-
-row_list <- c(1, 2, 4, 8, 16, 32, 64, 128)
-#row_list <- c(1, 2, 4, 8, 16)
-for (i in seq_along(row_list)) {
-    print("ROW: ")
-    print(i)
-    nrows <- row_list[[i]] 
-    dm <- generate_design_matrix(
-        data_list_0_0_train,
-        nrow = nrows,
-        seed = 42
-    )
-    params_df[i, "rows"] <- nrows
-    ## EDM slow
-    #ptm <- proc.time()
-    #q <- execute_design_matrix(
-    #   data_list_0_0_train,
-    #   dm
-    #   # design_matrix
-    #)
-    #t_slow <- (proc.time() - ptm)[["elapsed"]]
-    #params_df[i, "original"] <- t_slow
-    # EDM parallel
-    ptm <- proc.time()
-    q <- execute_design_matrix_p(
-       data_list_0_0_train,
-       dm
-       # design_matrix
-    )
-    t_p <- (proc.time() - ptm)[["elapsed"]]
-    params_df[i, "parallel"] <- t_p
-}
-
-params_df
-
-q <- proc.time()[["elapsed"]]
-
-
-# EDM slow
-ptm <- proc.time()
-q <- execute_design_matrix(
-   qdl,
-   dm
-   # design_matrix
-)
-print(proc.time() - ptm)
-
-# EDM apply
-ptm <- proc.time()
-q <- execute_design_matrix_p(
-   qdl,
-   dm
-   # design_matrix
-)
-print(proc.time() - ptm)
-
-
-# Regular apply
-ptm <- proc.time()
-q <- apply(dm, 1, dm_row_fn, qdl)
-print(proc.time() - ptm)
-
-# Future apply, no future set-up with multisession
-ptm <- proc.time()
-q <- future_apply(dm, 1, dm_row_fn, qdl)
-print(proc.time() - ptm)
-
-library(parallel)
-
-library(future)
-library(future.apply)
-plan(multisession)
-
-library(future.apply)
-plan(multisession)
-
-
-
-colnames(om_0_0_train) %in% colnames(om)
-colnames(om) == colnames(om_0_0_train)
-
-dim(om)
-
-colnames(om)[which(!colnames(om) %in% colnames(om_0_0_train))]
-
-length(colnames(om))
-
-colnames(om_0_0_train)
-
-colnames(om)
-
-ae(om, om_0_0_train)
-
-om
-
-om <- apply(dm, 1, dm_row_fn, dl=dl)
-om <- do.call("rbind", om)
-
-
-colnames(dm)
-
-dmnames
-
-execute_inclusion
-
-dm_row_fn(dm[1, ], dl)
-
-apply(dm, 1, dm_row_fn, dl=dl)
-
-dm[1, ]
-
-# Consider parallelizing code
-# https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html
-
-om_0_0_train
-
-
-#write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
+# LEFT OFF HERE
 
 #om_0_0_train <- read_csv(proc_path("2023_05_08_om_0_0_train.csv"))
 
