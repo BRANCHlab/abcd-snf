@@ -1,6 +1,15 @@
-# Repeated SNF
+# Similarity Network Fusion - Layer 1
+
+In this chapter, I use the `metasnf` package to generate many diverse subtyping solutions with SNF.
+I examine the following sets of diverse solutions:
+
+1. Baseline mTBI subjects with the complete set of input variables
+2. Baseline mTBI subjects without Race or SES variables to examine the dependence of the generated solutions on these features
+
+## Baseline mTBI subjects, all input variables
 
 ```{r eval = FALSE}
+
 library(dplyr)
 library(abcdutils)
 library(metasnf)
@@ -28,89 +37,79 @@ design_matrix <- generate_design_matrix(
     seed = 42
 )
 
+# Exporting and reloading the design matrix
 write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
-
 design_matrix <- read_csv(proc_path("2023_07_20_design_matrix.csv"))
 
-# Output matrix storing results from multiple SNF iterations
+# Generating output matrix
 om_0_0_train <- execute_design_matrix(
    data_list_0_0_train,
    design_matrix,
    processes = "max"
 )
 
+# Exporting and reloading the output matrix
 write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
+om_0_0_train <- read_csv(proc_path("2023_07_20_om_0_0_train.csv"))
 
-# LEFT OFF HERE
+# Extending the output matrix to include CBCL p-values
+eom_0_0_train <- extend_om(om_0_0_train, outcome_list_0_0_train)
 
-#om_0_0_train <- read_csv(proc_path("2023_05_08_om_0_0_train.csv"))
+# Exporting and reloading the output matrix
+write_csv(eom_0_0_train, proc_path("eom_0_0_train.csv", date = TRUE))
+eom_0_0_train <- read_csv(proc_path("2023_07_21_eom_0_0_train.csv"))
 
-min(om_0_0_train$min_p_val) # 3.41e-07
-min(om_0_0_train$mean_p_val) # 0.005
-
-no_subs(om_0_0_train)
-
-### Investigating the creation of the output matrix
-dl <- data_list_0_0_train
-dm <- design_matrix
-
-no_subs(build_output_matrix(dl, dm))
-
-no_subs(build_output_matrix_soft(dl, dm))
-
-build_output_matrix_soft(dl, dm)
-
-
-extend_om(om_0_0_train_soft, outcome_list_0_0_train)
-
-
-clustered_subs <- get_clustered_subs(om_0_0_train_soft[1, ])
-# This really shouldn't be different from clustered_subs
-assigned_subs <- clustered_subs |>
-    dplyr::filter(clustered_subs$"cluster" != 0)
-
-assigned_subs
-
-outcome_list_0_0_train
-
-
-        # Assign p-values
-        for (j in seq_along(outcome_list)) {
-            current_outcome_component <- outcome_list[[j]]
-            current_outcome_name <- current_outcome_component$"name"
-            p_value <- get_p(assigned_subs, current_outcome_component)
-            target_col <- grep(current_outcome_name, colnames(output_matrix))
-            output_matrix[i, target_col] <- p_value
-        }
-
-#########################
-
-###
+min(eom_0_0_train$min_p_val) # 5.2069e-14
+min(eom_0_0_train$mean_p_val) # 0.002912379
 ```
+
+## Baseline mTBI subjects, no race or SES
+
+```{r}
+# Examining the structure of the data list
+summarize_dl(data_list_0_0_train)
+
+to_remove <- c("race", "income")
+
+data_list_fair_0_0_train <- list_remove(
+    data_list_0_0_train,
+    "race",
+    "income"
+)
+
+summarize_dl(data_list_fair_0_0_train)
+
+# Generating output matrix
+om_fair_0_0_train <- execute_design_matrix(
+   data_list_fair_0_0_train,
+   design_matrix,
+   processes = "max"
+)
+
+# Exporting and reloading the output matrix
+write_csv(om_fair_0_0_train, proc_path("om_fair_0_0_train.csv", date = TRUE))
+om_fair_0_0_train <- read_csv(proc_path("2023_07_21_om_fair_0_0_train.csv"))
+
+# Extending the output matrix to include CBCL p-values
+eom_fair_0_0_train <- extend_om(om_fair_0_0_train, outcome_list_0_0_train)
+
+# Exporting and reloading the output matrix
+write_csv(eom_fair_0_0_train, proc_path("eom_fair_0_0_train.csv", date = TRUE))
+eom_fair_0_0_train <- read_csv(proc_path("2023_07_21_eom_fair_0_0_train.csv"))
+
+min(eom_fair_0_0_train$min_p_val) # 1.182735e-08
+min(eom_fair_0_0_train$mean_p_val) # 0.008627628
+
+```
+
+
 
 The logic here, as current inplemented:
 
 generate the output matrix (dm with cols for each subject containing their cluster)
 
-
-
-
-
-
-
-
 The following code chunk is where I left off with cleaning.
 It is in meta_clustering.qmd.
-
-
-
-
-
-
-
-
-
-
 
 
 ```{r}
@@ -1176,7 +1175,7 @@ ggsave(fig_path("testing_cbcl_ors.png", date = TRUE), height = 6, dpi = 300)
 ## Individual CBCL measures as bar charts
 
 ```{r}
-test_comparison_df <- rbind(c1_test_df, c2_test_df) 
+test_comparison_df <- rbind(c1_test_df, c2_test_df)
 
 test_comparison_df$cluster <- as.factor(test_comparison_df$cluster)
 
