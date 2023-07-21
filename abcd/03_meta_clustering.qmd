@@ -1,10 +1,9 @@
 # Meta-clustering characterization
 
-Move this to appendix
-
 ## Meta-clustering
 
 ```{r eval = FALSE}
+
 library(here)
 library(readr)
 library(dplyr)
@@ -12,67 +11,58 @@ library(metasnf)
 library(abcdutils)
 library(ggplot2)
 
-
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-manuscript_path <- path_maker("~/documents/clustering-abcd-snf")
+#
+eom_0_0_train <- read_csv(proc_path("2023_07_21_eom_0_0_train.csv"))
+#eom_fair_0_0_train <- read_csv(proc_path("2023_07_21_eom_fair_0_0_train.csv"))
+#
+min(eom_0_0_train$min_p_val) # 5.2069e-14
+min(eom_0_0_train$mean_p_val) # 0.002912379
+#
+#min(eom_fair_0_0_train$min_p_val) # 1.182735e-08
+#min(eom_fair_0_0_train$mean_p_val) # 0.008627628
+#
+# Identify the lowest p-value solutions for each number of subtypes
+top_oms_0_0_train <- top_om_per_cluster(eom_0_0_train)
+top_oms_0_0_train |> dplyr::select(c("significance", "row_id"))
 
-om_0_0_train <- read_csv(proc_path("2023_05_08_om_0_0_train.csv"))
+write_csv(top_oms_0_0_train, proc_path("top_oms_0_0_train.csv", date = TRUE))
 
-min(om_0_0_train$min_p_val) # 3.41e-07
-min(om_0_0_train$mean_p_val) # 0.005
+om_scatter(
+    top_oms_0_0_train,
+    save = fig_path(
+        "top_oms_0_0_train_scatter.png",
+        date = TRUE
+    )
+)
 
-top_oms <- top_om_per_cluster(om_0_0_train)
-
-top_oms |> dplyr::select(c("significance", "row_id"))
-
-write_csv(top_oms, proc_path("top_oms_0_0_train.csv", date = TRUE))
-
-#om_scatter(top_oms,
-#           save = fig_path("top_oms_0_0_train_scatter.png", date = TRUE))
-om_scatter(top_oms)
-
-mc_results_0_0_train <- meta_cluster(om_0_0_train)
+mc_results_0_0_train <- meta_cluster(eom_0_0_train)
 
 write_csv(data.frame(mc_results_0_0_train),
           proc_path("mc_results_0_0_train.csv", date = TRUE))
 
-
 mc_results_0_0_train <-
-    as.matrix(read_csv(proc_path("2023_05_08_mc_results_0_0_train.csv")))
+    as.matrix(read_csv(proc_path("2023_07_21_mc_results_0_0_train.csv")))
 
-colnames(mc_results_0_0_train) <- as.character(seq_len(nrow(mc_results_0_0_train)))
-rownames(mc_results_0_0_train) <- as.character(seq_len(nrow(mc_results_0_0_train)))
+colnames(mc_results_0_0_train) <-
+    as.character(seq_len(nrow(mc_results_0_0_train)))
+rownames(mc_results_0_0_train) <-
+    as.character(seq_len(nrow(mc_results_0_0_train)))
 
 # ARIs between solutions
-#mc_heatmap(mc_results_0_0_train,
-#           save = fig_path("mc_results_0_0_train.png", date = TRUE))
-mc_heatmap(mc_results_0_0_train)
-
-mc_heatmap(mc_results_0_0_train,
-           save = fig_path("mc_results_0_0_train.png", date = TRUE))
-
-mc_heatmap(mc_results_0_0_train,
-           save = manuscript_path("mc_results_0_0_train.png", date = TRUE))
-
+ari_heatmap(mc_results_0_0_train,
+           save = fig_path("mc_results_0_0_train.pdf", date = TRUE))
 
 ## Trying to plot the input design matrix as a heatmap
 mc_order_0_0_train <- get_pheatmap_order(mc_results_0_0_train)
 
-
 ## Design matrix
-design_matrix <- read_csv(proc_path("2023_05_08_design_matrix.csv"))
-    
-design_matrix
+design_matrix <- read_csv(proc_path("2023_07_20_design_matrix.csv"))
 
 dm_heatmap(
     design_matrix,
     fig_path("dm_original_0_0_train.png", date = TRUE)
-)
-
-dm_heatmap(
-    design_matrix,
-    manuscript_path("dm_original_0_0_train.png", date = TRUE)
 )
 
 dm_heatmap(design_matrix[mc_order_0_0_train, ],
