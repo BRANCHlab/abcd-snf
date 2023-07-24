@@ -13,21 +13,38 @@ library(ggplot2)
 
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-#
+
 eom_0_0_train <- read_csv(proc_path("2023_07_21_eom_0_0_train.csv"))
-#eom_fair_0_0_train <- read_csv(proc_path("2023_07_21_eom_fair_0_0_train.csv"))
-#
+eom_fair_0_0_train <- read_csv(proc_path("2023_07_21_eom_fair_0_0_train.csv"))
+
 min(eom_0_0_train$min_p_val) # 5.2069e-14
 min(eom_0_0_train$mean_p_val) # 0.002912379
-#
-#min(eom_fair_0_0_train$min_p_val) # 1.182735e-08
-#min(eom_fair_0_0_train$mean_p_val) # 0.008627628
-#
+
+min(eom_fair_0_0_train$min_p_val) # 1.182735e-08
+min(eom_fair_0_0_train$mean_p_val) # 0.008627628
+
 # Identify the lowest p-value solutions for each number of subtypes
 top_oms_0_0_train <- top_om_per_cluster(eom_0_0_train)
 top_oms_0_0_train |> dplyr::select(c("significance", "row_id"))
 
-write_csv(top_oms_0_0_train, proc_path("top_oms_0_0_train.csv", date = TRUE))
+top_oms_fair_0_0_train <- top_om_per_cluster(eom_fair_0_0_train)
+top_oms_fair_0_0_train |> dplyr::select(c("significance", "row_id"))
+
+write_csv(
+    top_oms_0_0_train,
+    proc_path("top_oms_0_0_train.csv", date = TRUE)
+)
+
+write_csv(
+    top_oms_fair_0_0_train,
+    proc_path("top_oms_fair_0_0_train.csv", date = TRUE)
+)
+
+top_oms_0_0_train <-
+    read_csv(proc_path("2023_07_24_top_oms_0_0_train.csv"))
+
+top_oms_fair_0_0_train <-
+    read_csv(proc_path("2023_07_24_top_oms_fair_0_0_train.csv"))
 
 om_scatter(
     top_oms_0_0_train,
@@ -37,49 +54,99 @@ om_scatter(
     )
 )
 
-mc_results_0_0_train <- meta_cluster(eom_0_0_train)
+om_scatter(
+    top_oms_fair_0_0_train,
+    save = fig_path(
+        "top_oms_fair_0_0_train_scatter.png",
+        date = TRUE
+    )
+)
+
+mc_results_0_0_train <- calc_om_aris(eom_0_0_train)
+
+mc_results_fair_0_0_train <- calc_om_aris(eom_fair_0_0_train)
 
 write_csv(data.frame(mc_results_0_0_train),
           proc_path("mc_results_0_0_train.csv", date = TRUE))
 
+write_csv(data.frame(mc_results_fair_0_0_train),
+          proc_path("mc_results_fair_0_0_train.csv", date = TRUE))
+
 mc_results_0_0_train <-
-    as.matrix(read_csv(proc_path("2023_07_21_mc_results_0_0_train.csv")))
+    as.matrix(read_csv(proc_path("2023_07_24_mc_results_0_0_train.csv")))
+
+mc_results_fair_0_0_train <-
+    as.matrix(read_csv(proc_path("2023_07_24_mc_results_fair_0_0_train.csv")))
 
 colnames(mc_results_0_0_train) <-
     as.character(seq_len(nrow(mc_results_0_0_train)))
 rownames(mc_results_0_0_train) <-
     as.character(seq_len(nrow(mc_results_0_0_train)))
 
+colnames(mc_results_fair_0_0_train) <-
+    as.character(seq_len(nrow(mc_results_fair_0_0_train)))
+rownames(mc_results_fair_0_0_train) <-
+    as.character(seq_len(nrow(mc_results_fair_0_0_train)))
+
+
 # ARIs between solutions
 ari_heatmap(mc_results_0_0_train,
            save = fig_path("mc_results_0_0_train.pdf", date = TRUE))
 
+ari_heatmap(mc_results_fair_0_0_train,
+           save = fig_path("mc_results_fair_0_0_train.pdf", date = TRUE))
+
+
 ## Trying to plot the input design matrix as a heatmap
 mc_order_0_0_train <- get_pheatmap_order(mc_results_0_0_train)
+
+mc_order_fair_0_0_train <- get_pheatmap_order(mc_results_fair_0_0_train)
+
 
 ## Design matrix
 design_matrix <- read_csv(proc_path("2023_07_20_design_matrix.csv"))
 
+design_matrix <- data.frame(design_matrix)
+
+# Original ordering
 dm_heatmap(
     design_matrix,
-    fig_path("dm_original_0_0_train.png", date = TRUE)
+    save = fig_path("dm_original_0_0_train.pdf", date = TRUE)
 )
 
-dm_heatmap(design_matrix[mc_order_0_0_train, ],
-           fig_path("dm_reordered_0_0_train.png", date = TRUE))
+# Reordered by all-variable results
+dm_heatmap(
+    design_matrix,
+    order = mc_order_0_0_train,
+    save = fig_path("dm_reordered_0_0_train.pdf", date = TRUE)
+)
 
-dm_heatmap(design_matrix[mc_order_0_0_train, ],
-           manuscript_path("dm_reordered_0_0_train.png", date = TRUE))
+# Reordered by non-race non-ses results
+dm_heatmap(
+    design_matrix,
+    mc_order_fair_0_0_train,
+    save = fig_path("dm_reordered_fair_0_0_train.pdf", date = TRUE)
+)
 
+mc_pvals_0_0_train <- p_val_select(eom_0_0_train)
 
-mc_pvals_0_0_train <- p_val_select(om_0_0_train)
+mc_pvals_fair_0_0_train <- p_val_select(eom_fair_0_0_train)
 
-mc_pvals_reordered_0_0_train <- mc_pvals_0_0_train[mc_order_0_0_train, ]
+mc_pvals_reordered_0_0_train <-
+    mc_pvals_0_0_train[mc_order_0_0_train, ]
+
+mc_pvals_reordered_fair_0_0_train <-
+    mc_pvals_fair_0_0_train[mc_order_fair_0_0_train, ]
 
 # P-values
-pvals_pheatmap(mc_pvals_reordered_0_0_train,
-               save = fig_path("mc_pvals_0_0_train.png", date = TRUE))
+pvals_pheatmap(
+    mc_pvals_reordered_0_0_train,
+    save = fig_path("mc_pvals_0_0_train.pdf", date = TRUE)
+)
 
-pvals_pheatmap(mc_pvals_reordered_0_0_train,
-               save = manuscript_path("mc_pvals_0_0_train.png", date = TRUE))
+pvals_pheatmap(
+    mc_pvals_reordered_fair_0_0_train,
+    save = fig_path("mc_pvals_fair_0_0_train.pdf", date = TRUE)
+)
+
 ```
