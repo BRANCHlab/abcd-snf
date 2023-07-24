@@ -37,6 +37,42 @@ design_matrix <- generate_design_matrix(
     seed = 42
 )
 
+
+random_removal <- function(num_cols) {
+    # Generate 10,000 random numbers according to exponential distribution
+    rand_vals <- stats::rexp(10000)
+    # Scale them to range from 0 to the
+    rand_vals <- rand_vals / max(rand_vals) * (num_cols - 1)
+    #rand_vals <- floor(rand_vals)
+    rand_vals <- round(rand_vals) + 1
+    return(rand_vals)
+    #num_removed <- sample(rand_vals, 1)
+    #remove_placeholders <- rep(0, num_removed)
+    #keep_placeholders <- rep(1, num_cols - num_removed)
+    #unshuffled_removals <- c(remove_placeholders, keep_placeholders)
+    #shuffled_removals <- sample(unshuffled_removals)
+    #return(shuffled_removals)
+}
+format(random_removal(20), scientific = FALSE)
+
+
+
+random_removal <- function(num_cols) {
+    rand_vals <- stats::rexp(10000)
+    rand_vals <- rand_vals / max(rand_vals) * (num_cols - 1)
+    rand_vals <- floor(rand_vals)
+    print(max(rand_vals))
+    print(which(rand_vals > 18))
+    num_removed <- sample(rand_vals, 1)
+    remove_placeholders <- rep(0, num_removed)
+    keep_placeholders <- rep(1, num_cols - num_removed)
+    unshuffled_removals <- c(remove_placeholders, keep_placeholders)
+    shuffled_removals <- sample(unshuffled_removals)
+    return(shuffled_removals)
+}
+
+format(random_removal(20), scientific = FALSE)
+
 # Exporting and reloading the design matrix
 write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
 design_matrix <- read_csv(proc_path("2023_07_20_design_matrix.csv"))
