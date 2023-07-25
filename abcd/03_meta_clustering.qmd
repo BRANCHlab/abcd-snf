@@ -49,7 +49,7 @@ top_oms_fair_0_0_train <-
 om_scatter(
     top_oms_0_0_train,
     save = fig_path(
-        "top_oms_0_0_train_scatter.png",
+        "top_oms_0_0_train_scatter.pdf",
         date = TRUE
     )
 )
@@ -57,26 +57,28 @@ om_scatter(
 om_scatter(
     top_oms_fair_0_0_train,
     save = fig_path(
-        "top_oms_fair_0_0_train_scatter.png",
+        "top_oms_fair_0_0_train_scatter.pdf",
         date = TRUE
     )
 )
 
 mc_results_0_0_train <- calc_om_aris(eom_0_0_train)
 
-mc_results_fair_0_0_train <- calc_om_aris(eom_fair_0_0_train)
-
 write_csv(data.frame(mc_results_0_0_train),
           proc_path("mc_results_0_0_train.csv", date = TRUE))
+
+mc_results_fair_0_0_train <- calc_om_aris(eom_fair_0_0_train)
 
 write_csv(data.frame(mc_results_fair_0_0_train),
           proc_path("mc_results_fair_0_0_train.csv", date = TRUE))
 
+# Plan: Lapply will access each row of the matrix, go through and
+
 mc_results_0_0_train <-
-    as.matrix(read_csv(proc_path("2023_07_24_mc_results_0_0_train.csv")))
+    as.matrix(read_csv(proc_path("2023_07_25_mc_results_0_0_train.csv")))
 
 mc_results_fair_0_0_train <-
-    as.matrix(read_csv(proc_path("2023_07_24_mc_results_fair_0_0_train.csv")))
+    as.matrix(read_csv(proc_path("2023_07_25_mc_results_fair_0_0_train.csv")))
 
 colnames(mc_results_0_0_train) <-
     as.character(seq_len(nrow(mc_results_0_0_train)))
@@ -90,11 +92,17 @@ rownames(mc_results_fair_0_0_train) <-
 
 
 # ARIs between solutions
-ari_heatmap(mc_results_0_0_train,
-           save = fig_path("mc_results_0_0_train.pdf", date = TRUE))
+ari_heatmap(
+    mc_results_0_0_train,
+    save = fig_path("mc_results_0_0_train.pdf", date = TRUE),
+    hide_ids = TRUE
+)
 
-ari_heatmap(mc_results_fair_0_0_train,
-           save = fig_path("mc_results_fair_0_0_train.pdf", date = TRUE))
+ari_heatmap(
+    mc_results_fair_0_0_train,
+    save = fig_path("mc_results_fair_0_0_train.pdf", date = TRUE),
+    hide_ids = TRUE
+)
 
 
 ## Trying to plot the input design matrix as a heatmap

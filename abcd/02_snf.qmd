@@ -8,6 +8,8 @@ I examine the following sets of diverse solutions:
 
 ## Baseline mTBI subjects, all input variables
 
+### Set-up
+
 ```{r eval = FALSE}
 
 library(dplyr)
@@ -29,6 +31,12 @@ data_list_0_0_train <-
 # Structure containing all outcome data
 outcome_list_0_0_train <-
     list.load(proc_path("2023_07_17_outcome_list_0_0_train.rdata"))
+
+```
+
+### Regular design matrix
+
+```{r}
 
 # Building the design matrix which contains all settings for 100 SNF runs
 design_matrix <- generate_design_matrix(
@@ -55,11 +63,56 @@ write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
 
 om_0_0_train <- read_csv(proc_path("2023_07_25_om_0_0_train.csv"))
 
+```
+
+### Tight design matrix
+
+```{r}
+
+# Building the design matrix which contains all settings for 100 SNF runs
+design_matrix_tight <- generate_design_matrix(
+    data_list_0_0_train,
+    nrow = 1000,
+    min_removed = 1,
+    max_removed = 3,
+    seed = 42
+)
+
+# Exporting and reloading the design matrix
+write_csv(
+    design_matrix_tight,
+    proc_path("design_matrix_tight.csv", date = TRUE)
+)
+
+design_matrix_tight <- read_csv(proc_path("2023_07_25_design_matrix_tight.csv"))
+
+# Generating output matrix
+om_tight_0_0_train <- execute_design_matrix(
+   data_list_0_0_train,
+   design_matrix_tight,
+   processes = "max"
+)
+
+# Exporting and reloading the output matrix
+write_csv(om_tight_0_0_train, proc_path("om_tight_0_0_train.csv", date = TRUE))
+
+om_tight_0_0_train <- read_csv(proc_path("2023_07_25_om_tight_0_0_train.csv"))
+
+## INSIDE 2023_07_25_snf.R SCRIPT ###########################################
+
 # Extending the output matrix to include CBCL p-values
 eom_0_0_train <- extend_om(om_0_0_train, outcome_list_0_0_train)
 
 # Exporting and reloading the output matrix
 write_csv(eom_0_0_train, proc_path("eom_0_0_train.csv", date = TRUE))
+
+# Extending the output matrix to include CBCL p-values
+eom_tight_0_0_train <- extend_om(om_tight_0_0_train, outcome_list_0_0_train)
+
+# Exporting and reloading the output matrix
+write_csv(eom_tight_0_0_train, proc_path("eom_tight_0_0_train.csv", date = TRUE))
+
+##############################################################################
 
 eom_0_0_train <- read_csv(proc_path("2023_07_25_eom_0_0_train.csv"))
 
