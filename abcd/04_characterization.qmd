@@ -3,6 +3,7 @@
 ## Load libraries and data
 
 ```{r}
+
 library(metasnf)
 library(rlist)
 library(abcdutils)
@@ -11,26 +12,55 @@ library(readr)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-od_path <- path_maker("/home/prashanth/onedrive/images")
+#od_path <- path_maker("/home/prashanth/onedrive/images")
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
 proc_writer <- make_writer(proc_path)
 proc_reader <- make_reader(proc_path)
 input_reader <- make_reader(input_path)
 
-data_list_train <- list.load(proc_path("2023_04_27_data_list_0_0_train.rdata"))
-data_list_test <- list.load(proc_path("2023_04_27_data_list_0_0_test.rdata"))
-data_list_full <- list.load(proc_path("2023_04_27_data_list_0_0_full.rdata"))
-cbcl_list_train <- list.load(proc_path("2023_04_27_cbcl_list_0_0_train.rdata"))
-cbcl_list_full <- list.load(proc_path("2023_04_27_cbcl_list_0_0_full.rdata"))
+data_list_train <- list.load(proc_path("2023_07_17_data_list_0_0_train.rdata"))
+data_list_test <- list.load(proc_path("2023_07_17_data_list_0_0_test.rdata"))
+data_list_full <- list.load(proc_path("2023_07_17_data_list_0_0_full.rdata"))
+cbcl_list_train <- list.load(proc_path("2023_07_17_cbcl_list_0_0_train.rdata"))
+cbcl_list_full <- list.load(proc_path("2023_07_17_cbcl_list_0_0_full.rdata"))
 
-nihtbx_pattern <- input_reader("2023_04_27_nihtbx_pattern_fc_imp_0_0.csv")
-nihtbx_list <- input_reader("2023_04_27_nihtbx_list_fc_imp_0_0.csv")
-nihtbx_cardsort <- input_reader("2023_04_27_nihtbx_cardsort_fc_imp_0_0.csv")
-sds_sleep_df <- input_reader("2023_04_26_sds_sleep_df_0_0.csv")
+data_list_fair_train <- list_remove(
+    data_list_train,
+    "race",
+    "income"
+)
 
+data_list_fair_test <- list_remove(
+    data_list_test,
+    "race",
+    "income"
+)
 
-top_oms_0_0_train <- read_csv(proc_path("2023_04_27_top_oms_0_0_train.csv"))
+data_list_fair_full <- list_remove(
+    data_list_full,
+    "race",
+    "income"
+)
+
+#nihtbx_pattern <- input_reader("2023_07_17_nihtbx_pattern_fc_imp_0_0.csv")
+#nihtbx_list <- input_reader("2023_07_17_nihtbx_list_fc_imp_0_0.csv")
+#nihtbx_cardsort <- input_reader("2023_07_17_nihtbx_cardsort_fc_imp_0_0.csv")
+#sds_sleep_df <- input_reader("2023_07_17_sds_sleep_df_0_0.csv")
+
+# Loading top oms of each combination of data list and design matrix
+top_oms_0_0_train <-
+    read_csv(proc_path("2023_07_26_top_oms_0_0_train.csv"))
+
+top_oms_fair_0_0_train <-
+    read_csv(proc_path("2023_07_26_top_oms_fair_0_0_train.csv"))
+
+top_oms_tight_0_0_train <-
+    read_csv(proc_path("2023_07_26_top_oms_tight_0_0_train.csv"))
+
+top_oms_tight_fair_0_0_train <-
+    read_csv(proc_path("2023_07_26_top_oms_tight_fair_0_0_train.csv"))
+
 ```
 
 ## Summary of the ABCD sample
@@ -186,37 +216,54 @@ top_oms_0_0_train <- read_csv(proc_path("2023_04_27_top_oms_0_0_train.csv"))
 The function below generates a grid of CBCL impairment plots for each cluster solution and saves them using a provided `path_maker` function.
 
 ```{r}
+
 # Last generated on 2023-04-06
-plot_all_cbcl(top_oms_0_0_train, cbcl_list_train, fig_path)
 
-top_oms_0_0_train$significance
+# This is a temporary measure. For starters, the CBCL list shouldn't be here.
+cbcl_list_train_prefixed <- lapply(
+    cbcl_list_train,
+    function(x) {
+        x$"subjectkey" <- paste0("subject_", x$"subjectkey")
+        return(x)
+    }
+)
 
-# The two clust mean solution
-top_om_uhn <- top_oms_0_0_train[2, ]
-
-# All solutions, all cbcl vars
 plot_all_cbcl(
     top_oms_0_0_train,
-    cbcl_list_train,
-    fig_path,
-    save_suffix = "_cbcl_train"
+    cbcl_list_train_prefixed,
+    save_prefix = "all_vars_loose_dm_",
+    fig_path
+)
+#
+plot_all_cbcl(
+    top_oms_fair_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair_vars_loose_dm_",
+    fig_path
+)
+#
+plot_all_cbcl(
+    top_oms_tight_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "all_vars_tight_dm_",
+    fig_path
+)
+#
+plot_all_cbcl(
+    top_oms_tight_fair_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair_vars_tight_dm_",
+    fig_path
 )
 
-# Top solution, depress, anxiety, attention, and aggression
-plot_all_cbcl(
-    top_om_uhn,
-    cbcl_list_train,
-    fig_path,
-    include = c(
-        "depress",
-        "anxiety",
-        "attention",
-        "aggressive"
-    ),
-    save_suffix = "_cbcl_short_train",
-    h = 8,
-    w = 15
-)
+# Left off here
+
+# Next steps:
+# 0. Jump down to row 814 and launch those input plots
+# 1. throw all the figures in a beamer presentation
+# 2. Run the input characterization plots if possible
+# 3. consider suffixing my plots with "_cbcl_train"
+
 ```
 
 
@@ -762,6 +809,8 @@ input_characterization_plots_g <- function(om,
     }
 }
 
+
+summarize_dl(data_list_train)
 
 input_characterization_plots_g(top_oms_0_0_train,
     loc = train_dfs[[1]],

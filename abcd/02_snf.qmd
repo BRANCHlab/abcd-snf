@@ -1,4 +1,4 @@
-# Similarity Network Fusion - Layer 1
+# Similarity Network Fusion
 
 In this chapter, I use the `metasnf` package to generate many diverse subtyping solutions with SNF.
 I examine the following sets of diverse solutions:
@@ -6,9 +6,7 @@ I examine the following sets of diverse solutions:
 1. Baseline mTBI subjects with the complete set of input variables
 2. Baseline mTBI subjects without Race or SES variables to examine the dependence of the generated solutions on these features
 
-## Baseline mTBI subjects, all input variables
-
-### Set-up
+## Set-up
 
 ```{r eval = FALSE}
 
@@ -34,11 +32,13 @@ outcome_list_0_0_train <-
 
 ```
 
+## Baseline mTBI subjects, all input variables
+
 ### Regular design matrix
 
 ```{r}
 
-# Building the design matrix which contains all settings for 100 SNF runs
+# Building the design matrix which contains all settings for 1000 SNF runs
 design_matrix <- generate_design_matrix(
     data_list_0_0_train,
     nrow = 1000,
@@ -49,7 +49,7 @@ design_matrix <- generate_design_matrix(
 # Exporting and reloading the design matrix
 write_csv(design_matrix, proc_path("design_matrix.csv", date = TRUE))
 
-design_matrix <- read_csv(proc_path("2023_07_25_design_matrix.csv"))
+design_matrix <- read_csv(proc_path("2023_07_26_design_matrix.csv"))
 
 # Generating output matrix
 om_0_0_train <- execute_design_matrix(
@@ -61,7 +61,15 @@ om_0_0_train <- execute_design_matrix(
 # Exporting and reloading the output matrix
 write_csv(om_0_0_train, proc_path("om_0_0_train.csv", date = TRUE))
 
-om_0_0_train <- read_csv(proc_path("2023_07_25_om_0_0_train.csv"))
+om_0_0_train <- read_csv(proc_path("2023_07_26_om_0_0_train.csv"))
+
+# Extending the output matrix to include CBCL p-values
+eom_0_0_train <- extend_om(om_0_0_train, outcome_list_0_0_train)
+
+# Exporting and reloading the output matrix
+write_csv(eom_0_0_train, proc_path("eom_0_0_train.csv", date = TRUE))
+
+eom_0_0_train <- read_csv(proc_path("2023_07_26_eom_0_0_train.csv"))
 
 ```
 
@@ -84,7 +92,7 @@ write_csv(
     proc_path("design_matrix_tight.csv", date = TRUE)
 )
 
-design_matrix_tight <- read_csv(proc_path("2023_07_25_design_matrix_tight.csv"))
+design_matrix_tight <- read_csv(proc_path("2023_07_26_design_matrix_tight.csv"))
 
 # Generating output matrix
 om_tight_0_0_train <- execute_design_matrix(
@@ -96,40 +104,29 @@ om_tight_0_0_train <- execute_design_matrix(
 # Exporting and reloading the output matrix
 write_csv(om_tight_0_0_train, proc_path("om_tight_0_0_train.csv", date = TRUE))
 
-om_tight_0_0_train <- read_csv(proc_path("2023_07_25_om_tight_0_0_train.csv"))
+om_tight_0_0_train <- read_csv(proc_path("2023_07_26_om_tight_0_0_train.csv"))
 
-## INSIDE 2023_07_25_snf.R SCRIPT ###########################################
-
-# Extending the output matrix to include CBCL p-values
-eom_0_0_train <- extend_om(om_0_0_train, outcome_list_0_0_train)
-
-# Exporting and reloading the output matrix
-write_csv(eom_0_0_train, proc_path("eom_0_0_train.csv", date = TRUE))
-
-# Extending the output matrix to include CBCL p-values
+# Extending the tight output matrix to include CBCL p-values
 eom_tight_0_0_train <- extend_om(om_tight_0_0_train, outcome_list_0_0_train)
 
 # Exporting and reloading the output matrix
-write_csv(eom_tight_0_0_train, proc_path("eom_tight_0_0_train.csv", date = TRUE))
+write_csv(
+    eom_tight_0_0_train,
+    proc_path("eom_tight_0_0_train.csv", date = TRUE)
+)
 
-##############################################################################
-
-eom_0_0_train <- read_csv(proc_path("2023_07_25_eom_0_0_train.csv"))
-
-# Left off here
-
-min(eom_0_0_train$min_p_val) # 5.2069e-14
-min(eom_0_0_train$mean_p_val) # 0.002912379
+eom_tight_0_0_train <- read_csv(proc_path("2023_07_26_eom_tight_0_0_train.csv"))
 
 ```
 
 ## Baseline mTBI subjects, no race or SES
 
+
+### Regular design matrix
+
 ```{r}
 # Examining the structure of the data list
 summarize_dl(data_list_0_0_train)
-
-to_remove <- c("race", "income")
 
 data_list_fair_0_0_train <- list_remove(
     data_list_0_0_train,
@@ -137,19 +134,44 @@ data_list_fair_0_0_train <- list_remove(
     "income"
 )
 
-summarize_dl(data_list_fair_0_0_train)
+list.save(
+    data_list_fair_0_0_train,
+    proc_path("data_list_fair_0_0_train.rdata", date = TRUE)
+)
+
+data_list_fair_0_0_train <- list.load(
+    proc_path("2023_07_26_data_list_fair_0_0_train.rdata")
+)
+
+# Building the design matrix which contains all settings for 100 SNF runs
+design_matrix_fair <- generate_design_matrix(
+    data_list_fair_0_0_train,
+    nrow = 1000,
+    min_removed = 1,
+    seed = 42
+)
+
+# Exporting and reloading the design matrix
+write_csv(
+    design_matrix_fair,
+    proc_path("design_matrix_fair.csv", date = TRUE)
+)
+
+design_matrix_fair <- read_csv(
+    proc_path("2023_07_26_design_matrix_fair.csv")
+)
 
 # Generating output matrix
 om_fair_0_0_train <- execute_design_matrix(
    data_list_fair_0_0_train,
-   design_matrix,
+   design_matrix_fair,
    processes = "max"
 )
 
 # Exporting and reloading the output matrix
 write_csv(om_fair_0_0_train, proc_path("om_fair_0_0_train.csv", date = TRUE))
 
-om_fair_0_0_train <- read_csv(proc_path("2023_07_25_om_fair_0_0_train.csv"))
+om_fair_0_0_train <- read_csv(proc_path("2023_07_26_om_fair_0_0_train.csv"))
 
 # Extending the output matrix to include CBCL p-values
 eom_fair_0_0_train <- extend_om(om_fair_0_0_train, outcome_list_0_0_train)
@@ -157,13 +179,67 @@ eom_fair_0_0_train <- extend_om(om_fair_0_0_train, outcome_list_0_0_train)
 # Exporting and reloading the output matrix
 write_csv(eom_fair_0_0_train, proc_path("eom_fair_0_0_train.csv", date = TRUE))
 
-eom_fair_0_0_train <- read_csv(proc_path("2023_07_25_eom_fair_0_0_train.csv"))
-
-min(eom_fair_0_0_train$min_p_val) # 1.182735e-08
-min(eom_fair_0_0_train$mean_p_val) # 0.008627628
+eom_fair_0_0_train <- read_csv(proc_path("2023_07_26_eom_fair_0_0_train.csv"))
 
 ```
 
+### Tight design matrix
+
+```{r}
+
+# Building the design matrix which contains all settings for 100 SNF runs
+design_matrix_tight_fair <- generate_design_matrix(
+    data_list_fair_0_0_train,
+    nrow = 1000,
+    min_removed = 1,
+    max_removed = 3,
+    seed = 42
+)
+
+# Exporting and reloading the design matrix
+write_csv(
+    design_matrix_tight_fair,
+    proc_path("design_matrix_tight_fair.csv", date = TRUE)
+)
+
+design_matrix_tight_fair <- read_csv(
+    proc_path("2023_07_26_design_matrix_tight_fair.csv")
+)
+
+# Generating tight output matrix
+om_tight_fair_0_0_train <- execute_design_matrix(
+   data_list_fair_0_0_train,
+   design_matrix_tight_fair,
+   processes = "max"
+)
+
+# Exporting and reloading the output matrix
+write_csv(
+    om_tight_fair_0_0_train,
+    proc_path("om_tight_fair_0_0_train.csv", date = TRUE)
+)
+
+om_tight_fair_0_0_train <- read_csv(
+    proc_path("2023_07_26_om_tight_fair_0_0_train.csv")
+)
+
+# Extending the output matrix to include CBCL p-values
+eom_tight_fair_0_0_train <- extend_om(
+    om_tight_fair_0_0_train,
+    outcome_list_0_0_train
+)
+
+# Exporting and reloading the output matrix
+write_csv(
+    eom_tight_fair_0_0_train,
+    proc_path("eom_tight_fair_0_0_train.csv", date = TRUE)
+)
+
+eom_tight_fair_0_0_train <- read_csv(
+    proc_path("2023_07_26_eom_tight_fair_0_0_train.csv")
+)
+
+```
 
 
 The logic here, as current inplemented:
