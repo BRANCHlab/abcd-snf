@@ -10,9 +10,13 @@ library(abcdutils)
 library(here)
 library(readr)
 
+
+input_path <- path_maker("~/mnt/hpf/Users/pvelayudhan/subtyping/research/data/abcd/inputs")
+fig_path <- path_maker("~/mnt/hpf/Users/pvelayudhan/subtyping/research/data/abcd/results/figures")
+proc_path <- path_maker("~/mnt/hpf/Users/pvelayudhan/subtyping/research/data/abcd/results/processed")
+
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-#od_path <- path_maker("/home/prashanth/onedrive/images")
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
 proc_writer <- make_writer(proc_path)
@@ -30,36 +34,72 @@ data_list_fair_train <- list_remove(
     "race",
     "income"
 )
-
 data_list_fair_test <- list_remove(
     data_list_test,
     "race",
     "income"
 )
-
 data_list_fair_full <- list_remove(
     data_list_full,
     "race",
     "income"
 )
+data_list_fair2_train <- list_remove(
+    data_list_train,
+    "sex"
+)
+data_list_fair2_test <- list_remove(
+    data_list_test,
+    "sex"
+)
+data_list_fair2_full <- list_remove(
+    data_list_full,
+    "sex"
+)
+data_list_fair3_train <- list_remove(
+    data_list_train,
+    "race",
+    "income",
+    "sex"
+)
+data_list_fair3_test <- list_remove(
+    data_list_test,
+    "race",
+    "income",
+    "sex"
+)
+data_list_fair3_full <- list_remove(
+    data_list_full,
+    "race",
+    "income",
+    "sex"
+)
 
-#nihtbx_pattern <- input_reader("2023_07_17_nihtbx_pattern_fc_imp_0_0.csv")
-#nihtbx_list <- input_reader("2023_07_17_nihtbx_list_fc_imp_0_0.csv")
-#nihtbx_cardsort <- input_reader("2023_07_17_nihtbx_cardsort_fc_imp_0_0.csv")
-#sds_sleep_df <- input_reader("2023_07_17_sds_sleep_df_0_0.csv")
+nihtbx_pattern <- input_reader("2023_07_17_nihtbx_pattern_fc_imp_0_0.csv")
+nihtbx_list <- input_reader("2023_07_17_nihtbx_list_fc_imp_0_0.csv")
+nihtbx_cardsort <- input_reader("2023_07_17_nihtbx_cardsort_fc_imp_0_0.csv")
+sds_sleep_df <- input_reader("2023_07_17_sds_sleep_df_0_0.csv")
+
+
 
 # Loading top oms of each combination of data list and design matrix
 top_oms_0_0_train <-
-    read_csv(proc_path("2023_07_26_top_oms_0_0_train.csv"))
-
-top_oms_fair_0_0_train <-
-    read_csv(proc_path("2023_07_26_top_oms_fair_0_0_train.csv"))
-
+    read_csv(proc_path("2023_07_31_top_oms_0_0_train.csv"))
 top_oms_tight_0_0_train <-
-    read_csv(proc_path("2023_07_26_top_oms_tight_0_0_train.csv"))
-
+    read_csv(proc_path("2023_07_31_top_oms_tight_0_0_train.csv"))
+top_oms_fair_0_0_train <-
+    read_csv(proc_path("2023_07_31_top_oms_fair_0_0_train.csv"))
 top_oms_tight_fair_0_0_train <-
-    read_csv(proc_path("2023_07_26_top_oms_tight_fair_0_0_train.csv"))
+    read_csv(proc_path("2023_07_31_top_oms_tight_fair_0_0_train.csv"))
+top_oms_fair2_0_0_train <-
+    read_csv(proc_path("2023_07_31_top_oms_fair2_0_0_train.csv"))
+top_oms_tight_fair2_0_0_train <-
+    read_csv(proc_path("2023_07_31_top_oms_tight_fair2_0_0_train.csv"))
+top_oms_fair3_0_0_train <-
+    read_csv(proc_path("2023_07_31_top_oms_fair3_0_0_train.csv"))
+top_oms_tight_fair3_0_0_train <-
+    read_csv(proc_path("2023_07_31_top_oms_tight_fair3_0_0_train.csv"))
+
 
 ```
 
@@ -231,14 +271,7 @@ cbcl_list_train_prefixed <- lapply(
 plot_all_cbcl(
     top_oms_0_0_train,
     cbcl_list_train_prefixed,
-    save_prefix = "all_vars_loose_dm_",
-    fig_path
-)
-
-plot_all_cbcl(
-    top_oms_fair_0_0_train,
-    cbcl_list_train_prefixed,
-    save_prefix = "fair_vars_loose_dm_",
+    save_prefix = "all_vars_dm_",
     fig_path
 )
 #
@@ -250,11 +283,46 @@ plot_all_cbcl(
 )
 #
 plot_all_cbcl(
+    top_oms_fair_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair_vars_dm_",
+    fig_path
+)
+#
+plot_all_cbcl(
     top_oms_tight_fair_0_0_train,
     cbcl_list_train_prefixed,
     save_prefix = "fair_vars_tight_dm_",
     fig_path
 )
+#
+plot_all_cbcl(
+    top_oms_fair2_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair2_vars_dm_",
+    fig_path
+)
+#
+plot_all_cbcl(
+    top_oms_tight_fair2_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair2_vars_tight_dm_",
+    fig_path
+)
+plot_all_cbcl(
+    top_oms_fair3_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair3_vars_dm_",
+    fig_path
+)
+#
+plot_all_cbcl(
+    top_oms_tight_fair3_0_0_train,
+    cbcl_list_train_prefixed,
+    save_prefix = "fair3_vars_tight_dm_",
+    fig_path
+)
+
 
 # Left off here
 
@@ -581,6 +649,7 @@ input_characterization_plots_g <- function(om,
                                          pattern = NULL,
                                          cardsort = NULL,
                                          list = NULL,
+                                         sleep = NULL,
                                          general_inp_path,
                                          rsfmri_path,
                                          other_mri_path,
@@ -717,6 +786,7 @@ input_characterization_plots_g <- function(om,
             main = "Subcortical Volume")[[4]]
         # Non-imaging
         ## Family function
+        print("cheese")
         fam_fn_p <- pheatmap_om_matrix(row_i, fam_fn,
             legend = FALSE,
             cw = 50,
@@ -765,6 +835,7 @@ input_characterization_plots_g <- function(om,
                         grid_other_mri,
                         width = 20,
                         height = 20)
+        print("dog")
         grid_non_imaging <- gridExtra::arrangeGrob(
             fam_fn_p,
             parent_p,
@@ -807,14 +878,779 @@ input_characterization_plots_g <- function(om,
         ggplot2::ggsave(file = g_path, grid, width = 45, height = 30)
     }
 }
+#
+input_characterization_plots_g_f <- function(om,
+                                         loc = NULL,
+                                         mechanism = NULL,
+                                         dazed = NULL,
+                                         interview_age = NULL,
+                                         mtbi_age = NULL,
+                                         pubertal = NULL,
+                                         sex = NULL,
+                                         headache = NULL,
+                                         mtbi_count = NULL,
+                                         wmnd = NULL,
+                                         gord_cor = NULL,
+                                         gord_var = NULL,
+                                         subc_cor = NULL,
+                                         subc_var = NULL,
+                                         cort_sa = NULL,
+                                         cort_t = NULL,
+                                         subc_v = NULL,
+                                         loneliness = NULL,
+                                         screentime = NULL,
+                                         fam_fn = NULL,
+                                         sports = NULL,
+                                         prosocial = NULL,
+                                         parent_psych = NULL,
+                                         exercise = NULL,
+                                         pattern = NULL,
+                                         cardsort = NULL,
+                                         list = NULL,
+                                         sleep = NULL,
+                                         general_inp_path,
+                                         rsfmri_path,
+                                         other_mri_path,
+                                         other_heatmap_path) {
+    for (i in seq_len(nrow(om))) {
+        row_i <- om[i, ]
+        sig <- row_i$"significance"
+        id <- row_i$"row_id"
+        prefix <- paste0("row_", id, "_", sig)
+        g_path <- gsub("gen", paste0(prefix, "_gen"), general_inp_path)
+        r_path <- gsub("rsfmri", paste0(prefix, "_rsfmri"), rsfmri_path)
+        om_path <- gsub("other_mri",
+                        paste0(prefix, "_other_mri"), other_mri_path)
+        o_path <- gsub("other_in",
+                       paste0(prefix, "_other_in"), other_heatmap_path)
+        # LOC
+        loc_p <- plot_om_bar(row_i, loc, "latest_mtbi_loc", "LOC")
+        # Mechanism
+        mech_p <- plot_om_bar(row_i, mechanism, "latest_mtbi_mechanism", "MOI")
+        # Dazed
+        dazed_p <- plot_om_bar(row_i, dazed, "latest_mtbi_mem_daze", "Dazed")
+        # Age at interview
+        interview_age_p <- plot_om_cont(row_i, interview_age, "interview_age",
+                               "Interview Age")
+        # Age at injury
+        injury_age_p <- plot_om_cont(row_i, mtbi_age, "latest_mtbi_age",
+                                     "Injury Age")
+        # Pubertal status
+        pubertal_p <- plot_om_cont(row_i, pubertal, "pubertal_status",
+                                   "Pubertal\nStage")
+        # Sex
+        sex_p <- plot_om_bar(row_i, sex, "sex", "Sex")
+        # Headaches
+        headache_p <- plot_om_bar(row_i, headache, "headache", "Headaches")
+        # Number of injuries
+        mtbi_count_p <- plot_om_bar(row_i, mtbi_count, "mtbi_count",
+                                     "mTBI\nCount")
+        # Loneliness
+        friend_p1 <- plot_om_cont(row_i, loneliness, "ss_friend",
+                     "Same Sex\nFriends")
+        friend_p2 <- plot_om_cont(row_i, loneliness, "ss_close_friend",
+                     "Same Sex\nClose Friends")
+        friend_p3 <- plot_om_cont(row_i, loneliness, "os_friend",
+                     "Opposite Sex\nFriends")
+        friend_p4 <- plot_om_cont(row_i, loneliness, "os_close_friend",
+                     "Opposite Sex\nClose Friends")
+        # Screentime
+        wknd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+                     "Weekend\nScreentime")
+        wkd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wkday_hrs",
+                     "Weekday\nScreentime")
+        # Exercise
+        exercise_p <- plot_om_cont(row_i, exercise, "physical_activity",
+            "Exercise level")
+        # NIHTBX
+        pattern_p <- plot_om_cont(row_i, pattern, "nihtbx_pattern_fc",
+                     "NIHTBX\nPattern Comparison")
+        # NIH Cardsort
+        card_p <- plot_om_cont(row_i, cardsort, "nihtbx_cardsort_fc",
+                     "NIHTBX\nCard Sort")
+        # NIH List
+        list_p <- plot_om_cont(row_i, list, "nihtbx_list_fc",
+                     "NIHTBX\nList Sort")
+        ## Sports and Activities
+        sa_p1 <- plot_om_cont(row_i, sports, "organized_school_activities",
+                     "Activities organized\nwithin school")
+        sa_p2 <- plot_om_cont(row_i, sports, "organized_outside_activities",
+                     "Activities organized\noutside of school")
+        sa_p3 <- plot_om_cont(row_i, sports, "private_instruction_activities",
+                     "Activities with\nprivate instruction")
+        sa_p4 <- plot_om_cont(row_i, sports, "p12_activities",
+                     "Activities in\nthe last year")
+        # Prosocial behaviour
+        proso_p1 <- plot_om_bar(row_i, prosocial, "q1",
+                    "Care about \nothers'\nfeelings")
+        proso_p2 <- plot_om_bar(row_i, prosocial, "q2",
+                    "Help hurt, upset, \nor sick people")
+        proso_p3 <- plot_om_bar(row_i, prosocial, "q3",
+                    "Often offer\nto help")
+        # rsFMRI
+        # gord_cor
+        gord_cor_p <- pheatmap_om_matrix(row_i, gord_cor, binary = TRUE,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical correlations (rs-fMRI)")[[4]]
+        ## gord_var
+        gord_var_p <- pheatmap_om_matrix(row_i, gord_var,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical variations (rs-fMRI))")[[4]]
+        ### subc_cor
+        subc_cor_p <- pheatmap_om_matrix(row_i, subc_cor, binary = TRUE,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical correlations (rs-fMRI)")[[4]]
+        ## subc_var
+        subc_var_p <- pheatmap_om_matrix(row_i, subc_var,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical variations (rs-fMRI)")[[4]]
+        # Other MRI
+        ## dMRI
+        wmnd_p <- pheatmap_om_matrix(
+            row_i, wmnd, binary = FALSE,
+            legend = FALSE,
+            cw = 50,
+            ch = 2,
+            main = "White Matter Neurite Densities")[[4]]
+        ## cort_sa
+        cort_sa_p <- pheatmap_om_matrix(row_i, cort_sa,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical Surface Area")[[4]]
+        ## cort_t
+        cort_t_p <- pheatmap_om_matrix(row_i, cort_t,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical Thickness")[[4]]
+        ## subc_v
+        subc_v_p <- pheatmap_om_matrix(row_i, subc_v,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical Volume")[[4]]
+        # Non-imaging
+        ## Family function
+        print("cheese")
+        fam_fn_p <- pheatmap_om_matrix(row_i, fam_fn,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Family Function")[[4]]
+        ## Parent psychopathology
+        parent_p <- pheatmap_om_matrix(row_i, parent_psych,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Parent Psychopathology")[[4]]
+        ## SDS
+        sleep_p <- pheatmap_om_matrix(row_i, sds_sleep_df,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Sleeping issues")[[4]]
+        ## Sports and Activities
+        sports_p <- pheatmap_om_matrix(row_i, sports,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Sports and Activities")[[4]]
+        #
+        # Grid creation
+        #
+        grid_rsfmri <- gridExtra::arrangeGrob(
+            gord_var_p,
+            subc_cor_p,
+            gord_cor_p,
+            subc_var_p)
+        ggplot2::ggsave(file = r_path,
+                        grid_rsfmri,
+                        width = 20,
+                        height = 30)
+        grid_other_mri <- gridExtra::arrangeGrob(
+            wmnd_p,
+            cort_sa_p,
+            cort_t_p,
+            subc_v_p)
+        ggplot2::ggsave(file = om_path,
+                        grid_other_mri,
+                        width = 20,
+                        height = 20)
+        print("dog")
+        grid_non_imaging <- gridExtra::arrangeGrob(
+            fam_fn_p,
+            parent_p,
+            sleep_p,
+            sports_p)
+        ggplot2::ggsave(file = o_path,
+                        grid_non_imaging,
+                        width = 20,
+                        height = 30)
+        grid <- gridExtra::arrangeGrob(
+            abcdutils::clean_plot(loc_p, c("x")),
+            abcdutils::clean_plot(mech_p, c("x")),
+            abcdutils::clean_plot(dazed_p, c("x")),
+            abcdutils::clean_plot(sex_p, c("x")),
+            abcdutils::clean_plot(headache_p, c("x")),
+            abcdutils::clean_plot(mtbi_count_p, c("x")),
+            abcdutils::clean_plot(proso_p1, c("x")),
+            abcdutils::clean_plot(proso_p2, c("x")),
+            abcdutils::clean_plot(proso_p3, c("x")),
+            abcdutils::clean_plot(sa_p1, c("x")),
+            abcdutils::clean_plot(sa_p2, c("x")),
+            abcdutils::clean_plot(sa_p3, c("x")),
+            abcdutils::clean_plot(sa_p4, c("x")),
+            abcdutils::clean_plot(exercise_p, c("x")),
+            abcdutils::clean_plot(interview_age_p, c("x")),
+            abcdutils::clean_plot(injury_age_p, c("x")),
+            abcdutils::clean_plot(friend_p1, c("x")),
+            abcdutils::clean_plot(friend_p2, c("x")),
+            abcdutils::clean_plot(friend_p3, c("x")),
+            abcdutils::clean_plot(friend_p4, c("x")),
+            abcdutils::clean_plot(wknd_screen_p, c("x")),
+            abcdutils::clean_plot(wkd_screen_p, c("x")),
+            abcdutils::clean_plot(pattern_p, c("x")),
+            abcdutils::clean_plot(card_p, c("x")),
+            abcdutils::clean_plot(list_p, c("x")),
+            abcdutils::clean_plot(pubertal_p, c("x"))
+        )
+        ggplot2::ggsave(file = g_path, grid, width = 45, height = 30)
+    }
+}
+#
+input_characterization_plots_g_f2 <- function(om,
+                                         loc = NULL,
+                                         mechanism = NULL,
+                                         dazed = NULL,
+                                         income = NULL,
+                                         interview_age = NULL,
+                                         mtbi_age = NULL,
+                                         pubertal = NULL,
+                                         race = NULL,
+                                         headache = NULL,
+                                         mtbi_count = NULL,
+                                         wmnd = NULL,
+                                         gord_cor = NULL,
+                                         gord_var = NULL,
+                                         subc_cor = NULL,
+                                         subc_var = NULL,
+                                         cort_sa = NULL,
+                                         cort_t = NULL,
+                                         subc_v = NULL,
+                                         loneliness = NULL,
+                                         screentime = NULL,
+                                         fam_fn = NULL,
+                                         sports = NULL,
+                                         prosocial = NULL,
+                                         parent_psych = NULL,
+                                         exercise = NULL,
+                                         pattern = NULL,
+                                         cardsort = NULL,
+                                         list = NULL,
+                                         sleep = NULL,
+                                         general_inp_path,
+                                         rsfmri_path,
+                                         other_mri_path,
+                                         other_heatmap_path) {
+    for (i in seq_len(nrow(om))) {
+        row_i <- om[i, ]
+        sig <- row_i$"significance"
+        id <- row_i$"row_id"
+        prefix <- paste0("row_", id, "_", sig)
+        g_path <- gsub("gen", paste0(prefix, "_gen"), general_inp_path)
+        r_path <- gsub("rsfmri", paste0(prefix, "_rsfmri"), rsfmri_path)
+        om_path <- gsub("other_mri",
+                        paste0(prefix, "_other_mri"), other_mri_path)
+        o_path <- gsub("other_in",
+                       paste0(prefix, "_other_in"), other_heatmap_path)
+        # LOC
+        loc_p <- plot_om_bar(row_i, loc, "latest_mtbi_loc", "LOC")
+        # Mechanism
+        mech_p <- plot_om_bar(row_i, mechanism, "latest_mtbi_mechanism", "MOI")
+        # Dazed
+        dazed_p <- plot_om_bar(row_i, dazed, "latest_mtbi_mem_daze", "Dazed")
+        # Income
+        income_p <- plot_om_bar(row_i, income, "household_income", "Income")
+        # Age at interview
+        interview_age_p <- plot_om_cont(row_i, interview_age, "interview_age",
+                               "Interview Age")
+        # Age at injury
+        injury_age_p <- plot_om_cont(row_i, mtbi_age, "latest_mtbi_age",
+                                     "Injury Age")
+        # Pubertal status
+        pubertal_p <- plot_om_cont(row_i, pubertal, "pubertal_status",
+                                   "Pubertal\nStage")
+        # Race
+        race_p <- plot_om_bar(row_i, race, "race", "Race")
+        # Headaches
+        headache_p <- plot_om_bar(row_i, headache, "headache", "Headaches")
+        # Number of injuries
+        mtbi_count_p <- plot_om_bar(row_i, mtbi_count, "mtbi_count",
+                                     "mTBI\nCount")
+        # Loneliness
+        friend_p1 <- plot_om_cont(row_i, loneliness, "ss_friend",
+                     "Same Sex\nFriends")
+        friend_p2 <- plot_om_cont(row_i, loneliness, "ss_close_friend",
+                     "Same Sex\nClose Friends")
+        friend_p3 <- plot_om_cont(row_i, loneliness, "os_friend",
+                     "Opposite Sex\nFriends")
+        friend_p4 <- plot_om_cont(row_i, loneliness, "os_close_friend",
+                     "Opposite Sex\nClose Friends")
+        # Screentime
+        wknd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+                     "Weekend\nScreentime")
+        wkd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wkday_hrs",
+                     "Weekday\nScreentime")
+        # Exercise
+        exercise_p <- plot_om_cont(row_i, exercise, "physical_activity",
+            "Exercise level")
+        # NIHTBX
+        pattern_p <- plot_om_cont(row_i, pattern, "nihtbx_pattern_fc",
+                     "NIHTBX\nPattern Comparison")
+        # NIH Cardsort
+        card_p <- plot_om_cont(row_i, cardsort, "nihtbx_cardsort_fc",
+                     "NIHTBX\nCard Sort")
+        # NIH List
+        list_p <- plot_om_cont(row_i, list, "nihtbx_list_fc",
+                     "NIHTBX\nList Sort")
+        ## Sports and Activities
+        sa_p1 <- plot_om_cont(row_i, sports, "organized_school_activities",
+                     "Activities organized\nwithin school")
+        sa_p2 <- plot_om_cont(row_i, sports, "organized_outside_activities",
+                     "Activities organized\noutside of school")
+        sa_p3 <- plot_om_cont(row_i, sports, "private_instruction_activities",
+                     "Activities with\nprivate instruction")
+        sa_p4 <- plot_om_cont(row_i, sports, "p12_activities",
+                     "Activities in\nthe last year")
+        # Prosocial behaviour
+        proso_p1 <- plot_om_bar(row_i, prosocial, "q1",
+                    "Care about \nothers'\nfeelings")
+        proso_p2 <- plot_om_bar(row_i, prosocial, "q2",
+                    "Help hurt, upset, \nor sick people")
+        proso_p3 <- plot_om_bar(row_i, prosocial, "q3",
+                    "Often offer\nto help")
+        # rsFMRI
+        # gord_cor
+        gord_cor_p <- pheatmap_om_matrix(row_i, gord_cor, binary = TRUE,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical correlations (rs-fMRI)")[[4]]
+        ## gord_var
+        gord_var_p <- pheatmap_om_matrix(row_i, gord_var,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical variations (rs-fMRI))")[[4]]
+        ### subc_cor
+        subc_cor_p <- pheatmap_om_matrix(row_i, subc_cor, binary = TRUE,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical correlations (rs-fMRI)")[[4]]
+        ## subc_var
+        subc_var_p <- pheatmap_om_matrix(row_i, subc_var,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical variations (rs-fMRI)")[[4]]
+        # Other MRI
+        ## dMRI
+        wmnd_p <- pheatmap_om_matrix(
+            row_i, wmnd, binary = FALSE,
+            legend = FALSE,
+            cw = 50,
+            ch = 2,
+            main = "White Matter Neurite Densities")[[4]]
+        ## cort_sa
+        cort_sa_p <- pheatmap_om_matrix(row_i, cort_sa,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical Surface Area")[[4]]
+        ## cort_t
+        cort_t_p <- pheatmap_om_matrix(row_i, cort_t,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical Thickness")[[4]]
+        ## subc_v
+        subc_v_p <- pheatmap_om_matrix(row_i, subc_v,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical Volume")[[4]]
+        # Non-imaging
+        ## Family function
+        print("cheese")
+        fam_fn_p <- pheatmap_om_matrix(row_i, fam_fn,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Family Function")[[4]]
+        ## Parent psychopathology
+        parent_p <- pheatmap_om_matrix(row_i, parent_psych,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Parent Psychopathology")[[4]]
+        ## SDS
+        sleep_p <- pheatmap_om_matrix(row_i, sds_sleep_df,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Sleeping issues")[[4]]
+        ## Sports and Activities
+        sports_p <- pheatmap_om_matrix(row_i, sports,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Sports and Activities")[[4]]
+        #
+        # Grid creation
+        #
+        grid_rsfmri <- gridExtra::arrangeGrob(
+            gord_var_p,
+            subc_cor_p,
+            gord_cor_p,
+            subc_var_p)
+        ggplot2::ggsave(file = r_path,
+                        grid_rsfmri,
+                        width = 20,
+                        height = 30)
+        grid_other_mri <- gridExtra::arrangeGrob(
+            wmnd_p,
+            cort_sa_p,
+            cort_t_p,
+            subc_v_p)
+        ggplot2::ggsave(file = om_path,
+                        grid_other_mri,
+                        width = 20,
+                        height = 20)
+        print("dog")
+        grid_non_imaging <- gridExtra::arrangeGrob(
+            fam_fn_p,
+            parent_p,
+            sleep_p,
+            sports_p)
+        ggplot2::ggsave(file = o_path,
+                        grid_non_imaging,
+                        width = 20,
+                        height = 30)
+        grid <- gridExtra::arrangeGrob(
+            abcdutils::clean_plot(loc_p, c("x")),
+            abcdutils::clean_plot(mech_p, c("x")),
+            abcdutils::clean_plot(dazed_p, c("x")),
+            abcdutils::clean_plot(income_p, c("x")),
+            abcdutils::clean_plot(race_p, c("x")),
+            abcdutils::clean_plot(headache_p, c("x")),
+            abcdutils::clean_plot(mtbi_count_p, c("x")),
+            abcdutils::clean_plot(proso_p1, c("x")),
+            abcdutils::clean_plot(proso_p2, c("x")),
+            abcdutils::clean_plot(proso_p3, c("x")),
+            abcdutils::clean_plot(sa_p1, c("x")),
+            abcdutils::clean_plot(sa_p2, c("x")),
+            abcdutils::clean_plot(sa_p3, c("x")),
+            abcdutils::clean_plot(sa_p4, c("x")),
+            abcdutils::clean_plot(exercise_p, c("x")),
+            abcdutils::clean_plot(interview_age_p, c("x")),
+            abcdutils::clean_plot(injury_age_p, c("x")),
+            abcdutils::clean_plot(friend_p1, c("x")),
+            abcdutils::clean_plot(friend_p2, c("x")),
+            abcdutils::clean_plot(friend_p3, c("x")),
+            abcdutils::clean_plot(friend_p4, c("x")),
+            abcdutils::clean_plot(wknd_screen_p, c("x")),
+            abcdutils::clean_plot(wkd_screen_p, c("x")),
+            abcdutils::clean_plot(pattern_p, c("x")),
+            abcdutils::clean_plot(card_p, c("x")),
+            abcdutils::clean_plot(list_p, c("x")),
+            abcdutils::clean_plot(pubertal_p, c("x"))
+        )
+        ggplot2::ggsave(file = g_path, grid, width = 45, height = 30)
+    }
+}
+#
+input_characterization_plots_g_f3 <- function(om,
+                                         loc = NULL,
+                                         mechanism = NULL,
+                                         dazed = NULL,
+                                         interview_age = NULL,
+                                         mtbi_age = NULL,
+                                         pubertal = NULL,
+                                         headache = NULL,
+                                         mtbi_count = NULL,
+                                         wmnd = NULL,
+                                         gord_cor = NULL,
+                                         gord_var = NULL,
+                                         subc_cor = NULL,
+                                         subc_var = NULL,
+                                         cort_sa = NULL,
+                                         cort_t = NULL,
+                                         subc_v = NULL,
+                                         loneliness = NULL,
+                                         screentime = NULL,
+                                         fam_fn = NULL,
+                                         sports = NULL,
+                                         prosocial = NULL,
+                                         parent_psych = NULL,
+                                         exercise = NULL,
+                                         pattern = NULL,
+                                         cardsort = NULL,
+                                         list = NULL,
+                                         sleep = NULL,
+                                         general_inp_path,
+                                         rsfmri_path,
+                                         other_mri_path,
+                                         other_heatmap_path) {
+    for (i in seq_len(nrow(om))) {
+        row_i <- om[i, ]
+        sig <- row_i$"significance"
+        id <- row_i$"row_id"
+        prefix <- paste0("row_", id, "_", sig)
+        g_path <- gsub("gen", paste0(prefix, "_gen"), general_inp_path)
+        r_path <- gsub("rsfmri", paste0(prefix, "_rsfmri"), rsfmri_path)
+        om_path <- gsub("other_mri",
+                        paste0(prefix, "_other_mri"), other_mri_path)
+        o_path <- gsub("other_in",
+                       paste0(prefix, "_other_in"), other_heatmap_path)
+        # LOC
+        loc_p <- plot_om_bar(row_i, loc, "latest_mtbi_loc", "LOC")
+        # Mechanism
+        mech_p <- plot_om_bar(row_i, mechanism, "latest_mtbi_mechanism", "MOI")
+        # Dazed
+        dazed_p <- plot_om_bar(row_i, dazed, "latest_mtbi_mem_daze", "Dazed")
+        # Age at interview
+        interview_age_p <- plot_om_cont(row_i, interview_age, "interview_age",
+                               "Interview Age")
+        # Age at injury
+        injury_age_p <- plot_om_cont(row_i, mtbi_age, "latest_mtbi_age",
+                                     "Injury Age")
+        # Pubertal status
+        pubertal_p <- plot_om_cont(row_i, pubertal, "pubertal_status",
+                                   "Pubertal\nStage")
+        # Headaches
+        headache_p <- plot_om_bar(row_i, headache, "headache", "Headaches")
+        # Number of injuries
+        mtbi_count_p <- plot_om_bar(row_i, mtbi_count, "mtbi_count",
+                                     "mTBI\nCount")
+        # Loneliness
+        friend_p1 <- plot_om_cont(row_i, loneliness, "ss_friend",
+                     "Same Sex\nFriends")
+        friend_p2 <- plot_om_cont(row_i, loneliness, "ss_close_friend",
+                     "Same Sex\nClose Friends")
+        friend_p3 <- plot_om_cont(row_i, loneliness, "os_friend",
+                     "Opposite Sex\nFriends")
+        friend_p4 <- plot_om_cont(row_i, loneliness, "os_close_friend",
+                     "Opposite Sex\nClose Friends")
+        # Screentime
+        wknd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wknd_hrs",
+                     "Weekend\nScreentime")
+        wkd_screen_p <- plot_om_cont(row_i, screentime, "screentime_wkday_hrs",
+                     "Weekday\nScreentime")
+        # Exercise
+        exercise_p <- plot_om_cont(row_i, exercise, "physical_activity",
+            "Exercise level")
+        # NIHTBX
+        pattern_p <- plot_om_cont(row_i, pattern, "nihtbx_pattern_fc",
+                     "NIHTBX\nPattern Comparison")
+        # NIH Cardsort
+        card_p <- plot_om_cont(row_i, cardsort, "nihtbx_cardsort_fc",
+                     "NIHTBX\nCard Sort")
+        # NIH List
+        list_p <- plot_om_cont(row_i, list, "nihtbx_list_fc",
+                     "NIHTBX\nList Sort")
+        ## Sports and Activities
+        sa_p1 <- plot_om_cont(row_i, sports, "organized_school_activities",
+                     "Activities organized\nwithin school")
+        sa_p2 <- plot_om_cont(row_i, sports, "organized_outside_activities",
+                     "Activities organized\noutside of school")
+        sa_p3 <- plot_om_cont(row_i, sports, "private_instruction_activities",
+                     "Activities with\nprivate instruction")
+        sa_p4 <- plot_om_cont(row_i, sports, "p12_activities",
+                     "Activities in\nthe last year")
+        # Prosocial behaviour
+        proso_p1 <- plot_om_bar(row_i, prosocial, "q1",
+                    "Care about \nothers'\nfeelings")
+        proso_p2 <- plot_om_bar(row_i, prosocial, "q2",
+                    "Help hurt, upset, \nor sick people")
+        proso_p3 <- plot_om_bar(row_i, prosocial, "q3",
+                    "Often offer\nto help")
+        # rsFMRI
+        # gord_cor
+        gord_cor_p <- pheatmap_om_matrix(row_i, gord_cor, binary = TRUE,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical correlations (rs-fMRI)")[[4]]
+        ## gord_var
+        gord_var_p <- pheatmap_om_matrix(row_i, gord_var,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical variations (rs-fMRI))")[[4]]
+        ### subc_cor
+        subc_cor_p <- pheatmap_om_matrix(row_i, subc_cor, binary = TRUE,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical correlations (rs-fMRI)")[[4]]
+        ## subc_var
+        subc_var_p <- pheatmap_om_matrix(row_i, subc_var,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical variations (rs-fMRI)")[[4]]
+        # Other MRI
+        ## dMRI
+        wmnd_p <- pheatmap_om_matrix(
+            row_i, wmnd, binary = FALSE,
+            legend = FALSE,
+            cw = 50,
+            ch = 2,
+            main = "White Matter Neurite Densities")[[4]]
+        ## cort_sa
+        cort_sa_p <- pheatmap_om_matrix(row_i, cort_sa,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical Surface Area")[[4]]
+        ## cort_t
+        cort_t_p <- pheatmap_om_matrix(row_i, cort_t,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Cortical Thickness")[[4]]
+        ## subc_v
+        subc_v_p <- pheatmap_om_matrix(row_i, subc_v,
+            legend = FALSE,
+            cw = 50,
+            ch = 3,
+            main = "Subcortical Volume")[[4]]
+        # Non-imaging
+        ## Family function
+        print("cheese")
+        fam_fn_p <- pheatmap_om_matrix(row_i, fam_fn,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Family Function")[[4]]
+        ## Parent psychopathology
+        parent_p <- pheatmap_om_matrix(row_i, parent_psych,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Parent Psychopathology")[[4]]
+        ## SDS
+        sleep_p <- pheatmap_om_matrix(row_i, sds_sleep_df,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Sleeping issues")[[4]]
+        ## Sports and Activities
+        sports_p <- pheatmap_om_matrix(row_i, sports,
+            legend = FALSE,
+            cw = 50,
+            ch = 30,
+            show_row = TRUE,
+            main = "Sports and Activities")[[4]]
+        #
+        # Grid creation
+        #
+        grid_rsfmri <- gridExtra::arrangeGrob(
+            gord_var_p,
+            subc_cor_p,
+            gord_cor_p,
+            subc_var_p)
+        ggplot2::ggsave(file = r_path,
+                        grid_rsfmri,
+                        width = 20,
+                        height = 30)
+        grid_other_mri <- gridExtra::arrangeGrob(
+            wmnd_p,
+            cort_sa_p,
+            cort_t_p,
+            subc_v_p)
+        ggplot2::ggsave(file = om_path,
+                        grid_other_mri,
+                        width = 20,
+                        height = 20)
+        print("dog")
+        grid_non_imaging <- gridExtra::arrangeGrob(
+            fam_fn_p,
+            parent_p,
+            sleep_p,
+            sports_p)
+        ggplot2::ggsave(file = o_path,
+                        grid_non_imaging,
+                        width = 20,
+                        height = 30)
+        grid <- gridExtra::arrangeGrob(
+            abcdutils::clean_plot(loc_p, c("x")),
+            abcdutils::clean_plot(mech_p, c("x")),
+            abcdutils::clean_plot(dazed_p, c("x")),
+            abcdutils::clean_plot(headache_p, c("x")),
+            abcdutils::clean_plot(mtbi_count_p, c("x")),
+            abcdutils::clean_plot(proso_p1, c("x")),
+            abcdutils::clean_plot(proso_p2, c("x")),
+            abcdutils::clean_plot(proso_p3, c("x")),
+            abcdutils::clean_plot(sa_p1, c("x")),
+            abcdutils::clean_plot(sa_p2, c("x")),
+            abcdutils::clean_plot(sa_p3, c("x")),
+            abcdutils::clean_plot(sa_p4, c("x")),
+            abcdutils::clean_plot(exercise_p, c("x")),
+            abcdutils::clean_plot(interview_age_p, c("x")),
+            abcdutils::clean_plot(injury_age_p, c("x")),
+            abcdutils::clean_plot(friend_p1, c("x")),
+            abcdutils::clean_plot(friend_p2, c("x")),
+            abcdutils::clean_plot(friend_p3, c("x")),
+            abcdutils::clean_plot(friend_p4, c("x")),
+            abcdutils::clean_plot(wknd_screen_p, c("x")),
+            abcdutils::clean_plot(wkd_screen_p, c("x")),
+            abcdutils::clean_plot(pattern_p, c("x")),
+            abcdutils::clean_plot(card_p, c("x")),
+            abcdutils::clean_plot(list_p, c("x")),
+            abcdutils::clean_plot(pubertal_p, c("x"))
+        )
+        ggplot2::ggsave(file = g_path, grid, width = 45, height = 30)
+    }
+}
 
+q <- top_oms_0_0_train[1, ]
 
 train_dfs <- lapply(data_list_train, function(x) x$"data")
 
-train_dfs[[1]]
+plot_om_bar(q, train_dfs[[10]], "headache", "Headaches", save = fig_path("hi.png"))
 
-summarize_dl(data_list_train)
 
+# You need to run this!
+nihtbx_pattern$subjectkey <- paste0("subject_", nihtbx_pattern$subjectkey)
+nihtbx_cardsort$subjectkey <- paste0("subject_", nihtbx_cardsort$subjectkey)
+nihtbx_list$subjectkey <- paste0("subject_", nihtbx_list$subjectkey)
+sds_sleep_df$subjectkey <- paste0("subject_", sds_sleep_df$subjectkey)
+
+top_oms_0_0_train
+
+# All vars
 input_characterization_plots_g(top_oms_0_0_train,
     loc = train_dfs[[1]],
     mechanism = train_dfs[[2]],
@@ -842,13 +1678,262 @@ input_characterization_plots_g(top_oms_0_0_train,
     prosocial = train_dfs[[24]],
     parent_psych = train_dfs[[25]],
     exercise = train_dfs[[26]],
-    #pattern = nihtbx_pattern,
-    #cardsort = nihtbx_cardsort,
-    #list = nihtbx_list,
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
     general_inp_path = fig_path("general_inputs_train.png", date = TRUE),
     rsfmri_path = fig_path("rsfmri_inputs_train.png", date = TRUE),
     other_mri_path = fig_path("other_mri_train.png", date = TRUE),
     other_heatmap_path = fig_path("other_input_train.png", date = TRUE))
+#
+# All vars
+input_characterization_plots_g(top_oms_tight_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    income = train_dfs[[4]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    race = train_dfs[[8]],
+    sex = train_dfs[[9]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_t.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_t.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_t.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_t.png", date = TRUE))
+#
+# No race or income
+input_characterization_plots_g_f(top_oms_fair_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    sex = train_dfs[[9]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_f.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_f.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_f.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_f.png", date = TRUE))
+#
+# No race or income
+input_characterization_plots_g_f(top_oms_tight_fair_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    sex = train_dfs[[9]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_tf.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_tf.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_tf.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_tf.png", date = TRUE))
+#
+# No sex
+input_characterization_plots_g_f2(top_oms_fair2_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    income = train_dfs[[4]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    race = train_dfs[[8]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_f2.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_f2.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_f2.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_f2.png", date = TRUE))
+#
+# No sex
+input_characterization_plots_g_f2(top_oms_tight_fair2_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    income = train_dfs[[4]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    race = train_dfs[[8]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_tf2.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_tf2.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_tf2.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_tf2.png", date = TRUE))
+#
+# No race, income, or sex
+input_characterization_plots_g_f3(top_oms_fair3_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_f3.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_f3.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_f3.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_f3.png", date = TRUE))
+#
+# No race, income, or sex
+input_characterization_plots_g_f3(top_oms_tight_fair3_0_0_train,
+    loc = train_dfs[[1]],
+    mechanism = train_dfs[[2]],
+    dazed = train_dfs[[3]],
+    interview_age = train_dfs[[5]],
+    mtbi_age = train_dfs[[6]],
+    pubertal = train_dfs[[7]],
+    headache = train_dfs[[10]],
+    mtbi_count = train_dfs[[11]],
+    wmnd = train_dfs[[12]],
+    gord_cor = train_dfs[[13]],
+    gord_var = train_dfs[[14]],
+    subc_cor = train_dfs[[15]],
+    subc_var = train_dfs[[16]],
+    cort_sa = train_dfs[[17]],
+    cort_t = train_dfs[[18]],
+    subc_v = train_dfs[[19]],
+    loneliness = train_dfs[[20]],
+    screentime = train_dfs[[21]],
+    fam_fn = train_dfs[[22]],
+    sports = train_dfs[[23]],
+    prosocial = train_dfs[[24]],
+    parent_psych = train_dfs[[25]],
+    exercise = train_dfs[[26]],
+    pattern = nihtbx_pattern,
+    cardsort = nihtbx_cardsort,
+    list = nihtbx_list,
+    sleep = sds_sleep_df,
+    general_inp_path = fig_path("general_inputs_train_tf3.png", date = TRUE),
+    rsfmri_path = fig_path("rsfmri_inputs_train_tf3.png", date = TRUE),
+    other_mri_path = fig_path("other_mri_train_tf3.png", date = TRUE),
+    other_heatmap_path = fig_path("other_input_train_tf3.png", date = TRUE))
+#
 
 test_dfs <- lapply(data_list_test, function(x) x$"data")
 
