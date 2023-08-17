@@ -19,6 +19,17 @@ table(mh_mtbi_count$mtbi_count)
 
 # Plot of the times since each child had their latest mTBI
 mtbi_detailed <- read_csv(here(paste0(misc_path, "mtbi_detailed.csv")))
+
+# plotting function
+scabcd_hist <- function(df, xval, xlabel = "", title = "", size = 20) {
+    ggplot2::ggplot(df, ggplot2::aes_string(x = xval)) +
+        ggplot2::geom_histogram(color = "darkblue", fill = "lightblue") +
+        ggplot2::ggtitle(title) +
+        ggplot2::xlab(xlabel) +
+        ggplot2::ylab("Count") +
+        ggplot2::theme_light(base_size = size)
+}
+
 scabcd_hist(mtbi_detailed,
             title = "Histogram of times since latest mTBI",
             xval = "latest_mtbi_mpi",
@@ -27,6 +38,26 @@ scabcd_hist(mtbi_detailed,
 
 ```{r eval = FALSE, echo = FALSE}
 # Export the figure
+
+scabcd_ggsave <- function(path, plotname) {
+    carbon_path <- paste0(path, plotname)
+    repo_path <- paste0("figures/abcd/", plotname)
+    print("Warning: This will overwrite files located at:")
+    print(paste0("[1]: ", here::here(carbon_path)))
+    print(paste0("[2]: ", here::here(repo_path)))
+    proceed <- readline(prompt = "Proceed? [N/y]: ")
+    if (proceed == "y") {
+        ## For carbon
+        ggplot2::ggsave(here::here(carbon_path),
+            width = 10,
+            height = 10)
+        # For this repo
+        ggplot2::ggsave(here::here(repo_path),
+            width = 10,
+            height = 10)
+    }
+}
+
 scabcd_ggsave(path = "data/abcd/processed/prashanth/figures-and-tables/",
               plotname = "time_since_latest_mtbi_full.png")
 ```
