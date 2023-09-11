@@ -1,60 +1,3 @@
-# R Session Information
-
-The analysis in this script were last completed on August 9th, 2023, under the following conditions:
-
-- R version 4.3.1 (2023-06-16)
-- Platform: x86_64-pc-linux-gnu (64-bit)
-- OS: CentOS Linux 7 (Core)
-- Packages:
-    - attached base packages:
-        - stats
-        - graphics
-        - grDevices
-        - utils
-        - datasets
-        - methods
-        - base
-    - other attached packages:
-        - abcdutils_0.1.1
-        - knitr_1.43
-        - here_1.0.1
-        - dplyr_1.1.2
-        - readr_2.1.4
-        - ggplot2_3.4.2
-    - loaded via a namespace:
-        - crayon_1.5.2
-        - vctrs_0.6.3
-        - cli_3.6.1
-        - rlang_1.1.1
-        - xfun_0.39
-        - generics_0.1.3
-        - data.table_1.14.8
-        - bit_4.0.5
-        - glue_1.6.2
-        - colorspace_2.1-0
-        - rprojroot_2.0.3
-        - hms_1.1.3
-        - scales_1.2.1
-        - fansi_1.0.4
-        - grid_4.3.1
-        - munsell_0.5.0
-        - tibble_3.2.1
-        - tzdb_0.4.0
-        - lifecycle_1.0.3
-        - compiler_4.3.1
-        - pkgconfig_2.0.3
-        - R6_2.5.1
-        - tidyselect_1.2.0
-        - utf8_1.2.3
-        - parallel_4.3.1
-        - vroom_1.6.3
-        - pillar_1.9.0
-        - magrittr_2.0.3
-        - bit64_4.0.5
-        - tools_4.3.1
-        - withr_2.5.0
-        - gtable_0.3.3
-
 # Data extraction
 
 ## Subjects
@@ -399,25 +342,54 @@ This would primarily be used for an analysis in which we examined all the 2yfu d
 
 ```{r}
 
+# The age of latest mTBI as of 1 years
 (d_mtbi_age_1_l <- get_mtbi_age(ph_p_otbi, abcd_y_lt, mtbi_subjects_1_not_0, t = 1))
+# The age of latest mTBI as of 2 years
 (d_mtbi_age_2_l <- get_mtbi_age(ph_p_otbi, abcd_y_lt, mtbi_subjects_2_not_0, t = 2))
+
+# Where all longitudinal ages will be stored
 d_mtbi_age_l_l <- data.frame(
     subjectkey = mtbi_subjects_l$subjectkey
 )
-d_mtbi_age_l_l <- (dplyr::full_join(d_mtbi_age_l_l, d_mtbi_age_1_l, by = "subjectkey"))
-d_mtbi_age_l_l <- (dplyr::full_join(q, d_mtbi_age_2_l, by = "subjectkey"))
+
+# Change the names from these dataframes to keep track of where each column
+#  came from
+d_mtbi_age_1_l <- d_mtbi_age_1_l |>
+    dplyr::rename("latest_mtbi_age_1" = "latest_mtbi_age")
+d_mtbi_age_2_l <- d_mtbi_age_2_l |>
+    dplyr::rename("latest_mtbi_age_2" = "latest_mtbi_age")
+
+# Merge everything into one dataframe
+d_mtbi_age_l_l <- dplyr::full_join(
+    d_mtbi_age_l_l,
+    d_mtbi_age_1_l,
+    by = "subjectkey"
+)
+d_mtbi_age_l_l <- dplyr::full_join(
+    d_mtbi_age_l_l,
+    d_mtbi_age_2_l,
+    by = "subjectkey"
+)
+
+colnames(d_mtbi_age_l_l)
+
+# If the 2-year timepoint does not have an mTBI age, the latest mtbi must have
+#  happened at the 1-year timepoint. In the case, take the age from that time.
+#  Otherwise if the 2-year timepoint does have an age, use that age as the
+#  latest mTBI age.
 d_mtbi_age_l_l <- d_mtbi_age_l_l |> dplyr::mutate(
     latest_mtbi_age = dplyr::case_when(
-        is.na(latest_mtbi_age.y) ~ latest_mtbi_age.x,
-        TRUE ~ latest_mtbi_age.y
+        is.na(latest_mtbi_age_2) ~ latest_mtbi_age_1,
+        TRUE ~ latest_mtbi_age_2
     ),
     .keep = "unused"
 )
 
-
 # As this is one of the mTBI injury variables, it is not needed for the
 #  longitudinal analysis checking to see if baseline pre-injury data predicts
 #  post-injury change in behavioural scores.
+
+# LEFT OFF HERE
 
 ## Sex assigned at birth
 (d_sex_0_0 <- get_sex(gish_p_gi, mtbi_subjects_0, t = 0))
@@ -459,11 +431,13 @@ d_race_u_0 <- get_race(
     "condensed_undummied",
     t = 0
 )
+
 ```
 
 Subset and export the demographic input variables:
 
 ```{r}
+
 # Last run July 14th, 2023
 write_csv(d_pubertal_status_0_0, input_path("d_pubertal_status_0_0.csv", TRUE))
 write_csv(d_interview_age_0_0, input_path("d_interview_age_0_0.csv", TRUE))
@@ -490,6 +464,7 @@ write_csv(d_p_gender_u_0, input_path("d_p_gender_u_0", TRUE))
 write_csv(d_y_gender_u_4, input_path("d_y_gender_u_4", TRUE))
 write_csv(d_income_u_0, input_path("d_income_u_0.csv", TRUE))
 write_csv(d_race_u_0, input_path("d_race_u_0.csv", TRUE))
+
 ```
 
 
@@ -1570,3 +1545,53 @@ write_csv(sds_sleep_df_l_0, input_path("sds_sleep_df_l_0.csv", date = TRUE))
 write_csv(sds_sleep_df_l_2, input_path("sds_sleep_df_l_2.csv", date = TRUE))
 write_csv(sds_sleep_df_delta_l, input_path("sds_sleep_df_delta_l.csv", TRUE))
 ```
+
+
+# R Session Information
+
+The analysis in this script were last completed on September 9th, 2023, under the following conditions:
+
+R version 4.3.1 (2023-06-16)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: CentOS Linux 7 (Core)
+
+Matrix products: default
+BLAS:   /hpf/tools/centos7/R/4.3.1/lib64/R/lib/libRblas.so
+LAPACK: /hpf/tools/centos7/R/4.3.1/lib64/R/lib/libRlapack.so;  LAPACK version 3.11.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C
+
+time zone: America/Toronto
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+other attached packages:
+[1] abcdutils_0.1.1 knitr_1.43      here_1.0.1      dplyr_1.1.2
+[5] readr_2.1.4     ggplot2_3.4.2   colorout_1.2-2
+
+loaded via a namespace (and not attached):
+ [1] crayon_1.5.2      vctrs_0.6.3       cli_3.6.1         xfun_0.39
+ [5] rlang_1.1.1       purrr_1.0.1       generics_0.1.3    data.table_1.14.8
+ [9] bit_4.0.5         glue_1.6.2        colorspace_2.1-0  rprojroot_2.0.3
+[13] hms_1.1.3         scales_1.2.1      fansi_1.0.4       grid_4.3.1
+[17] munsell_0.5.0     tibble_3.2.1      tzdb_0.4.0        lifecycle_1.0.3
+[21] compiler_4.3.1    pkgconfig_2.0.3   R6_2.5.1          tidyselect_1.2.0
+[25] utf8_1.2.3        parallel_4.3.1    vroom_1.6.3       pillar_1.9.0
+[29] magrittr_2.0.3    bit64_4.0.5       tools_4.3.1       withr_2.5.0
+[33] gtable_0.3.3
+
+Output obtained from the following command:
+
+```{r eval = FALSE}
+writeLines(capture.output(sessionInfo()), "sessionInfo.txt")
+```
+
+From: https://stackoverflow.com/a/21967272/16626788
