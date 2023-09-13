@@ -22,6 +22,7 @@ library(here)
 #  ?path_maker for more information.
 input_path <- abcdutils::path_maker(here::here(paste0("data/abcd/inputs")))
 raw_path <- abcdutils::path_maker(here::here(paste0("data/abcd/raw")))
+core_path <- abcdutils::path_maker(here::here(paste0("data/abcd/core")))
 misc_path <- abcdutils::path_maker(here::here(paste0("data/abcd/misc")))
 
 # Baseline inputs
@@ -38,9 +39,9 @@ d_interview_age_0_0 <-
 d_mtbi_age_0_0 <-
     read_csv(input_path("2023_09_12_d_mtbi_age_0_0.csv"))
 d_sex_0_0 <-
-    read_csv(input_path("2023_09_12_d_sex_0_0.csv"))
+    read_csv(input_path("2023_09_13_d_sex_0_0.csv"))
 d_gender_0_0 <-
-    read_csv(input_path("2023_09_12_d_p_gender_0_0.csv"))
+    read_csv(input_path("2023_09_13_d_p_gender_0_0.csv"))
 d_income_0_0 <-
     read_csv(input_path("2023_09_12_d_income_0_0.csv"))
 d_race_0_0 <-
@@ -118,29 +119,48 @@ nihtbx_cardsort_fc_0_0 <- read_csv(
 
 ```
 
-
 ## Neuroimaging quality control
 
-```{r eval = FALSE}
-mriqcrp10301 <- read_delim(raw_path("mriqcrp10301.txt"))
+First identify which subjects have valid neuroimaging data.
 
-mri_y_qc_raw_smr_t1 <- abcd_load(raw_path("mri_y_qc_raw_smr_t1.csv"))
-mri_y_qc_raw_smr_t2 <- abcd_load(raw_path("mri_y_qc_raw_smr_t2.csv"))
-mri_y_qc_raw_rsfmr <- abcd_load(raw_path("mri_y_qc_raw_rsfmr.csv"))
-mri_y_qc_raw_dmr <- abcd_load(raw_path("mri_y_qc_raw_dmr.csv"))
+```{r eval = FALSE}
+
+mri_y_qc_raw_smr_t1 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t1.csv"))
+mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
+mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
+mri_y_qc_raw_dmr <- abcd_load(core_path("imaging/mri_y_qc_raw_dmr.csv"))
 
 # Obtaining the QC'd subjects with complete neuroimaging data
-rm_gord_cor_qc_0_0 <-
-    abcdutils::qc_rsfmri(rm_gord_cor_0_0, mri_y_qc_raw_rsfmr, t = 0, no_na = TRUE)
-rm_gord_var_qc_0_0 <-
-    abcdutils::qc_rsfmri(rm_gord_var_0_0, mri_y_qc_raw_rsfmr, t = 0, no_na = TRUE)
-rm_subc_cor_qc_0_0 <-
-    abcdutils::qc_rsfmri(rm_subc_cor_0_0, mri_y_qc_raw_rsfmr, t = 0, no_na = TRUE)
-rm_subc_var_qc_0_0 <-
-    abcdutils::qc_rsfmri(rm_subc_var_0_0, mri_y_qc_raw_rsfmr, t = 0, no_na = TRUE)
-dm_all_wmnd_qc_0_0 <-
-    abcdutils::qc_dmri(dm_all_wmnd_0_0, mri_y_qc_raw_dmr, t = 0, no_na = TRUE)
-
+rm_gord_cor_qc_0_0 <- abcdutils::qc_rsfmri(
+    rm_gord_cor_0_0,
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    no_na = TRUE
+)
+rm_gord_var_qc_0_0 <- abcdutils::qc_rsfmri(
+    rm_gord_var_0_0,
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    no_na = TRUE
+)
+rm_subc_cor_qc_0_0 <- abcdutils::qc_rsfmri(
+    rm_subc_cor_0_0,
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    no_na = TRUE
+)
+rm_subc_var_qc_0_0 <- abcdutils::qc_rsfmri(
+    rm_subc_var_0_0,
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    no_na = TRUE
+)
+dm_all_wmnd_qc_0_0 <- abcdutils::qc_dmri(
+    dm_all_wmnd_0_0,
+    mri_y_qc_raw_dmr,
+    t = 0,
+    no_na = TRUE
+)
 sm_cort_sa_qc_0_0 <- abcdutils::qc_smri(
     sm_cort_sa_0_0,
     mri_y_qc_raw_smr_t1,
@@ -171,7 +191,187 @@ write_csv(dm_all_wmnd_qc_0_0, input_path("dm_all_wmnd_qc_0_0.csv", TRUE))
 write_csv(sm_cort_sa_qc_0_0, input_path("sm_cort_sa_qc_0_0.csv", TRUE))
 write_csv(sm_cort_t_qc_0_0, input_path("sm_cort_t_qc_0_0.csv", TRUE))
 write_csv(sm_subc_v_qc_0_0, input_path("sm_subc_v_qc_0_0.csv", TRUE))
+
 ```
+
+# Assigning train and test splits
+
+To avoid having training and testing data inform each other during imputation, we assign the splits prior to the imputation.
+
+
+
+
+# Imputing missing data
+
+SNF requires complete data as input for integration.
+
+We face a few oddities that may impact the validity of using a multiple imputation approach:
+
+Neuroimaging data, which accounts for the majority of the individual features, are either completely removed or completely present for most subjects.
+We proceed by not including those subjects who are missing neuroimaging data or who have neuroimaging data that did not pass checks for quality control.
+
+Though this work is an exploratory clustering analysis that is designed to reveal insights about patterns across all variables, the experimental design used focuses on those insights particular relevant to better understanding behavioural impairments following concussion.
+Our post-concussion assessments of behavioural impairment come from the CBCL and SDS.
+CBCL data, which comprises a wide set of features, is either completely missing or completely present.
+
+```{r}
+
+full_baseline_df_list <- list(
+    as_mtbi_mem_daze_0_0,
+    as_mtbi_mechanism_0_0,
+    as_mtbi_loc_0_0,
+    d_pubertal_status_0_0,
+    d_interview_age_0_0,
+    d_mtbi_age_0_0,
+    d_sex_0_0,
+    d_gender_0_0,
+    d_income_0_0,
+    d_race_0_0,
+    mh_headaches_0_0,
+    mh_mtbi_count_0_0,
+    sm_subc_v_qc_0_0,
+    sm_cort_t_qc_0_0,
+    sm_cort_sa_qc_0_0,
+    dm_all_wmnd_qc_0_0,
+    rm_gord_cor_qc_0_0,
+    rm_subc_cor_qc_0_0,
+    rm_gord_var_qc_0_0,
+    rm_subc_var_qc_0_0,
+    p_loneliness_0_0,
+    p_screen_time_0_0,
+    p_sports_0_0,
+    p_exercise_0_0,
+    p_prosocial_0_0,
+    p_family_function_0_0,
+    p_parent_psych_0_0,
+    cbcl_anxdep_ss_0_0,
+    cbcl_withdep_ss_0_0,
+    cbcl_somatic_ss_0_0,
+    cbcl_social_ss_0_0,
+    cbcl_thought_ss_0_0,
+    cbcl_attention_ss_0_0,
+    cbcl_rulebreak_ss_0_0,
+    cbcl_aggressive_ss_0_0,
+    sds_total_probs_0_0,
+    nihtbx_list_fc_0_0,
+    nihtbx_pattern_fc_0_0,
+    nihtbx_cardsort_fc_0_0
+)
+
+full_baseline_df <- abcdutils::merge_df_list(
+    full_baseline_df_list,
+    join = "full"
+)
+
+no_imaging_baseline_df_list <- list(
+    as_mtbi_mem_daze_0_0,
+    as_mtbi_mechanism_0_0,
+    as_mtbi_loc_0_0,
+    d_pubertal_status_0_0,
+    d_interview_age_0_0,
+    d_mtbi_age_0_0,
+    d_sex_0_0,
+    d_gender_0_0,
+    d_income_0_0,
+    d_race_0_0,
+    mh_headaches_0_0,
+    mh_mtbi_count_0_0,
+    p_loneliness_0_0,
+    p_screen_time_0_0,
+    p_sports_0_0,
+    p_exercise_0_0,
+    p_prosocial_0_0,
+    p_family_function_0_0,
+    p_parent_psych_0_0,
+    cbcl_anxdep_ss_0_0,
+    cbcl_withdep_ss_0_0,
+    cbcl_somatic_ss_0_0,
+    cbcl_social_ss_0_0,
+    cbcl_thought_ss_0_0,
+    cbcl_attention_ss_0_0,
+    cbcl_rulebreak_ss_0_0,
+    cbcl_aggressive_ss_0_0,
+    sds_total_probs_0_0,
+    nihtbx_list_fc_0_0,
+    nihtbx_pattern_fc_0_0,
+    nihtbx_cardsort_fc_0_0
+)
+
+no_imaging_baseline_df <- abcdutils::merge_df_list(
+    no_imaging_baseline_df_list,
+    join = "full"
+)
+
+
+colnames(no_imaging_baseline_df)[colSums(is.na(no_imaging_baseline_df)) > 0]
+
+na.omit(no_imaging_baseline_df)
+
+
+na.omit(no_imaging_baseline_df)
+
+imaging_baseline_df_list <- list(
+    sm_subc_v_qc_0_0,
+    sm_cort_t_qc_0_0,
+    sm_cort_sa_qc_0_0,
+    dm_all_wmnd_qc_0_0,
+    rm_gord_cor_qc_0_0,
+    rm_subc_cor_qc_0_0,
+    rm_gord_var_qc_0_0,
+    rm_subc_var_qc_0_0,
+    cbcl_anxdep_ss_0_0,
+    cbcl_withdep_ss_0_0,
+    cbcl_somatic_ss_0_0,
+    cbcl_social_ss_0_0,
+    cbcl_thought_ss_0_0,
+    cbcl_attention_ss_0_0,
+    cbcl_rulebreak_ss_0_0,
+    cbcl_aggressive_ss_0_0,
+    sds_total_probs_0_0,
+    nihtbx_cardsort_fc_0_0
+)
+#
+imaging_baseline_df <- abcdutils::merge_df_list(
+    imaging_baseline_df_list,
+    join = "full"
+)
+# 362 subjects have complete imaging data post-QC
+na.omit(imaging_baseline_df)
+
+
+
+
+# Size of baseline data:
+dim(full_baseline_df) # 440 * 1435
+
+
+
+
+
+# Create and format a dataframe that stores the number of missing entries for
+#  each feature
+missing_baseline_df <- data.frame(colSums(is.na(full_baseline_df)))
+missing_baseline_df$"feature" <- rownames(missing_baseline_df)
+missing_baseline_df <- missing_baseline_df[, c(2, 1)]
+colnames(missing_baseline_df) <- c("feature", "missing")
+rownames(missing_baseline_df) <- NULL
+
+head(missing_baseline_df)
+
+number_of_cols_missing_data <- missing_baseline_df |>
+    dplyr::filter(missing > 0) |>
+    nrow()
+
+number_of_cols_missing_data # 1377
+
+hist(missing_baseline_df$missing)
+
+# Create and format a dataframe that stores the number of missing entries for
+#  each subject
+hist(rowSums(is.na(full_baseline_df)))
+
+```
+
 
 
 ## Imputing missing data
@@ -189,87 +389,81 @@ Imputation notes:
 2. I'm imputing uninjured controls with the injured group
 
 ```{r eval = FALSE}
-# put all data frames into a named list
-df_list_no_neuroimaging_0_0 <- list(
-    "loss of consciousness" = as_mtbi_loc_0_0,
-    "mechanism of injury" = as_mtbi_mechanism_0_0,
-    "memory loss / dazed" = as_mtbi_mem_daze_0_0,
-    "income" = d_income_0_0,
-    "interview_age" = d_interview_age_0_0,
-    "mtbi_age" = d_mtbi_age_0_0,
-    "pubertal_status" = d_pubertal_status_0_0,
-    "race" = d_race_0_0,
-    "sex" = d_sex_0_0,
-    "headaches" = mh_headaches_0_0,
-    "mtbi_count" = mh_mtbi_count_0_0,
-    "loneliness" = p_loneliness_0_0,
-    "screen time" = p_screen_time_0_0,
-    "family function" = p_family_function_0_0,
-    "sports" = p_sports_0_0,
-    "prosocial" = p_prosocial_0_0,
-    "parent psych" = p_parent_psych_0_0,
-    "exercise" = p_exercise_0_0,
-    "cbcl headaches" = cbcl_headaches_0_0,
-    "cbcl nausea" = cbcl_nausea_0_0,
-    "cbcl vomiting" = cbcl_vomiting_0_0,
-    "cbcl dizzy" = cbcl_dizzy_0_0,
-    "cbcl overtired" = cbcl_overtired_0_0,
-    "cbcl sleeping more" = cbcl_sleeping_more_0_0,
-    "cbcl sleeping less" = cbcl_sleeping_less_0_0,
-    "cbcl depress r" = cbcl_depress_r_0_0,
-    "cbcl anxiety r" = cbcl_anxiety_r_0_0,
-    "cbcl attention r" = cbcl_attention_r_0_0,
-    "cbcl aggressive r" = cbcl_aggressive_r_0_0,
-    "sds sleep" = sds_sleep_0_0,
-    "nihtbx list fc" = nihtbx_list_fc_0_0,
-    "nihtbx pattern fc" = nihtbx_pattern_fc_0_0,
-    "nihtbx cardsort fc" = nihtbx_cardsort_fc_0_0
-)
 
-# Visualize missing data
-abcdutils::vis_missing_by_df(df_list_no_neuroimaging_0_0)
-
-full_df_0_0 <- df_list_no_neuroimaging_0_0 |>
-    purrr::reduce(dplyr::full_join, by = "subjectkey")
-
-dim(full_df_0_0)
-# 440 subjects
-
-dim(na.omit(full_df_0_0))
-# 368 subjects with complete non-neuroimaging data
-
-# Not imputing the neuroimaging data
-neuroimaging_df <- abcdutils::merge_df_list(list(rm_gord_cor_qc_0_0,
-    rm_gord_var_qc_0_0,
-    rm_subc_cor_qc_0_0,
-    rm_subc_var_qc_0_0,
-    dm_all_wmnd_qc_0_0,
-    sm_cort_sa_qc_0_0,
-    sm_cort_t_qc_0_0,
-    sm_subc_v_qc_0_0,
-    full_df_0_0))
-na.omit(neuroimaging_df)
-# Only 308 children remain if missing data is excluded
-
-# Excluding NIHTBX out-of-model measure
-full_df_0_0_no_nihtbx <- full_df_0_0 |>
-    dplyr::select(-dplyr::starts_with("nih"))
-
-no_imputation_no_nihtbx <- abcdutils::merge_df_list(list(rm_gord_cor_qc_0_0,
-    rm_gord_var_qc_0_0,
-    rm_subc_cor_qc_0_0,
-    rm_subc_var_qc_0_0,
-    dm_all_wmnd_qc_0_0,
-    sm_cort_sa_qc_0_0,
-    sm_cort_t_qc_0_0,
-    sm_subc_v_qc_0_0,
-    full_df_0_0_no_nihtbx))
-na.omit(no_imputation_no_nihtbx)
+## put all data frames into a named list
+#df_list_no_neuroimaging_0_0 <- list(
+#    "loss of consciousness" = as_mtbi_loc_0_0,
+#    "mechanism of injury" = as_mtbi_mechanism_0_0,
+#    "memory loss / dazed" = as_mtbi_mem_daze_0_0,
+#    "income" = d_income_0_0,
+#    "interview_age" = d_interview_age_0_0,
+#    "mtbi_age" = d_mtbi_age_0_0,
+#    "pubertal_status" = d_pubertal_status_0_0,
+#    "race" = d_race_0_0,
+#    "sex" = d_sex_0_0,
+#    "headaches" = mh_headaches_0_0,
+#    "mtbi_count" = mh_mtbi_count_0_0,
+#    "loneliness" = p_loneliness_0_0,
+#    "screen time" = p_screen_time_0_0,
+#    "family function" = p_family_function_0_0,
+#    "sports" = p_sports_0_0,
+#    "prosocial" = p_prosocial_0_0,
+#    "parent psych" = p_parent_psych_0_0,
+#    "exercise" = p_exercise_0_0,
+#    "nihtbx list fc" = nihtbx_list_fc_0_0,
+#    "nihtbx pattern fc" = nihtbx_pattern_fc_0_0,
+#    "nihtbx cardsort fc" = nihtbx_cardsort_fc_0_0
+#)
+#
+#a <- abcdutils::vis_missing_by_df(full_baseline_df_list)[[1]]
+#
+#a + ggplot2::theme(text = ggplot2::element_text(size=20))
+#
+## Visualize missing data
+#abcdutils::vis_missing_by_df(df_list_no_neuroimaging_0_0)
+#
+#full_df_0_0 <- df_list_no_neuroimaging_0_0 |>
+#    purrr::reduce(dplyr::full_join, by = "subjectkey")
+#
+#dim(full_df_0_0)
+## 440 subjects
+#
+#dim(na.omit(full_df_0_0))
+## 368 subjects with complete non-neuroimaging data
+#
+## Not imputing the neuroimaging data
+#neuroimaging_df <- abcdutils::merge_df_list(list(rm_gord_cor_qc_0_0,
+#    rm_gord_var_qc_0_0,
+#    rm_subc_cor_qc_0_0,
+#    rm_subc_var_qc_0_0,
+#    dm_all_wmnd_qc_0_0,
+#    sm_cort_sa_qc_0_0,
+#    sm_cort_t_qc_0_0,
+#    sm_subc_v_qc_0_0,
+#    full_df_0_0))
+#na.omit(neuroimaging_df)
+## Only 308 children remain if missing data is excluded
+#
+## Excluding NIHTBX out-of-model measure
+#full_df_0_0_no_nihtbx <- full_df_0_0 |>
+#    dplyr::select(-dplyr::starts_with("nih"))
+#
+#no_imputation_no_nihtbx <- abcdutils::merge_df_list(list(rm_gord_cor_qc_0_0,
+#    rm_gord_var_qc_0_0,
+#    rm_subc_cor_qc_0_0,
+#    rm_subc_var_qc_0_0,
+#    dm_all_wmnd_qc_0_0,
+#    sm_cort_sa_qc_0_0,
+#    sm_cort_t_qc_0_0,
+#    sm_subc_v_qc_0_0,
+#    full_df_0_0_no_nihtbx))
+#na.omit(no_imputation_no_nihtbx)
 # 321 children - still many are lost
 
-
 # Columns with missing data
+
 (missing_data_colnames <- names(which(colSums(is.na(full_df_0_0)) > 0)))
+
 # Missing:
 # mem/daze,
 # household_income,
@@ -457,6 +651,7 @@ write_csv(nihtbx_pattern_fc_imp_0_0,
     input_path("nihtbx_pattern_fc_imp_0_0.csv", date = TRUE))
 write_csv(nihtbx_cardsort_fc_imp_0_0,
     input_path("nihtbx_cardsort_fc_imp_0_0.csv", date = TRUE))
+
 ```
 
 ## Convert the raw CBCL scores into thresholded ones
