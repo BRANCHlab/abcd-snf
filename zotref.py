@@ -1,1 +1,0 @@
-/home/prashanth/.local/share/nvim/lazy/zotcite/python3/zotref.py
