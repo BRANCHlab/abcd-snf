@@ -7,8 +7,13 @@ This script is used to:
 3. Threshold CBCL behaviour measures (raw scores into normal (0), borderline (1), and clinical (2))
 
 1. Load in the extracted data
+2. Assign train and test sets of the data
+
+3. Within the training data:
+    - Explore the percentage of missingness
+    - Impute missing data
+
 2. Remove subjects who are missing neuroimaging data - we are not going to impute that
-3. Assign train and test sets of the data
 4. sdfasd
 
 The longitudinal analysis will ultimately involve checking to see if the subtypes found can predict change scores in CBCL or SDS measures.
@@ -36,94 +41,94 @@ misc_path <- abcdutils::path_maker(here::here(paste0("data/abcd/misc")))
 
 # Baseline inputs
 as_mtbi_mem_daze_0_0 <-
-    read_csv(input_path("2023_09_12_as_mtbi_mem_daze_0_0.csv"))
+    read_csv(input_path("2023_09_19_as_mtbi_mem_daze_0_0.csv"))
 as_mtbi_mechanism_0_0 <-
-    read_csv(input_path("2023_09_12_as_mtbi_mechanism_0_0.csv"))
+    read_csv(input_path("2023_09_19_as_mtbi_mechanism_0_0.csv"))
 as_mtbi_loc_0_0 <-
-    read_csv(input_path("2023_09_12_as_mtbi_loc_0_0.csv"))
+    read_csv(input_path("2023_09_19_as_mtbi_loc_0_0.csv"))
 d_pubertal_status_0_0 <-
-    read_csv(input_path("2023_09_12_d_pubertal_status_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_pubertal_status_0_0.csv"))
 d_interview_age_0_0 <-
-    read_csv(input_path("2023_09_12_d_interview_age_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_interview_age_0_0.csv"))
 d_mtbi_age_0_0 <-
-    read_csv(input_path("2023_09_12_d_mtbi_age_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_mtbi_age_0_0.csv"))
 d_sex_0_0 <-
-    read_csv(input_path("2023_09_13_d_sex_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_sex_0_0.csv"))
 d_gender_0_0 <-
-    read_csv(input_path("2023_09_13_d_p_gender_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_p_gender_0_0.csv"))
 d_income_0_0 <-
-    read_csv(input_path("2023_09_12_d_income_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_income_0_0.csv"))
 d_race_0_0 <-
-    read_csv(input_path("2023_09_12_d_race_0_0.csv"))
+    read_csv(input_path("2023_09_19_d_race_0_0.csv"))
 mh_headaches_0_0 <-
-    read_csv(input_path("2023_09_12_mh_headaches_0_0.csv"))
+    read_csv(input_path("2023_09_19_mh_headaches_0_0.csv"))
 mh_mtbi_count_0_0 <-
-    read_csv(input_path("2023_09_12_mh_mtbi_count_0_0.csv"))
+    read_csv(input_path("2023_09_19_mh_mtbi_count_0_0.csv"))
 sm_subc_v_0_0 <-
-    read_csv(input_path("2023_09_12_sm_subc_v_0_0.csv"))
+    read_csv(input_path("2023_09_19_sm_subc_v_0_0.csv"))
 sm_cort_t_0_0 <-
-    read_csv(input_path("2023_09_12_sm_cort_t_0_0.csv"))
+    read_csv(input_path("2023_09_19_sm_cort_t_0_0.csv"))
 sm_cort_sa_0_0 <-
-    read_csv(input_path("2023_09_12_sm_cort_sa_0_0.csv"))
+    read_csv(input_path("2023_09_19_sm_cort_sa_0_0.csv"))
 dm_all_wmnd_0_0 <-
-    read_csv(input_path("2023_09_12_dm_all_wmnd_0_0.csv"))
+    read_csv(input_path("2023_09_19_dm_all_wmnd_0_0.csv"))
 rm_gord_cor_0_0 <-
-    read_csv(input_path("2023_09_12_rm_gord_cor_0_0.csv"))
+    read_csv(input_path("2023_09_19_rm_gord_cor_0_0.csv"))
 rm_subc_cor_0_0 <-
-    read_csv(input_path("2023_09_12_rm_subc_cor_0_0.csv"))
+    read_csv(input_path("2023_09_19_rm_subc_cor_0_0.csv"))
 rm_gord_var_0_0 <-
-    read_csv(input_path("2023_09_12_rm_gord_var_0_0.csv"))
+    read_csv(input_path("2023_09_19_rm_gord_var_0_0.csv"))
 rm_subc_var_0_0 <-
-    read_csv(input_path("2023_09_12_rm_subc_var_0_0.csv"))
+    read_csv(input_path("2023_09_19_rm_subc_var_0_0.csv"))
 p_loneliness_0_0 <-
-    read_csv(input_path("2023_09_12_p_loneliness_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_loneliness_0_0.csv"))
 p_screen_time_0_0 <-
-    read_csv(input_path("2023_09_12_p_screen_time_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_screen_time_0_0.csv"))
 p_sports_0_0 <-
-    read_csv(input_path("2023_09_12_p_sports_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_sports_0_0.csv"))
 p_exercise_0_0 <-
-    read_csv(input_path("2023_09_12_p_exercise_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_exercise_0_0.csv"))
 p_prosocial_0_0 <-
-    read_csv(input_path("2023_09_12_p_prosocial_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_prosocial_0_0.csv"))
 p_family_function_0_0 <-
-    read_csv(input_path("2023_09_12_p_family_function_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_family_function_0_0.csv"))
 p_parent_psych_0_0 <-
-    read_csv(input_path("2023_09_12_p_parent_psych_0_0.csv"))
+    read_csv(input_path("2023_09_19_p_parent_psych_0_0.csv"))
 cbcl_anxdep_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_anxdep_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_anxdep_ss_0_0.csv")
 )
 cbcl_withdep_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_withdep_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_withdep_ss_0_0.csv")
 )
 cbcl_somatic_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_somatic_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_somatic_ss_0_0.csv")
 )
 cbcl_social_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_social_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_social_ss_0_0.csv")
 )
 cbcl_thought_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_thought_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_thought_ss_0_0.csv")
 )
 cbcl_attention_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_attention_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_attention_ss_0_0.csv")
 )
 cbcl_rulebreak_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_rulebreak_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_rulebreak_ss_0_0.csv")
 )
 cbcl_aggressive_ss_0_0 <- read_csv(
-    input_path("2023_09_12_cbcl_aggressive_ss_0_0.csv")
+    input_path("2023_09_19_cbcl_aggressive_ss_0_0.csv")
 )
 sds_total_probs_0_0 <- read_csv(
-    input_path("2023_09_12_sds_total_probs_0_0.csv")
+    input_path("2023_09_19_sds_total_probs_0_0.csv")
 )
 nihtbx_list_fc_0_0 <- read_csv(
-    input_path("2023_09_12_nihtbx_list_fc_0_0.csv")
+    input_path("2023_09_19_nihtbx_list_fc_0_0.csv")
 )
 nihtbx_pattern_fc_0_0 <- read_csv(
-    input_path("2023_09_12_nihtbx_pattern_fc_0_0.csv")
+    input_path("2023_09_19_nihtbx_pattern_fc_0_0.csv")
 )
 nihtbx_cardsort_fc_0_0 <- read_csv(
-    input_path("2023_09_12_nihtbx_cardsort_fc_0_0.csv")
+    input_path("2023_09_19_nihtbx_cardsort_fc_0_0.csv")
 )
 
 ```
