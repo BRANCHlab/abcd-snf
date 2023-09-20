@@ -121,15 +121,6 @@ cbcl_aggressive_ss_0_0 <- read_csv(
 sds_total_probs_0_0 <- read_csv(
     input_path("2023_09_19_sds_total_probs_0_0.csv")
 )
-nihtbx_list_fc_0_0 <- read_csv(
-    input_path("2023_09_19_nihtbx_list_fc_0_0.csv")
-)
-nihtbx_pattern_fc_0_0 <- read_csv(
-    input_path("2023_09_19_nihtbx_pattern_fc_0_0.csv")
-)
-nihtbx_cardsort_fc_0_0 <- read_csv(
-    input_path("2023_09_19_nihtbx_cardsort_fc_0_0.csv")
-)
 
 ```
 
@@ -206,16 +197,147 @@ write_csv(sm_cort_sa_qc_0_0, input_path("sm_cort_sa_qc_0_0.csv", TRUE))
 write_csv(sm_cort_t_qc_0_0, input_path("sm_cort_t_qc_0_0.csv", TRUE))
 write_csv(sm_subc_v_qc_0_0, input_path("sm_subc_v_qc_0_0.csv", TRUE))
 
-rm_gord_cor_qc_0_0 <- read_csv(input_path("2023_09_18_rm_gord_cor_qc_0_0.csv"))
-rm_gord_var_qc_0_0 <- read_csv(input_path("2023_09_18_rm_gord_var_qc_0_0.csv"))
-rm_subc_cor_qc_0_0 <- read_csv(input_path("2023_09_18_rm_subc_cor_qc_0_0.csv"))
-rm_subc_var_qc_0_0 <- read_csv(input_path("2023_09_18_rm_subc_var_qc_0_0.csv"))
-dm_all_wmnd_qc_0_0 <- read_csv(input_path("2023_09_18_dm_all_wmnd_qc_0_0.csv"))
-sm_cort_sa_qc_0_0 <- read_csv(input_path("2023_09_18_sm_cort_sa_qc_0_0.csv"))
-sm_cort_t_qc_0_0 <- read_csv(input_path("2023_09_18_sm_cort_t_qc_0_0.csv"))
-sm_subc_v_qc_0_0 <- read_csv(input_path("2023_09_18_sm_subc_v_qc_0_0.csv"))
+rm_gord_cor_qc_0_0 <- read_csv(input_path("2023_09_20_rm_gord_cor_qc_0_0.csv"))
+rm_gord_var_qc_0_0 <- read_csv(input_path("2023_09_20_rm_gord_var_qc_0_0.csv"))
+rm_subc_cor_qc_0_0 <- read_csv(input_path("2023_09_20_rm_subc_cor_qc_0_0.csv"))
+rm_subc_var_qc_0_0 <- read_csv(input_path("2023_09_20_rm_subc_var_qc_0_0.csv"))
+dm_all_wmnd_qc_0_0 <- read_csv(input_path("2023_09_20_dm_all_wmnd_qc_0_0.csv"))
+sm_cort_sa_qc_0_0 <- read_csv(input_path("2023_09_20_sm_cort_sa_qc_0_0.csv"))
+sm_cort_t_qc_0_0 <- read_csv(input_path("2023_09_20_sm_cort_t_qc_0_0.csv"))
+sm_subc_v_qc_0_0 <- read_csv(input_path("2023_09_20_sm_subc_v_qc_0_0.csv"))
 
 ```
+
+## Characterizing missingness
+
+```{r}
+
+# Note that the longitudinal subjects have not been filtered in any way based on
+#  whether or not they also had an mTBI at bsaeline or another timepoint
+mtbi_subjects_0 <- read_csv(
+    sub_path("2023_09_19_mtbi_subjects_0.csv")
+)
+uninjured_subjects <- read_csv(
+    sub_path("2023_09_19_uninjured_subjects.csv")
+)
+
+full_baseline_mtbi_df_list <- list(
+    "as_mtbi_mem_daze_0_0" = as_mtbi_mem_daze_0_0,
+    "as_mtbi_mechanism_0_0" = as_mtbi_mechanism_0_0,
+    "as_mtbi_loc_0_0" = as_mtbi_loc_0_0,
+    "d_pubertal_status_0_0" = d_pubertal_status_0_0,
+    "d_interview_age_0_0" = d_interview_age_0_0,
+    "d_mtbi_age_0_0" = d_mtbi_age_0_0,
+    "d_sex_0_0" = d_sex_0_0,
+    "d_gender_0_0" = d_gender_0_0,
+    "d_income_0_0" = d_income_0_0,
+    "d_race_0_0" = d_race_0_0,
+    "mh_headaches_0_0" = mh_headaches_0_0,
+    "mh_mtbi_count_0_0" = mh_mtbi_count_0_0,
+    "sm_subc_v_qc_0_0" = sm_subc_v_qc_0_0,
+    "sm_cort_t_qc_0_0" = sm_cort_t_qc_0_0,
+    "sm_cort_sa_qc_0_0" = sm_cort_sa_qc_0_0,
+    "dm_all_wmnd_qc_0_0" = dm_all_wmnd_qc_0_0,
+    "rm_gord_cor_qc_0_0" = rm_gord_cor_qc_0_0,
+    "rm_subc_cor_qc_0_0" = rm_subc_cor_qc_0_0,
+    "rm_gord_var_qc_0_0" = rm_gord_var_qc_0_0,
+    "rm_subc_var_qc_0_0" = rm_subc_var_qc_0_0,
+    "p_loneliness_0_0" = p_loneliness_0_0,
+    "p_screen_time_0_0" = p_screen_time_0_0,
+    "p_sports_0_0" = p_sports_0_0,
+    "p_exercise_0_0" = p_exercise_0_0,
+    "p_prosocial_0_0" = p_prosocial_0_0,
+    "p_family_function_0_0" = p_family_function_0_0,
+    "p_parent_psych_0_0" = p_parent_psych_0_0,
+    "cbcl_anxdep_ss_0_0" = cbcl_anxdep_ss_0_0,
+    "cbcl_withdep_ss_0_0" = cbcl_withdep_ss_0_0,
+    "cbcl_somatic_ss_0_0" = cbcl_somatic_ss_0_0,
+    "cbcl_social_ss_0_0" = cbcl_social_ss_0_0,
+    "cbcl_thought_ss_0_0" = cbcl_thought_ss_0_0,
+    "cbcl_attention_ss_0_0" = cbcl_attention_ss_0_0,
+    "cbcl_rulebreak_ss_0_0" = cbcl_rulebreak_ss_0_0,
+    "cbcl_aggressive_ss_0_0" = cbcl_aggressive_ss_0_0,
+    "sds_total_probs_0_0" = sds_total_probs_0_0
+)
+
+
+missing_analyzer <- function() {
+
+}
+
+missing_skeleton <- data.frame()
+
+for (df in full_baseline_mtbi_df_list) {
+    print(dim(df))
+}
+
+names(full_baseline_mtbi_df_list)
+
+full_baseline_mtbi_df <- merge_df_list(
+    full_baseline_mtbi_df_list,
+    join = "full"
+)
+
+mtbi_subjects_0
+
+sds_total_probs_0_0
+
+
+missing_subjects <- function(all_subs, df) {
+    complete <- na.omit(df)
+    missing <- dplyr::anti_join(all_subs, complete, by = "subjectkey")
+    return(missing)
+}
+
+
+
+
+
+missing_subjects(mtbi_subjects_0, as_mtbi_mem_daze_0_0)
+
+
+
+nrow(as_mtbi_mem_daze_0_0)
+nrow(as_mtbi_mechanism_0_0)
+nrow(as_mtbi_loc_0_0)
+nrow(d_pubertal_status_0_0)
+nrow(d_interview_age_0_0)
+nrow(d_mtbi_age_0_0)
+nrow(d_sex_0_0)
+nrow(d_gender_0_0)
+nrow(d_income_0_0)
+nrow(d_race_0_0)
+nrow(mh_headaches_0_0)
+nrow(mh_mtbi_count_0_0)
+nrow(sm_subc_v_0_0)
+nrow(sm_cort_t_0_0)
+nrow(sm_cort_sa_0_0)
+nrow(dm_all_wmnd_0_0)
+nrow(rm_gord_cor_0_0)
+nrow(rm_subc_cor_0_0)
+nrow(rm_gord_var_0_0)
+nrow(rm_subc_var_0_0)
+nrow(p_loneliness_0_0)
+nrow(p_screen_time_0_0)
+nrow(p_sports_0_0)
+nrow(p_exercise_0_0)
+nrow(p_prosocial_0_0)
+nrow(p_family_function_0_0)
+nrow(p_parent_psych_0_0)
+nrow(cbcl_anxdep_ss_0_0)
+nrow(cbcl_withdep_ss_0_0)
+nrow(cbcl_somatic_ss_0_0)
+nrow(cbcl_social_ss_0_0)
+nrow(cbcl_thought_ss_0_0)
+nrow(cbcl_attention_ss_0_0)
+nrow(cbcl_rulebreak_ss_0_0)
+nrow(cbcl_aggressive_ss_0_0)
+nrow(sds_total_probs_0_0)
+
+```
+
+
+
 
 # Assigning train and test splits
 
