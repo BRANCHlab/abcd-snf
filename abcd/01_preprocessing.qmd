@@ -30,6 +30,7 @@ library(abcdutils)
 library(readr)
 library(purrr)
 library(here)
+library(pheatmap)
 
 # The path_maker function helps with managing and date stamping long paths. The
 #  functions are just used here to help with reading and writing data. See
@@ -38,6 +39,8 @@ input_path <- abcdutils::path_maker(here::here(paste0("data/abcd/inputs")))
 raw_path <- abcdutils::path_maker(here::here(paste0("data/abcd/raw")))
 core_path <- abcdutils::path_maker(here::here(paste0("data/abcd/core")))
 misc_path <- abcdutils::path_maker(here::here(paste0("data/abcd/misc")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
 # Baseline mTBI inputs
 as_mtbi_mem_daze_0_0 <-
@@ -196,6 +199,64 @@ sds_total_probs_u_0 <- read_csv(
     input_path("2023_09_20_sds_total_probs_u_0.csv")
 )
 
+# Longitudinal data mTBI "outcome" data
+cbcl_anxdep_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_anxdep_ss_0_l.csv")
+)
+cbcl_withdep_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_withdep_ss_0_l.csv")
+)
+cbcl_somatic_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_somatic_ss_0_l.csv")
+)
+cbcl_social_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_social_ss_0_l.csv")
+)
+cbcl_thought_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_thought_ss_0_l.csv")
+)
+cbcl_attention_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_attention_ss_0_l.csv")
+)
+cbcl_rulebreak_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_rulebreak_ss_0_l.csv")
+)
+cbcl_aggressive_ss_0_l <- read_csv(
+    input_path("2023_09_20_cbcl_aggressive_ss_0_l.csv")
+)
+sds_total_probs_0_l <- read_csv(
+    input_path("2023_09_20_sds_total_probs_0_l.csv")
+)
+
+# Longitudinal uninjured "outcome" data
+cbcl_anxdep_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_anxdep_ss_u_l.csv")
+)
+cbcl_withdep_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_withdep_ss_u_l.csv")
+)
+cbcl_somatic_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_somatic_ss_u_l.csv")
+)
+cbcl_social_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_social_ss_u_l.csv")
+)
+cbcl_thought_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_thought_ss_u_l.csv")
+)
+cbcl_attention_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_attention_ss_u_l.csv")
+)
+cbcl_rulebreak_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_rulebreak_ss_u_l.csv")
+)
+cbcl_aggressive_ss_u_l <- read_csv(
+    input_path("2023_09_20_cbcl_aggressive_ss_u_l.csv")
+)
+sds_total_probs_u_l <- read_csv(
+    input_path("2023_09_20_sds_total_probs_u_l.csv")
+)
+
 ```
 
 ## Neuroimaging quality control
@@ -203,7 +264,6 @@ sds_total_probs_u_0 <- read_csv(
 First identify which subjects have valid neuroimaging data.
 
 ```{r eval = FALSE}
-
 mri_y_qc_raw_smr_t1 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t1.csv"))
 mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
 mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
@@ -358,6 +418,10 @@ sm_subc_v_qc_u_0 <- read_csv(input_path("2023_09_20_sm_subc_v_qc_u_0.csv"))
 
 ## Characterizing missingness
 
+### Patterns of missingness: neuroimaging
+
+Neuroimaging data within the ABCD study typically occurs together.
+
 ```{r}
 
 # Note that the longitudinal subjects have not been filtered in any way based on
@@ -369,7 +433,47 @@ uninjured_subjects <- read_csv(
     sub_path("2023_09_20_uninjured_subjects.csv")
 )
 
-full_baseline_mtbi_df_list <- list(
+mtbi_neuroimaging_df_list <- list(
+    "sm_subc_v_qc_0_0" = sm_subc_v_qc_0_0,
+    "sm_cort_t_qc_0_0" = sm_cort_t_qc_0_0,
+    "sm_cort_sa_qc_0_0" = sm_cort_sa_qc_0_0,
+    "dm_all_wmnd_qc_0_0" = dm_all_wmnd_qc_0_0,
+    "rm_gord_cor_qc_0_0" = rm_gord_cor_qc_0_0,
+    "rm_subc_cor_qc_0_0" = rm_subc_cor_qc_0_0,
+    "rm_gord_var_qc_0_0" = rm_gord_var_qc_0_0,
+    "rm_subc_var_qc_0_0" = rm_subc_var_qc_0_0
+)
+
+merged_mtbi_neuroimaging_df <- mtbi_neuroimaging_df_list |>
+    merge_df_list(join = "full")
+
+mtbi_with_neuroimaging <- merged_mtbi_neuroimaging_df |>
+    na.omit() |>
+    dplyr::select("subjectkey") |>
+    unlist() |>
+    as.character()
+
+mtbi_without_neuroimaging <- mtbi_subjects_0 |>
+    dplyr::filter(!subjectkey %in% mtbi_with_neuroimaging) |>
+    unlist() |>
+    as.character()
+
+mtbi_with_neuroimaging
+
+```
+
+# Exploring patterns of missingness
+
+This section explores how different feature dataframes share missingness.
+
+
+## Amount of missingness
+
+How much missing data is there?
+
+```{r}
+
+mtbi_df_list_0 <- list(
     "as_mtbi_mem_daze_0_0" = as_mtbi_mem_daze_0_0,
     "as_mtbi_mechanism_0_0" = as_mtbi_mechanism_0_0,
     "as_mtbi_loc_0_0" = as_mtbi_loc_0_0,
@@ -408,129 +512,321 @@ full_baseline_mtbi_df_list <- list(
     "sds_total_probs_0_0" = sds_total_probs_0_0
 )
 
-nrow(mtbi_subjects_0)
+uninjured_df_list_0 <- list(
+    "d_pubertal_status_u_0" = d_pubertal_status_u_0,
+    "d_interview_age_u_0" = d_interview_age_u_0,
+    "d_sex_u_0" = d_sex_u_0,
+    "d_gender_u_0" = d_gender_u_0,
+    "d_income_u_0" = d_income_u_0,
+    "d_race_u_0" = d_race_u_0,
+    "mh_headaches_u_0" = mh_headaches_u_0,
+    "sm_subc_v_qc_u_0" = sm_subc_v_qc_u_0,
+    "sm_cort_t_qc_u_0" = sm_cort_t_qc_u_0,
+    "sm_cort_sa_qc_u_0" = sm_cort_sa_qc_u_0,
+    "dm_all_wmnd_qc_u_0" = dm_all_wmnd_qc_u_0,
+    "rm_gord_cor_qc_u_0" = rm_gord_cor_qc_u_0,
+    "rm_subc_cor_qc_u_0" = rm_subc_cor_qc_u_0,
+    "rm_gord_var_qc_u_0" = rm_gord_var_qc_u_0,
+    "rm_subc_var_qc_u_0" = rm_subc_var_qc_u_0,
+    "p_loneliness_u_0" = p_loneliness_u_0,
+    "p_screen_time_u_0" = p_screen_time_u_0,
+    "p_sports_u_0" = p_sports_u_0,
+    "p_exercise_u_0" = p_exercise_u_0,
+    "p_prosocial_u_0" = p_prosocial_u_0,
+    "p_family_function_u_0" = p_family_function_u_0,
+    "p_parent_psych_u_0" = p_parent_psych_u_0,
+    "cbcl_anxdep_ss_u_0" = cbcl_anxdep_ss_u_0,
+    "cbcl_withdep_ss_u_0" = cbcl_withdep_ss_u_0,
+    "cbcl_somatic_ss_u_0" = cbcl_somatic_ss_u_0,
+    "cbcl_social_ss_u_0" = cbcl_social_ss_u_0,
+    "cbcl_thought_ss_u_0" = cbcl_thought_ss_u_0,
+    "cbcl_attention_ss_u_0" = cbcl_attention_ss_u_0,
+    "cbcl_rulebreak_ss_u_0" = cbcl_rulebreak_ss_u_0,
+    "cbcl_aggressive_ss_u_0" = cbcl_aggressive_ss_u_0,
+    "sds_total_probs_u_0" = sds_total_probs_u_0
+)
 
+mtbi_df_list_l <- list(
+    "cbcl_anxdep_ss_0_l" = cbcl_anxdep_ss_0_l,
+    "cbcl_withdep_ss_0_l" = cbcl_withdep_ss_0_l,
+    "cbcl_somatic_ss_0_l" = cbcl_somatic_ss_0_l,
+    "cbcl_social_ss_0_l" = cbcl_social_ss_0_l,
+    "cbcl_thought_ss_0_l" = cbcl_thought_ss_0_l,
+    "cbcl_attention_ss_0_l" = cbcl_attention_ss_0_l,
+    "cbcl_rulebreak_ss_0_l" = cbcl_rulebreak_ss_0_l,
+    "cbcl_aggressive_ss_0_l" = cbcl_aggressive_ss_0_l,
+    "sds_total_probs_0_l" = sds_total_probs_0_l
+)
 
-full_baseline_mtbi_df <- full_baseline_mtbi_df_list |>
-    merge_df_list(join = "full")
+uninjured_df_list_l <- list(
+    "cbcl_anxdep_ss_u_l" = cbcl_anxdep_ss_u_l,
+    "cbcl_withdep_ss_u_l" = cbcl_withdep_ss_u_l,
+    "cbcl_somatic_ss_u_l" = cbcl_somatic_ss_u_l,
+    "cbcl_social_ss_u_l" = cbcl_social_ss_u_l,
+    "cbcl_thought_ss_u_l" = cbcl_thought_ss_u_l,
+    "cbcl_attention_ss_u_l" = cbcl_attention_ss_u_l,
+    "cbcl_rulebreak_ss_u_l" = cbcl_rulebreak_ss_u_l,
+    "cbcl_aggressive_ss_u_l" = cbcl_aggressive_ss_u_l,
+    "sds_total_probs_u_l" = sds_total_probs_u_l
+)
 
-na.omit(full_baseline_mtbi_df)
-
-
-missing_analyzer <- function(df_list, subject_list) {
+amount_missingness <- function(df_list, subjects) {
+    pct_missing <- ""
     merged_df <- df_list |>
         merge_df_list(join = "full")
+    merged_df <- dplyr::full_join(merged_df, subjects, by = "subjectkey")
+    # Number of missing elements across the whole dataframe
+    num_nas <- sum(colSums(is.na(merged_df)))
+    num_elements <- length(unlist(merged_df))
+    pct_missing_overall <- num_nas / num_elements
+    # Features sorted by missingness
+    missing_vec <- merged_df |>
+        is.na() |>
+        colSums() |>
+        unlist() |>
+        as.numeric()
+    missing_vec <- missing_vec / nrow(subjects)
+    missing_vec <- missing_vec * 100
+    missing_vec
+    missing_pct_by_col <- data.frame(
+        names = names(merged_df),
+        pct_missing = missing_vec
+    )
+    missing_pct_by_col <- missing_pct_by_col[2:nrow(missing_pct_by_col), ]
+    missing_pct_by_col <- missing_pct_by_col |>
+        dplyr::arrange(desc(pct_missing))
+    output <- list(pct_missing_overall, missing_pct_by_col)
+    names(output) <- c("pct_missing_overall", "missing_pct_by_col")
+    return(output)
+}
+
+uninjured_missingness_0 <-
+    amount_missingness(uninjured_df_list_0, uninjured_subjects)
+
+mtbi_missingness_0 <-
+    amount_missingness(mtbi_df_list_0, mtbi_subjects_0)
+
+uninjured_missingness_l <-
+    amount_missingness(uninjured_df_list_l, uninjured_subjects)
+
+mtbi_missingness_l <-
+    amount_missingness(mtbi_df_list_l, mtbi_subjects_0)
+
+uninjured_missingness_0[[1]] # 0.08989943
+mtbi_missingness_0[[1]] # 0.0942055
+uninjured_missingness_l[[1]] # 0.2681282
+mtbi_missingness_l[[1]] # 0.2556818
+
+write_csv(
+    uninjured_missingness_0[[2]],
+    misc_path(
+        "uninjured_missingness_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    mtbi_missingness_0[[2]],
+    misc_path(
+        "mtbi_missingness_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    uninjured_missingness_l[[2]],
+    misc_path(
+        "uninjured_missingness_l.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    mtbi_missingness_l[[2]],
+    misc_path(
+        "mtbi_missingness_l.csv",
+        date = TRUE
+    )
+)
+
+# I'm here
+
+```
+
+# Imputation
+
+From Stef van Buuren: https://stefvanbuuren.name/fimd/sec-missmult.html:
+
+Another ad-hoc technique is to add a dummy variable for each cluster, so that the model estimates a separate coefficient for each cluster.
+The coefficients are estimated by ordinary least squares, and the parameters are drawn from their posteriors.
+If the missing values are restricted to the outcome, this method will estimate the fixed effects quite well, but also artificially inflates the true variation between groups, and thus biases the ICC upwards (Andridge 2011; Van Buuren 2011; Graham 2012).
+If there are also missing values in the predictors, the level-1 regression weights will be unbiased, but the level-2 weights are biased, in particular for small clusters and low ICC.
+See Lüdtke, Robitzsch, and Grund (2017) for more detail, who also derive the asymptotic bias.
+If the primary interest is on the fixed effects, adding a cluster dummy is an easily implementable alternative, unless the missing rate is very large and/or the intra-class correlation is very low and the number of records in the cluster is small (Drechsler 2015; Lüdtke, Robitzsch, and Grund 2017).
+Since the bias in random slopes and variance components can be substantial, one should turn to multilevel imputation to obtain proper estimates of those parts of the multilevel model (Speidel, Drechsler, and Sakshaug 2017).
+
+
+
+```{r}
+
+# Function takes in a list of dataframes and returns a matrix where rows are
+#  subjects who have any missing data, columns are the different dataframes,
+#  and matrix elements are 0 if no data is missing and 1 if any data is missing
+missing_dfs <- function(df_list, subject_list) {
+    # Full join all the dataframes in df_list. The subjectkeys should match
+    #  the subject_list.
+    merged_df <- df_list |>
+        merge_df_list(join = "full")
+    # complete_df holds data for all the subjects that have no missing data
     complete_df <- na.omit(merged_df)
+    # complete_subjects have no missing data
     complete_subjects <- complete_df$"subjectkey"
+    # incomplete_pos has the indices (in the full subject_list) of those who
+    #  are not a part of complete_subjects, i.e. the people who DO have missing
+    #  data.
     incomplete_pos <- which(!subject_list$"subjectkey" %in% complete_subjects)
+    # incomplete_subjects are those subjects who do have missing data.
     incomplete_subjects <- subject_list$"subjectkey"[incomplete_pos]
-    #
+    # this df will have 1 column for subjectkey and then columns for each
+    #  dataframe in the df_list. It will also have one row for each subject
+    #  that has any missing data.
     qmatrix <- matrix(
         ncol = 1 + length(df_list),
         nrow = length(incomplete_subjects)
     ) |>
         data.frame()
+    # assigning the proper column names
     colnames(qmatrix) <- c("subjectkey", names(df_list))
-    #
-    for (obs in seq_along(incomplete_subjects)) {
+    # now we populate the qmatrix by one subject who is missing data at a time
+    for (i in seq_along(incomplete_subjects)) {
         print(
             paste0(
-                round(100*(obs / length(incomplete_subjects)), 1),
+                round(100 * (i / length(incomplete_subjects)), 1),
                 "% complete..."
             )
         )
         has_full_data <- lapply(
-            full_baseline_mtbi_df_list,
+            df_list,
             function(x) {
-                if (incomplete_subjects[[obs]] %in% na.omit(x)$"subjectkey") {
-                    return(1)
-                } else {
+                # If the ith person with missing data has complete data for x,
+                #  give them a 0. Otherwise, give them a 1.
+                if (incomplete_subjects[[i]] %in% na.omit(x)$"subjectkey") {
                     return(0)
+                } else {
+                    return(1)
                 }
             }
         )
-        has_full_data_row <- c(incomplete_subjects[[obs]], has_full_data) |>
+        # the ith person's row in the qmatrix will be their name and membership
+        #  in each complete dataframe
+        has_full_data_row <- c(incomplete_subjects[[i]], has_full_data) |>
             unlist() |>
             as.character()
-        qmatrix[obs, ] <- has_full_data_row
+        qmatrix[i, ] <- has_full_data_row
     }
+    # remove the subjectkeys (perhaps worth removing this line later) to easily
+    #  plot heatmap
     q_no_subs <- qmatrix[, 2:ncol(qmatrix)]
-    q_numeric <- col_to_num(q_no_subs, 1:ncol(q_no_subs))
-    cols_with_missing_data <- colSums(q_numeric) != nrow(q_numeric)
+    # convert columns to numeric type
+    q_numeric <- abcdutils::col_to_num(q_no_subs, seq_len(ncol(q_no_subs)))
+    # clear off any columns that have purely complete data
+    cols_with_missing_data <- colSums(q_numeric) != 0
     return(q_numeric[, cols_with_missing_data])
 }
 
-q <- missing_analyzer(full_baseline_mtbi_df_list, mtbi_subjects_0)
-
-q2
-
-library(pheatmap)
-
-pheatmap(q_numeric)
-
-
-pheatmap(q_numeric[, cols_with_missing_data])
-
-z
-
-
-length(z)
-
-ncol(qmatrix)
-
-qmatrix[1, ] <- z
-
-ncol(qmatrix)
-
-
-
-q
-
-
-q[[1]]
-
-full_baseline_mtbi_df_list |>
-    names()
-
-
-missing_skeleton <- data.frame()
-
-add_columns(missing_skeleton, names(full_baseline_mtbi_df_list))
-
-library(abcdutils)
-
-# each row is a person
-# each column is 1 or 0 if they are missing data for that particular thing
-
-
-for (df in full_baseline_mtbi_df_list) {
-    print(dim(df))
-}
-
-names(full_baseline_mtbi_df_list)
-
-full_baseline_mtbi_df <- merge_df_list(
-    full_baseline_mtbi_df_list,
-    join = "full"
+missing_mtbi_0 <- missing_dfs(
+    mtbi_df_list_0,
+    mtbi_subjects_0
 )
+
+missing_uninjured_0 <- missing_dfs(
+    uninjured_df_list_0,
+    uninjured_subjects
+)
+
+missing_mtbi_l <- missing_dfs(
+    mtbi_df_list_l,
+    mtbi_subjects_0
+)
+
+missing_uninjured_l <- missing_dfs(
+    uninjured_df_list_l,
+    uninjured_subjects
+)
+
+
+write_csv(
+    missing_mtbi_0,
+    misc_path(
+        "missing_mtbi_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    missing_uninjured_0,
+    misc_path(
+        "missing_uninjured_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    missing_mtbi_l,
+    misc_path(
+        "missing_mtbi_l.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    missing_uninjured_l,
+    misc_path(
+        "missing_uninjured_l.csv",
+        date = TRUE
+    )
+)
+
+missing_uninjured_0 <- read_csv(misc_path("2023_09_21_missing_uninjured_0.csv"))
+missing_mtbi_0 <- read_csv(misc_path("2023_09_21_missing_mtbi_0.csv"))
+missing_uninjured_l <- read_csv(misc_path("2023_09_21_missing_uninjured_l.csv"))
+missing_mtbi_l <- read_csv(misc_path("2023_09_21_missing_mtbi_l.csv"))
+
+
+
+missing_mtbi_0
 
 mtbi_subjects_0
 
-sds_total_probs_0_0
+pheatmap(
+    missing_mtbi_0,
+    show_rownames = FALSE,
+    filename = fig_path("missing_mtbi_0.png", date = TRUE)
+)
 
+pheatmap(
+    missing_mtbi_0,
+    show_rownames = FALSE,
+    filename = fig_path("missing_mtbi_0.png", date = TRUE)
+)
 
-missing_subjects <- function(all_subs, df) {
-    complete <- na.omit(df)
-    missing <- dplyr::anti_join(all_subs, complete, by = "subjectkey")
-    return(missing)
-}
+pheatmap(
+    missing_uninjured_0,
+    show_rownames = FALSE,
+    filename = fig_path("missing_uninjured_0.png", date = TRUE)
+)
 
+pheatmap(
+    missing_mtbi_l,
+    show_rownames = FALSE,
+    filename = fig_path("missing_mtbi_l.png", date = TRUE)
+)
 
-
-
-
-missing_subjects(mtbi_subjects_0, as_mtbi_mem_daze_0_0)
-
+pheatmap(
+    missing_uninjured_l,
+    show_rownames = FALSE,
+    filename = fig_path("missing_uninjured_l.png", date = TRUE)
+)
 
 
 nrow(as_mtbi_mem_daze_0_0)
