@@ -264,6 +264,7 @@ sds_total_probs_u_l <- read_csv(
 First identify which subjects have valid neuroimaging data.
 
 ```{r eval = FALSE}
+
 mri_y_qc_raw_smr_t1 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t1.csv"))
 mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
 mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
@@ -649,26 +650,6 @@ write_csv(
     )
 )
 
-# I'm here
-
-```
-
-# Imputation
-
-From Stef van Buuren: https://stefvanbuuren.name/fimd/sec-missmult.html:
-
-Another ad-hoc technique is to add a dummy variable for each cluster, so that the model estimates a separate coefficient for each cluster.
-The coefficients are estimated by ordinary least squares, and the parameters are drawn from their posteriors.
-If the missing values are restricted to the outcome, this method will estimate the fixed effects quite well, but also artificially inflates the true variation between groups, and thus biases the ICC upwards (Andridge 2011; Van Buuren 2011; Graham 2012).
-If there are also missing values in the predictors, the level-1 regression weights will be unbiased, but the level-2 weights are biased, in particular for small clusters and low ICC.
-See Lüdtke, Robitzsch, and Grund (2017) for more detail, who also derive the asymptotic bias.
-If the primary interest is on the fixed effects, adding a cluster dummy is an easily implementable alternative, unless the missing rate is very large and/or the intra-class correlation is very low and the number of records in the cluster is small (Drechsler 2015; Lüdtke, Robitzsch, and Grund 2017).
-Since the bias in random slopes and variance components can be substantial, one should turn to multilevel imputation to obtain proper estimates of those parts of the multilevel model (Speidel, Drechsler, and Sakshaug 2017).
-
-
-
-```{r}
-
 # Function takes in a list of dataframes and returns a matrix where rows are
 #  subjects who have any missing data, columns are the different dataframes,
 #  and matrix elements are 0 if no data is missing and 1 if any data is missing
@@ -754,7 +735,6 @@ missing_uninjured_l <- missing_dfs(
     uninjured_subjects
 )
 
-
 write_csv(
     missing_mtbi_0,
     misc_path(
@@ -792,6 +772,9 @@ missing_mtbi_0 <- read_csv(misc_path("2023_09_21_missing_mtbi_0.csv"))
 missing_uninjured_l <- read_csv(misc_path("2023_09_21_missing_uninjured_l.csv"))
 missing_mtbi_l <- read_csv(misc_path("2023_09_21_missing_mtbi_l.csv"))
 
+dim(missing_mtbi_0)
+
+dim(missing_uninjured_0)
 
 
 missing_mtbi_0
@@ -828,6 +811,23 @@ pheatmap(
     filename = fig_path("missing_uninjured_l.png", date = TRUE)
 )
 
+```
+
+# Imputation
+
+Data will be imputed under the following schemes:
+- 5 imputations of mTBI data alone
+- 5 imputations of uninjured data alone
+- 5 imputations of mTBI + uninjured data together
+
+Resulting in 10 versions of the mTBI data and 10 versions of the uninjured data.
+
+```{r}
+
+
+```
+
+```{r}
 
 nrow(as_mtbi_mem_daze_0_0)
 nrow(as_mtbi_mechanism_0_0)
