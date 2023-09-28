@@ -47,6 +47,8 @@ library(abcdutils)
 core_path <- path_maker(here(paste0("data/abcd/core")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
 
 # Loading data
 ## TBI
@@ -651,7 +653,7 @@ For cortical thicknesses, the relevant file is abcd_mrisdp10201, which contains 
 
 mri_y_smr_vol_aseg <- abcd_load(core_path("imaging/mri_y_smr_vol_aseg.csv"))
 
-sm_subc_v_0_0 <- abcdutils::get_subc_v(
+sm_subc_v_0_0 <- get_subc_v(
     mri_y_smr_vol_aseg,
     mtbi_subjects_0,
     t = 0
@@ -659,7 +661,7 @@ sm_subc_v_0_0 <- abcdutils::get_subc_v(
 
 write_csv(sm_subc_v_0_0, input_path("sm_subc_v_0_0.csv", date = TRUE))
 
-sm_subc_v_l_0 <- abcdutils::get_subc_v(
+sm_subc_v_l_0 <- get_subc_v(
     mri_y_smr_vol_aseg,
     mtbi_subjects_l,
     t = 0
@@ -667,7 +669,7 @@ sm_subc_v_l_0 <- abcdutils::get_subc_v(
 
 write_csv(sm_subc_v_l_0, input_path("sm_subc_v_l_0.csv", date = TRUE))
 
-sm_subc_v_u_0 <- abcdutils::get_subc_v(
+sm_subc_v_u_0 <- get_subc_v(
     mri_y_smr_vol_aseg,
     uninjured_subjects,
     t = 0
@@ -685,7 +687,12 @@ mrisdp_151: Cortical thickness in mm for cortical Destrieux ROI mean
 
 smri_thick_cdk_mean: Mean cortical thickness in mm for whole brain for cortical Desikan parcellation
 
+Cortical thickness could be taken from the destrieux or desikan parcellation
+
+First, a check between the Destrieux and Desikan parcellations:
+
 ```{r}
+
 # Comparison of the two parcellations:
 mri_y_smr_thk_dst <- abcd_load(core_path("imaging/mri_y_smr_thk_dst.csv"))
 mri_y_smr_thk_dsk <- abcd_load(core_path("imaging/mri_y_smr_thk_dsk.csv"))
@@ -709,31 +716,37 @@ ggplot(cort_t_dfs, mapping = aes(x = mrisdp_151, y = smri_thick_cdk_mean)) +
     xlab("Destrieux parcellation whole brain cortical thickness") +
     ylab("Desikan parcellation mean brain cortical thickness") +
     theme_bw() +
-    theme(text = element_text(size = 20))
+    theme(text = element_text(size = 10))
 
+ggsave(fig_path("destrieux_vs_desikan_cort_t.png", date = TRUE))
 
-colnames(mri_y_smr_thk_dst)
+```
 
+It seems that there are a few more subjects who had the Desikan parcellations calculated for them.
+
+```{r}
+
+# Selecting Desikan simply because it seems to have a few more subjects
 
 ## Cortical thickness
-sm_cort_t_0_0 <- abcdutils::get_cort_t(
-    mri_y_smr_thk_dst,
+sm_cort_t_0_0 <- get_cort_t(
+    mri_y_smr_thk_dsk,
     mtbi_subjects_0,
     t = 0
 )
 
 write_csv(sm_cort_t_0_0, input_path("sm_cort_t_0_0.csv", date = TRUE))
 
-sm_cort_t_l_0 <- abcdutils::get_cort_t(
-    mri_y_smr_thk_dst,
+sm_cort_t_l_0 <- get_cort_t(
+    mri_y_smr_thk_dsk,
     mtbi_subjects_l,
     t = 0
 )
 
 write_csv(sm_cort_t_l_0, input_path("sm_cort_t_l_0.csv", date = TRUE))
 
-sm_cort_t_u_0 <- abcdutils::get_cort_t(
-    mri_y_smr_thk_dst,
+sm_cort_t_u_0 <- get_cort_t(
+    mri_y_smr_thk_dsk,
     uninjured_subjects,
     t = 0
 )
@@ -747,21 +760,22 @@ write_csv(sm_cort_t_u_0, input_path("sm_cort_t_u_0.csv", date = TRUE))
 ```{r}
 
 mri_y_smr_area_dst <- abcd_load(core_path("imaging/mri_y_smr_area_dst.csv"))
+mri_y_smr_area_dsk <- abcd_load(core_path("imaging/mri_y_smr_area_dsk.csv"))
 
-sm_cort_sa_0_0 <- abcdutils::get_cort_sa(
-    mri_y_smr_area_dst, mtbi_subjects_0, t = 0
+sm_cort_sa_0_0 <- get_cort_sa(
+    mri_y_smr_area_dsk, mtbi_subjects_0, t = 0
 )
 
 write_csv(sm_cort_sa_0_0, input_path("sm_cort_sa_0_0.csv", date = TRUE))
 
-sm_cort_sa_l_0 <- abcdutils::get_cort_sa(
-    mri_y_smr_area_dst, mtbi_subjects_l, t = 0
+sm_cort_sa_l_0 <- get_cort_sa(
+    mri_y_smr_area_dsk, mtbi_subjects_l, t = 0
 )
 
 write_csv(sm_cort_sa_l_0, input_path("sm_cort_sa_l_0.csv", date = TRUE))
 
-sm_cort_sa_u_0 <- abcdutils::get_cort_sa(
-    mri_y_smr_area_dst, uninjured_subjects, t = 0
+sm_cort_sa_u_0 <- get_cort_sa(
+    mri_y_smr_area_dsk, uninjured_subjects, t = 0
 )
 
 write_csv(sm_cort_sa_u_0, input_path("sm_cort_sa_u_0.csv", date = TRUE))
@@ -778,6 +792,14 @@ See diffusion MRI chapter in appendix for full details.
 
 ##### White matter neurite densities
 
+Some potential summary neurite density meeasures:
+
+* dmri_rsirnd_fib_allfib (AtlasTrack fiber segmentation, all fibers)
+* dmri_rsirndwm_cdx_mean (Destrieux cortical parcellation peri-cortical white matter mean)
+* dmri_rsirndwm_cdk_mean (Desikan cortical parcellation peri-cortical white matter mean)
+
+First, a check on how correlated these features are to each other:
+
 ```{r}
 
 # DMRI dataframe
@@ -785,10 +807,65 @@ mri_y_rsi_rnd_at <- abcd_load(core_path("imaging/mri_y_rsi_rnd_at.csv"))
 mri_y_rsi_rnd_wm_dsk <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
 mri_y_rsi_rnd_wm_dst <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dst.csv"))
 
+dsk_pc_wm <- mri_y_rsi_rnd_wm_dsk |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "dmri_rsirndwm_cdk_mean")
+
+dst_pc_wm <- mri_y_rsi_rnd_wm_dst |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "dmri_rsirndwm_cdx_mean")
+
+na.omit(dst_pc_wm) |> dim()
+na.omit(dsk_pc_wm) |> dim()
+
+at_wm <- mri_y_rsi_rnd_at |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "dmri_rsirnd_fib_allfib")
+
+pc_wm_df <- dplyr::inner_join(dst_pc_wm, dsk_pc_wm, by = "subjectkey")
+pc_wm_df <- dplyr::inner_join(pc_wm_df, at_wm, by = "subjectkey") |> na.omit()
+
+pc_wm_df |>
+    ggplot(aes(x = dmri_rsirndwm_cdx_mean, y = dmri_rsirndwm_cdk_mean)) +
+    geom_point() +
+    xlab("Destrieux parcellation peri-cortical white matter neurite density") +
+    ylab("Desikan parcellation peri-cortical white matter neurite density") +
+    theme_bw() +
+    theme(text = element_text(size = 10))
+
+ggsave(fig_path("destrieux_vs_desikan_pericortical_wm_nd.png", date = TRUE))
+
+# Doesn't matter!
+cor(pc_wm_df$"dmri_rsirnd_fib_allfib", pc_wm_df$"dmri_rsirndwm_cdk_mean")
+
+# Peri-cortical WM ND and major fiber WM ND are very correlated but still have
+#  greater than 1 dimension to them
+pc_wm_df |>
+    ggplot(aes(x = dmri_rsirnd_fib_allfib, y = dmri_rsirndwm_cdk_mean)) +
+    geom_point(alpha = 0.2, size = 3) +
+    xlab("AtlasTrack all fiber neurite density") +
+    ylab("Desikan parcellation peri-cortical white matter neurite density") +
+    ylim(c(0.3, 0.5)) +
+    xlim(c(0.5, 0.8)) +
+    theme_bw() +
+    theme(text = element_text(size = 10))
+
+ggsave(fig_path("desikan_pc_wm_nd_vs_at_allfib_nd.png", date = TRUE))
+
+```
+
+So I'll hold on to both of the features.
+
+```{r}
+
+colnames(mri_y_rsi_rnd_at)
+
+
+mri_y_rsi_rnd_wm_dsk <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
+
 # White matter neurite densities
 dm_all_wmnd_0_0 <- get_all_wmnd(
     mri_y_rsi_rnd_at,
-    mri_y_rsi_rnd_wm_dst,
     mri_y_rsi_rnd_wm_dsk,
     subjects = mtbi_subjects_0,
     t = 0
@@ -797,7 +874,6 @@ write_csv(dm_all_wmnd_0_0, input_path("dm_all_wmnd_0_0.csv", date = TRUE))
 
 dm_all_wmnd_l_0 <- get_all_wmnd(
     mri_y_rsi_rnd_at,
-    mri_y_rsi_rnd_wm_dst,
     mri_y_rsi_rnd_wm_dsk,
     subjects = mtbi_subjects_l,
     t = 0
@@ -806,7 +882,6 @@ write_csv(dm_all_wmnd_l_0, input_path("dm_all_wmnd_l_0.csv", date = TRUE))
 
 dm_all_wmnd_u_0 <- get_all_wmnd(
     mri_y_rsi_rnd_at,
-    mri_y_rsi_rnd_wm_dst,
     mri_y_rsi_rnd_wm_dsk,
     subjects = uninjured_subjects,
     t = 0
@@ -821,15 +896,40 @@ We are interested in the following rs-fMRI measures:
 
 - Gordon network (cortical) correlations
 - Subcortical correlations
-- Gordon and subcortical temporal variances
 
-##### Cortical parcellation network correlations
+How correlated are these two features?
 
 ```{r}
 
 mri_y_rsfmr_cor_gp_gp <- abcd_load(
     core_path("imaging/mri_y_rsfmr_cor_gp_gp.csv")
 )
+
+mri_y_rsfmr_cor_gp_aseg <- abcd_load(
+    core_path("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
+)
+
+gord_cors <- mri_y_rsfmr_cor_gp_gp |> get_gord_cor(t = 0)
+subc_cors <- mri_y_rsfmr_cor_gp_aseg |> get_subc_cor(t = 0)
+
+rsfmri_cors <- dplyr::inner_join(gord_cors, subc_cors, by = "subjectkey") |>
+    na.omit()
+
+rsfmri_cors |>
+    ggplot(aes(x = avg_gord_cor, y = avg_subc_cor)) +
+    geom_point(alpha = 0.2, size = 3) +
+    xlim(c(0, 0.1)) +
+    ylim(c(-0.1, 0.15)) +
+    theme_bw()
+
+ggsave(fig_path("gord_vs_subc_cors.png", date = TRUE))
+
+```
+
+
+##### Cortical parcellation network correlations
+
+```{r}
 
 rm_gord_cor_0_0 <- get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
@@ -861,10 +961,6 @@ write_csv(rm_gord_cor_u_0, input_path("rm_gord_cor_u_0.csv", date = TRUE))
 
 ```{r}
 
-mri_y_rsfmr_cor_gp_aseg <- abcd_load(
-    core_path("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
-)
-
 rm_subc_cor_0_0 <- get_subc_cor(
     mri_y_rsfmr_cor_gp_aseg,
     mtbi_subjects_0,
@@ -888,46 +984,6 @@ rm_subc_cor_u_0 <- get_subc_cor(
 )
 
 write_csv(rm_subc_cor_u_0, input_path("rm_subc_cor_u_0.csv", date = TRUE))
-
-```
-
-##### Cortical parcellation temporal variances
-
-```{r}
-
-mri_y_rsfmr_var_gp <- abcd_load(core_path("imaging/mri_y_rsfmr_var_gp.csv"))
-
-rm_gord_var_0_0 <- get_gord_var(mri_y_rsfmr_var_gp, mtbi_subjects_0, t = 0)
-
-write_csv(rm_gord_var_0_0, input_path("rm_gord_var_0_0.csv", date = TRUE))
-
-rm_gord_var_l_0 <- get_gord_var(mri_y_rsfmr_var_gp, mtbi_subjects_l, t = 0)
-
-write_csv(rm_gord_var_l_0, input_path("rm_gord_var_l_0.csv", date = TRUE))
-
-rm_gord_var_u_0 <- get_gord_var(mri_y_rsfmr_var_gp, uninjured_subjects, t = 0)
-
-write_csv(rm_gord_var_u_0, input_path("rm_gord_var_u_0.csv", date = TRUE))
-
-```
-
-##### Subcortical parcellation temporal variances
-
-```{r}
-
-mri_y_rsfmr_var_aseg <- abcd_load(core_path("imaging/mri_y_rsfmr_var_aseg.csv"))
-
-rm_subc_var_0_0 <- get_subc_var(mri_y_rsfmr_var_aseg, mtbi_subjects_0, t = 0)
-
-write_csv(rm_subc_var_0_0, input_path("rm_subc_var_0_0.csv", date = TRUE))
-
-rm_subc_var_l_0 <- get_subc_var(mri_y_rsfmr_var_aseg, mtbi_subjects_l, t = 0)
-
-write_csv(rm_subc_var_l_0, input_path("rm_subc_var_l_0.csv", date = TRUE))
-
-rm_subc_var_u_0 <- get_subc_var(mri_y_rsfmr_var_aseg, uninjured_subjects, t = 0)
-
-write_csv(rm_subc_var_u_0, input_path("rm_subc_var_u_0.csv", date = TRUE))
 
 ```
 
@@ -1169,11 +1225,10 @@ write_csv(p_parent_psych_u_0, input_path("p_parent_psych_u_0.csv", date = TRUE))
 
 These are collected at both baseline and longitudinal timepoints.
 
-#### Anxious-depressed
+First, a check on missingness in CBCL:
 
 ```{r}
 
-mh_p_asr <- abcd_load(core_path("mental-health/mh_p_asr.csv"))
 mh_p_cbcl <- abcd_load(core_path("mental-health/mh_p_cbcl.csv"))
 
 get_cbcl_syndrome_scale(
@@ -1181,7 +1236,7 @@ get_cbcl_syndrome_scale(
     mh_p_cbcl,
     raw = TRUE,
     subjects = mtbi_subjects_0,
-    t = 1
+    t = 0
 ) |>
     na.omit() |>
     dim()
@@ -1196,6 +1251,35 @@ get_cbcl_syndrome_scale(
     na.omit() |>
     dim()
 
+mtbi_cbcl <- dplyr::inner_join(mh_p_cbcl, mtbi_subjects_0, by = "subjectkey") |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select(dplyr::contains("scr_syn"))
+
+all_cbcl <- mh_p_cbcl |>
+    dplyr::select(dplyr::contains("scr_syn"))
+
+dim(na.omit(mtbi_cbcl)) - dim(mtbi_cbcl)
+
+dim(na.omit(all_cbcl)) - dim(all_cbcl)
+
+hist(mtbi_cbcl$"cbcl_scr_syn_anxdep_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_withdep_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_somatic_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_social_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_thought_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_attention_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_rulebreak_r")
+hist(mtbi_cbcl$"cbcl_scr_syn_aggressive_r")
+
+```
+
+It doesn't seem like the baseline subjects have any missing mTBI data
+
+#### Anxious-depressed
+
+```{r}
+
+mh_p_asr <- abcd_load(core_path("mental-health/mh_p_asr.csv"))
 
 ## At baseline
 cbcl_anxdep_ss_0_0 <- get_cbcl_syndrome_scale(
@@ -1205,6 +1289,9 @@ cbcl_anxdep_ss_0_0 <- get_cbcl_syndrome_scale(
     subjects = mtbi_subjects_0,
     t = 0
 )
+
+cbcl_anxdep_ss_0_0
+
 write_csv(
     cbcl_anxdep_ss_0_0,
     input_path("cbcl_anxdep_ss_0_0.csv", date = TRUE)
@@ -1907,6 +1994,7 @@ write_csv(
 ### Sleep disturbance scale
 
 ```{r}
+
 ph_p_sds <- abcd_load(core_path("physical-health/ph_p_sds.csv"))
 
 # Baseline
@@ -1921,6 +2009,8 @@ write_csv(
         "sds_total_probs_0_0.csv",
         date = TRUE
     )
+)
+
 sds_total_probs_l_0 <- get_sds_total_probs(
     ph_p_sds,
     mtbi_subjects_l,
@@ -1946,7 +2036,6 @@ write_csv(
         date = TRUE
     )
 )
-
 
 # 2yfu
 sds_total_probs_0_l <- get_sds_total_probs(
@@ -1987,6 +2076,7 @@ write_csv(
         date = TRUE
     )
 )
+
 ```
 
 # R Session Information
