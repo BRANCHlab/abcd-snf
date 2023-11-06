@@ -1,5 +1,114 @@
 # Data extraction
 
+## Libraries, path names, and importing of raw data
+
+```{r}
+
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(knitr)
+library(abcdutils)
+
+core_path <- path_maker(here(paste0("data/abcd/core")))
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+# Ohio TBI screen
+ph_p_otbi <- abcd_load(core_path("physical-health/ph_p_otbi.csv"))
+
+# Age
+abcd_y_lt <- abcd_load(core_path("abcd-general/abcd_y_lt.csv"))
+
+# Pubertal development scale, youth report
+ph_y_pds <- abcd_load(core_path("physical-health/ph_y_pds.csv"))
+
+# Pubertal development scale, parent report
+ph_p_pds <- abcd_load(core_path("physical-health/ph_p_pds.csv"))
+
+# Parent report of gender identity
+gish_p_gi <- abcd_load(core_path("gender-identity-sexual-health/gish_p_gi.csv"))
+
+# Youth report of gender identity
+gish_y_gi <- abcd_load(core_path("gender-identity-sexual-health/gish_y_gi.csv"))
+
+# Demographic data
+abcd_p_demo <- abcd_load(core_path("abcd-general/abcd_p_demo.csv"))
+
+# Medical history
+ph_p_mhx <- abcd_load(core_path("physical-health/ph_p_mhx.csv"))
+
+# Subcortical volumes (ASEG)
+mri_y_smr_vol_aseg <- abcd_load(core_path("imaging/mri_y_smr_vol_aseg.csv"))
+
+# Desikan cortical thicknesses
+mri_y_smr_thk_dsk <- abcd_load(core_path("imaging/mri_y_smr_thk_dsk.csv"))
+
+# Destrieux cortical thicknesses
+mri_y_smr_thk_dst <- abcd_load(core_path("imaging/mri_y_smr_thk_dst.csv"))
+
+# Desikan cortical surface areas
+mri_y_smr_area_dsk <- abcd_load(core_path("imaging/mri_y_smr_area_dsk.csv"))
+
+# Destrieux cortical surface areas
+mri_y_smr_area_dst <- abcd_load(core_path("imaging/mri_y_smr_area_dst.csv"))
+
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at <- abcd_load(core_path("imaging/mri_y_rsi_rnd_at.csv"))
+
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
+
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dst.csv"))
+
+# rs-fMRI cortical-cortical correlations
+mri_y_rsfmr_cor_gp_gp <- abcd_load(
+    core_path("imaging/mri_y_rsfmr_cor_gp_gp.csv")
+)
+
+# rs-fMRI cortical-subcortical correlations
+mri_y_rsfmr_cor_gp_aseg <- abcd_load(
+    core_path("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
+)
+
+# Loneliness
+mh_y_or <- abcd_load(core_path("mental-health/mh_y_or.csv"))
+
+# Screen time
+nt_p_stq <- abcd_load(core_path("novel-technologies/nt_p_stq.csv"))
+
+# Participation in sports and activities
+ph_p_saiq <- abcd_load(core_path("physical-health/ph_p_saiq.csv"))
+
+# Exercise habits
+ph_y_yrb <- abcd_load(core_path("physical-health/ph_y_yrb.csv"))
+
+# Youth report of prosocial behaviour
+ce_y_psb <- abcd_load(core_path("culture-environment/ce_y_psb.csv"))
+
+# Parent report of prosocial behaviour
+ce_p_psb <- abcd_load(core_path("culture-environment/ce_p_psb.csv"))
+
+# Youth report of family function
+ce_y_fes <- abcd_load(core_path("culture-environment/ce_y_fes.csv"))
+
+# Parent report of family function
+ce_p_fes <- abcd_load(core_path("culture-environment/ce_p_fes.csv"))
+
+# Parent ASEBA self-report (psychopathology)
+mh_p_asr <- abcd_load(core_path("mental-health/mh_p_asr.csv"))
+
+# Parent report of child behaviour (CBCL)
+mh_p_cbcl <- abcd_load(core_path("mental-health/mh_p_cbcl.csv"))
+
+# Sleep disturbance scale
+ph_p_sds <- abcd_load(core_path("physical-health/ph_p_sds.csv"))
+
+```
+
 ## Subjects
 
 All information required for identifying children at a chronic stage following mTBI as of baseline data collection is available in the `abcd_otbi01.txt` file, and in the `abcd_lpohstbi01.txt` file for longitudinal data.
@@ -36,136 +145,19 @@ The fixed nature of the questionnaire also meant that some information about mul
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
 ```{r}
+# mTBI subjects (latest mTBI at least 3 months prior to baseline collection
+mtbi_subjects <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 0)
 
-library(ggplot2)
-library(readr)
-library(dplyr)
-library(here)
-library(knitr)
-library(abcdutils)
+# Uninjured subjects (those with no injuries as of baseline collection)
+uninjured_subjects <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0)
 
-core_path <- path_maker(here(paste0("data/abcd/core")))
-input_path <- path_maker(here(paste0("data/abcd/inputs")))
-sub_path <- path_maker(here(paste0("data/abcd/subjects")))
-fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-
-
-# Loading data
-## TBI
-ph_p_otbi <- abcd_load(core_path("physical-health/ph_p_otbi.csv"))
-
-## Age
-abcd_y_lt <- abcd_load(core_path("abcd-general/abcd_y_lt.csv"))
-
-# mTBI subjects
-## Baseline at chronic stage post-mTBI (> 3 months) for analyses
-(mtbi_subjects_0 <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 0))
-
-write_csv(
-    mtbi_subjects_0,
-    sub_path("mtbi_subjects_0.csv", date = TRUE)
-)
-
-## Baseline including recent mTBIs to exclude from longitudinal data
-(mtbi_subjects_0_no_min <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, t = 0))
-
-## Year 1 follow-up - assessments will just be taken from 2 yr follow up time
-(mtbi_subjects_1 <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, t = 1))
-
-write_csv(
-    mtbi_subjects_1,
-    sub_path("mtbi_subjects_1.csv", date = TRUE)
-)
-
-## Year 2 follow-up
-(mtbi_subjects_2 <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 2))
-
-write_csv(
-    mtbi_subjects_2,
-    sub_path("mtbi_subjects_2.csv", date = TRUE)
-)
-
-## Those with injuries in year 1 + 2
-mtbi_subjects_1_2 <-
-    dplyr::full_join(mtbi_subjects_1, mtbi_subjects_2, by = "subjectkey")
-
-write_csv(
-    mtbi_subjects_1_2,
-    sub_path("mtbi_subjects_1_2.csv", date = TRUE)
-)
-
-## Those with injuries in year 1 + 2, but not year 0 (exclusively longitudinal)
-mtbi_subjects_l <- mtbi_subjects_1_2[which(!(
-    mtbi_subjects_1_2$"subjectkey" %in%
-        mtbi_subjects_0_no_min$"subjectkey")), ]
-
-mtbi_subjects_l <- data.frame("subjectkey" = mtbi_subjects_l)
-
-write_csv(
-    mtbi_subjects_l,
-    sub_path("mtbi_subjects_l.csv", date = TRUE)
-)
-
-# Control subjects (those with no injuries in year 1, 2, or 3)
-uninjured_subjects <- get_uninjured_subjects(
-    ph_p_otbi,
-    abcd_y_lt
-)
-
-write_csv(
-    uninjured_subjects,
-    sub_path("uninjured_subjects.csv", date = TRUE)
-)
-
-# Within mtbi_subjects xl, I need to keep track of which subjects had their
-#  latest injury in year 1 and which ones had their latest injury in year 2.
-#  This is only so that the mTBI specific variables, like memory loss, are
-#  recorded for the most recent injury.
-mtbi_subjects_1_not_0 <- dplyr::semi_join(
-    mtbi_subjects_1,
-    mtbi_subjects_l,
-    by = "subjectkey"
-)
-
-write_csv(
-    mtbi_subjects_1_not_0,
-    sub_path("mtbi_subjects_1_not_0.csv", date = TRUE)
-)
-
-mtbi_subjects_2_not_0 <- dplyr::semi_join(
-    mtbi_subjects_2,
-    mtbi_subjects_l,
-    by = "subjectkey"
-)
-
-write_csv(
-    mtbi_subjects_2_not_0,
-    sub_path("mtbi_subjects_2_not_0.csv", date = TRUE)
-)
+write_csv(mtbi_subjects, sub_path("mtbi_subjects.csv", date = TRUE))
+write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
 # Note that the longitudinal subjects have not been filtered in any way based on
-#  whether or not they also had an mTBI at bsaeline or another timepoint
-mtbi_subjects_0 <- read_csv(
-    sub_path("2023_09_20_mtbi_subjects_0.csv")
-)
-mtbi_subjects_1 <- read_csv(
-    sub_path("2023_09_20_mtbi_subjects_1.csv")
-)
-mtbi_subjects_2 <- read_csv(
-    sub_path("2023_09_20_mtbi_subjects_2.csv")
-)
-mtbi_subjects_l <- read_csv(
-    sub_path("2023_09_20_mtbi_subjects_l.csv")
-)
-mtbi_subjects_1_not_0 <- read_csv(
-    sub_path("2023_09_20_mtbi_subjects_1_not_0.csv")
-)
-mtbi_subjects_2_not_0 <- read_csv(
-    sub_path("2023_09_20_mtbi_subjects_2_not_0.csv")
-)
-uninjured_subjects <- read_csv(
-    sub_path("2023_09_20_uninjured_subjects.csv")
-)
+#  whether or not they also had an mTBI at baseline or another timepoint
+mtbi_subjects <- read_csv(sub_path("2023_11_06_mtbi_subjects_0.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_11_06_uninjured_subjects.csv"))
 
 ```
 
@@ -210,46 +202,19 @@ A few more intermediate columns need to be added to isolate these variables for 
 #### Feeling dazed
 
 ```{r}
-
 # Baseline values of subjects with injuries prior to baseline
-as_mtbi_mem_daze_0_0 <-
-    get_mtbi_mem_daze(ph_p_otbi, abcd_y_lt, mtbi_subjects_0, t = 0)
+as_mtbi_mem_daze_mtbi <-
+    get_mtbi_mem_daze(ph_p_otbi, abcd_y_lt, mtbi_subjects, t = 0)
 
 write_csv(
-    as_mtbi_mem_daze_0_0,
-    input_path("as_mtbi_mem_daze_0_0.csv", date = TRUE)
+    as_mtbi_mem_daze_mtbi,
+    input_path("as_mtbi_mem_daze_mtbi.csv", date = TRUE)
 )
-
-# Baseline values of subjects who received injuries between baseline and 2yfu
-# This should just be a lot of NA values, as they haven't had their injuries yet
-as_mtbi_mem_daze_l_0 <-
-    get_mtbi_mem_daze(ph_p_otbi, abcd_y_lt, mtbi_subjects_l, t = 0)
-
-write_csv(
-    as_mtbi_mem_daze_l_0,
-    input_path("as_mtbi_mem_daze_l_0.csv", date = TRUE)
-)
-
-# Longitudinal values of subjects who received injuries between bl and 2yfu
-as_mtbi_mem_daze_l_l <- get_mtbi_mem_daze_l(
-    ph_p_otbi,
-    abcd_y_lt,
-    mtbi_subjects_l,
-    mtbi_subjects_1,
-    mtbi_subjects_2
-)
-
-write_csv(
-    as_mtbi_mem_daze_l_l,
-    input_path("as_mtbi_mem_daze_l_l.csv", date = TRUE)
-)
-
 ```
 
 #### Mechanism of injury
 
 ```{r}
-
 # Baseline values of subjects with injuries prior to baseline
 as_mtbi_mechanism_0_0 <-
     get_mtbi_mechanism(ph_p_otbi, abcd_y_lt, mtbi_subjects_0, t = 0)
@@ -341,9 +306,6 @@ Age and sex are commonly included in the ABCD study's data files.
 #### Pubertal status
 
 ```{r}
-
-ph_y_pds <- abcd_load(core_path("physical-health/ph_y_pds.csv"))
-ph_p_pds <- abcd_load(core_path("physical-health/ph_p_pds.csv"))
 
 d_pubertal_status_0_0 <-
     get_pubertal_status(ph_p_pds, ph_y_pds, mtbi_subjects_0, t = 0)
@@ -463,9 +425,6 @@ write_csv(d_mtbi_age_l_l, input_path("d_mtbi_age_l_l.csv", TRUE))
 #### Sex at birth
 
 ```{r}
-
-gish_p_gi <- abcd_load(core_path("gender-identity-sexual-health/gish_p_gi.csv"))
-
 (d_sex_0_0 <- get_sex(gish_p_gi, mtbi_subjects_0, t = 0))
 
 write_csv(d_sex_0_0, input_path("d_sex_0_0.csv", TRUE))
@@ -483,8 +442,6 @@ write_csv(d_sex_u_0, input_path("d_sex_u_0.csv", TRUE))
 #### Parent report of gender
 
 ```{r}
-
-gish_y_gi <- abcd_load(core_path("gender-identity-sexual-health/gish_y_gi.csv"))
 
 # Gender identity - only parent reports are available at baseline. 4 year data
 #  is the earliest timepoint where child reports are available.
@@ -517,8 +474,6 @@ write_csv(d_y_gender_u_4, input_path("d_y_gender_u_4.csv", TRUE))
 #### Household income
 
 ```{r}
-
-abcd_p_demo <- abcd_load(core_path("abcd-general/abcd_p_demo.csv"))
 
 (d_income_0_0 <- get_income(abcd_p_demo, mtbi_subjects_0, t = 0))
 
@@ -582,8 +537,6 @@ Unfortunately, information on pain (the file `abcd_pq01.txt`), a factor noted as
 #### History of headaches
 
 ```{r}
-
-ph_p_mhx <- abcd_load(core_path("physical-health/ph_p_mhx.csv"))
 
 (mh_headaches_0_0 <- get_headaches(ph_p_mhx, mtbi_subjects_0, t = 0))
 
@@ -650,9 +603,6 @@ For cortical thicknesses, the relevant file is abcd_mrisdp10201, which contains 
 ##### Subcortical volume
 
 ```{r}
-
-mri_y_smr_vol_aseg <- abcd_load(core_path("imaging/mri_y_smr_vol_aseg.csv"))
-
 sm_subc_v_0_0 <- get_subc_v(
     mri_y_smr_vol_aseg,
     mtbi_subjects_0,
@@ -676,7 +626,6 @@ sm_subc_v_u_0 <- get_subc_v(
 )
 
 write_csv(sm_subc_v_u_0, input_path("sm_subc_v_u_0.csv", date = TRUE))
-
 ```
 
 ##### Cortical thickness
@@ -687,51 +636,15 @@ mrisdp_151: Cortical thickness in mm for cortical Destrieux ROI mean
 
 smri_thick_cdk_mean: Mean cortical thickness in mm for whole brain for cortical Desikan parcellation
 
-Cortical thickness could be taken from the destrieux or desikan parcellation
-
-First, a check between the Destrieux and Desikan parcellations:
-
-```{r}
-
-# Comparison of the two parcellations:
-mri_y_smr_thk_dst <- abcd_load(core_path("imaging/mri_y_smr_thk_dst.csv"))
-mri_y_smr_thk_dsk <- abcd_load(core_path("imaging/mri_y_smr_thk_dsk.csv"))
-
-dst_cort_t <- mri_y_smr_thk_dst |>
-    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
-    dplyr::select("subjectkey", "mrisdp_151")
-
-dsk_cort_t <- mri_y_smr_thk_dsk |>
-    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
-    dplyr::select("subjectkey", "smri_thick_cdk_mean")
-
-cort_t_dfs <- dplyr::inner_join(dst_cort_t, dsk_cort_t, by = "subjectkey") |>
-    na.omit()
-
-dst_cort_t |> na.omit() |> dim() # 11715 participants
-dsk_cort_t |> na.omit() |> dim() # 11728 participants?
-
-ggplot(cort_t_dfs, mapping = aes(x = mrisdp_151, y = smri_thick_cdk_mean)) +
-    geom_point() +
-    xlab("Destrieux parcellation whole brain cortical thickness") +
-    ylab("Desikan parcellation mean brain cortical thickness") +
-    theme_bw() +
-    theme(text = element_text(size = 10))
-
-ggsave(fig_path("destrieux_vs_desikan_cort_t.png", date = TRUE))
-
-```
-
-It seems that there are a few more subjects who had the Desikan parcellations calculated for them.
+A comparison between the two can be found in the appendix.
+Because there happens to be a few more participants with calculated Desikan parcellations, that is what is used here.
 
 ```{r}
-
-# Selecting Desikan simply because it seems to have a few more subjects
 
 ## Cortical thickness
-sm_cort_t_0_0 <- get_cort_t(
+sm_cort_t_mtbi <- get_cort_t(
     mri_y_smr_thk_dsk,
-    mtbi_subjects_0,
+    mtbi_subjects,
     t = 0
 )
 
@@ -758,9 +671,6 @@ write_csv(sm_cort_t_u_0, input_path("sm_cort_t_u_0.csv", date = TRUE))
 ##### Cortical surface areas
 
 ```{r}
-
-mri_y_smr_area_dst <- abcd_load(core_path("imaging/mri_y_smr_area_dst.csv"))
-mri_y_smr_area_dsk <- abcd_load(core_path("imaging/mri_y_smr_area_dsk.csv"))
 
 sm_cort_sa_0_0 <- get_cort_sa(
     mri_y_smr_area_dsk, mtbi_subjects_0, t = 0
@@ -798,78 +708,16 @@ Some potential summary neurite density meeasures:
 * dmri_rsirndwm_cdx_mean (Destrieux cortical parcellation peri-cortical white matter mean)
 * dmri_rsirndwm_cdk_mean (Desikan cortical parcellation peri-cortical white matter mean)
 
-First, a check on how correlated these features are to each other:
-
 ```{r}
-
-# DMRI dataframe
-mri_y_rsi_rnd_at <- abcd_load(core_path("imaging/mri_y_rsi_rnd_at.csv"))
-mri_y_rsi_rnd_wm_dsk <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
-mri_y_rsi_rnd_wm_dst <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dst.csv"))
-
-dsk_pc_wm <- mri_y_rsi_rnd_wm_dsk |>
-    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
-    dplyr::select("subjectkey", "dmri_rsirndwm_cdk_mean")
-
-dst_pc_wm <- mri_y_rsi_rnd_wm_dst |>
-    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
-    dplyr::select("subjectkey", "dmri_rsirndwm_cdx_mean")
-
-na.omit(dst_pc_wm) |> dim()
-na.omit(dsk_pc_wm) |> dim()
-
-at_wm <- mri_y_rsi_rnd_at |>
-    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
-    dplyr::select("subjectkey", "dmri_rsirnd_fib_allfib")
-
-pc_wm_df <- dplyr::inner_join(dst_pc_wm, dsk_pc_wm, by = "subjectkey")
-pc_wm_df <- dplyr::inner_join(pc_wm_df, at_wm, by = "subjectkey") |> na.omit()
-
-pc_wm_df |>
-    ggplot(aes(x = dmri_rsirndwm_cdx_mean, y = dmri_rsirndwm_cdk_mean)) +
-    geom_point() +
-    xlab("Destrieux parcellation peri-cortical white matter neurite density") +
-    ylab("Desikan parcellation peri-cortical white matter neurite density") +
-    theme_bw() +
-    theme(text = element_text(size = 10))
-
-ggsave(fig_path("destrieux_vs_desikan_pericortical_wm_nd.png", date = TRUE))
-
-# Doesn't matter!
-cor(pc_wm_df$"dmri_rsirnd_fib_allfib", pc_wm_df$"dmri_rsirndwm_cdk_mean")
-
-# Peri-cortical WM ND and major fiber WM ND are very correlated but still have
-#  greater than 1 dimension to them
-pc_wm_df |>
-    ggplot(aes(x = dmri_rsirnd_fib_allfib, y = dmri_rsirndwm_cdk_mean)) +
-    geom_point(alpha = 0.2, size = 3) +
-    xlab("AtlasTrack all fiber neurite density") +
-    ylab("Desikan parcellation peri-cortical white matter neurite density") +
-    ylim(c(0.3, 0.5)) +
-    xlim(c(0.5, 0.8)) +
-    theme_bw() +
-    theme(text = element_text(size = 10))
-
-ggsave(fig_path("desikan_pc_wm_nd_vs_at_allfib_nd.png", date = TRUE))
-
-```
-
-So I'll hold on to both of the features.
-
-```{r}
-
-colnames(mri_y_rsi_rnd_at)
-
-
-mri_y_rsi_rnd_wm_dsk <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
 
 # White matter neurite densities
-dm_all_wmnd_0_0 <- get_all_wmnd(
+dm_all_wmnd_mtbi <- get_all_wmnd(
     mri_y_rsi_rnd_at,
     mri_y_rsi_rnd_wm_dsk,
-    subjects = mtbi_subjects_0,
+    subjects = mtbi_subjects,
     t = 0
 )
+
 write_csv(dm_all_wmnd_0_0, input_path("dm_all_wmnd_0_0.csv", date = TRUE))
 
 dm_all_wmnd_l_0 <- get_all_wmnd(
@@ -900,14 +748,6 @@ We are interested in the following rs-fMRI measures:
 How correlated are these two features?
 
 ```{r}
-
-mri_y_rsfmr_cor_gp_gp <- abcd_load(
-    core_path("imaging/mri_y_rsfmr_cor_gp_gp.csv")
-)
-
-mri_y_rsfmr_cor_gp_aseg <- abcd_load(
-    core_path("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
-)
 
 gord_cors <- mri_y_rsfmr_cor_gp_gp |> get_gord_cor(t = 0)
 subc_cors <- mri_y_rsfmr_cor_gp_aseg |> get_subc_cor(t = 0)
@@ -995,7 +835,6 @@ Psychosocial factors of interest include:
 
 ```{r}
 
-mh_y_or <- abcd_load(core_path("mental-health/mh_y_or.csv"))
 
 p_loneliness_0_0 <- get_loneliness(
     mh_y_or,
@@ -1029,7 +868,6 @@ write_csv(p_loneliness_u_0, input_path("p_loneliness_u_0.csv", date = TRUE))
 
 ```{r}
 
-nt_p_stq <- abcd_load(core_path("novel-technologies/nt_p_stq.csv"))
 
 p_screen_time_0_0 <- get_screen_time(
     nt_p_stq,
@@ -1058,7 +896,6 @@ write_csv(p_screen_time_u_0, input_path("p_screen_time_u_0.csv", date = TRUE))
 
 ```{r}
 
-ph_p_saiq <- abcd_load(core_path("physical-health/ph_p_saiq.csv"))
 
 p_sports_0_0 <- get_sports_and_activities(
     ph_p_saiq,
@@ -1087,8 +924,6 @@ write_csv(p_sports_u_0, input_path("p_sports_u_0.csv", date = TRUE))
 
 ```{r}
 
-ph_y_yrb <- abcd_load(core_path("physical-health/ph_y_yrb.csv"))
-
 p_exercise_0_0 <- get_exercise(
     ph_y_yrb,
     mtbi_subjects_0,
@@ -1115,9 +950,6 @@ write_csv(p_exercise_u_0, input_path("p_exercise_u_0.csv", date = TRUE))
 #### Prosocial behaviour
 
 ```{r}
-
-ce_y_psb <- abcd_load(core_path("culture-environment/ce_y_psb.csv"))
-ce_p_psb <- abcd_load(core_path("culture-environment/ce_p_psb.csv"))
 
 p_prosocial_0_0 <- get_prosocial_behaviour(
     ce_p_psb,
@@ -1148,9 +980,6 @@ write_csv(p_prosocial_u_0, input_path("p_prosocial_u_0.csv", date = TRUE))
 #### Family function
 
 ```{r}
-
-ce_y_fes <- abcd_load(core_path("culture-environment/ce_y_fes.csv"))
-ce_p_fes <- abcd_load(core_path("culture-environment/ce_p_fes.csv"))
 
 p_family_function_0_0 <- get_family_function(
     ce_y_fes,
@@ -1191,8 +1020,6 @@ write_csv(
 
 ```{r}
 
-mh_p_asr <- abcd_load(core_path("mental-health/mh_p_asr.csv"))
-
 p_parent_psych_0_0 <- get_parent_psychopathology(
     mh_p_asr,
     mtbi_subjects_0,
@@ -1228,8 +1055,6 @@ These are collected at both baseline and longitudinal timepoints.
 First, a check on missingness in CBCL:
 
 ```{r}
-
-mh_p_cbcl <- abcd_load(core_path("mental-health/mh_p_cbcl.csv"))
 
 get_cbcl_syndrome_scale(
     syndrome = "anxdep",
@@ -1278,8 +1103,6 @@ It doesn't seem like the baseline subjects have any missing mTBI data
 #### Anxious-depressed
 
 ```{r}
-
-mh_p_asr <- abcd_load(core_path("mental-health/mh_p_asr.csv"))
 
 ## At baseline
 cbcl_anxdep_ss_0_0 <- get_cbcl_syndrome_scale(
@@ -1994,8 +1817,6 @@ write_csv(
 ### Sleep disturbance scale
 
 ```{r}
-
-ph_p_sds <- abcd_load(core_path("physical-health/ph_p_sds.csv"))
 
 # Baseline
 sds_total_probs_0_0 <- get_sds_total_probs(

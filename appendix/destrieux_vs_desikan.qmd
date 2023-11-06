@@ -1,0 +1,120 @@
+# Destrieux and Desikan Parcellations
+
+The Destrieux and Desikan parcellations can both be used to obtain brain structure information on a region-by-region basis.
+
+This file is by no means an exhaustive comparison of the two parcellations, but briefly outlines their correlation on variables included in this study.
+
+## Libraries, path names, and importing of raw data
+
+```{r}
+library(here)
+library(abcdutils)
+library(ggplot2)
+
+core_path <- path_maker(here(paste0("data/abcd/core")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+# Desikan cortical thicknesses
+mri_y_smr_thk_dsk <- abcd_load(core_path("imaging/mri_y_smr_thk_dsk.csv"))
+
+# Destrieux cortical thicknesses
+mri_y_smr_thk_dst <- abcd_load(core_path("imaging/mri_y_smr_thk_dst.csv"))
+
+# Desikan cortical surface areas
+mri_y_smr_area_dsk <- abcd_load(core_path("imaging/mri_y_smr_area_dsk.csv"))
+
+# Destrieux cortical surface areas
+mri_y_smr_area_dst <- abcd_load(core_path("imaging/mri_y_smr_area_dst.csv"))
+
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at <- abcd_load(core_path("imaging/mri_y_rsi_rnd_at.csv"))
+
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
+
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst <- abcd_load(core_path("imaging/mri_y_rsi_rnd_wm_dst.csv"))
+```
+
+## Cortical thickness
+
+### Missing data counts
+
+```{r}
+# Comparison of the two parcellations:
+dst_cort_t <- mri_y_smr_thk_dst |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "mrisdp_151")
+
+dsk_cort_t <- mri_y_smr_thk_dsk |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "smri_thick_cdk_mean")
+
+dsk_cort_t |> na.omit() |> dim() # 11728 participants
+dst_cort_t |> na.omit() |> dim() # 11715 participants
+```
+
+It's close, but it looks like a few more participants have complete data with the Desikan parcellation.
+
+### Correlation
+
+```{r}
+cort_t_dfs <- dplyr::inner_join(dst_cort_t, dsk_cort_t, by = "subjectkey") |>
+    na.omit()
+
+cort_t_dfs |>
+    ggplot(aes(x = mrisdp_151, y = smri_thick_cdk_mean)) +
+    geom_point() +
+    labs(
+        x = "Destrieux parcellation whole brain cortical thickness",
+        y = "Desikan parcellation mean brain cortical thickness"
+    ) +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+cor(cort_t_dfs$"mrisdp_151", cort_t_dfs$"smri_thick_cdk_mean")
+
+ggsave(fig_path("destrieux_vs_desikan_cort_t.png", date = TRUE))
+```
+
+Excluding what looks like negligible noise, they seem to be nearly identical.
+
+## Neurite densities
+
+### Missing data
+
+```{r}
+dsk_pc_wm <- mri_y_rsi_rnd_wm_dsk |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "dmri_rsirndwm_cdk_mean")
+
+dst_pc_wm <- mri_y_rsi_rnd_wm_dst |>
+    dplyr::filter(eventname == "baseline_year_1_arm_1") |>
+    dplyr::select("subjectkey", "dmri_rsirndwm_cdx_mean")
+
+dsk_pc_wm |> na.omit() |> dim()
+dst_pc_wm |> na.omit() |> dim()
+```
+
+Again it appears that a few more participants have Desikan data.
+
+### Correlation
+
+```{r}
+pc_wm_df <- dplyr::inner_join(dst_pc_wm, dsk_pc_wm, by = "subjectkey") |>
+    na.omit()
+
+pc_wm_df |>
+    ggplot(aes(x = dmri_rsirndwm_cdx_mean, y = dmri_rsirndwm_cdk_mean)) +
+    geom_point() +
+    labs(
+        x = "Destrieux parcellation peri-cortical WM neurite density",
+        y = "Desikan parcellation peri-cortical WM neurite density"
+    ) +
+    theme_bw() +
+    theme(text = element_text(size = 20))
+
+cor(pc_wm_df$"dmri_rsirndwm_cdx_mean", pc_wm_df$"dmri_rsirndwm_cdk_mean")
+
+ggsave(fig_path("destrieux_vs_desikan_pericortical_wm_nd.png", date = TRUE))
+```
