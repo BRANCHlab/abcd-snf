@@ -1,0 +1,556 @@
+# Characterizing Missingness
+
+```{r}
+
+library(abcdutils)
+library(here)
+library(readr)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+#raw_path <- path_maker(here(paste0("data/abcd/raw")))
+#core_path <- path_maker(here(paste0("data/abcd/core")))
+#misc_path <- path_maker(here(paste0("data/abcd/misc")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+#fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+# Subjects
+mtbi_subjects <- read_csv(sub_path("2023_11_07_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_11_07_uninjured_subjects.csv"))
+
+rm_gord_cor_qc_mtbi <- read_csv(
+    input_path("2023_11_07_rm_gord_cor_qc_mtbi.csv")
+)
+rm_subc_cor_qc_mtbi <- read_csv(
+    input_path("2023_11_07_rm_subc_cor_qc_mtbi.csv")
+)
+dm_all_wmnd_qc_mtbi <- read_csv(
+    input_path("2023_11_07_dm_all_wmnd_qc_mtbi.csv")
+)
+sm_cort_sa_qc_mtbi <- read_csv(
+    input_path("2023_11_07_sm_cort_sa_qc_mtbi.csv")
+)
+sm_cort_t_qc_mtbi <- read_csv(
+    input_path("2023_11_07_sm_cort_t_qc_mtbi.csv")
+)
+sm_subc_v_qc_mtbi <- read_csv(
+    input_path("2023_11_07_sm_subc_v_qc_mtbi.csv")
+)
+
+rm_gord_cor_qc_uninj <- read_csv(
+    input_path("2023_11_07_rm_gord_cor_qc_uninj.csv")
+)
+rm_subc_cor_qc_uninj <- read_csv(
+    input_path("2023_11_07_rm_subc_cor_qc_uninj.csv")
+)
+dm_all_wmnd_qc_uninj <- read_csv(
+    input_path("2023_11_07_dm_all_wmnd_qc_uninj.csv")
+)
+sm_cort_sa_qc_uninj <- read_csv(
+    input_path("2023_11_07_sm_cort_sa_qc_uninj.csv")
+)
+sm_cort_t_qc_uninj <- read_csv(
+    input_path("2023_11_07_sm_cort_t_qc_uninj.csv")
+)
+sm_subc_v_qc_uninj <- read_csv(
+    input_path("2023_11_07_sm_subc_v_qc_uninj.csv")
+)
+```
+
+```{r}
+
+# There are 440 mTBI subjects:
+dim(mtbi_subjects)
+
+# And 11408 uninjured subjects:
+dim(uninjured_subjects)
+
+# How many mtbi subjects are missing complete neuroimaging data?
+mtbi_neuroimaging_df_list <- list(
+    mtbi_subjects,
+    "sm_subc_v_qc_mtbi" = sm_subc_v_qc_mtbi,
+    "sm_cort_t_qc_mtbi" = sm_cort_t_qc_mtbi,
+    "sm_cort_sa_qc_mtbi" = sm_cort_sa_qc_mtbi,
+    "dm_all_wmnd_qc_mtbi" = dm_all_wmnd_qc_mtbi,
+    "rm_gord_cor_qc_mtbi" = rm_gord_cor_qc_mtbi,
+    "rm_subc_cor_qc_mtbi" = rm_subc_cor_qc_mtbi
+)
+
+merged_mtbi_neuroimaging_df <- mtbi_neuroimaging_df_list |>
+    merge_df_list(join = "full")
+
+# 362 subjects remain:
+dim(na.omit(merged_mtbi_neuroimaging_df))
+
+# The subjects who have complete neuroimaging data:
+mtbi_with_neuroimaging <- merged_mtbi_neuroimaging_df |>
+    na.omit() |>
+    dplyr::select("subjectkey") |>
+    unlist() |>
+    as.character()
+
+# And the subjects missing their complete neuroimaging data:
+mtbi_without_neuroimaging <- mtbi_subjects |>
+    dplyr::filter(!subjectkey %in% mtbi_with_neuroimaging) |>
+    unlist() |>
+    as.character()
+
+# Construction of a dataframe that has the neuroimaging completion status of
+#  each subject
+with_neuroimaging_df <- data.frame(
+    "subjectkey" = mtbi_with_neuroimaging,
+    has_neuro = TRUE
+)
+without_neuroimaging_df <- data.frame(
+    "subjectkey" = mtbi_without_neuroimaging,
+    has_neuro = FALSE
+)
+
+neuroimaging_status <- rbind(without_neuroimaging_df, with_neuroimaging_df)
+
+# pubertal status neuroimaging
+psn_mtbi <- dplyr::inner_join(
+    d_pubertal_status_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+# No difference in average pubertal development scale scores between youth
+#  and parents
+wilcox.test(
+    psn_mtbi$"pubertal_status"[psn_mtbi$"has_neuro" == TRUE],
+    psn_mtbi$"pubertal_status"[psn_mtbi$"has_neuro" == FALSE]
+)
+
+ggplot(psn_mtbi, mapping = aes(x = has_neuro, y = pubertal_status)) +
+    geom_boxplot() +
+    geom_jitter(height = 0)
+
+# interview age
+ia_mtbi <- dplyr::inner_join(
+    d_interview_age_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+# interview age
+t.test(
+    ia_mtbi$"interview_age"[ia_mtbi$"has_neuro" == TRUE],
+    ia_mtbi$"interview_age"[ia_mtbi$"has_neuro" == FALSE]
+)
+
+ggplot(ia_mtbi, mapping = aes(x = has_neuro, y = interview_age)) +
+    geom_boxplot() +
+    geom_jitter(height = 0)
+
+
+# mtbi age
+ma_mtbi <- dplyr::inner_join(
+    d_mtbi_age_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+# mtbi age
+t.test(
+    ma_mtbi$"latest_mtbi_age"[ma_mtbi$"has_neuro" == TRUE],
+    ma_mtbi$"latest_mtbi_age"[ma_mtbi$"has_neuro" == FALSE]
+)
+
+ggplot(ma_mtbi, mapping = aes(x = has_neuro, y = latest_mtbi_age)) +
+    geom_boxplot() +
+    geom_jitter(height = 0)
+
+# sex
+sex_mtbi <- dplyr::inner_join(
+    d_sex_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+# sex
+chisq.test(table(sex_mtbi$"sex", sex_mtbi$"has_neuro"))
+
+ggplot(sex_mtbi, mapping = aes(x = sex, fill = has_neuro)) +
+    geom_bar()
+
+# household income
+inc_mtbi <- dplyr::inner_join(
+    d_income_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+wilcox.test(
+    inc_mtbi$"household_income"[inc_mtbi$"has_neuro" == TRUE],
+    inc_mtbi$"household_income"[inc_mtbi$"has_neuro" == FALSE]
+)
+
+mean(inc_mtbi$"household_income"[inc_mtbi$"has_neuro" == TRUE], na.rm = TRUE)
+mean(inc_mtbi$"household_income"[inc_mtbi$"has_neuro" == FALSE], na.rm = TRUE)
+
+ggplot(inc_mtbi, mapping = aes(x = has_neuro, y = household_income)) +
+    geom_violin() +
+    geom_jitter(height = 0)
+
+
+# race
+race_mtbi <- dplyr::inner_join(
+    d_race_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+d_race_mtbi
+
+chisq.test(table(race_mtbi$"race", race_mtbi$"has_neuro"))
+
+ggplot(race_mtbi, mapping = aes(x = race, fill = has_neuro)) +
+    geom_bar()
+
+# cbcl anxdep
+cbcl_anx <- dplyr::inner_join(
+    cbcl_anxdep_ss_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+cbcl_anx
+
+wilcox.test(
+    cbcl_anx$"cbcl_scr_syn_anxdep_r"[cbcl_anx$"has_neuro" == TRUE],
+    cbcl_anx$"cbcl_scr_syn_anxdep_r"[cbcl_anx$"has_neuro" == FALSE]
+)
+
+mean(
+    cbcl_anx$"cbcl_scr_syn_anxdep_r"[cbcl_anx$"has_neuro" == TRUE],
+    na.rm = TRUE
+)
+mean(
+    cbcl_anx$"cbcl_scr_syn_anxdep_r"[cbcl_anx$"has_neuro" == FALSE],
+    na.rm = TRUE
+)
+
+ggplot(cbcl_anx, mapping = aes(x = has_neuro, y = cbcl_scr_syn_anxdep_r)) +
+    geom_boxplot() +
+    geom_jitter(height = 0)
+
+
+# cbcl withdep
+cbcl_wd <- dplyr::inner_join(
+    cbcl_withdep_ss_mtbi,
+    neuroimaging_status,
+    by = "subjectkey"
+)
+
+wilcox.test(
+    cbcl_wd$"cbcl_scr_syn_withdep_r"[cbcl_wd$"has_neuro" == TRUE],
+    cbcl_wd$"cbcl_scr_syn_withdep_r"[cbcl_wd$"has_neuro" == FALSE]
+)
+
+mean(
+    cbcl_wd$"cbcl_scr_syn_withdep_r"[cbcl_wd$"has_neuro" == TRUE],
+    na.rm = TRUE
+)
+mean(
+    cbcl_wd$"cbcl_scr_syn_withdep_r"[cbcl_wd$"has_neuro" == FALSE],
+    na.rm = TRUE
+)
+
+ggplot(cbcl_wd, mapping = aes(x = has_neuro, y = cbcl_scr_syn_withdep_r)) +
+    geom_boxplot() +
+    geom_jitter(height = 0)
+
+mtbi_df_list_0 <- list(
+    "as_mtbi_mem_daze_mtbi" = as_mtbi_mem_daze_mtbi,
+    "as_mtbi_mechanism_mtbi" = as_mtbi_mechanism_mtbi,
+    "as_mtbi_loc_mtbi" = as_mtbi_loc_mtbi,
+    "d_pubertal_status_mtbi" = d_pubertal_status_mtbi,
+    "d_interview_age_mtbi" = d_interview_age_mtbi,
+    "d_mtbi_age_mtbi" = d_mtbi_age_mtbi,
+    "d_sex_mtbi" = d_sex_mtbi,
+    "d_income_mtbi" = d_income_mtbi,
+    "d_race_mtbi" = d_race_mtbi,
+    "mh_headaches_mtbi" = mh_headaches_mtbi,
+    "mh_mtbi_count_mtbi" = mh_mtbi_count_mtbi,
+    "sm_subc_v_qc_mtbi" = sm_subc_v_qc_mtbi,
+    "sm_cort_t_qc_mtbi" = sm_cort_t_qc_mtbi,
+    "sm_cort_sa_qc_mtbi" = sm_cort_sa_qc_mtbi,
+    "dm_all_wmnd_qc_mtbi" = dm_all_wmnd_qc_mtbi,
+    "rm_gord_cor_qc_mtbi" = rm_gord_cor_qc_mtbi,
+    "rm_subc_cor_qc_mtbi" = rm_subc_cor_qc_mtbi,
+    "p_loneliness_mtbi" = p_loneliness_mtbi,
+    "p_screen_time_mtbi" = p_screen_time_mtbi,
+    "p_sports_mtbi" = p_sports_mtbi,
+    "p_exercise_mtbi" = p_exercise_mtbi,
+    "p_prosocial_mtbi" = p_prosocial_mtbi,
+    "p_family_function_mtbi" = p_family_function_mtbi,
+    "p_parent_psych_mtbi" = p_parent_psych_mtbi,
+    "cbcl_anxdep_ss_mtbi" = cbcl_anxdep_ss_mtbi,
+    "cbcl_withdep_ss_mtbi" = cbcl_withdep_ss_mtbi,
+    "cbcl_somatic_ss_mtbi" = cbcl_somatic_ss_mtbi,
+    "cbcl_social_ss_mtbi" = cbcl_social_ss_mtbi,
+    "cbcl_thought_ss_mtbi" = cbcl_thought_ss_mtbi,
+    "cbcl_attention_ss_mtbi" = cbcl_attention_ss_mtbi,
+    "cbcl_rulebreak_ss_mtbi" = cbcl_rulebreak_ss_mtbi,
+    "cbcl_aggressive_ss_mtbi" = cbcl_aggressive_ss_mtbi,
+    "sds_total_probs_mtbi" = sds_total_probs_mtbi
+)
+
+# Check on the total number of features: (72)
+dim(merge_df_list(mtbi_df_list_0, join = "full"))
+
+uninjured_df_list_0 <- list(
+    "d_pubertal_status_uninj" = d_pubertal_status_uninj,
+    "d_interview_age_uninj" = d_interview_age_uninj,
+    "d_sex_uninj" = d_sex_uninj,
+    "d_income_uninj" = d_income_uninj,
+    "d_race_uninj" = d_race_uninj,
+    "mh_headaches_uninj" = mh_headaches_uninj,
+    "sm_subc_v_qc_uninj" = sm_subc_v_qc_uninj,
+    "sm_cort_t_qc_uninj" = sm_cort_t_qc_uninj,
+    "sm_cort_sa_qc_uninj" = sm_cort_sa_qc_uninj,
+    "dm_all_wmnd_qc_uninj" = dm_all_wmnd_qc_uninj,
+    "rm_gord_cor_qc_uninj" = rm_gord_cor_qc_uninj,
+    "rm_subc_cor_qc_uninj" = rm_subc_cor_qc_uninj,
+    "p_loneliness_uninj" = p_loneliness_uninj,
+    "p_screen_time_uninj" = p_screen_time_uninj,
+    "p_sports_uninj" = p_sports_uninj,
+    "p_exercise_uninj" = p_exercise_uninj,
+    "p_prosocial_uninj" = p_prosocial_uninj,
+    "p_family_function_uninj" = p_family_function_uninj,
+    "p_parent_psych_uninj" = p_parent_psych_uninj,
+    "cbcl_anxdep_ss_uninj" = cbcl_anxdep_ss_uninj,
+    "cbcl_withdep_ss_uninj" = cbcl_withdep_ss_uninj,
+    "cbcl_somatic_ss_uninj" = cbcl_somatic_ss_uninj,
+    "cbcl_social_ss_uninj" = cbcl_social_ss_uninj,
+    "cbcl_thought_ss_uninj" = cbcl_thought_ss_uninj,
+    "cbcl_attention_ss_uninj" = cbcl_attention_ss_uninj,
+    "cbcl_rulebreak_ss_uninj" = cbcl_rulebreak_ss_uninj,
+    "cbcl_aggressive_ss_uninj" = cbcl_aggressive_ss_uninj,
+    "sds_total_probs_uninj" = sds_total_probs_uninj
+)
+
+amount_missingness <- function(df_list, subjects) {
+    pct_missing <- ""
+    merged_df <- df_list |>
+        merge_df_list(join = "full")
+    merged_df <- dplyr::full_join(merged_df, subjects, by = "subjectkey")
+    # Number of missing elements across the whole dataframe
+    num_nas <- sum(colSums(is.na(merged_df)))
+    num_elements <- length(unlist(merged_df))
+    pct_missing_overall <- num_nas / num_elements * 100
+    # Features sorted by missingness
+    missing_vec <- merged_df |>
+        is.na() |>
+        colSums() |>
+        unlist() |>
+        as.numeric()
+    missing_vec <- missing_vec / nrow(subjects)
+    missing_vec <- missing_vec * 100
+    missing_vec
+    missing_pct_by_col <- data.frame(
+        names = names(merged_df),
+        pct_missing = missing_vec
+    )
+    missing_pct_by_col <- missing_pct_by_col[2:nrow(missing_pct_by_col), ]
+    missing_pct_by_col <- missing_pct_by_col |>
+        dplyr::arrange(desc(pct_missing))
+    output <- list(pct_missing_overall, missing_pct_by_col)
+    names(output) <- c("pct_missing_overall", "missing_pct_by_col")
+    return(output)
+}
+
+uninjured_missingness_0 <-
+    amount_missingness(uninjured_df_list_0, uninjured_subjects)
+
+mtbi_missingness_0 <-
+    amount_missingness(mtbi_df_list_0, mtbi_subjects_0)
+
+uninjured_missingness_0[[1]] # 1.2%
+mtbi_missingness_0[[1]] # 1.0%
+
+write_csv(
+    uninjured_missingness_0[[2]],
+    misc_path(
+        "uninjured_missingness_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    mtbi_missingness_0[[2]],
+    misc_path(
+        "mtbi_missingness_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    uninjured_missingness_l[[2]],
+    misc_path(
+        "uninjured_missingness_l.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    mtbi_missingness_l[[2]],
+    misc_path(
+        "mtbi_missingness_l.csv",
+        date = TRUE
+    )
+)
+
+# Function takes in a list of dataframes and returns a matrix where rows are
+#  subjects who have any missing data, columns are the different dataframes,
+#  and matrix elements are 0 if no data is missing and 1 if any data is missing
+missing_dfs <- function(df_list, subject_list) {
+    # Full join all the dataframes in df_list. The subjectkeys should match
+    #  the subject_list.
+    merged_df <- df_list |>
+        merge_df_list(join = "full")
+    # complete_df holds data for all the subjects that have no missing data
+    complete_df <- na.omit(merged_df)
+    # complete_subjects have no missing data
+    complete_subjects <- complete_df$"subjectkey"
+    # incomplete_pos has the indices (in the full subject_list) of those who
+    #  are not a part of complete_subjects, i.e. the people who DO have missing
+    #  data.
+    incomplete_pos <- which(!subject_list$"subjectkey" %in% complete_subjects)
+    # incomplete_subjects are those subjects who do have missing data.
+    incomplete_subjects <- subject_list$"subjectkey"[incomplete_pos]
+    # this df will have 1 column for subjectkey and then columns for each
+    #  dataframe in the df_list. It will also have one row for each subject
+    #  that has any missing data.
+    qmatrix <- matrix(
+        ncol = 1 + length(df_list),
+        nrow = length(incomplete_subjects)
+    ) |>
+        data.frame()
+    # assigning the proper column names
+    colnames(qmatrix) <- c("subjectkey", names(df_list))
+    # now we populate the qmatrix by one subject who is missing data at a time
+    for (i in seq_along(incomplete_subjects)) {
+        print(
+            paste0(
+                round(100 * (i / length(incomplete_subjects)), 1),
+                "% complete..."
+            )
+        )
+        has_full_data <- lapply(
+            df_list,
+            function(x) {
+                # If the ith person with missing data has complete data for x,
+                #  give them a 0. Otherwise, give them a 1.
+                if (incomplete_subjects[[i]] %in% na.omit(x)$"subjectkey") {
+                    return(0)
+                } else {
+                    return(1)
+                }
+            }
+        )
+        # the ith person's row in the qmatrix will be their name and membership
+        #  in each complete dataframe
+        has_full_data_row <- c(incomplete_subjects[[i]], has_full_data) |>
+            unlist() |>
+            as.character()
+        qmatrix[i, ] <- has_full_data_row
+    }
+    # remove the subjectkeys (perhaps worth removing this line later) to easily
+    #  plot heatmap
+    q_no_subs <- qmatrix[, 2:ncol(qmatrix)]
+    # convert columns to numeric type
+    q_numeric <- abcdutils::col_to_num(q_no_subs, seq_len(ncol(q_no_subs)))
+    # clear off any columns that have purely complete data
+    cols_with_missing_data <- colSums(q_numeric) != 0
+    return(q_numeric[, cols_with_missing_data])
+}
+
+missing_mtbi_0 <- missing_dfs(
+    mtbi_df_list_0,
+    mtbi_subjects_0
+)
+
+missing_uninjured_0 <- missing_dfs(
+    uninjured_df_list_0,
+    uninjured_subjects
+)
+
+missing_mtbi_l <- missing_dfs(
+    mtbi_df_list_l,
+    mtbi_subjects_0
+)
+
+missing_uninjured_l <- missing_dfs(
+    uninjured_df_list_l,
+    uninjured_subjects
+)
+
+write_csv(
+    missing_mtbi_0,
+    misc_path(
+        "missing_mtbi_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    missing_uninjured_0,
+    misc_path(
+        "missing_uninjured_0.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    missing_mtbi_l,
+    misc_path(
+        "missing_mtbi_l.csv",
+        date = TRUE
+    )
+)
+
+write_csv(
+    missing_uninjured_l,
+    misc_path(
+        "missing_uninjured_l.csv",
+        date = TRUE
+    )
+)
+
+missing_uninjured_0 <- read_csv(misc_path("2023_09_28_missing_uninjured_0.csv"))
+missing_mtbi_0 <- read_csv(misc_path("2023_09_28_missing_mtbi_0.csv"))
+missing_uninjured_l <- read_csv(misc_path("2023_09_28_missing_uninjured_l.csv"))
+missing_mtbi_l <- read_csv(misc_path("2023_09_28_missing_mtbi_l.csv"))
+
+pheatmap(
+    missing_mtbi_0,
+    show_rownames = FALSE,
+    filename = fig_path("missing_mtbi_0.png", date = TRUE)
+)
+
+pheatmap(
+    missing_mtbi_0,
+    show_rownames = FALSE,
+    filename = fig_path("missing_mtbi_0.png", date = TRUE)
+)
+
+pheatmap(
+    missing_uninjured_0,
+    show_rownames = FALSE,
+    filename = fig_path("missing_uninjured_0.png", date = TRUE)
+)
+
+pheatmap(
+    missing_mtbi_l,
+    show_rownames = FALSE,
+    filename = fig_path("missing_mtbi_l.png", date = TRUE)
+)
+
+pheatmap(
+    missing_uninjured_l,
+    show_rownames = FALSE,
+    filename = fig_path("missing_uninjured_l.png", date = TRUE)
+)
+
+```

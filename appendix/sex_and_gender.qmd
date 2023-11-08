@@ -1,103 +1,25 @@
+# Sex and Gender
+
+A comparison between parent report of sex at birth and parent report of child's gender at baseline data collection timepoint.
+
 ```{r}
+# Parent report of gender identity
+gish_p_gi <- abcd_load(
+    core_path("gender-identity-sexual-health/gish_p_gi.csv")
+)
 
-gish_p_gi <- abcd_load(raw_path("gish_p_gi.csv"))
-gish_y_gi <- abcd_load(raw_path("gish_y_gi.csv"))
-gish_p_sex <- abcd_load(raw_path("gish_p_sex.csv"))
-gish_y_sex <- abcd_load(raw_path("gish_y_sex.csv"))
+sex <- get_sex(gish_p_gi, t = 0)
 
-pgi <- gish_p_gi |>
-    dplyr::select(
-        "eventname",
-        "subjectkey",
-        "demo_sex_v2", # what is their assigned sex
-        "demo_gender_id_v2", # what is their gender
-        "demo_gender_id_v2_l", # what is their gender (l)
-        "kbi_p_c_trans", # are they trans
-        "kbi_p_c_trans_l" # are they trans (l)
-    ) |>
-    dplyr::rename(
-        "p_sex" = "demo_sex_v2",
-        "p_gender" = "demo_gender_id_v2",
-        "p_gender_l" = "demo_gender_id_v2_l",
-        "p_trans" = "kbi_p_c_trans",
-        "p_trans_l" = "kbi_p_c_trans_l"
-    )
+# Parent report of gender
+pr_gender <- get_p_gender(gish_p_gi, t = 0)
 
-colnames(pgi)
+sex_and_gender <- dplyr::inner_join(sex, pr_gender, by = "subjectkey")
 
-ygi <- gish_y_gi |>
-    dplyr::select(
-        "eventname",
-        "subjectkey",
-        "kbi_sex_assigned_at_birth", # what is their assigned sex
-        "kbi_gender", # what is their gender
-        "kbi_y_trans_id" # what is their gender (l)
-    ) |>
-    dplyr::rename(
-        "y_sex" = "kbi_sex_assigned_at_birth",
-        "y_gender" = "kbi_gender",
-        "y_trans" = "kbi_y_trans_id"
-    )
-ygi <- ygi |>
-    dplyr::mutate(
-        y_gender = dplyr::case_when(
-            y_gender == 1 ~ "boy",
-            y_gender == 2 ~ "girl",
-            y_gender == 3 ~ "nb",
-            y_gender == 4 ~ "don't know",
-            y_gender == 5 ~ "no answer",
-            TRUE ~ NA
-        )
-    )
-ygi3 <- ygi |>
-    dplyr::filter(eventname == "3_year_follow_up_y_arm_1") |>
-    dplyr::select("subjectkey", "y_gender") |>
-    dplyr::filter(!is.na(y_gender))
-ygi4 <- ygi |>
-    dplyr::filter(eventname == "4_year_follow_up_y_arm_1") |>
-    dplyr::select("subjectkey", "y_gender") |>
-    dplyr::filter(!is.na(y_gender))
-colnames(ygi3) <- c("subjectkey", "gender3")
-colnames(ygi4) <- c("subjectkey", "gender4")
-ygi_full <- na.omit(dplyr::full_join(ygi3, ygi4, by = "subjectkey"))
-ygi_mismatch <- ygi_full |>
-    dplyr::filter(gender3 != gender4)
+sex_and_gender |>
+    dplyr::select(-"subjectkey") |>
+    table()
 
-ygi_full
-
-ygi |>
-    dplyr::group_by(y_sex) |>
-    dplyr::summarize(n = dplyr::n())
-
-ygi_mismatch
-
-ygi_mismatch |>
-    dplyr::filter(gender3 == "boy") |>
-    dplyr::group_by(gender4) |>
-    dplyr::summarize(n = dplyr::n())
-
-ygi_mismatch |>
-    dplyr::filter(gender3 == "girl") |>
-    dplyr::group_by(gender4) |>
-    dplyr::summarize(n = dplyr::n())
-
-ygi_mismatch |>
-    dplyr::filter(gender3 == "nb") |>
-    dplyr::group_by(gender4) |>
-    dplyr::summarize(n = dplyr::n())
-
-
-q <- dplyr::full_join(pgi, ygi, by = c("subjectkey", "eventname")) |>
-    dplyr::filter(eventname == "baseline_year_1_arm_1")
-
-q$eventname
-
-q
-
-x <- dplyr::full_join(pgi, ygi, by = c("subjectkey", "eventname")) |>
-    dplyr::filter(eventname == "2_year_follow_up_y_arm_1") |>
-    dplyr::filter(y_trans == 1)
-
-x
-
+dim(sex_and_gender)
 ```
+
+A tiny fraction of kids (10/11868) have different values between their biological sex at birth and parent report of gender.
