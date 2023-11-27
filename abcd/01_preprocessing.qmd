@@ -2,22 +2,10 @@
 
 This script is used to:
 
-1. Impute missing data for non-neuroimaging input variables
+1. Assign train and test sets of the data
 2. Remove neuroimaging data for participants who do not meet ABCD's QC
-3. Threshold CBCL behaviour measures (raw scores into normal (0), borderline (1), and clinical (2))
-
-1. Load in the extracted data
-2. Assign train and test sets of the data
-
-3. Within the training data:
-    - Explore the percentage of missingness
-    - Impute missing data
-
-2. Remove subjects who are missing neuroimaging data - we are not going to impute that
-
-The longitudinal analysis will ultimately involve checking to see if the subtypes found can predict change scores in CBCL or SDS measures.
-Which means we'll also need longitudinal CBCL and SDS measures.
-
+3. Impute missing data
+4. Threshold CBCL behaviour measures (raw scores into normal (0), borderline (1), and clinical (2))
 
 ## Loading in data
 
@@ -395,7 +383,6 @@ sm_subc_v_qc_uninj <- read_csv(
 Summary of demographic and CBCL / SDS variables to know if any stratification should occur
 
 ```{r}
-
 group_sizes <- function(df) {
     summary_table <- df |>
         dplyr::select(-"subjectkey") |>
@@ -404,17 +391,103 @@ group_sizes <- function(df) {
     return(summary_table)
 }
 
+dplyr::inner_join(d_income_mtbi, d_race_mtbi) |>
+    dplyr::inner_join(d_sex_mtbi) |>
+    dplyr::select(-"subjectkey") |>
+    table()
+
+dplyr::inner_join(d_sex_mtbi, d_income_mtbi) |>
+    dplyr::select(-"subjectkey") |>
+    table()
+
+dplyr::inner_join(d_sex_mtbi, d_race_mtbi) |>
+    dplyr::select(-"subjectkey") |>
+    table()
+
+
+sds_total_probs_mtbi
+
+mtbi_cbcl
+
 group_sizes(d_income_mtbi)
 
 group_sizes(d_race_mtbi)
 
 group_sizes(d_sex_mtbi)
 
-group_sizes(d_pubertal_status_mtbi)
+key_data <- list(
+)
 
-group_sizes(cbcl_anxdep_mtbi)
+library(metasnf)
+
+
+outcomes <- list(
+    cbcl_anxdep_mtbi,
+    cbcl_withdep_mtbi,
+    cbcl_somatic_mtbi,
+    cbcl_social_mtbi,
+    cbcl_thought_mtbi,
+    cbcl_attention_mtbi,
+    cbcl_rulebreak_mtbi,
+    cbcl_aggressive_mtbi,
+    sds_total_probs_mtbi
+) |> merge_df_list()
+
+stratification_data <- generate_data_list(
+    list(d_income_mtbi, "income", "demographics", "ordinal"),
+    list(d_race_mtbi, "race", "demographics", "categorical"),
+    list(d_sex_mtbi, "sex", "demographics", "categorical"),
+    list(outcomes, "cbcl", "behaviour", "continuous"),
+    uid = "subjectkey"
+)
+
+associations_matrix <- calculate_associations(stratification_data)
+
+png('pairwise_outcomes.png', width = 600, height = 600)
+
+png('correlation_heatmap.png', width = 600, height = 600)
+correlation_pval_heatmap(
+    associations_matrix
+    #out_of_models = list(
+    #    "Sex" = "sex",
+    #    "Income" = "household_income",
+    #    "Race" = "race"
+    #)
+)
+dev.off()
+
+
+png('correlation_heatmap2.png', width = 600, height = 600)
+correlation_pval_heatmap(
+    associations_matrix,
+    confounders = list(
+        "Sex" = "sex",
+        "Income" = "household_income",
+        "Race" = "race"
+    )
+)
+dev.off()
+
+png('pairwise_outcomes.png', width = 600, height = 600)
+outcomes |>
+    dplyr::select(-"subjectkey") |>
+    plot()
+dev.off()
+
+library(ggplot2)
+
+
+library(GGally)
+
+outcomes |>
+    dplyr::select(-"subjectkey") |>
+    ggpairs()
+
+ggsave("gg_pairwise_outcomes.png")
 
 ```
+
+Household income has 21% at level 1 (low), 29.1% at level 2 (medium), and 49.9% at level 3 (high).
 
 
 ## Stratified train/test split
@@ -462,8 +535,6 @@ all_data_df <- merge_df_list(all_dataframes, join = "full")
 set.seed(42)
 
 all_data_df[sample(nrow(all_data_df)), ]
-
-round(440*0.8)
 
 evaluation_stratification <- function(df, train_frac) {
     n_train <- round(nrow(df) * train_frac)
