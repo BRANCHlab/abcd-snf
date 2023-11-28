@@ -10,11 +10,12 @@ This script is used to:
 ## Loading in data
 
 ```{r}
+# Chunk needed for re-running
 library(abcdutils)
 library(here)
 library(readr)
 library(metasnf)
-#library(mice)
+library(mice)
 #library(dplyr)
 #library(purrr)
 #library(pheatmap)
@@ -339,55 +340,47 @@ write_csv(dm_all_wmnd_qc_uninj, input_path("dm_all_wmnd_qc_uninj.csv", TRUE))
 write_csv(sm_cort_sa_qc_uninj, input_path("sm_cort_sa_qc_uninj.csv", TRUE))
 write_csv(sm_cort_t_qc_uninj, input_path("sm_cort_t_qc_uninj.csv", TRUE))
 write_csv(sm_subc_v_qc_uninj, input_path("sm_subc_v_qc_uninj.csv", TRUE))
+```
 
+
+```{r}
+# Chunk needed for re-running
 rm_gord_cor_qc_mtbi <- read_csv(
     input_path("2023_11_07_rm_gord_cor_qc_mtbi.csv")
 )
-
 rm_subc_cor_qc_mtbi <- read_csv(
     input_path("2023_11_07_rm_subc_cor_qc_mtbi.csv")
 )
-
 dm_all_wmnd_qc_mtbi <- read_csv(
     input_path("2023_11_07_dm_all_wmnd_qc_mtbi.csv")
 )
-
 sm_cort_sa_qc_mtbi <- read_csv(
     input_path("2023_11_07_sm_cort_sa_qc_mtbi.csv")
 )
-
 sm_cort_t_qc_mtbi <- read_csv(
     input_path("2023_11_07_sm_cort_t_qc_mtbi.csv")
 )
-
 sm_subc_v_qc_mtbi <- read_csv(
     input_path("2023_11_07_sm_subc_v_qc_mtbi.csv")
 )
-
 rm_gord_cor_qc_uninj <- read_csv(
     input_path("2023_11_07_rm_gord_cor_qc_uninj.csv")
 )
-
 rm_subc_cor_qc_uninj <- read_csv(
     input_path("2023_11_07_rm_subc_cor_qc_uninj.csv")
 )
-
 dm_all_wmnd_qc_uninj <- read_csv(
     input_path("2023_11_07_dm_all_wmnd_qc_uninj.csv")
 )
-
 sm_cort_sa_qc_uninj <- read_csv(
     input_path("2023_11_07_sm_cort_sa_qc_uninj.csv")
 )
-
 sm_cort_t_qc_uninj <- read_csv(
     input_path("2023_11_07_sm_cort_t_qc_uninj.csv")
 )
-
 sm_subc_v_qc_uninj <- read_csv(
     input_path("2023_11_07_sm_subc_v_qc_uninj.csv")
 )
-
 ```
 
 ## Train/Test split
@@ -395,7 +388,6 @@ sm_subc_v_qc_uninj <- read_csv(
 To avoid having training and testing data inform each other during imputation, we assign the splits prior to the imputation.
 
 ```{r}
-
 mtbi_split <- train_test_assign(
     train_frac = 0.8,
     subjects = mtbi_subjects$"subjectkey"
@@ -824,40 +816,40 @@ CBCL data, which comprises a wide set of features, is either completely missing 
 
 ```{r}
 
-mtbi_df <- list(
-    "as_mem_daze_mtbi" = as_mem_daze_mtbi,
-    "as_mechanism_mtbi" = as_mechanism_mtbi,
-    "as_loc_mtbi" = as_loc_mtbi,
-    "d_interview_age_mtbi" = d_interview_age_mtbi,
-    "d_mtbi_age_mtbi" = d_mtbi_age_mtbi,
-    "d_sex_mtbi" = d_sex_mtbi,
-    "d_income_mtbi" = d_income_mtbi,
-    "d_race_mtbi" = d_race_mtbi,
-    "d_pubertal_status_mtbi" = d_pubertal_status_mtbi,
-    "mh_headaches_mtbi" = mh_headaches_mtbi,
-    "mh_mtbi_count_mtbi" = mh_mtbi_count_mtbi,
-    "sm_subc_v_qc_mtbi" = sm_subc_v_qc_mtbi,
-    "sm_cort_t_qc_mtbi" = sm_cort_t_qc_mtbi,
-    "sm_cort_sa_qc_mtbi" = sm_cort_sa_qc_mtbi,
-    "dm_all_wmnd_qc_mtbi" = dm_all_wmnd_qc_mtbi,
-    "rm_gord_cor_qc_mtbi" = rm_gord_cor_qc_mtbi,
-    "rm_subc_cor_qc_mtbi" = rm_subc_cor_qc_mtbi,
-    "p_loneliness_mtbi" = p_loneliness_mtbi,
-    "p_screen_time_mtbi" = p_screen_time_mtbi,
-    "p_sports_mtbi" = p_sports_mtbi,
-    "p_exercise_mtbi" = p_exercise_mtbi,
-    "p_prosocial_mtbi" = p_prosocial_mtbi,
-    "p_fam_fn_mtbi" = p_fam_fn_mtbi,
-    "p_parent_psych_mtbi" = p_parent_psych_mtbi,
-    "cbcl_anxdep_mtbi" = cbcl_anxdep_mtbi,
-    "cbcl_withdep_mtbi" = cbcl_withdep_mtbi,
-    "cbcl_somatic_mtbi" = cbcl_somatic_mtbi,
-    "cbcl_social_mtbi" = cbcl_social_mtbi,
-    "cbcl_thought_mtbi" = cbcl_thought_mtbi,
-    "cbcl_attention_mtbi" = cbcl_attention_mtbi,
-    "cbcl_rulebreak_mtbi" = cbcl_rulebreak_mtbi,
-    "cbcl_aggressive_mtbi" = cbcl_aggressive_mtbi,
-    "sds_total_probs_mtbi" = sds_total_probs_mtbi
+mtbi_train_df <- list(
+    "as_mem_daze_mtbi" = as_mem_daze_mtbi_train,
+    "as_mechanism_mtbi" = as_mechanism_mtbi_train,
+    "as_loc_mtbi" = as_loc_mtbi_train,
+    "d_interview_age_mtbi" = d_interview_age_mtbi_train,
+    "d_mtbi_age_mtbi" = d_mtbi_age_mtbi_train,
+    "d_sex_mtbi" = d_sex_mtbi_train,
+    "d_income_mtbi" = d_income_mtbi_train,
+    "d_race_mtbi" = d_race_mtbi_train,
+    "d_pubertal_status_mtbi" = d_pubertal_status_mtbi_train,
+    "mh_headaches_mtbi" = mh_headaches_mtbi_train,
+    "mh_mtbi_count_mtbi" = mh_mtbi_count_mtbi_train,
+    "sm_subc_v_qc_mtbi" = sm_subc_v_qc_mtbi_train,
+    "sm_cort_t_qc_mtbi" = sm_cort_t_qc_mtbi_train,
+    "sm_cort_sa_qc_mtbi" = sm_cort_sa_qc_mtbi_train,
+    "dm_all_wmnd_qc_mtbi" = dm_all_wmnd_qc_mtbi_train,
+    "rm_gord_cor_qc_mtbi" = rm_gord_cor_qc_mtbi_train,
+    "rm_subc_cor_qc_mtbi" = rm_subc_cor_qc_mtbi_train,
+    "p_loneliness_mtbi" = p_loneliness_mtbi_train,
+    "p_screen_time_mtbi" = p_screen_time_mtbi_train,
+    "p_sports_mtbi" = p_sports_mtbi_train,
+    "p_exercise_mtbi" = p_exercise_mtbi_train,
+    "p_prosocial_mtbi" = p_prosocial_mtbi_train,
+    "p_fam_fn_mtbi" = p_fam_fn_mtbi_train,
+    "p_parent_psych_mtbi" = p_parent_psych_mtbi_train,
+    "cbcl_anxdep_mtbi" = cbcl_anxdep_mtbi_train,
+    "cbcl_withdep_mtbi" = cbcl_withdep_mtbi_train,
+    "cbcl_somatic_mtbi" = cbcl_somatic_mtbi_train,
+    "cbcl_social_mtbi" = cbcl_social_mtbi_train,
+    "cbcl_thought_mtbi" = cbcl_thought_mtbi_train,
+    "cbcl_attention_mtbi" = cbcl_attention_mtbi_train,
+    "cbcl_rulebreak_mtbi" = cbcl_rulebreak_mtbi_train,
+    "cbcl_aggressive_mtbi" = cbcl_aggressive_mtbi_train,
+    "sds_total_probs_mtbi" = sds_total_probs_mtbi_train
 ) |>
     abcdutils::merge_df_list(join = "full")
 
@@ -895,15 +887,14 @@ uninj_df <- list(
 
 ```
 
-## Miscellaneous cleaning
+## Some initial pairwise associations
 
 ```{r}
-
 ###############################################################################
 # mTBI pairwise associations (among those with complete data)
 ###############################################################################
 mtbi_dl <- generate_data_list(
-    list(mtbi_df, "mtbi", "mtbi", "mixed")
+    list(mtbi_train_df, "mtbi", "mtbi", "mixed")
 )
 
 mtbi_associations_matrix <- calculate_associations(
@@ -911,25 +902,79 @@ mtbi_associations_matrix <- calculate_associations(
     cat_test = "fisher_exact"
 )
 
+png('all_vars_correlations.png', width = 250, height = 220, units='mm', res = 300)
+
 correlation_pval_heatmap(
     mtbi_associations_matrix,
     significance_stars = FALSE
 )
 
-dl_df <- collapse_dl(mtbi_dl)
+dev.off()
+
 
 keep_numeric <- function(df) {
     df <- numcol_to_numeric(df)
-    classes <- as.vector(sapply(dl_df, class))
+    classes <- as.vector(sapply(df, class))
     df <- df[, classes == "numeric", drop = FALSE]
     return(df)
 }
 
-numeric_dl_df <- keep_numeric(dl_df)
+correlations_heatmap <- function(data_list) {
+    dl_df <- collapse_dl(data_list)
+    numeric_dl_df <- keep_numeric(dl_df)
+}
 
-correlation_matrix <- cor(numeric_dl_df)
+uninj_dl <- generate_data_list(
+    list(uninj_df, "uninj", "uninj", "mixed")
+)
 
-ComplexHeatmap::Heatmap(correlation_matrix)
+mtbi_dl_df <- collapse_dl(mtbi_dl)
+uninj_dl_df <- collapse_dl(uninj_dl)
+
+mtbi_dl_df2 <- mtbi_dl_df[, colnames(uninj_dl_df)]
+
+uninj_numeric_dl_df <- keep_numeric(uninj_dl_df)
+
+uninj_correlation_matrix <- cor(uninj_numeric_dl_df)
+
+uninj_hm <- ComplexHeatmap::Heatmap(uninj_correlation_matrix)
+uninj_hm <- ComplexHeatmap::draw(uninj_hm)
+uninj_order <- ComplexHeatmap::row_order(uninj_hm)
+
+png('uninjured_correlations.png', width = 250, height = 220, units='mm', res = 300)
+
+uninj_correlation_matrix_ordered <- uninj_correlation_matrix[uninj_order, uninj_order]
+ComplexHeatmap::Heatmap(uninj_correlation_matrix_ordered, cluster_rows = FALSE, cluster_columns = FALSE)
+
+dev.off()
+
+
+png('mtbi_correlations.png', width = 250, height = 220, units='mm', res = 300)
+
+mtbi_numeric_dl_df <- keep_numeric(mtbi_dl_df2)
+mtbi_correlation_matrix <- cor(mtbi_numeric_dl_df)[uninj_order, uninj_order]
+mtbi_hm <- ComplexHeatmap::Heatmap(mtbi_correlation_matrix, cluster_rows = FALSE, cluster_columns = FALSE)
+mtbi_hm <- ComplexHeatmap::draw(mtbi_hm)
+
+dev.off()
+
+diff_matrix <- uninj_correlation_matrix_ordered - mtbi_correlation_matrix
+
+png('change_in_correlations.png', width = 250, height = 220, units='mm', res = 300)
+
+ComplexHeatmap::Heatmap(diff_matrix, cluster_rows = FALSE, cluster_columns = FALSE)
+
+dev.off()
+
+abs_diff_matrix <- abs(diff_matrix)
+
+library(circlize)
+
+col_fun <- colorRamp2(c(0, max(abs_diff_matrix)), c("white", "purple"))
+
+png('abs_change_in_correlations.png', width = 250, height = 220, units='mm', res = 300)
+ComplexHeatmap::Heatmap(abs_diff_matrix, cluster_rows = FALSE, cluster_columns = FALSE, col = col_fun)
+dev.off()
 
 correlations_heatmap <- function(data_list) {
     dl_df <- collapse_dl(data_list)
@@ -988,7 +1033,6 @@ missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_df)) > 0))
 missing_colnames_uninj <- names(which(colSums(is.na(uninj_df)) > 0))
 
 
-
 #### Multicollinearity detection:
 mtbi_df |>
     ggplot(aes(x = smri_area_cdk_total, y = smri_vol_scs_wholeb)) +
@@ -999,18 +1043,29 @@ mtbi_0_merged_df |>
     geom_point()
 #####
 
-mtbi_0_merged_df <- abcdutils::char_to_fac(mtbi_0_merged_df)
+
+classes <- sapply(mtbi_df, class) |> as.vector()
+
+mtbi_df[, classes == "character"]
+
+mtbi_df_adjusted <- mtbi_df |>
+    dplyr::mutate(
+        sex = dplyr::case_when(
+            sex == "F" ~ 0,
+            sex == "M" ~ 1
+        ),
+        race = dplyr::case_when(
+            race == "white" ~ 0,
+            race == "mixed_or_other" ~ 1,
+            race == "black" ~ 1
+        )
+    ) |> abcdutils::char_to_fac()
+
 
 ncol(mtbi_0_merged_df)
 
 z <- mtbi_0_merged_df[, 2:55]
 colnames(z)
-
-z |> select_if(is.numeric) |>
-    dplyr::select(dplyr::starts_with("asr")) |>
-    na.omit() |>
-    cor() |>
-    pheatmap()
 
 # Prediction matrix construction
 ncols <- ncol(z)
@@ -1038,12 +1093,20 @@ colnames(z)
 pheatmap(predmat, cluster_rows = FALSE, cluster_cols = FALSE)
 
 # HERE I AM! HERE IS THE CODE TO IMPUTE EVERYTHING!
+
+mtbi_df_no_subs <- mtbi_df_adjusted |>
+    dplyr::select(-"subjectkey") |>
+    data.frame()
+
+mtbi_impute <- mtbi_df_no_subs[, 1:14]
+
+colnames(mtbi_df_no_subs)[13]
+
 imputed_mtbi <- mice(
-    mergedkkk,
+    mtbi_impute,
     m = 5,
     maxit = 10,
-    seed = 42,
-    predictorMatrix = predmat
+    seed = 42
 )
 
 # Ah shoot, i need to take out the test set first... lol
