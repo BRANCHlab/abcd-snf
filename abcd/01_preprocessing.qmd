@@ -887,30 +887,55 @@ uninj_df <- list(
 
 ```
 
-## Some initial pairwise associations
+Adjusting variables to numeric format
 
 ```{r}
-###############################################################################
-# mTBI pairwise associations (among those with complete data)
-###############################################################################
-mtbi_dl <- generate_data_list(
-    list(mtbi_train_df, "mtbi", "mtbi", "mixed")
+
+classes <- sapply(mtbi_df, class) |> as.vector()
+mtbi_df[, classes == "character"]
+
+mtbi_train_df_numeric <- mtbi_train_df |>
+    dplyr::mutate(
+        sex = dplyr::case_when(
+            sex == "F" ~ 0,
+            sex == "M" ~ 1
+        ),
+        race = dplyr::case_when(
+            race == "white" ~ 0,
+            race == "mixed_or_other" ~ 1,
+            race == "black" ~ 1
+        )
+    ) |> abcdutils::char_to_fac()
+
+uninj_df_numeric <- uninj_df |>
+    dplyr::mutate(
+        sex = dplyr::case_when(
+            sex == "F" ~ 0,
+            sex == "M" ~ 1
+        ),
+        race = dplyr::case_when(
+            race == "white" ~ 0,
+            race == "mixed_or_other" ~ 1,
+            race == "black" ~ 1
+        )
+    ) |> abcdutils::char_to_fac()
+
+```
+
+## Checking for excessive collinearity
+
+```{r}
+
+# Restrict to only shared variables
+mtbi_train_reduced <- mtbi_train_df_numeric[, colnames(uninj_df_numeric)]
+
+mtbi_train_dl <- generate_data_list(
+    list(mtbi_train_reduced, "mtbi", "mtbi", "mixed")
 )
 
-mtbi_associations_matrix <- calculate_associations(
-    mtbi_dl,
-    cat_test = "fisher_exact"
+uninj_dl <- generate_data_list(
+    list(uninj_df_numeric, "uninj", "uninj", "mixed")
 )
-
-png('all_vars_correlations.png', width = 250, height = 220, units='mm', res = 300)
-
-correlation_pval_heatmap(
-    mtbi_associations_matrix,
-    significance_stars = FALSE
-)
-
-dev.off()
-
 
 keep_numeric <- function(df) {
     df <- numcol_to_numeric(df)
@@ -919,68 +944,112 @@ keep_numeric <- function(df) {
     return(df)
 }
 
-correlations_heatmap <- function(data_list) {
+correlation_heatmap <- function(data_list, order = NULL) {
     dl_df <- collapse_dl(data_list)
     numeric_dl_df <- keep_numeric(dl_df)
+    correlation_matrix <- cor(numeric_dl_df)
+    if (is.null(order)) {
+        heatmap <- ComplexHeatmap::Heatmap(correlation_matrix)
+    } else {
+        heatmap <- ComplexHeatmap::Heatmap(
+            correlation_matrix[order, order],
+            cluster_rows = FALSE,
+            cluster_columns = FALSE
+        )
+    }
+    drawn_heatmap <- ComplexHeatmap::draw(heatmap)
+    order <- ComplexHeatmap::row_order(drawn_heatmap)
+    results <- list(
+        "correlation_matrix" = correlation_matrix,
+        "heatmap" = heatmap,
+        "order" = order
+    )
+    return(results)
 }
 
-uninj_dl <- generate_data_list(
-    list(uninj_df, "uninj", "uninj", "mixed")
+# First pass to extract the order of columns
+mtbi_correlation_data_initial <- correlation_heatmap(
+    mtbi_train_dl
 )
 
-mtbi_dl_df <- collapse_dl(mtbi_dl)
-uninj_dl_df <- collapse_dl(uninj_dl)
+mtbi_order <- mtbi_correlation_data_initial$"order"
 
-mtbi_dl_df2 <- mtbi_dl_df[, colnames(uninj_dl_df)]
+mtbi_correlation_data <- correlation_heatmap(
+    mtbi_train_dl,
+    order = mtbi_order
+)
 
-uninj_numeric_dl_df <- keep_numeric(uninj_dl_df)
+uninj_correlation_data <- correlation_heatmap(
+    uninj_dl,
+    order = mtbi_order
+)
 
-uninj_correlation_matrix <- cor(uninj_numeric_dl_df)
+mtbi_correlation_matrix <- mtbi_correlation_data$"correlation_matrix"
+mtbi_correlation_heatmap <- mtbi_correlation_data$"heatmap"
+uninj_correlation_matrix <- uninj_correlation_data$"correlation_matrix"
+uninj_correlation_heatmap <- uninj_correlation_data$"heatmap"
 
-uninj_hm <- ComplexHeatmap::Heatmap(uninj_correlation_matrix)
-uninj_hm <- ComplexHeatmap::draw(uninj_hm)
-uninj_order <- ComplexHeatmap::row_order(uninj_hm)
-
-png('uninjured_correlations.png', width = 250, height = 220, units='mm', res = 300)
-
-uninj_correlation_matrix_ordered <- uninj_correlation_matrix[uninj_order, uninj_order]
-ComplexHeatmap::Heatmap(uninj_correlation_matrix_ordered, cluster_rows = FALSE, cluster_columns = FALSE)
-
+png(
+    fig_path("uninjured_correlations.png", TRUE),
+    width = 250,
+    height = 220,
+    units = "mm",
+    res = 300
+)
+uninj_correlation_heatmap
 dev.off()
 
-
-png('mtbi_correlations.png', width = 250, height = 220, units='mm', res = 300)
-
-mtbi_numeric_dl_df <- keep_numeric(mtbi_dl_df2)
-mtbi_correlation_matrix <- cor(mtbi_numeric_dl_df)[uninj_order, uninj_order]
-mtbi_hm <- ComplexHeatmap::Heatmap(mtbi_correlation_matrix, cluster_rows = FALSE, cluster_columns = FALSE)
-mtbi_hm <- ComplexHeatmap::draw(mtbi_hm)
-
+png(
+    fig_path("mtbi_correlations.png", TRUE),
+    width = 250,
+    height = 220,
+    units = "mm",
+    res = 300
+)
+mtbi_correlation_heatmap
 dev.off()
 
-diff_matrix <- uninj_correlation_matrix_ordered - mtbi_correlation_matrix
+diff_matrix <- uninj_correlation_matrix - mtbi_correlation_matrix
 
-png('change_in_correlations.png', width = 250, height = 220, units='mm', res = 300)
-
-ComplexHeatmap::Heatmap(diff_matrix, cluster_rows = FALSE, cluster_columns = FALSE)
-
+png(
+    fig_path("difference_in_correlations.png", TRUE),
+    width = 250,
+    height = 220,
+    units = "mm",
+    res = 300
+)
+ComplexHeatmap::Heatmap(
+    diff_matrix,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
 dev.off()
+
 
 abs_diff_matrix <- abs(diff_matrix)
+col_fun <- circlize::colorRamp2(c(0, max(abs_diff_matrix)), c("white", "purple"))
 
-library(circlize)
 
-col_fun <- colorRamp2(c(0, max(abs_diff_matrix)), c("white", "purple"))
-
-png('abs_change_in_correlations.png', width = 250, height = 220, units='mm', res = 300)
-ComplexHeatmap::Heatmap(abs_diff_matrix, cluster_rows = FALSE, cluster_columns = FALSE, col = col_fun)
+png(
+    fig_path("abs_difference_in_correlations.png", TRUE),
+    width = 250,
+    height = 220,
+    units = "mm",
+    res = 300
+)
+ComplexHeatmap::Heatmap(
+    abs_diff_matrix,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    col = col_fun
+)
 dev.off()
 
-correlations_heatmap <- function(data_list) {
-    dl_df <- collapse_dl(data_list)
-    numeric_dl_df <- keep_numeric(dl_df)
-}
+```
 
+HERE I AM!
+
+```{r}
 ###############################################################################
 # Uninjured pairwise associations (among those with complete data)
 ###############################################################################
@@ -1044,22 +1113,6 @@ mtbi_0_merged_df |>
 #####
 
 
-classes <- sapply(mtbi_df, class) |> as.vector()
-
-mtbi_df[, classes == "character"]
-
-mtbi_df_adjusted <- mtbi_df |>
-    dplyr::mutate(
-        sex = dplyr::case_when(
-            sex == "F" ~ 0,
-            sex == "M" ~ 1
-        ),
-        race = dplyr::case_when(
-            race == "white" ~ 0,
-            race == "mixed_or_other" ~ 1,
-            race == "black" ~ 1
-        )
-    ) |> abcdutils::char_to_fac()
 
 
 ncol(mtbi_0_merged_df)
