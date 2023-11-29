@@ -30,6 +30,7 @@ core_path <- path_maker(here(paste0("data/abcd/core")))
 misc_path <- path_maker(here(paste0("data/abcd/misc")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
 # Subjects
 mtbi_subjects <- read_csv(sub_path("2023_11_07_mtbi_subjects.csv"))
@@ -925,7 +926,6 @@ uninj_df_numeric <- uninj_df |>
 ## Checking for excessive collinearity
 
 ```{r}
-
 # Restrict to only shared variables
 mtbi_train_reduced <- mtbi_train_df_numeric[, colnames(uninj_df_numeric)]
 
@@ -1047,165 +1047,367 @@ dev.off()
 
 ```
 
-HERE I AM!
-
-```{r}
-###############################################################################
-# Uninjured pairwise associations (among those with complete data)
-###############################################################################
-uninj_dl <- generate_data_list(
-    list(uninj_df, "uninj", "uninj", "mixed")
-)
-
-uninj_associations_matrix <- calculate_associations(
-    uninj_dl,
-    cat_test = "fisher_exact"
-)
-
-correlation_pval_heatmap(
-    uninj_associations_matrix,
-    significance_stars = FALSE
-)
-
-uninj_df$"cbcl_scr_syn_rulebreak_r"
-uninj_df$"cbcl_scr_syn_thought_r"
-
-uninj_associations_matrix[1:3, 1:3]
-
-uninj_df$"pubertal_status"
-uninj_df$"sex"
-
-uninj_df |>
-    ggplot(aes(x = sex, y = pubertal_status)) +
-    geom_boxplot() +
-    geom_jitter(height = 0.2, width = 0.6, alpha = 0.5)
-
-```
-
 ## Imputing missing data
 
-Here, I only impute the non-neuroimaging data.
+Generating three different sets of 5:
 
-Code is based on Eman's imputation script.
-Thanks Eman!
-
-While this choice was made largely for the sake of time, it was also partially because imputing neuroimaging data doesn't seem to be a common practice.
-
-Imputation notes:
-
-1. I'm imputing prior to train/test split (limits generalizability)
-2. I'm imputing uninjured controls with the injured group
+- Imputing mTBI alone (5 datasets)
+- Imputing uninjured alone (5 datasets)
+- Imputing mTBI and uninjured together (5 datasets)
 
 ```{r eval = FALSE}
 
-missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_df)) > 0))
-missing_colnames_uninj <- names(which(colSums(is.na(uninj_df)) > 0))
+missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_train_df_numeric)) > 0))
+missing_colnames_mtbi
 
+missing_colnames_uninj <- names(which(colSums(is.na(uninj_df_numeric)) > 0))
+missing_colnames_uninj
 
-#### Multicollinearity detection:
-mtbi_df |>
-    ggplot(aes(x = smri_area_cdk_total, y = smri_vol_scs_wholeb)) +
-    geom_point()
-
-mtbi_0_merged_df |>
-    ggplot(aes(x = dmri_rsirnd_fib_allfib, y = dmri_rsirndwm_cdk_mean)) +
-    geom_point()
-#####
-
-
-
-
-ncol(mtbi_0_merged_df)
-
-z <- mtbi_0_merged_df[, 2:55]
-colnames(z)
-
-# Prediction matrix construction
-ncols <- ncol(z)
-predmat <- matrix(nrow = ncols, ncol = ncols, 1)
-colnames(predmat) <- colnames(z)
-rownames(predmat) <- colnames(z)
-diag(predmat) <- 0
-# Randomly remove one pair of any highly correlated vars from prediction
-predmat[, "smri_area_cdk_total"] <- 0
-predmat[, "dmri_rsirnd_fib_allfib"] <- 0
-predmat[, "avg_subc_cor"] <- 0
-predmat[, "avg_gord_cor"] <- 0
-predmat[, "asr_scr_intrusive_r"] <- 0
-predmat[, "asr_scr_withdrawn_r"] <- 0
-predmat[, "asr_scr_somatic_r"] <- 0
-predmat[, "asr_scr_thought_r"] <- 0
-predmat[, "asr_scr_aggressive_r"] <- 0 # close to anxdep
-predmat[, "asr_scr_anxdisord_r"] <- 0 # close to anxdep
-predmat[, "asr_scr_anxdep_r"] <- 0
-predmat[, "asr_scr_avoidant_r"] <- 0 # close to withdrawn
-predmat[, "asr_scr_antisocial_r"] <- 0 # close to withdrawn
-
-colnames(z)
-
-pheatmap(predmat, cluster_rows = FALSE, cluster_cols = FALSE)
-
-# HERE I AM! HERE IS THE CODE TO IMPUTE EVERYTHING!
-
-mtbi_df_no_subs <- mtbi_df_adjusted |>
+# Remove the subjectkey variable
+mtbi_df_no_subs <- mtbi_train_df_numeric |>
     dplyr::select(-"subjectkey") |>
     data.frame()
 
-mtbi_impute <- mtbi_df_no_subs[, 1:14]
+uninj_df_no_subs <- uninj_df_numeric |>
+    dplyr::select(-"subjectkey") |>
+    data.frame()
 
-colnames(mtbi_df_no_subs)[13]
+###############################################################################
+# Functions to check the biggest correlations
+big_correlations <- function(df, threshold = 0) {
+    df <- na.omit(df)
+    correlations <- cor(df)
+    diag(correlations) <- 0
+    abs_cor <- abs(correlations)
+    pairs <- t(combn(colnames(abs_cor), 2))
+    paired_cors <- data.frame(pairs, cor = abs_cor[pairs])
+    paired_cors <- paired_cors[paired_cors$"cor" > threshold, ]
+    return(paired_cors)
+}
 
+predictor_candidates <- function(df, threshold = 0) {
+    df <- big_correlations(df, threshold)
+    variables <- c(df$"X1", df$"X2") |> unique()
+    max_cor_df <- data.frame(
+        variable = as.character(),
+        max_cor = as.numeric()
+    )
+    i <- 0
+    while (nrow(df) > 0) {
+        i <- i + 1
+        print(i)
+        row_with_max_cor <- which(df$"cor" == max(df$"cor"))[1]
+        var_with_max_cor <- df[row_with_max_cor, "X1"]
+        max_cor <- df[row_with_max_cor, "cor"]
+        max_cor_df <- rbind(
+            max_cor_df,
+            data.frame(
+                variable = var_with_max_cor,
+                max_cor = max_cor
+            )
+        )
+        df <- df |>
+            dplyr::filter(X1 != var_with_max_cor & X2 != var_with_max_cor)
+    }
+    return(max_cor_df)
+}
+###############################################################################
+# Imputation - only mTBI
+###############################################################################
+# Doesn't run
 imputed_mtbi <- mice(
-    mtbi_impute,
+    mtbi_df_no_subs,
     m = 5,
     maxit = 10,
     seed = 42
 )
 
-# Ah shoot, i need to take out the test set first... lol
-five_imputed_mtbi <- complete(imputed_mtbi, action = "long", include = TRUE)
+# Prediction matrix construction
+mtbi_predmat <- matrix(nrow = ncol(mtbi_df_no_subs), ncol = ncol(mtbi_df_no_subs), 1)
+colnames(mtbi_predmat) <- colnames(mtbi_df_no_subs)
+rownames(mtbi_predmat) <- colnames(mtbi_df_no_subs)
+diag(mtbi_predmat) <- 0
+pred_mat_vars <- predictor_candidates(mtbi_df_no_subs[, -2])
+mtbi_predmat[, pred_mat_vars$"variable"[1]] <- 0
+ComplexHeatmap::Heatmap(
+    mtbi_predmat,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+# Write and recover
+write.table(mtbi_predmat, proc_path("mtbi_predmat.txt", TRUE))
+mtbi_predmat <- as.matrix(read.table(proc_path("2023_11_29_mtbi_predmat.txt")))
+storage.mode(mtbi_predmat) <- "double"
+
+# Runs
+imputed_mtbi <- mice(
+    mtbi_df_no_subs,
+    m = 5,
+    maxit = 10,
+    seed = 42,
+    predictorMatrix = mtbi_predmat
+)
+
+# mTBI solo imputed data
+five_imputed_mtbi_train <- complete(
+    imputed_mtbi,
+    action = "long",
+    include = TRUE
+)
+
+# Write and recover
+write_csv(
+    five_imputed_mtbi_train,
+    input_path("five_imputed_mtbi_train.csv", TRUE)
+)
+five_imputed_mtbi_train <- read_csv(
+    input_path("2023_11_29_five_imputed_mtbi_train.csv")
+)
+
+###############################################################################
+# Imputation - only uninjured
+###############################################################################
+
+# Doesn't run
+imputed_uninj <- mice(
+    uninj_df_no_subs,
+    m = 5,
+    maxit = 10,
+    seed = 42
+)
+
+# Prediction matrix construction
+uninj_predmat <- matrix(nrow = ncol(uninj_df_no_subs), ncol = ncol(uninj_df_no_subs), 1)
+colnames(uninj_predmat) <- colnames(uninj_df_no_subs)
+rownames(uninj_predmat) <- colnames(uninj_df_no_subs)
+diag(uninj_predmat) <- 0
+pred_mat_vars <- predictor_candidates(uninj_df_no_subs[, -2])
+uninj_predmat[, pred_mat_vars$"variable"[1]] <- 0
+ComplexHeatmap::Heatmap(
+    uninj_predmat,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+# Write and recover
+write.table(uninj_predmat, proc_path("uninj_predmat.txt", TRUE))
+uninj_predmat <- as.matrix(read.table(proc_path("2023_11_29_uninj_predmat.txt")))
+storage.mode(uninj_predmat) <- "double"
 
 
-colnames(z)
-
-z <- na.omit(mtbi_0_merged_df)
-
-z2 <- na.omit(uninjured_0_merged_df)
-
-# It turns out that these three variables are very closely related
-ggplot(z, aes(x = smri_thick_cdk_mean, y = smri_area_cdk_total)) +
-    geom_point()
-
-ggplot(z, aes(x = smri_thick_cdk_mean, y = smri_vol_scs_wholeb)) +
-    geom_point()
-
-ggplot(z, aes(x = smri_area_cdk_total, y = smri_vol_scs_wholeb)) +
-    geom_point()
+# Runs
+imputed_uninj <- mice(
+    uninj_df_no_subs,
+    m = 5,
+    maxit = 10,
+    seed = 42,
+    predictorMatrix = uninj_predmat
+)
 
 
-ggplot(z2, aes(x = smri_thick_cdk_mean, y = smri_area_cdk_total)) +
-    geom_point()
+# Uninjured solo imputed data
+five_imputed_uninj <- complete(
+    imputed_uninj,
+    action = "long",
+    include = TRUE
+)
 
-ggplot(z2, aes(x = smri_thick_cdk_mean, y = smri_vol_scs_wholeb)) +
-    geom_point()
+# Write and recover
+write_csv(
+    five_imputed_uninj,
+    input_path("five_imputed_uninj.csv", TRUE)
+)
+five_imputed_uninj <- read_csv(
+    input_path("2023_11_29_five_imputed_uninj.csv")
+)
+
+###############################################################################
+# Imputation - mTBI and uninjured data stacked on top of each other
+# This will only look at the variables shared between the two groups
+###############################################################################
+
+mtbi_df_no_subs_limited_vars <- mtbi_df_no_subs[, colnames(uninj_df_no_subs)]
+
+colnames(uninj_df_no_subs)
+
+pooled_df <- rbind(mtbi_df_no_subs_limited_vars, uninj_df_no_subs)
+
+# Doesn't run
+imputed_pooled <- mice(
+    pooled_df,
+    m = 5,
+    maxit = 10,
+    seed = 42
+)
+
+# Prediction matrix construction
+pooled_predmat <- matrix(nrow = ncol(pooled_df), ncol = ncol(pooled_df), 1)
+colnames(pooled_predmat) <- colnames(pooled_df)
+rownames(pooled_predmat) <- colnames(pooled_df)
+diag(pooled_predmat) <- 0
+pred_mat_vars <- predictor_candidates(pooled_df)
+pooled_predmat[, pred_mat_vars$"variable"[1]] <- 0
+ComplexHeatmap::Heatmap(
+    pooled_predmat,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+# Write and recover
+write.table(pooled_predmat, proc_path("pooled_predmat.txt", TRUE))
+pooled_predmat <- as.matrix(read.table(proc_path("2023_11_29_pooled_predmat.txt")))
+storage.mode(pooled_predmat) <- "double"
+
+# Runs
+imputed_pooled <- mice(
+    pooled_df,
+    m = 5,
+    maxit = 10,
+    seed = 42,
+    predictorMatrix = pooled_predmat
+)
+
+# mTBI solo imputed data
+five_imputed_pooled <- complete(
+    imputed_pooled,
+    action = "long",
+    include = TRUE
+)
+
+# Write and recover
+write_csv(
+    five_imputed_pooled,
+    input_path("five_imputed_pooled.csv", TRUE)
+)
+five_imputed_pooled <- read_csv(
+    input_path("2023_11_29_five_imputed_pooled.csv")
+)
+```
+
+
+Formatting the imputed data:
+
+
+```{r}
+
+five_imputed_mtbi_train$"subjectkey" <- rep(
+    mtbi_train_df_numeric$"subjectkey",
+    6
+)
+
+five_imputed_uninj$"subjectkey" <- rep(
+    uninj_df_numeric$"subjectkey",
+    6
+)
+
+pooled_subjects <- c(
+    mtbi_train_df_numeric$"subjectkey",
+    uninj_df_numeric$"subjectkey"
+)
+
+five_imputed_pooled$"subjectkey" <- rep(
+    pooled_subjects,
+    6
+)
+
+write_csv(
+    five_imputed_mtbi_train,
+    input_path("five_imputed_mtbi_train_named.csv", TRUE)
+)
+write_csv(
+    five_imputed_uninj,
+    input_path("five_imputed_uninj_named.csv", TRUE)
+)
+write_csv(
+    five_imputed_pooled,
+    input_path("five_imputed_pooled_named.csv", TRUE)
+)
+```
+
+```{r}
+# Write and recover
+five_imputed_mtbi_train <- read_csv(
+    input_path("2023_11_29_five_imputed_mtbi_train_named.csv")
+)
+
+# Write and recover
+five_imputed_uninj <- read_csv(
+    input_path("2023_11_29_five_imputed_uninj_named.csv")
+)
+
+five_imputed_pooled <- read_csv(
+    input_path("2023_11_29_five_imputed_pooled_named.csv")
+)
+```
+
+```{r}
+
+pull_imputed_vars <- function(original_df, imputed_df, partition = NULL) {
+    if (!is.null(partition)) {
+        original_rows <- nrow(original_df)
+        start <- original_rows * partition + 1
+        end <- original_rows * (partition + 1)
+        partitioned_df <- imputed_df[start:end, colnames(original_df)]
+        return(partitioned_df)
+    } else {
+        df <- imputed_df[, colnames(original_df)]
+        return(df)
+    }
+}
+
+as_mem_daze_mtbi_train_imp_0 <- pull_imputed_vars(as_mem_daze_mtbi_train, five_imputed_mtbi_train, 0)
+as_mem_daze_mtbi_train_imp_1 <- pull_imputed_vars(as_mem_daze_mtbi_train, five_imputed_mtbi_train, 1)
+as_mem_daze_mtbi_train_imp_2 <- pull_imputed_vars(as_mem_daze_mtbi_train, five_imputed_mtbi_train, 2)
+as_mem_daze_mtbi_train_imp_3 <- pull_imputed_vars(as_mem_daze_mtbi_train, five_imputed_mtbi_train, 3)
+as_mem_daze_mtbi_train_imp_4 <- pull_imputed_vars(as_mem_daze_mtbi_train, five_imputed_mtbi_train, 4)
+as_mem_daze_mtbi_train_imp_5 <- pull_imputed_vars(as_mem_daze_mtbi_train, five_imputed_mtbi_train, 5)
+
+# HERE I AM!!!!!
+
+
+
+as_mem_daze_mtbi_imp <- five_imputed_mtbi_train[, colnames(as_mem_daze_mtbi)]
+
+as_mechanism_mtbi
+as_loc_mtbi
+d_interview_age_mtbi
+d_mtbi_age_mtbi
+d_sex_mtbi
+d_income_mtbi
+d_race_mtbi
+d_pubertal_status_mtbi
+mh_headaches_mtbi
+mh_mtbi_count_mtbi
+sm_subc_v_mtbi
+sm_cort_t_mtbi
+sm_cort_sa_mtbi
+dm_all_wmnd_mtbi
+rm_gord_cor_mtbi
+rm_subc_cor_mtbi
+p_loneliness_mtbi
+p_screen_time_mtbi
+p_sports_mtbi
+p_exercise_mtbi
+p_prosocial_mtbi
+p_fam_fn_mtbi
+p_parent_psych_mtbi
+cbcl_anxdep_mtbi
+cbcl_withdep_mtbi
+cbcl_somatic_mtbi
+cbcl_social_mtbi
+cbcl_thought_mtbi
+cbcl_attention_mtbi
+cbcl_rulebreak_mtbi
+cbcl_aggressive_mtbi
+sds_total_probs_mtbi
 
 
 
 
+```
 
-
-
-
-
-
-
-
-
-
-# Isolate the imputed data
-complete_imputed_mtbi <- cbind(subjectkey = full_df_mtbi$"subjectkey",
-                              complete(imputed_mtbi))
-
+```{r}
 # The features that were missing data
 missing_data_colnames
 
@@ -1253,46 +1455,6 @@ cbcl_anxiety_r_imp_mtbi <- cbcl_anxiety_r_mtbi
 cbcl_attention_r_imp_mtbi <- cbcl_attention_r_mtbi
 cbcl_aggressive_r_imp_mtbi <- cbcl_aggressive_r_mtbi
 sds_sleep_imp_mtbi <- sds_sleep_mtbi
-
-
-# Visualize missing data post-imputation
-df_list_no_neuroimaging_post_imp_mtbi <- list(
-    "loss of consciousness" = as_mtbi_loc_mtbi,
-    "mechanism of injury" = as_mtbi_mechanism_mtbi,
-    "memory loss / dazed" = as_mtbi_mem_daze_imp_mtbi,
-    "income" = d_income_imp_mtbi,
-    "interview_age" = d_interview_age_mtbi,
-    "mtbi_age" = d_mtbi_age_mtbi,
-    "pubertal_status" = d_pubertal_status_imp_mtbi,
-    "race" = d_race_imp_mtbi,
-    "sex" = d_sex_mtbi,
-    "headaches" = mh_headaches_mtbi,
-    "mtbi_count" = mh_mtbi_count_mtbi,
-    "loneliness" = p_loneliness_mtbi,
-    "screen time" = p_screen_time_imp_mtbi,
-    "family function" = p_fam_fn_mtbi,
-    "sports" = p_sports_mtbi,
-    "prosocial" = p_prosocial_mtbi,
-    "parent psych" = p_parent_psych_mtbi,
-    "exercise" = p_exercise_imp_mtbi,
-    "cbcl headaches" = cbcl_headaches_mtbi,
-    "cbcl nausea" = cbcl_nausea_mtbi,
-    "cbcl vomiting" = cbcl_vomiting_mtbi,
-    "cbcl dizzy" = cbcl_dizzy_mtbi,
-    "cbcl overtired" = cbcl_overtired_mtbi,
-    "cbcl sleeping more" = cbcl_sleeping_more_mtbi,
-    "cbcl sleeping less" = cbcl_sleeping_less_mtbi,
-    "cbcl depress r" = cbcl_depress_r_mtbi,
-    "cbcl anxiety r" = cbcl_anxiety_r_mtbi,
-    "cbcl attention r" = cbcl_attention_r_mtbi,
-    "cbcl aggressive r" = cbcl_aggressive_r_mtbi,
-    "sds sleep" = sds_sleep_mtbi,
-    "nihtbx list fc" = nihtbx_list_fc_imp_mtbi,
-    "nihtbx pattern fc" = nihtbx_pattern_fc_imp_mtbi,
-    "nihtbx cardsort fc" = nihtbx_cardsort_fc_imp_mtbi
-)
-vis_missing_by_df(df_list_no_neuroimaging_post_imp_mtbi)
-
 
 # Export imputed results
 write_csv(as_mtbi_loc_imp_mtbi,
@@ -1361,7 +1523,6 @@ write_csv(nihtbx_pattern_fc_imp_mtbi,
     input_path("nihtbx_pattern_fc_imp_mtbi.csv", date = TRUE))
 write_csv(nihtbx_cardsort_fc_imp_mtbi,
     input_path("nihtbx_cardsort_fc_imp_mtbi.csv", date = TRUE))
-
 ```
 
 ## Convert the raw CBCL scores into thresholded ones
@@ -1403,12 +1564,10 @@ library(abcdutils)
 library(readr)
 library(here)
 
-
 # Functions to import data from carbon
 input_path <- abcdutils::path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- abcdutils::path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- abcdutils::path_maker(here(paste0("data/abcd/results/figures")))
-
 
 # Importing data
 as_mtbi_loc_mtbi <-
