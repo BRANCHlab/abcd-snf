@@ -1,12 +1,141 @@
 # Similarity Network Fusion
 
 In this chapter, I use the `metasnf` package to generate many diverse subtyping solutions with SNF.
-I examine the following sets of diverse solutions:
 
-1. Baseline mTBI subjects with the complete set of input variables
-2. Baseline mTBI subjects without Race or SES variables to examine the dependence of the generated solutions on these features
+## Data set-up
 
-## Set-up
+In the previous chapter, we set up the following datasets:
+
+* 1 original unimputed mTBI dataset
+* 1 original unimputed uninjured dataset
+* 5 imputed mTBI datasets
+* 5 imputed uninjured datasets
+* 5 imputed mTBI + uninjured datasets
+
+For the sake of simplicity, let's start just by exploring the first of the imputed mTBI datasets.
+
+To keep track of what data we're working with, variables will have the following notation: (m/u/p)(0-5), where m represented mTBI data, u represents uninjured data, p for pooled data, 0 indicating original (unimputed) data, and 1-5 indicating the imputed dataset number.
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+
+as_mem_daze_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_as_mem_daze_mtbi_train_imp_1.csv"))
+as_mechanism_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_as_mechanism_mtbi_train_imp_1.csv"))
+as_loc_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_as_loc_mtbi_train_imp_1.csv"))
+d_interview_age_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_d_interview_age_mtbi_train_imp_1.csv"))
+d_mtbi_age_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_d_mtbi_age_mtbi_train_imp_1.csv"))
+d_sex_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_d_sex_mtbi_train_imp_1.csv"))
+d_income_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_d_income_mtbi_train_imp_1.csv"))
+d_race_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_d_race_mtbi_train_imp_1.csv"))
+d_pubertal_status_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_d_pubertal_status_mtbi_train_imp_1.csv"))
+mh_headaches_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_mh_headaches_mtbi_train_imp_1.csv"))
+mh_mtbi_count_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_mh_mtbi_count_mtbi_train_imp_1.csv"))
+sm_subc_v_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_sm_subc_v_mtbi_train_imp_1.csv"))
+sm_cort_t_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_sm_cort_t_mtbi_train_imp_1.csv"))
+sm_cort_sa_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_sm_cort_sa_mtbi_train_imp_1.csv"))
+dm_all_wmnd_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_dm_all_wmnd_mtbi_train_imp_1.csv"))
+rm_gord_cor_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_rm_gord_cor_mtbi_train_imp_1.csv"))
+rm_subc_cor_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_rm_subc_cor_mtbi_train_imp_1.csv"))
+p_loneliness_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_loneliness_mtbi_train_imp_1.csv"))
+p_screen_time_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_screen_time_mtbi_train_imp_1.csv"))
+p_sports_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_sports_mtbi_train_imp_1.csv"))
+p_exercise_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_exercise_mtbi_train_imp_1.csv"))
+p_prosocial_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_prosocial_mtbi_train_imp_1.csv"))
+p_fam_fn_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_fam_fn_mtbi_train_imp_1.csv"))
+p_parent_psych_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_p_parent_psych_mtbi_train_imp_1.csv"))
+t_cbcl_anxdep_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_anxdep_mtbi_train_imp_1.csv"))
+t_cbcl_withdep_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_withdep_mtbi_train_imp_1.csv"))
+t_cbcl_somatic_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_somatic_mtbi_train_imp_1.csv"))
+t_cbcl_social_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_social_mtbi_train_imp_1.csv"))
+t_cbcl_thought_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_thought_mtbi_train_imp_1.csv"))
+t_cbcl_attention_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_attention_mtbi_train_imp_1.csv"))
+t_cbcl_rulebreak_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_rulebreak_mtbi_train_imp_1.csv"))
+t_cbcl_aggressive_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_t_cbcl_aggressive_mtbi_train_imp_1.csv"))
+sds_total_probs_mtbi_train_imp_1 <- read_csv(input_path("2023_11_30_sds_total_probs_mtbi_train_imp_1.csv"))
+
+data_list_m1 <- generate_data_list(
+    list(as_mem_daze_mtbi_train_imp_1, "as_mem_daze", "AS", "discrete"),
+    list(as_mechanism_mtbi_train_imp_1, "as_mechanism", "AS", "categorical"),
+    list(as_loc_mtbi_train_imp_1, "as_loc", "AS", "discrete"),
+    list(d_interview_age_mtbi_train_imp_1, "d_age", "D", "discrete"),
+    list(d_mtbi_age_mtbi_train_imp_1, "d_mtbi_age", "D", "discrete"),
+    list(d_sex_mtbi_train_imp_1, "d_sex", "D", "discrete"),
+    list(d_income_mtbi_train_imp_1, "d_income", "D", "ordinal"),
+    list(d_race_mtbi_train_imp_1, "d_race", "D", "discrete"),
+    list(d_pubertal_status_mtbi_train_imp_1, "d_pubertal", "D", "discrete"),
+    list(mh_headaches_mtbi_train_imp_1, "mh_headaches", "MH", "discrete"),
+    list(mh_mtbi_count_mtbi_train_imp_1, "mh_mtbi_count", "MH", "discrete"),
+    list(sm_subc_v_mtbi_train_imp_1, "sm_subc_v", "N", "continuous"),
+    list(sm_cort_t_mtbi_train_imp_1, "sm_cort_t", "N", "continuous"),
+    list(sm_cort_sa_mtbi_train_imp_1, "sm_cort_sa", "N", "continuous"),
+    list(dm_all_wmnd_mtbi_train_imp_1, "dm_all_wmnd", "N", "continuous"),
+    list(rm_gord_cor_mtbi_train_imp_1, "rm_gord_cor", "N", "continuous"),
+    list(rm_subc_cor_mtbi_train_imp_1, "rm_subc_cor", "N", "continuous"),
+    list(p_loneliness_mtbi_train_imp_1, "p_loneliness", "P", "discrete"),
+    list(p_screen_time_mtbi_train_imp_1, "p_screen_time", "P", "discrete"),
+    list(p_sports_mtbi_train_imp_1, "p_sports", "P", "discrete"),
+    list(p_exercise_mtbi_train_imp_1, "p_exercise", "P", "discrete"),
+    list(p_prosocial_mtbi_train_imp_1, "p_prosocial", "P", "discrete"),
+    list(p_fam_fn_mtbi_train_imp_1, "p_fam_fn", "P", "discrete"),
+    list(p_parent_psych_mtbi_train_imp_1, "p_parent_psych", "P", "discrete"),
+    uid = "subjectkey"
+)
+
+sds_total_probs_mtbi_train_imp_1
+
+oom_list_m1 <- generate_data_list(
+    list(t_cbcl_anxdep_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_withdep_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_somatic_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_social_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_thought_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_attention_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_rulebreak_mtbi_train_imp_1, "B", "", "ordinal")
+    list(t_cbcl_aggressive_mtbi_train_imp_1, "B", "", "ordinal")
+    list(sds_total_probs_mtbi_train_imp_1, "S", "", "ordinal")
+)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r eval = FALSE}
 
