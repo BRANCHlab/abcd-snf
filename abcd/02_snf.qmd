@@ -302,6 +302,10 @@ oom_m1_pvals <- p_val_select(extended_solutions_matrix_m1)
 
 colnames(oom_m1_pvals)
 
+impairment_separation <- -log(oom_m1_pvals)
+
+impairment_separation$"row_id" <- oom_m1_pvals$"row_id"
+
 pvals_heatmap(
     oom_m1_pvals,
     order = aris_m1_order,
@@ -309,6 +313,18 @@ pvals_heatmap(
     reverse_colours = TRUE,
     save = fig_path("aris_ordered_oom_pvals_m1.png", TRUE)
 )
+
+pvals_heatmap(
+    impairment_separation,
+    order = aris_m1_order,
+    cluster_cols = FALSE
+)
+
+dim(impairment_separation)
+
+as.matrix(impairment_separation[aris_m1_order, -1]) |>
+    ComplexHeatmap::Heatmap(cluster_rows = FALSE, cluster_columns = FALSE)
+
 ```
 
 
@@ -332,18 +348,44 @@ formatted_extended_solutions_matrix_m1 <- extended_solutions_matrix_m1 |>
 
 colnames(no_subs(extended_solutions_matrix_m1))
 
+colnames(formatted_extended_solutions_matrix_m1)
+
+neg_log <- formatted_extended_solutions_matrix_m1 |>
+    no_subs() |>
+    dplyr::select(dplyr::ends_with("_p") | dplyr::ends_with("_val")) |>
+    numcol_to_numeric() |>
+    dplyr::select(-"minus_log_mean_p")
+neg_log <- -log(neg_log)
+better_names <- gsub("cbcl_scr_syn_", "", colnames(neg_log))
+better_names <- gsub("_r_p", "", better_names)
+better_names <- gsub("sds_p_ss_total_p", "sleep", better_names)
+better_names <- gsub("_p_val", "_sep", better_names)
+better_names
+colnames(neg_log) <- better_names
+neg_log$"row_id" <- formatted_extended_solutions_matrix_m1$"row_id"
+separation_df <- dplyr::inner_join(neg_log, formatted_extended_solutions_matrix_m1, by = "row_id")
+separation_df <- separation_df |> numcol_to_numeric()
+
+colnames(separation_df |> no_subs())
+
+hm_colours <- function(vector) {
+    colours <- circlize::colorRamp2(
+        c(min(vector), max(vector)),
+        c("black", "red")
+    )
+    return(colours)
+}
+
 aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
     aris_m1,
     order = aris_m1_order,
     log_graph = FALSE,
-    cluster_rows = TRUE,
-    cluster_columns = TRUE,
-    data = formatted_extended_solutions_matrix_m1,
+    data = separation_df,
     bottom_hm = list(
         "SNF Scheme" = "snf_scheme"
     ),
-    top_bar = list(
-        "Impairment Separation" = "minus_log_mean_p"
+    top_hm = list(
+        "Impairment Separation" = "mean_sep"
     ),
     bottom_bar = list(
         "K" = "k",
@@ -353,11 +395,45 @@ aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
     heatmap_height = grid::unit(19, "cm"),
     heatmap_width = grid::unit(19, "cm"),
     annotation_colours = list(
-        #"SNF Scheme" = c(
-        #    "Domain" = "#7FC97F",
-        #    "Individual" = "#BEAED4",
-        #    "Two-step" = "#FDC086"
-        #)
+        "SNF Scheme" = c(
+            "Domain" = "orange",
+            "Individual" = "purple",
+            "Two-step" = "turquoise"
+        ),
+        "Impairment Separation" = hm_colours(separation_df$"mean_sep")
+    ),
+    col = circlize::colorRamp2(
+        c(min(aris_m1), max(aris_m1)),
+        c("navy", "red")
+    )
+)
+# No saving
+aris_m1_extended_annotated_heatmap
+
+
+
+aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
+    aris_m1,
+    order = aris_m1_order,
+    log_graph = FALSE,
+    data = formatted_extended_solutions_matrix_m1,
+    bottom_hm = list(
+        "SNF Scheme" = "snf_scheme"
+    ),
+    top_bar = list(
+        "Impairment Separation" = "minus_log_mean_p"
+    ),
+    left_bar = list(
+        "WithdrawnDepressed" = "cbcl_scr_syn_withdep_r_p"
+    ),
+    bottom_bar = list(
+        "K" = "k",
+        "Number of Clusters" = "nclust"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
         "SNF Scheme" = c(
             "Domain" = "orange",
             "Individual" = "purple",
@@ -369,7 +445,6 @@ aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
         c("navy", "red")
     )
 )
-
 # No saving
 aris_m1_extended_annotated_heatmap
 
