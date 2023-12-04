@@ -216,6 +216,131 @@ settings_matrix_heatmap(
 )
 ```
 
+A chunk devoted to reading in the already written files:
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+as_mem_daze_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_as_mem_daze_mtbi_train_imp_1.csv"))
+as_mechanism_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_as_mechanism_mtbi_train_imp_1.csv"))
+as_loc_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_as_loc_mtbi_train_imp_1.csv"))
+d_interview_age_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_interview_age_mtbi_train_imp_1.csv"))
+d_mtbi_age_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_mtbi_age_mtbi_train_imp_1.csv"))
+d_sex_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_sex_mtbi_train_imp_1.csv"))
+d_income_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_income_mtbi_train_imp_1.csv"))
+d_race_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_race_mtbi_train_imp_1.csv"))
+d_pubertal_status_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_pubertal_status_mtbi_train_imp_1.csv"))
+mh_headaches_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_mh_headaches_mtbi_train_imp_1.csv"))
+mh_mtbi_count_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_mh_mtbi_count_mtbi_train_imp_1.csv"))
+sm_subc_v_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sm_subc_v_mtbi_train_imp_1.csv"))
+sm_cort_t_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sm_cort_t_mtbi_train_imp_1.csv"))
+sm_cort_sa_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sm_cort_sa_mtbi_train_imp_1.csv"))
+dm_all_wmnd_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_dm_all_wmnd_mtbi_train_imp_1.csv"))
+rm_gord_cor_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_rm_gord_cor_mtbi_train_imp_1.csv"))
+rm_subc_cor_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_rm_subc_cor_mtbi_train_imp_1.csv"))
+p_loneliness_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_loneliness_mtbi_train_imp_1.csv"))
+p_screen_time_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_screen_time_mtbi_train_imp_1.csv"))
+p_sports_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_sports_mtbi_train_imp_1.csv"))
+p_exercise_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_exercise_mtbi_train_imp_1.csv"))
+p_prosocial_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_prosocial_mtbi_train_imp_1.csv"))
+p_fam_fn_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_fam_fn_mtbi_train_imp_1.csv"))
+p_parent_psych_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_parent_psych_mtbi_train_imp_1.csv"))
+t_cbcl_anxdep_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_anxdep_mtbi_train_imp_1.csv"))
+t_cbcl_withdep_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_withdep_mtbi_train_imp_1.csv"))
+t_cbcl_somatic_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_somatic_mtbi_train_imp_1.csv"))
+t_cbcl_social_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_social_mtbi_train_imp_1.csv"))
+t_cbcl_thought_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_thought_mtbi_train_imp_1.csv"))
+t_cbcl_attention_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_attention_mtbi_train_imp_1.csv"))
+t_cbcl_rulebreak_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_rulebreak_mtbi_train_imp_1.csv"))
+t_cbcl_aggressive_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_aggressive_mtbi_train_imp_1.csv"))
+sds_total_probs_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sds_total_probs_mtbi_train_imp_1.csv"))
+
+data_list_m1 <- generate_data_list(
+    list(as_mem_daze_mtbi_train_imp_1, "as_mem_daze", "AS", "discrete"),
+    list(as_mechanism_mtbi_train_imp_1, "as_mechanism", "AS", "categorical"),
+    list(as_loc_mtbi_train_imp_1, "as_loc", "AS", "discrete"),
+    list(d_interview_age_mtbi_train_imp_1, "d_age", "D", "discrete"),
+    list(d_mtbi_age_mtbi_train_imp_1, "d_mtbi_age", "D", "discrete"),
+    list(d_sex_mtbi_train_imp_1, "d_sex", "D", "discrete"),
+    list(d_income_mtbi_train_imp_1, "d_income", "D", "ordinal"),
+    list(d_race_mtbi_train_imp_1, "d_race", "D", "discrete"),
+    list(d_pubertal_status_mtbi_train_imp_1, "d_pubertal", "D", "discrete"),
+    list(mh_headaches_mtbi_train_imp_1, "mh_headaches", "MH", "discrete"),
+    list(mh_mtbi_count_mtbi_train_imp_1, "mh_mtbi_count", "MH", "discrete"),
+    list(sm_subc_v_mtbi_train_imp_1, "sm_subc_v", "N", "continuous"),
+    list(sm_cort_t_mtbi_train_imp_1, "sm_cort_t", "N", "continuous"),
+    list(sm_cort_sa_mtbi_train_imp_1, "sm_cort_sa", "N", "continuous"),
+    list(dm_all_wmnd_mtbi_train_imp_1, "dm_all_wmnd", "N", "continuous"),
+    list(rm_gord_cor_mtbi_train_imp_1, "rm_gord_cor", "N", "continuous"),
+    list(rm_subc_cor_mtbi_train_imp_1, "rm_subc_cor", "N", "continuous"),
+    list(p_loneliness_mtbi_train_imp_1, "p_loneliness", "P", "discrete"),
+    list(p_screen_time_mtbi_train_imp_1, "p_screen_time", "P", "discrete"),
+    list(p_sports_mtbi_train_imp_1, "p_sports", "P", "discrete"),
+    list(p_exercise_mtbi_train_imp_1, "p_exercise", "P", "discrete"),
+    list(p_prosocial_mtbi_train_imp_1, "p_prosocial", "P", "discrete"),
+    list(p_fam_fn_mtbi_train_imp_1, "p_fam_fn", "P", "discrete"),
+    list(p_parent_psych_mtbi_train_imp_1, "p_parent_psych", "P", "discrete"),
+    uid = "subjectkey"
+)
+
+oom_list_m1 <- generate_data_list(
+    list(t_cbcl_anxdep_mtbi_train_imp_1, "t_cbcl_anxdep", "B", "ordinal"),
+    list(t_cbcl_withdep_mtbi_train_imp_1, "t_cbcl_withdep", "B", "ordinal"),
+    list(t_cbcl_somatic_mtbi_train_imp_1, "t_cbcl_somatic", "B", "ordinal"),
+    list(t_cbcl_social_mtbi_train_imp_1, "t_cbcl_social", "B", "ordinal"),
+    list(t_cbcl_thought_mtbi_train_imp_1, "t_cbcl_thought", "B", "ordinal"),
+    list(t_cbcl_attention_mtbi_train_imp_1, "t_cbcl_attention", "B", "ordinal"),
+    list(t_cbcl_rulebreak_mtbi_train_imp_1, "t_cbcl_rulebreak", "B", "ordinal"),
+    list(t_cbcl_aggressive_mtbi_train_imp_1, "t_cbcl_aggressive", "B", "ordinal"),
+    list(sds_total_probs_mtbi_train_imp_1, "sds_total_probs", "S", "discrete")
+)
+
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+)
+
+settings_matrix <- read_csv(
+    proc_path(
+        "2023_12_01_settings_matrix.csv"
+    )
+)
+
+solutions_matrix_m1 <- read_csv(
+    proc_path(
+        "2023_12_01_solutions_matrix_m1.csv"
+    )
+)
+
+aris_m1 <- read_csv(proc_path("2023_12_01_aris_m1.csv"))
+aris_m1 <- as.matrix(aris_m1)
+colnames(aris_m1) <- 1:nrow(aris_m1)
+rownames(aris_m1) <- 1:nrow(aris_m1)
+
+aris_m1_heatmap <- similarity_matrix_heatmap(
+    aris_m1,
+    log_graph = FALSE,
+    cluster_rows = TRUE,
+    cluster_columns = TRUE,
+)
+
+aris_m1_order <- unlist(read_csv(proc_path("2023_12_01_aris_m1_order.csv")))
+```
+
 By visual inspection, there appears to be non-random organization based on the parameters k, and snf_scheme.
 Below is the actual adjusted rand index heatmap with these hyperparameters highlighted.
 
@@ -223,9 +348,9 @@ Below is the actual adjusted rand index heatmap with these hyperparameters highl
 formatted_solutions_matrix_m1 <- solutions_matrix_m1 |>
     dplyr::mutate(
         "snf_scheme" = dplyr::case_when(
-            snf_scheme == 1 ~ "Individual",
-            snf_scheme == 2 ~ "Two-step",
-            snf_scheme == 3 ~ "Domain"
+            snf_scheme == 1 ~ "1",
+            snf_scheme == 2 ~ "2",
+            snf_scheme == 3 ~ "3"
         )
     )
 
@@ -250,9 +375,9 @@ aris_m1_annotated_heatmap <- similarity_matrix_heatmap(
     heatmap_width = grid::unit(19, "cm"),
     annotation_colours = list(
         "Scheme" = c(
-            "Domain" = "#7FC97F",
-            "Individual" = "#BEAED4",
-            "Two-step" = "#FDC086"
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
         )
     ),
     col = circlize::colorRamp2(
@@ -289,7 +414,6 @@ A few "meta clusters" are visible in the pairwise ARI heatmap.
 Let's see how they associate with the out of model measures:
 
 ```{r}
-
 
 aris_m1_annotated_heatmap
 
