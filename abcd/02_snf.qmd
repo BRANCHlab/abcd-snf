@@ -129,6 +129,134 @@ my_distance_metrics <- generate_distance_metrics_list(
 summarize_distance_metrics_list(my_distance_metrics)
 ```
 
+Visualizing correlations among initial variables
+
+```{r}
+all_vars_dl_m1
+
+summarize_dl(all_vars_dl_m1)
+
+keep_numeric <- function(df) {
+    df <- numcol_to_numeric(df)
+    classes <- as.vector(sapply(df, class))
+    df <- df[, classes == "numeric", drop = FALSE]
+    return(df)
+}
+
+correlation_heatmap <- function(data_list, order = NULL) {
+    dl_df <- collapse_dl(data_list)
+    numeric_dl_df <- keep_numeric(dl_df)
+    correlation_matrix <- cor(numeric_dl_df)
+    if (is.null(order)) {
+        heatmap <- ComplexHeatmap::Heatmap(correlation_matrix)
+    } else {
+        heatmap <- ComplexHeatmap::Heatmap(
+            correlation_matrix[order, order],
+            cluster_rows = FALSE,
+            cluster_columns = FALSE
+        )
+    }
+    drawn_heatmap <- ComplexHeatmap::draw(heatmap)
+    order <- ComplexHeatmap::row_order(drawn_heatmap)
+    results <- list(
+        "correlation_matrix" = correlation_matrix,
+        "heatmap" = heatmap,
+        "order" = order
+    )
+    return(results)
+}
+
+# First pass to extract the order of columns
+correlation_heatmap_data <- correlation_heatmap(
+    all_vars_dl_m1
+)
+
+correlation_matrix_m1 <- correlation_heatmap_data$"correlation_matrix"
+
+race_cors <- abs(correlation_matrix_m1[, "race"])
+race_order <- sort(race_cors, index.return = TRUE, decreasing = TRUE)$"ix"
+
+ComplexHeatmap::Heatmap(
+    abs(correlation_matrix_m1)[race_order, race_order],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+ComplexHeatmap::Heatmap(
+    abs(correlation_matrix_m1)[race_order, "race"],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+ComplexHeatmap::Heatmap(
+    log(abs(correlation_matrix_m1)[race_order, race_order]),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+ComplexHeatmap::Heatmap(
+    log(abs(correlation_matrix_m1)[race_order, "race"]),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+sex_cors <- abs(correlation_matrix_m1[, "sex"])
+sex_order <- sort(sex_cors, index.return = TRUE, decreasing = TRUE)$"ix"
+
+ComplexHeatmap::Heatmap(
+    abs(correlation_matrix_m1)[sex_order, sex_order],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+ComplexHeatmap::Heatmap(
+    abs(correlation_matrix_m1)[sex_order, "sex"],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+ComplexHeatmap::Heatmap(
+    log(abs(correlation_matrix_m1)[sex_order, sex_order]),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+ComplexHeatmap::Heatmap(
+    log(abs(correlation_matrix_m1)[sex_order, "sex"]),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
+
+
+###############################################################################
+# Similarity matrix visualizations
+###############################################################################
+
+all_vars_associations <- calculate_associations(all_vars_dl_m1)
+
+race_cors <- all_vars_associations[, "race"]
+race_order <- sort(race_cors, index.return = TRUE)$"ix"
+
+correlation_pval_heatmap(
+    all_vars_associations[race_order, race_order],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    significance_stars = FALSE
+)
+
+sex_cors <- all_vars_associations[, "sex"]
+sex_order <- sort(sex_cors, index.return = TRUE)$"ix"
+
+correlation_pval_heatmap(
+    all_vars_associations[sex_order, sex_order],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    significance_stars = FALSE
+)
+```
+
+Now for the actual subtyping.
+
 Some of the heavier functions are in the next chunk:
 
 ```{r}
@@ -216,151 +344,16 @@ settings_matrix_heatmap(
 )
 ```
 
-A chunk devoted to reading in the already written files:
-
-```{r}
-library(readr)
-library(abcdutils)
-library(here)
-library(metasnf)
-
-input_path <- path_maker(here(paste0("data/abcd/inputs")))
-proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
-fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-
-as_mem_daze_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_as_mem_daze_mtbi_train_imp_1.csv"))
-as_mechanism_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_as_mechanism_mtbi_train_imp_1.csv"))
-as_loc_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_as_loc_mtbi_train_imp_1.csv"))
-d_interview_age_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_interview_age_mtbi_train_imp_1.csv"))
-d_mtbi_age_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_mtbi_age_mtbi_train_imp_1.csv"))
-d_sex_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_sex_mtbi_train_imp_1.csv"))
-d_income_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_income_mtbi_train_imp_1.csv"))
-d_race_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_race_mtbi_train_imp_1.csv"))
-d_pubertal_status_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_d_pubertal_status_mtbi_train_imp_1.csv"))
-mh_headaches_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_mh_headaches_mtbi_train_imp_1.csv"))
-mh_mtbi_count_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_mh_mtbi_count_mtbi_train_imp_1.csv"))
-sm_subc_v_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sm_subc_v_mtbi_train_imp_1.csv"))
-sm_cort_t_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sm_cort_t_mtbi_train_imp_1.csv"))
-sm_cort_sa_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sm_cort_sa_mtbi_train_imp_1.csv"))
-dm_all_wmnd_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_dm_all_wmnd_mtbi_train_imp_1.csv"))
-rm_gord_cor_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_rm_gord_cor_mtbi_train_imp_1.csv"))
-rm_subc_cor_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_rm_subc_cor_mtbi_train_imp_1.csv"))
-p_loneliness_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_loneliness_mtbi_train_imp_1.csv"))
-p_screen_time_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_screen_time_mtbi_train_imp_1.csv"))
-p_sports_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_sports_mtbi_train_imp_1.csv"))
-p_exercise_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_exercise_mtbi_train_imp_1.csv"))
-p_prosocial_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_prosocial_mtbi_train_imp_1.csv"))
-p_fam_fn_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_fam_fn_mtbi_train_imp_1.csv"))
-p_parent_psych_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_p_parent_psych_mtbi_train_imp_1.csv"))
-t_cbcl_anxdep_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_anxdep_mtbi_train_imp_1.csv"))
-t_cbcl_withdep_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_withdep_mtbi_train_imp_1.csv"))
-t_cbcl_somatic_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_somatic_mtbi_train_imp_1.csv"))
-t_cbcl_social_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_social_mtbi_train_imp_1.csv"))
-t_cbcl_thought_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_thought_mtbi_train_imp_1.csv"))
-t_cbcl_attention_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_attention_mtbi_train_imp_1.csv"))
-t_cbcl_rulebreak_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_rulebreak_mtbi_train_imp_1.csv"))
-t_cbcl_aggressive_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_t_cbcl_aggressive_mtbi_train_imp_1.csv"))
-sds_total_probs_mtbi_train_imp_1 <- read_csv(input_path("2023_12_01_sds_total_probs_mtbi_train_imp_1.csv"))
-
-data_list_m1 <- generate_data_list(
-    list(as_mem_daze_mtbi_train_imp_1, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_train_imp_1, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_train_imp_1, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_train_imp_1, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_train_imp_1, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_train_imp_1, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_train_imp_1, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_train_imp_1, "d_race", "D", "discrete"),
-    list(d_pubertal_status_mtbi_train_imp_1, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_train_imp_1, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_train_imp_1, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_train_imp_1, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_train_imp_1, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_train_imp_1, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_train_imp_1, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_train_imp_1, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_train_imp_1, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_train_imp_1, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_train_imp_1, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_train_imp_1, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_train_imp_1, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_train_imp_1, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_train_imp_1, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_train_imp_1, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-oom_list_m1 <- generate_data_list(
-    list(t_cbcl_anxdep_mtbi_train_imp_1, "t_cbcl_anxdep", "B", "ordinal"),
-    list(t_cbcl_withdep_mtbi_train_imp_1, "t_cbcl_withdep", "B", "ordinal"),
-    list(t_cbcl_somatic_mtbi_train_imp_1, "t_cbcl_somatic", "B", "ordinal"),
-    list(t_cbcl_social_mtbi_train_imp_1, "t_cbcl_social", "B", "ordinal"),
-    list(t_cbcl_thought_mtbi_train_imp_1, "t_cbcl_thought", "B", "ordinal"),
-    list(t_cbcl_attention_mtbi_train_imp_1, "t_cbcl_attention", "B", "ordinal"),
-    list(t_cbcl_rulebreak_mtbi_train_imp_1, "t_cbcl_rulebreak", "B", "ordinal"),
-    list(t_cbcl_aggressive_mtbi_train_imp_1, "t_cbcl_aggressive", "B", "ordinal"),
-    list(sds_total_probs_mtbi_train_imp_1, "sds_total_probs", "S", "discrete")
-)
-
-my_distance_metrics <- generate_distance_metrics_list(
-    continuous_distances = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    discrete_distances = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    ordinal_distances = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-)
-
-settings_matrix <- read_csv(
-    proc_path(
-        "2023_12_01_settings_matrix.csv"
-    )
-)
-
-solutions_matrix_m1 <- read_csv(
-    proc_path(
-        "2023_12_01_solutions_matrix_m1.csv"
-    )
-)
-
-aris_m1 <- read_csv(proc_path("2023_12_01_aris_m1.csv"))
-aris_m1 <- as.matrix(aris_m1)
-colnames(aris_m1) <- 1:nrow(aris_m1)
-rownames(aris_m1) <- 1:nrow(aris_m1)
-
-aris_m1_heatmap <- similarity_matrix_heatmap(
-    aris_m1,
-    log_graph = FALSE,
-    cluster_rows = TRUE,
-    cluster_columns = TRUE,
-)
-
-aris_m1_order <- unlist(read_csv(proc_path("2023_12_01_aris_m1_order.csv")))
-```
-
 By visual inspection, there appears to be non-random organization based on the parameters k, and snf_scheme.
 Below is the actual adjusted rand index heatmap with these hyperparameters highlighted.
 
 ```{r}
-formatted_solutions_matrix_m1 <- solutions_matrix_m1 |>
-    dplyr::mutate(
-        "snf_scheme" = dplyr::case_when(
-            snf_scheme == 1 ~ "1",
-            snf_scheme == 2 ~ "2",
-            snf_scheme == 3 ~ "3"
-        )
-    )
 
 aris_m1_annotated_heatmap <- similarity_matrix_heatmap(
     aris_m1,
     order = aris_m1_order,
     log_graph = FALSE,
-    cluster_rows = TRUE,
-    cluster_columns = TRUE,
-    data = formatted_solutions_matrix_m1,
+    data = solutions_matrix_m1,
     top_bar = list(
         "Number of Clusters" = "nclust"
     ),
@@ -415,101 +408,115 @@ Let's see how they associate with the out of model measures:
 
 ```{r}
 
-aris_m1_annotated_heatmap
-
 extended_solutions_matrix_m1 <- extend_solutions(
     solutions_matrix_m1,
     oom_list_m1
 )
 
-oom_m1_pvals <- p_val_select(extended_solutions_matrix_m1)
-
-colnames(oom_m1_pvals)
-
-impairment_separation <- -log(oom_m1_pvals)
-
-impairment_separation$"row_id" <- oom_m1_pvals$"row_id"
-
-pvals_heatmap(
-    oom_m1_pvals,
-    order = aris_m1_order,
-    cluster_cols = FALSE,
-    reverse_colours = TRUE,
-    save = fig_path("aris_ordered_oom_pvals_m1.png", TRUE)
+write_csv(
+    extended_solutions_matrix_m1,
+    proc_path(
+        "extended_solutions_matrix_m1.csv",
+        TRUE
+    )
 )
 
-pvals_heatmap(
-    impairment_separation,
-    order = aris_m1_order,
-    cluster_cols = FALSE
+extended_solutions_matrix_m1 <- read_csv(
+    proc_path(
+        "2023_12_04_extended_solutions_matrix_m1.csv"
+    )
 )
 
-dim(impairment_separation)
+pval_select <- function(extended_solutions_matrix,
+                        keep_summary = TRUE,
+                        negative_log = FALSE,
+                        recalculate_summary = TRUE) {
+    pval_df <- extended_solutions_matrix |>
+        dplyr::select(
+            "row_id",
+            dplyr::ends_with("_p"),
+            dplyr::contains("p_val")
+        ) |>
+        data.frame() |>
+        numcol_to_numeric()
+    if (!keep_summary) {
+        pval_df <- pval_df |>
+            dplyr::select(-c("min_p_val", "mean_p_val"))
+    }
+    if (negative_log) {
+        neg_log_pval_df <- -log(pval_df)
+        neg_log_pval_df$"row_id" <- pval_df$"row_id"
+        pval_df <- neg_log_pval_df
+        if (recalculate_summary) {
+            mini_df <- pval_df |> dplyr::select(
+                dplyr::ends_with("_p")
+            )
+            pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
+            pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
+        }
+    }
+    return(pval_df)
+}
 
-as.matrix(impairment_separation[aris_m1_order, -1]) |>
-    ComplexHeatmap::Heatmap(cluster_rows = FALSE, cluster_columns = FALSE)
+oom_m1_pvals <- pval_select(
+    extended_solutions_matrix_m1,
+    negative_log = TRUE
+)
 
-```
-
-
-```{r}
-
-extended_solutions_matrix_m1
-
-
-# Looking at the newly added columns
-head(no_subs(extended_solutions_matrix))
-
-formatted_extended_solutions_matrix_m1 <- extended_solutions_matrix_m1 |>
-    dplyr::mutate(
-        "snf_scheme" = dplyr::case_when(
-            snf_scheme == 1 ~ "Individual",
-            snf_scheme == 2 ~ "Two-step",
-            snf_scheme == 3 ~ "Domain"
-        ),
-        "minus_log_mean_p" = -log(mean_p_val)
-    )
-
-colnames(no_subs(extended_solutions_matrix_m1))
-
-colnames(formatted_extended_solutions_matrix_m1)
-
-neg_log <- formatted_extended_solutions_matrix_m1 |>
-    no_subs() |>
-    dplyr::select(dplyr::ends_with("_p") | dplyr::ends_with("_val")) |>
-    numcol_to_numeric() |>
-    dplyr::select(-"minus_log_mean_p")
-neg_log <- -log(neg_log)
-better_names <- gsub("cbcl_scr_syn_", "", colnames(neg_log))
-better_names <- gsub("_r_p", "", better_names)
-better_names <- gsub("sds_p_ss_total_p", "sleep", better_names)
-better_names <- gsub("_p_val", "_sep", better_names)
-better_names
-colnames(neg_log) <- better_names
-neg_log$"row_id" <- formatted_extended_solutions_matrix_m1$"row_id"
-separation_df <- dplyr::inner_join(neg_log, formatted_extended_solutions_matrix_m1, by = "row_id")
-separation_df <- separation_df |> numcol_to_numeric()
-
-colnames(separation_df |> no_subs())
-
-hm_colours <- function(vector) {
-    colours <- circlize::colorRamp2(
-        c(min(vector), max(vector)),
-        c("black", "red")
-    )
+hm_colours <- function(data, max_red = TRUE) {
+    if (max_red) {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("black", "red")
+        )
+    } else {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("red", "black")
+        )
+    }
     return(colours)
 }
+
+pval_heatmap <- function(pval_df, order, max_red = FALSE) {
+    pval_df <- pval_df |> dplyr::select(-"row_id")
+    pval_matrix <- as.matrix(pval_df[order, ])
+    hm <- ComplexHeatmap::Heatmap(
+        pval_matrix,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_row_names = FALSE,
+        col = hm_colours(pval_matrix, max_red)
+    )
+    return(hm)
+}
+pval_hm_m1 <- pval_heatmap(oom_m1_pvals, order = aris_m1_order, max_red = TRUE)
+
+# No saving
+pval_hm_m1
+
+# PNG export
+grDevices::png(
+    fig_path("pval_hm_m1.png", TRUE),
+    width = 4000,
+    height = 3000,
+    res = 400
+)
+pval_hm_m1
+grDevices::dev.off()
+
+extended_solutions_matrix_m1$"mean_neglog_p" <- oom_m1_pvals$"mean_neglog_p"
 
 aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
     aris_m1,
     order = aris_m1_order,
     log_graph = FALSE,
-    data = separation_df,
+    data = extended_solutions_matrix_m1,
     bottom_hm = list(
         "SNF Scheme" = "snf_scheme"
     ),
     top_hm = list(
-        "Impairment Separation" = "mean_sep"
+        "Impairment Separation" = "mean_neglog_p"
     ),
     bottom_bar = list(
         "K" = "k",
@@ -520,66 +527,20 @@ aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
     heatmap_width = grid::unit(19, "cm"),
     annotation_colours = list(
         "SNF Scheme" = c(
-            "Domain" = "orange",
-            "Individual" = "purple",
-            "Two-step" = "turquoise"
+            "1" = "orange",
+            "2" = "purple",
+            "3" = "turquoise"
         ),
-        "Impairment Separation" = hm_colours(separation_df$"mean_sep")
+        "Impairment Separation" = hm_colours(oom_m1_pvals$"mean_neglog_p")
     ),
     col = circlize::colorRamp2(
         c(min(aris_m1), max(aris_m1)),
         c("navy", "red")
     )
 )
+
 # No saving
 aris_m1_extended_annotated_heatmap
-
-
-
-aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
-    aris_m1,
-    order = aris_m1_order,
-    log_graph = FALSE,
-    data = formatted_extended_solutions_matrix_m1,
-    bottom_hm = list(
-        "SNF Scheme" = "snf_scheme"
-    ),
-    top_bar = list(
-        "Impairment Separation" = "minus_log_mean_p"
-    ),
-    left_bar = list(
-        "WithdrawnDepressed" = "cbcl_scr_syn_withdep_r_p"
-    ),
-    bottom_bar = list(
-        "K" = "k",
-        "Number of Clusters" = "nclust"
-    ),
-    scale_diag = "none",
-    heatmap_height = grid::unit(19, "cm"),
-    heatmap_width = grid::unit(19, "cm"),
-    annotation_colours = list(
-        "SNF Scheme" = c(
-            "Domain" = "orange",
-            "Individual" = "purple",
-            "Two-step" = "turquoise"
-        )
-    ),
-    col = circlize::colorRamp2(
-        c(min(aris_m1), max(aris_m1)),
-        c("navy", "red")
-    )
-)
-# No saving
-aris_m1_extended_annotated_heatmap
-
-# PDF export
-grDevices::pdf(
-    fig_path("aris_m1_extended_annotated_heatmap.pdf", TRUE),
-    width = 10,
-    height = 10
-)
-aris_m1_extended_annotated_heatmap
-grDevices::dev.off()
 
 # PNG export
 grDevices::png(
@@ -592,70 +553,6 @@ aris_m1_extended_annotated_heatmap
 grDevices::dev.off()
 ```
 
-Loose exploring
+Next steps:
 
-```{r}
-
-all_vars_dl_m1
-
-summarize_dl(all_vars_dl_m1)
-
-
-keep_numeric <- function(df) {
-    df <- numcol_to_numeric(df)
-    classes <- as.vector(sapply(df, class))
-    df <- df[, classes == "numeric", drop = FALSE]
-    return(df)
-}
-
-correlation_heatmap <- function(data_list, order = NULL) {
-    dl_df <- collapse_dl(data_list)
-    numeric_dl_df <- keep_numeric(dl_df)
-    correlation_matrix <- cor(numeric_dl_df)
-    if (is.null(order)) {
-        heatmap <- ComplexHeatmap::Heatmap(correlation_matrix)
-    } else {
-        heatmap <- ComplexHeatmap::Heatmap(
-            correlation_matrix[order, order],
-            cluster_rows = FALSE,
-            cluster_columns = FALSE
-        )
-    }
-    drawn_heatmap <- ComplexHeatmap::draw(heatmap)
-    order <- ComplexHeatmap::row_order(drawn_heatmap)
-    results <- list(
-        "correlation_matrix" = correlation_matrix,
-        "heatmap" = heatmap,
-        "order" = order
-    )
-    return(results)
-}
-
-# First pass to extract the order of columns
-correlation_heatmap(
-    all_vars_dl_m1
-)
-
-all_vars_associations <- calculate_associations(all_vars_dl_m1)
-
-race_cors <- all_vars_associations[, "race"]
-race_order <- sort(race_cors, index.return = TRUE)$"ix"
-
-correlation_pval_heatmap(
-    all_vars_associations[race_order, race_order],
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    significance_stars = FALSE
-)
-
-sex_cors <- all_vars_associations[, "sex"]
-sex_order <- sort(sex_cors, index.return = TRUE)$"ix"
-
-correlation_pval_heatmap(
-    all_vars_associations[sex_order, sex_order],
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    significance_stars = FALSE
-)
-
-```
+- repeat for the other imputations and see how well the structure holds.
