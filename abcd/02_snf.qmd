@@ -265,7 +265,7 @@ Some of the heavier functions are in the next chunk:
 ###############################################################################
 settings_matrix <- generate_settings_matrix(
     data_list_m1,
-    nrow = 200,
+    nrow = 24,
     seed = 42,
     distance_metrics_list = my_distance_metrics
 )
@@ -278,11 +278,55 @@ settings_matrix <- read_csv(
     )
 )
 
+library(future)
+
+future::availableCores()
+
+start <- proc.time()
+solutions_matrix_m1 <- batch_snf(
+    data_list = data_list_m1,
+    settings_matrix = settings_matrix,
+    distance_metrics_list = my_distance_metrics,
+    processes = "max"
+)
+proc.time() - start
+
+start <- proc.time()
 solutions_matrix_m1 <- batch_snf(
     data_list = data_list_m1,
     settings_matrix = settings_matrix,
     distance_metrics_list = my_distance_metrics
 )
+
+proc.time() - start
+
+proc.time() - start
+
+time_data <- data.frame(
+    machine = as.character(),
+    processes = as.numeric(),
+    user_time = as.numeric(),
+    system_time = as.numeric(),
+    elapsed_time = as.numeric()
+)
+
+for (i in c(1, 2, 4, 8, 12, 24, 48)) {
+    print(i)
+}
+
+
+
+```
+
+Parallel 1:
+  user  system elapsed
+ 13.150   0.879  85.360
+
+```{r}
+
+
+
+
 
 write_csv(solutions_matrix_m1, proc_path("solutions_matrix_m1.csv", TRUE))
 
