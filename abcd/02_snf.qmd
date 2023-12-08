@@ -12,11 +12,7 @@ In the previous chapter, we set up the following datasets:
 * 5 imputed uninjured datasets
 * 5 imputed mTBI + uninjured datasets
 
-For the sake of simplicity, let's start just by exploring the first of the imputed mTBI datasets.
-
 To keep track of what data we're working with, variables will have the following notation: (m/u/p)(0-5), where m represented mTBI data, u represents uninjured data, p for pooled data, 0 indicating original (unimputed) data, and 1-5 indicating the imputed dataset number.
-
-### Pure mTBI imputations
 
 ```{r}
 library(readr)
@@ -798,9 +794,6 @@ oom_list_pm5 <- generate_data_list(
     list(sds_total_probs_pooled_mtbi_imp_5, "sds_total_probs", "S", "discrete")
 )
 
-all_vars_dl_m1 <- c(data_list_m1, oom_list_m1)
-summarize_dl(all_vars_dl_m1)
-
 ###############################################################################
 # 2. Add standard normalized variations to the distance metrics list (also
 # achievable through toggling automatic_standard_normalize parameter in
@@ -821,14 +814,99 @@ my_distance_metrics <- generate_distance_metrics_list(
 summarize_distance_metrics_list(my_distance_metrics)
 ```
 
-Visualizing correlations among initial variables
+## A utility function to give our variables some better names
 
 ```{r}
+
+
+heart_rate_df <- data.frame(
+    patient_id = c("1", "2", "3"),
+    var1 = c(0.04, 0.1, 0.3),
+    var2 = c(30, 2, 0.3)
+)
+
+personality_test_df <- data.frame(
+    patient_id = c("1", "2", "3"),
+    var3 = c(900, 1990, 373),
+    var4 = c(509, 2209, 83)
+)
+
+survey_response_df <- data.frame(
+    patient_id = c("1", "2", "3"),
+    var5 = c(1, 3, 3),
+    var6 = c(2, 3, 3)
+)
+
+city_df <- data.frame(
+    patient_id = c("1", "2", "3"),
+    var7 = c("toronto", "montreal", "vancouver")
+)
+
+dl <- generate_data_list(
+    list(heart_rate_df, "heart_rate", "clinical", "continuous"),
+    list(personality_test_df, "personality_test", "surveys", "continuous"),
+    list(survey_response_df, "survey_response", "surveys", "ordinal"),
+    list(city_df, "city", "location", "categorical"),
+    uid = "patient_id"
+)
+
+name_changes <- c(
+    "persons_city" = "var7",
+    "heart_measure1"= "var1",
+    "heart_measure2" = "var2"
+)
+
+rename_data_list <- function(data_list, name_mapping) {
+    data_list <- data_list |> lapply(
+        function(x) {
+            old_colnames <- colnames(x$"data")
+            new_colnames <- old_colnames |> lapply(
+                function(old_name) {
+                    if (old_name %in% name_mapping) {
+                        new_name <- names(name_mapping)[which(name_mapping == old_name)]
+                    } else {
+                        new_name <- old_name
+                    }
+                    return(new_name)
+                }
+            )
+            colnames(x$"data") <- new_colnames
+            return(x)
+        }
+    )
+    return(data_list)
+}
+
+rename_data_list(dl, name_changes)
+
+```
+
+## Initial visualizations
+
+Visualizing correlations among variables
+
+```{r}
+
 keep_numeric <- function(df) {
     df <- numcol_to_numeric(df)
     classes <- as.vector(sapply(df, class))
     df <- df[, classes == "numeric", drop = FALSE]
     return(df)
+}
+
+hm_colours <- function(data, max_red = TRUE) {
+    if (max_red) {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("black", "red")
+        )
+    } else {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("red", "black")
+        )
+    }
+    return(colours)
 }
 
 correlation_heatmap <- function(data_list, order = NULL) {
@@ -854,63 +932,41 @@ correlation_heatmap <- function(data_list, order = NULL) {
     return(results)
 }
 
+###############################################################################
+# Imputation 1
+###############################################################################
 # First pass to extract the order of columns
-correlation_heatmap_data <- correlation_heatmap(
-    all_vars_dl_m1
-)
+correlation_heatmap_data_m1 <- correlation_heatmap(c(data_list_m1, oom_list_m1))
+correlation_matrix_m1 <- correlation_heatmap_data_m1$"correlation_matrix"
+race_cors_m1 <- abs(correlation_matrix_m1[, "race"])
+race_order_m1 <- sort(race_cors_m1, index.return = TRUE, decreasing = TRUE)$"ix"
+sex_cors_m1 <- abs(correlation_matrix_m1[, "sex"])
+sex_order_m1 <- sort(sex_cors_m1, index.return = TRUE, decreasing = TRUE)$"ix"
 
-correlation_matrix_m1 <- correlation_heatmap_data$"correlation_matrix"
-
-race_cors <- abs(correlation_matrix_m1[, "race"])
-race_order <- sort(race_cors, index.return = TRUE, decreasing = TRUE)$"ix"
-
+# All correlations, sorted by abs(cor-race)
 ComplexHeatmap::Heatmap(
-    abs(correlation_matrix_m1)[race_order, race_order],
+    correlation_matrix_m1[race_order_m1, race_order_m1],
     cluster_rows = FALSE,
     cluster_columns = FALSE
 )
 
+# Race correlations, sorted by abs(cor-race)
 ComplexHeatmap::Heatmap(
-    abs(correlation_matrix_m1)[race_order, "race"],
+    correlation_matrix_m1[race_order_m1, "race"],
     cluster_rows = FALSE,
     cluster_columns = FALSE
 )
 
+# All correlations, sorted by abs(cor-sex)
 ComplexHeatmap::Heatmap(
-    log(abs(correlation_matrix_m1)[race_order, race_order]),
+    correlation_matrix_m1[sex_order_m1, sex_order_m1],
     cluster_rows = FALSE,
     cluster_columns = FALSE
 )
 
+# Sex correlations, sorted by abs(cor-race)
 ComplexHeatmap::Heatmap(
-    log(abs(correlation_matrix_m1)[race_order, "race"]),
-    cluster_rows = FALSE,
-    cluster_columns = FALSE
-)
-
-sex_cors <- abs(correlation_matrix_m1[, "sex"])
-sex_order <- sort(sex_cors, index.return = TRUE, decreasing = TRUE)$"ix"
-
-ComplexHeatmap::Heatmap(
-    abs(correlation_matrix_m1)[sex_order, sex_order],
-    cluster_rows = FALSE,
-    cluster_columns = FALSE
-)
-
-ComplexHeatmap::Heatmap(
-    abs(correlation_matrix_m1)[sex_order, "sex"],
-    cluster_rows = FALSE,
-    cluster_columns = FALSE
-)
-
-ComplexHeatmap::Heatmap(
-    log(abs(correlation_matrix_m1)[sex_order, sex_order]),
-    cluster_rows = FALSE,
-    cluster_columns = FALSE
-)
-
-ComplexHeatmap::Heatmap(
-    log(abs(correlation_matrix_m1)[sex_order, "sex"]),
+    correlation_matrix_m1[sex_order_m1, "sex"],
     cluster_rows = FALSE,
     cluster_columns = FALSE
 )
@@ -1110,7 +1166,6 @@ solutions_matrix_pm3 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm3.csv"
 solutions_matrix_pm4 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm4.csv"))
 solutions_matrix_pm5 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm5.csv"))
 
-
 aris_m1 <- calc_om_aris(solutions_matrix_m1)
 write_csv(data.frame(aris_m1), proc_path("aris_m1.csv", TRUE))
 aris_m2 <- calc_om_aris(solutions_matrix_m2)
@@ -1149,9 +1204,18 @@ all_mtbi_imputations <- do.call(
 aris_all_mtbi_imputations <- calc_om_aris(all_mtbi_imputations)
 write_csv(data.frame(aris_all_mtbi_imputations), proc_path("aris_all_mtbi_imputations.csv", TRUE))
 
+aris_m1 <- read_csv(proc_path("2023_12_07_aris_m1.csv")) |> as.matrix()
+aris_m2 <- read_csv(proc_path("2023_12_07_aris_m2.csv")) |> as.matrix()
+aris_m3 <- read_csv(proc_path("2023_12_07_aris_m3.csv")) |> as.matrix()
+aris_m4 <- read_csv(proc_path("2023_12_07_aris_m4.csv")) |> as.matrix()
+aris_m5 <- read_csv(proc_path("2023_12_07_aris_m5.csv")) |> as.matrix()
+aris_pm1 <- read_csv(proc_path("2023_12_07_aris_pm1.csv")) |> as.matrix()
+aris_pm2 <- read_csv(proc_path("2023_12_07_aris_pm2.csv")) |> as.matrix()
+aris_pm3 <- read_csv(proc_path("2023_12_07_aris_pm3.csv")) |> as.matrix()
+aris_pm4 <- read_csv(proc_path("2023_12_07_aris_pm4.csv")) |> as.matrix()
+aris_pm5 <- read_csv(proc_path("2023_12_07_aris_pm5.csv")) |> as.matrix()
+aris_all_mtbi_imputations <- read_csv(proc_path("2023_12_07_aris_all_mtbi_imputations.csv")) |> as.matrix()
 
-
-dim(aris_all_mtbi_imputations)
 
 aris_all_mtbi_imputations_heatmap <- similarity_matrix_heatmap(
     aris_all_mtbi_imputations,
@@ -1418,20 +1482,6 @@ oom_m1_pvals <- pval_select(
     negative_log = TRUE
 )
 
-hm_colours <- function(data, max_red = TRUE) {
-    if (max_red) {
-        colours <- circlize::colorRamp2(
-            c(min(data), max(data)),
-            c("black", "red")
-        )
-    } else {
-        colours <- circlize::colorRamp2(
-            c(min(data), max(data)),
-            c("red", "black")
-        )
-    }
-    return(colours)
-}
 
 pval_heatmap <- function(pval_df, order, max_red = FALSE) {
     pval_df <- pval_df |> dplyr::select(-"row_id")
