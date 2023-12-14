@@ -15,6 +15,14 @@ To keep track of what data we're working with, variables will have the following
 ## Utility functions
 
 ```{r}
+
+divergent_colours <- function(column)  {
+    values <- unique(column)
+    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
+    names(colours) <- values
+    return(colours)
+}
+
 data_list_metadata <- function(data_list) {
     merged_df <- collapse_dl(data_list)
     merged_df <- merged_df[, colnames(merged_df) != "subjectkey"]
@@ -209,26 +217,26 @@ uninjured_subjects <- read_csv(sub_path("2023_11_07_uninjured_subjects.csv"))
 ## Loading data and out of model lists
 
 ```{r}
-data_list_m1 <- list.load(input_path("2023_12_11_data_list_m1.rds"))
-data_list_m2 <- list.load(input_path("2023_12_11_data_list_m2.rds"))
-data_list_m3 <- list.load(input_path("2023_12_11_data_list_m3.rds"))
-data_list_m4 <- list.load(input_path("2023_12_11_data_list_m4.rds"))
-data_list_m5 <- list.load(input_path("2023_12_11_data_list_m5.rds"))
-data_list_pm1 <- list.load(input_path("2023_12_11_data_list_pm1.rds"))
-data_list_pm2 <- list.load(input_path("2023_12_11_data_list_pm2.rds"))
-data_list_pm3 <- list.load(input_path("2023_12_11_data_list_pm3.rds"))
-data_list_pm4 <- list.load(input_path("2023_12_11_data_list_pm4.rds"))
-data_list_pm5 <- list.load(input_path("2023_12_11_data_list_pm5.rds"))
-oom_list_m1 <- list.load(input_path("2023_12_11_oom_list_m1.rds"))
-oom_list_m2 <- list.load(input_path("2023_12_11_oom_list_m2.rds"))
-oom_list_m3 <- list.load(input_path("2023_12_11_oom_list_m3.rds"))
-oom_list_m4 <- list.load(input_path("2023_12_11_oom_list_m4.rds"))
-oom_list_m5 <- list.load(input_path("2023_12_11_oom_list_m5.rds"))
-oom_list_pm1 <- list.load(input_path("2023_12_11_oom_list_pm1.rds"))
-oom_list_pm2 <- list.load(input_path("2023_12_11_oom_list_pm2.rds"))
-oom_list_pm3 <- list.load(input_path("2023_12_11_oom_list_pm3.rds"))
-oom_list_pm4 <- list.load(input_path("2023_12_11_oom_list_pm4.rds"))
-oom_list_pm5 <- list.load(input_path("2023_12_11_oom_list_pm5.rds"))
+data_list_m1 <- list.load(input_path("2023_12_14_data_list_m1.rds"))
+data_list_m2 <- list.load(input_path("2023_12_14_data_list_m2.rds"))
+data_list_m3 <- list.load(input_path("2023_12_14_data_list_m3.rds"))
+data_list_m4 <- list.load(input_path("2023_12_14_data_list_m4.rds"))
+data_list_m5 <- list.load(input_path("2023_12_14_data_list_m5.rds"))
+data_list_pm1 <- list.load(input_path("2023_12_14_data_list_pm1.rds"))
+data_list_pm2 <- list.load(input_path("2023_12_14_data_list_pm2.rds"))
+data_list_pm3 <- list.load(input_path("2023_12_14_data_list_pm3.rds"))
+data_list_pm4 <- list.load(input_path("2023_12_14_data_list_pm4.rds"))
+data_list_pm5 <- list.load(input_path("2023_12_14_data_list_pm5.rds"))
+oom_list_m1 <- list.load(input_path("2023_12_14_oom_list_m1.rds"))
+oom_list_m2 <- list.load(input_path("2023_12_14_oom_list_m2.rds"))
+oom_list_m3 <- list.load(input_path("2023_12_14_oom_list_m3.rds"))
+oom_list_m4 <- list.load(input_path("2023_12_14_oom_list_m4.rds"))
+oom_list_m5 <- list.load(input_path("2023_12_14_oom_list_m5.rds"))
+oom_list_pm1 <- list.load(input_path("2023_12_14_oom_list_pm1.rds"))
+oom_list_pm2 <- list.load(input_path("2023_12_14_oom_list_pm2.rds"))
+oom_list_pm3 <- list.load(input_path("2023_12_14_oom_list_pm3.rds"))
+oom_list_pm4 <- list.load(input_path("2023_12_14_oom_list_pm4.rds"))
+oom_list_pm5 <- list.load(input_path("2023_12_14_oom_list_pm5.rds"))
 ```
 
 ## Some pairwise variable correlations
@@ -618,19 +626,14 @@ write_csv(
     proc_path("full_mtbi_extended_solutions_matrix.csv", TRUE)
 )
 
+full_extended_solutions_matrix <- read_csv(proc_path("2023_12_12_full_mtbi_extended_solutions_matrix.csv"))
+
 full_oom_pvals <- pval_select(
     full_extended_solutions_matrix,
     negative_log = TRUE
 )
 
 full_extended_solutions_matrix$"mean_neglog_p" <- full_oom_pvals$"mean_neglog_p"
-
-divergent_colours <- function(column)  {
-    values <- unique(column)
-    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
-    names(colours) <- values
-    return(colours)
-}
 
 aris_all_mtbi_imputations_annotated_heatmap <- similarity_matrix_heatmap(
     aris_all_mtbi_imputations,
@@ -887,60 +890,29 @@ mc_reordered_labels <- gsub("M", "F-H", mc_reordered_labels)
 mc_reordered_labels <- gsub("N", "F-I", mc_reordered_labels)
 mc_reordered_labels <- gsub("O", "F-J", mc_reordered_labels)
 
-mc_reordered_labels
-
 names(aris_all_mtbi_imputations_order) <- mc_reordered_labels
 
 sorted_mc_labels <- sort(aris_all_mtbi_imputations_order)
-
-
-mc_c_rows <- aris_all_mtbi_imputations_order[956:1227]
-
-aris_all_mtbi_imputations_order
-
-# HERE I AM!
-
-aris_all_mtbi_imputations_chopped_heatmap
-
 
 full_input_characterization_m1 <- extend_solutions(
     full_solutions_matrix,
     data_list_m1
 )
 
-target_pvals <- p_val_select(full_input_characterization_m1)
+write_csv(full_input_characterization_m1, proc_path("full_input_characterization_m1.csv", TRUE))
 
-target_pvals <- target_pvals |>
-    dplyr::select(-"clusters_p")
+full_input_characterization_m1 <- read_csv(proc_path("2023_12_14_full_input_characterization_m1.csv"))
+
+target_pvals <- full_input_characterization_m1 |>
+    p_val_select()
 
 target_pvals$"mc_label" <- names(sorted_mc_labels)
-
-colnames(target_pvals)
-
-target_pvals |>
-    dplyr::select(dplyr::ends_with("_p")) |>
-    unlist() |>
-    hist()
-
-hist(target_pvals)
-
-x <- 0.005
-
-
-
-data_list_metadata(data_list_m1)
-
-manhattan_plot(target_pvals, threshold = 0.05, bonferroni_line = FALSE)
-
-max(z[z != Inf])
-
-
-colnames(z)
 
 manhattan_plot <- function(data,
                            key_mode = FALSE,
                            threshold = NULL,
-                           bonferroni_line = FALSE) {
+                           bonferroni_line = FALSE,
+                           data_list) {
     row_id <- ""
     variable <- ""
     pval <- ""
@@ -982,8 +954,25 @@ manhattan_plot <- function(data,
             se_p = sd_p / sqrt(dplyr::n()),
             .groups = "drop"
         )
+    summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
+    ###########################################################################
+    # Merge the summmary plot with domain information from the data_list
+    ###########################################################################
+    dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    summary_data <- merge(
+        summary_data,
+        dl_metadata,
+        by.x = "variable",
+        by.y = "name",
+        all.x = TRUE
+    )
+    summary_data <- summary_data |> dplyr::arrange(domain)
+    summary_data$"variable" <- factor(
+        summary_data$"variable",
+        levels = unique(summary_data$"variable")
+    )
     plot <- summary_data |>
-        ggplot2::ggplot() +
+        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
         #ggplot2::geom_errorbar(
         #    mapping = ggplot2::aes(
         #        x = variable,
@@ -994,11 +983,13 @@ manhattan_plot <- function(data,
         #) +
         ggplot2::geom_jitter(
             mapping = ggplot2::aes(
+                group = domain,
                 x = variable,
                 y = mean_p,
-                colour = mc_label
+                colour = domain
             ),
             height = 0,
+            width = 0,
             alpha = 0.8,
             size = 5
         ) +
@@ -1016,7 +1007,8 @@ manhattan_plot <- function(data,
                 hjust = 1
             ),
             plot.title = ggplot2::element_text(hjust = 0.5)
-        )
+        ) +
+        ggplot2::facet_wrap(~ mc_label)
     if (!is.null(threshold)) {
         plot <- plot + ggplot2::geom_hline(
             yintercept = -log10(threshold),
@@ -1039,7 +1031,23 @@ manhattan_plot <- function(data,
     return(plot)
 }
 
+manhattan_plot(
+    target_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = data_list_m1
+)
 
+target_pvals2 <- target_pvals |>
+    dplyr::select()
+
+
+```
+
+
+
+```{r}
+mc_c_rows <- aris_all_mtbi_imputations_order[956:1227]
 colnames(target_pvals)
 
 
