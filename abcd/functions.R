@@ -78,7 +78,7 @@ hm_colours <- function(data, max_red = TRUE) {
     return(colours)
 }
 
-correlation_heatmap <- function(data_list, order = NULL) {
+correlation_data <- function(data_list, order = NULL) {
     dl_df <- metasnf::collapse_dl(data_list)
     numeric_dl_df <- keep_numeric(dl_df)
     correlation_matrix <- cor(numeric_dl_df)
@@ -168,13 +168,20 @@ save_pdf <- function(heatmap, path, width, height) {
     grDevices::dev.off()
 }
 
-save_png <- function(heatmap, path, width, height, res) {
-    grDevices::png(
-        filename = path,
-        width = width,
-        height = height,
-        res = res
+save_png <- function(heatmap, path, width, height, res = 300) {
+    tryCatch(
+        {
+            grDevices::png(
+                filename = path,
+                width = width,
+                height = height,
+                res = res
+            )
+            ComplexHeatmap::draw(heatmap)
+            grDevices::dev.off()
+        }, error = function(err) {
+            message("Error saving png - does the heatmap exist?")
+            grDevices::dev.off()
+        }
     )
-    ComplexHeatmap::draw(heatmap)
-    grDevices::dev.off()
 }

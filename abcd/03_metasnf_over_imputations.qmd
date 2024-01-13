@@ -1,0 +1,1023 @@
+# metasnf over imputaions
+
+## Generating custom distance measures
+
+```{r}
+###############################################################################
+# 2. Add standard normalized variations to the distance metrics list (also
+# achievable through toggling automatic_standard_normalize parameter in
+# `batch_snf`)
+###############################################################################
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+)
+
+summarize_distance_metrics_list(my_distance_metrics)
+```
+
+## Generating the settings matrix
+
+```{r}
+###############################################################################
+# 3. Generate the settings matrix
+###############################################################################
+settings_matrix <- generate_settings_matrix(
+    data_list_m1,
+    nrow = 200,
+    seed = 42,
+    distance_metrics_list = my_distance_metrics
+)
+
+write_csv(settings_matrix, proc_path("settings_matrix.csv", TRUE))
+
+settings_matrix <- read_csv(
+    proc_path(
+        "2023_12_01_settings_matrix.csv"
+    )
+)
+```
+
+## SNF for each of the imputations
+
+```{r}
+# mTBI only imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_m1 <- batch_snf(
+        data_list = data_list_m1,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_m1, proc_path("solutions_matrix_m1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_m2 <- batch_snf(
+        data_list = data_list_m2,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_m2, proc_path("solutions_matrix_m2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_m3 <- batch_snf(
+        data_list = data_list_m3,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_m3, proc_path("solutions_matrix_m3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_m4 <- batch_snf(
+        data_list = data_list_m4,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_m4, proc_path("solutions_matrix_m4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_m5 <- batch_snf(
+        data_list = data_list_m5,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_m5, proc_path("solutions_matrix_m5.csv", TRUE))
+
+# mTBI and uninjured pooled imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pm1 <- batch_snf(
+        data_list = data_list_pm1,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pm1, proc_path("solutions_matrix_pm1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pm2 <- batch_snf(
+        data_list = data_list_pm2,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pm2, proc_path("solutions_matrix_pm2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pm3 <- batch_snf(
+        data_list = data_list_pm3,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pm3, proc_path("solutions_matrix_pm3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pm4 <- batch_snf(
+        data_list = data_list_pm4,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pm4, proc_path("solutions_matrix_pm4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pm5 <- batch_snf(
+        data_list = data_list_pm5,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pm5, proc_path("solutions_matrix_pm5.csv", TRUE))
+```
+
+## Re-importing the generated solutions
+
+```{r}
+solutions_matrix_m1 <- read_csv(proc_path("2023_12_07_solutions_matrix_m1.csv"))
+solutions_matrix_m2 <- read_csv(proc_path("2023_12_07_solutions_matrix_m2.csv"))
+solutions_matrix_m3 <- read_csv(proc_path("2023_12_07_solutions_matrix_m3.csv"))
+solutions_matrix_m4 <- read_csv(proc_path("2023_12_07_solutions_matrix_m4.csv"))
+solutions_matrix_m5 <- read_csv(proc_path("2023_12_07_solutions_matrix_m5.csv"))
+solutions_matrix_pm1 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm1.csv"))
+solutions_matrix_pm2 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm2.csv"))
+solutions_matrix_pm3 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm3.csv"))
+solutions_matrix_pm4 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm4.csv"))
+solutions_matrix_pm5 <- read_csv(proc_path("2023_12_07_solutions_matrix_pm5.csv"))
+
+all_mtbi_imputations <- do.call(
+    "rbind",
+    list(
+        solutions_matrix_m1,
+        solutions_matrix_m2,
+        solutions_matrix_m3,
+        solutions_matrix_m4,
+        solutions_matrix_m5,
+        solutions_matrix_pm1,
+        solutions_matrix_pm2,
+        solutions_matrix_pm3,
+        solutions_matrix_pm4,
+        solutions_matrix_pm5
+    )
+)
+```
+
+## Calculating pairwise ARIs
+
+```{r}
+aris_m1 <- calc_om_aris(solutions_matrix_m1)
+write_csv(data.frame(aris_m1), proc_path("aris_m1.csv", TRUE))
+aris_m2 <- calc_om_aris(solutions_matrix_m2)
+write_csv(data.frame(aris_m2), proc_path("aris_m2.csv", TRUE))
+aris_m3 <- calc_om_aris(solutions_matrix_m3)
+write_csv(data.frame(aris_m3), proc_path("aris_m3.csv", TRUE))
+aris_m4 <- calc_om_aris(solutions_matrix_m4)
+write_csv(data.frame(aris_m4), proc_path("aris_m4.csv", TRUE))
+aris_m5 <- calc_om_aris(solutions_matrix_m5)
+write_csv(data.frame(aris_m5), proc_path("aris_m5.csv", TRUE))
+aris_pm1 <- calc_om_aris(solutions_matrix_pm1)
+write_csv(data.frame(aris_pm1), proc_path("aris_pm1.csv", TRUE))
+aris_pm2 <- calc_om_aris(solutions_matrix_pm2)
+write_csv(data.frame(aris_pm2), proc_path("aris_pm2.csv", TRUE))
+aris_pm3 <- calc_om_aris(solutions_matrix_pm3)
+write_csv(data.frame(aris_pm3), proc_path("aris_pm3.csv", TRUE))
+aris_pm4 <- calc_om_aris(solutions_matrix_pm4)
+write_csv(data.frame(aris_pm4), proc_path("aris_pm4.csv", TRUE))
+aris_pm5 <- calc_om_aris(solutions_matrix_pm5)
+write_csv(data.frame(aris_pm5), proc_path("aris_pm5.csv", TRUE))
+aris_all_mtbi_imputations <- calc_om_aris(all_mtbi_imputations)
+write_csv(data.frame(aris_all_mtbi_imputations), proc_path("aris_all_mtbi_imputations.csv", TRUE))
+```
+
+## Re-importing the ARIs
+
+```{r}
+aris_m1 <- read_csv(proc_path("2023_12_07_aris_m1.csv")) |> as.matrix()
+aris_m2 <- read_csv(proc_path("2023_12_07_aris_m2.csv")) |> as.matrix()
+aris_m3 <- read_csv(proc_path("2023_12_07_aris_m3.csv")) |> as.matrix()
+aris_m4 <- read_csv(proc_path("2023_12_07_aris_m4.csv")) |> as.matrix()
+aris_m5 <- read_csv(proc_path("2023_12_07_aris_m5.csv")) |> as.matrix()
+aris_pm1 <- read_csv(proc_path("2023_12_07_aris_pm1.csv")) |> as.matrix()
+aris_pm2 <- read_csv(proc_path("2023_12_07_aris_pm2.csv")) |> as.matrix()
+aris_pm3 <- read_csv(proc_path("2023_12_07_aris_pm3.csv")) |> as.matrix()
+aris_pm4 <- read_csv(proc_path("2023_12_07_aris_pm4.csv")) |> as.matrix()
+aris_pm5 <- read_csv(proc_path("2023_12_07_aris_pm5.csv")) |> as.matrix()
+
+aris_all_mtbi_imputations <- read_csv(proc_path("2023_12_07_aris_all_mtbi_imputations.csv")) |> as.matrix()
+```
+
+## Plotting the ARIs
+
+### Initial plot across all ARIs to extract order
+
+```{r}
+aris_all_mtbi_imputations_heatmap <- similarity_matrix_heatmap(
+    aris_all_mtbi_imputations,
+    log_graph = FALSE,
+    cluster_rows = TRUE,
+    cluster_columns = TRUE
+)
+
+aris_all_mtbi_imputations_heatmap <- ComplexHeatmap::draw(aris_all_mtbi_imputations_heatmap)
+aris_all_mtbi_imputations_order <- ComplexHeatmap::row_order(aris_all_mtbi_imputations_heatmap)
+write_csv(data.frame(aris_all_mtbi_imputations_order), proc_path("aris_all_mtbi_imputations_order.csv", TRUE))
+```
+
+### Re-importing the order
+
+```{r}
+aris_all_mtbi_imputations_order <- unlist(read_csv(proc_path("2023_12_07_aris_all_mtbi_imputations_order.csv")))
+names(aris_all_mtbi_imputations_order) <- NULL
+```
+
+## Full imputation meta clustering plot with impairment levels
+
+```{r}
+imputation_labels <- data.frame(
+    "imputation" = c(
+        rep("m1", 200),
+        rep("m2", 200),
+        rep("m3", 200),
+        rep("m4", 200),
+        rep("m5", 200),
+        rep("pm1", 200),
+        rep("pm2", 200),
+        rep("pm3", 200),
+        rep("pm4", 200),
+        rep("pm5", 200)
+    ),
+    "pooled" = c(
+        rep("yes", 1000),
+        rep("no", 1000)
+    )
+)
+
+full_solutions_matrix <- cbind(all_mtbi_imputations, imputation_labels)
+
+full_solutions_matrix$"nclust2" <- full_solutions_matrix$"nclust" - 2
+
+full_extended_solutions_matrix <- extend_solutions(
+    full_solutions_matrix,
+    oom_list_m1
+)
+
+write_csv(
+    full_extended_solutions_matrix,
+    proc_path("full_mtbi_extended_solutions_matrix.csv", TRUE)
+)
+
+full_extended_solutions_matrix <- read_csv(proc_path("2023_12_12_full_mtbi_extended_solutions_matrix.csv"))
+
+full_oom_pvals <- pval_select(
+    full_extended_solutions_matrix,
+    negative_log = TRUE
+)
+
+full_extended_solutions_matrix$"mean_neglog_p" <- full_oom_pvals$"mean_neglog_p"
+
+aris_all_mtbi_imputations_annotated_heatmap <- similarity_matrix_heatmap(
+    aris_all_mtbi_imputations,
+    order = aris_all_mtbi_imputations_order,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    log_graph = FALSE,
+    data = full_extended_solutions_matrix,
+    top_hm = list(
+        "Scheme" = "snf_scheme",
+        "Impairment Separation" = "mean_neglog_p"
+    ),
+    left_hm = list(
+        "Pooled" = "pooled",
+        "Imputation" = "imputation"
+    ),
+    top_bar = list(
+        "Number of Clusters - 2" = "nclust2"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "Pooled" = c(
+            "yes" = "orange",
+            "no" = "purple"
+        ),
+        "Imputation" = divergent_colours(full_extended_solutions_matrix$"imputation"),
+        "Scheme" = c(
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
+        ),
+        "Impairment Separation" = hm_colours(full_extended_solutions_matrix$"mean_neglog_p")
+    ),
+    col = circlize::colorRamp2(
+        c(min(aris_all_mtbi_imputations), max(aris_all_mtbi_imputations)),
+        c("navy", "red")
+    )
+)
+
+aris_all_mtbi_imputations_annotated_heatmap
+
+# PNG export
+grDevices::png(
+    fig_path("aris_all_mtbi_imputations_annotated_heatmap.png", TRUE),
+    width = 4000,
+    height = 4000,
+    res = 400
+)
+aris_all_mtbi_imputations_annotated_heatmap
+grDevices::dev.off()
+
+```
+
+## Identifying meta clusters
+
+```{r}
+
+aris_all_mtbi_imputations_chopped_heatmap <- similarity_matrix_heatmap(
+    aris_all_mtbi_imputations,
+    order = aris_all_mtbi_imputations_order,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    log_graph = FALSE,
+    data = full_extended_solutions_matrix,
+    top_hm = list(
+        "Scheme" = "snf_scheme",
+        "Impairment Separation" = "mean_neglog_p"
+    ),
+    left_hm = list(
+        "Pooled" = "pooled",
+        "Imputation" = "imputation"
+    ),
+    top_bar = list(
+        "Number of Clusters - 2" = "nclust2"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "Pooled" = c(
+            "yes" = "orange",
+            "no" = "purple"
+        ),
+        "Imputation" = divergent_colours(full_extended_solutions_matrix$"imputation"),
+        "Scheme" = c(
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
+        ),
+        "Impairment Separation" = hm_colours(full_extended_solutions_matrix$"mean_neglog_p")
+    ),
+    col = circlize::colorRamp2(
+        c(min(aris_all_mtbi_imputations), max(aris_all_mtbi_imputations)),
+        c("navy", "red")
+    ),
+    row_split = split_at(
+        vector = c(
+            500,
+            806,
+            956,
+            1227,
+            1441
+        ),
+        nrow = 2000
+    ),
+    column_split = split_at(
+        vector = c(
+            500,
+            806,
+            956,
+            1227,
+            1441
+        ),
+        nrow = 2000
+    )
+)
+
+aris_all_mtbi_imputations_chopped_heatmap
+
+
+# PNG export
+grDevices::png(
+    fig_path("aris_all_mtbi_imputations_chopped_heatmap.png", TRUE),
+    width = 4000,
+    height = 4000,
+    res = 400
+)
+aris_all_mtbi_imputations_chopped_heatmap
+grDevices::dev.off()
+
+
+# A deeper zoom on some of the small heatmaps
+
+zoomed_mc_f <- aris_all_mtbi_imputations[aris_all_mtbi_imputations_order, aris_all_mtbi_imputations_order]
+
+zoomed_mc_f <- zoomed_mc_f[1441:2000, 1441:2000]
+
+nrow(zoomed_mc_f)
+
+aris_all_mtbi_zoomed_mc_f_chopped_heatmap <- similarity_matrix_heatmap(
+    zoomed_mc_f,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    log_graph = FALSE,
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    col = circlize::colorRamp2(
+        c(min(aris_all_mtbi_imputations), max(aris_all_mtbi_imputations)),
+        c("navy", "red")
+    ),
+    row_split = paste0(
+        "F-",
+        split_at(
+            vector = c(
+                78,
+                253,
+                290,
+                336,
+                400,
+                438,
+                462,
+                496,
+                513
+            ),
+            nrow = 560
+        )
+    ),
+    column_split = paste0(
+        "F-",
+        split_at(
+            vector = c(
+                78,
+                253,
+                290,
+                336,
+                400,
+                438,
+                462,
+                496,
+                513
+            ),
+            nrow = 560
+        )
+    )
+)
+aris_all_mtbi_zoomed_mc_f_chopped_heatmap
+
+# PNG export
+grDevices::png(
+    fig_path("aris_all_mtbi_zoomed_mc_f_chopped_heatmap.png", TRUE),
+    width = 4000,
+    height = 4000,
+    res = 400
+)
+aris_all_mtbi_zoomed_mc_f_chopped_heatmap
+grDevices::dev.off()
+
+aris_all_mtbi_zoomed_mc_f_chopped_heatmap
+```
+
+## One-MC-at-a-time
+
+```{r}
+
+# Indices as they appear in the plots
+mc_reordered_indices <- list(
+    "A" = c(1, 500),
+    "B" = c(501, 806),
+    "C" = c(807, 956),
+    "D" = c(957, 1227),
+    "E" = c(1228, 1441),
+    "F-A" = c(1442, 1442 + 78),
+    "F-B" = c(1442 + 79, 1442 + 253),
+    "F-C" = c(1442 + 254, 1442 + 290),
+    "F-D" = c(1442 + 291, 1442 + 336),
+    "F-E" = c(1442 + 337, 1442 + 400),
+    "F-F" = c(1442 + 401, 1442 + 438),
+    "F-G" = c(1442 + 439, 1442 + 462),
+    "F-H" = c(1442 + 463, 1442 + 496),
+    "F-I" = c(1442 + 497, 1442 + 513),
+    "F-J" = c(1442 + 514, 2000)
+)
+
+mc_reordered_labels <- split_at(
+    c(
+        500,
+        806,
+        956,
+        1227,
+        1441,
+        1442 + 78,
+        1442 + 253,
+        1442 + 290,
+        1442 + 336,
+        1442 + 400,
+        1442 + 438,
+        1442 + 462,
+        1442 + 496,
+        1442 + 513
+    ),
+    2000
+)
+mc_reordered_labels <- gsub("F", "F-A", mc_reordered_labels)
+mc_reordered_labels <- gsub("G", "F-B", mc_reordered_labels)
+mc_reordered_labels <- gsub("H", "F-C", mc_reordered_labels)
+mc_reordered_labels <- gsub("I", "F-D", mc_reordered_labels)
+mc_reordered_labels <- gsub("J", "F-E", mc_reordered_labels)
+mc_reordered_labels <- gsub("K", "F-F", mc_reordered_labels)
+mc_reordered_labels <- gsub("L", "F-G", mc_reordered_labels)
+mc_reordered_labels <- gsub("M", "F-H", mc_reordered_labels)
+mc_reordered_labels <- gsub("N", "F-I", mc_reordered_labels)
+mc_reordered_labels <- gsub("O", "F-J", mc_reordered_labels)
+
+names(aris_all_mtbi_imputations_order) <- mc_reordered_labels
+
+sorted_mc_labels <- sort(aris_all_mtbi_imputations_order)
+
+full_input_characterization_m1 <- extend_solutions(
+    full_solutions_matrix,
+    data_list_m1
+)
+
+write_csv(full_input_characterization_m1, proc_path("full_input_characterization_m1.csv", TRUE))
+
+full_input_characterization_m1 <- read_csv(proc_path("2023_12_14_full_input_characterization_m1.csv"))
+
+target_pvals <- full_input_characterization_m1 |>
+    p_val_select()
+
+target_pvals$"mc_label" <- names(sorted_mc_labels)
+
+manhattan_plot <- function(data,
+                           key_mode = FALSE,
+                           threshold = NULL,
+                           bonferroni_line = FALSE,
+                           data_list) {
+    row_id <- ""
+    variable <- ""
+    pval <- ""
+    var_cols <- colnames(data)[endsWith(colnames(data), "_p")]
+    data[, var_cols] <- data[, var_cols] |>
+        apply(
+            MARGIN = 2,
+            FUN = function(x) {
+                -log10(x)
+                raw_p <- -log10(x)
+                new_x <- dplyr::case_when(
+                    raw_p > 5 ~ 5,
+                    raw_p > 4 ~ 4,
+                    raw_p > 3 ~ 3,
+                    raw_p > 2 ~ 2,
+                    raw_p > 1 ~ 1,
+                    raw_p > 0 ~ 0,
+                )
+                new_x
+            }
+        )
+    data$"row_id" <- factor(data$"row_id")
+    data$"mc_label" <- factor(data$"mc_label")
+    data <- data |>
+        tidyr::pivot_longer(
+            !(c(row_id, mc_label)),
+            names_to = "variable",
+            values_to = "pval"
+        ) |>
+        data.frame()
+    summary_data <- data |>
+        dplyr::group_by(
+            mc_label,
+            variable
+        ) |>
+        dplyr::summarize(
+            mean_p = mean(pval),
+            sd_p = sd(pval),
+            se_p = sd_p / sqrt(dplyr::n()),
+            .groups = "drop"
+        )
+    summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
+    ###########################################################################
+    # Merge the summmary plot with domain information from the data_list
+    ###########################################################################
+    dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    summary_data <- merge(
+        summary_data,
+        dl_metadata,
+        by.x = "variable",
+        by.y = "name",
+        all.x = TRUE
+    )
+    summary_data <- summary_data |> dplyr::arrange(domain)
+    summary_data$"variable" <- factor(
+        summary_data$"variable",
+        levels = unique(summary_data$"variable")
+    )
+    plot <- summary_data |>
+        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
+        #ggplot2::geom_errorbar(
+        #    mapping = ggplot2::aes(
+        #        x = variable,
+        #        ymin = mean_p - se_p,
+        #        ymax = mean_p + se_p,
+        #        colour = mc_label
+        #    )
+        #) +
+        ggplot2::geom_jitter(
+            mapping = ggplot2::aes(
+                group = domain,
+                x = variable,
+                y = mean_p,
+                colour = domain
+            ),
+            height = 0,
+            width = 0,
+            alpha = 0.8,
+            size = 5
+        ) +
+        ggplot2::labs(
+            x = "Variable",
+            y = expression("-log"[10]*"(p)"),
+            colour = "Solution"
+        ) +
+        ggplot2::ylim(-log10(0.05), 5) +
+        ggplot2::theme_bw() +
+        ggplot2::labs(y = "Discretized -log10(p)") +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(
+                angle = 90,
+                vjust = 0.5,
+                hjust = 1
+            ),
+            plot.title = ggplot2::element_text(hjust = 0.5)
+        ) +
+        ggplot2::facet_wrap(~ mc_label)
+    if (!is.null(threshold)) {
+        plot <- plot + ggplot2::geom_hline(
+            yintercept = -log10(threshold),
+            linetype = "dashed",
+            colour = "red"
+        )
+        if (bonferroni_line) {
+            plot <- plot + ggplot2::geom_hline(
+                yintercept = -log10(threshold / nrow(data)),
+                linetype = "dashed",
+                colour = "black"
+            )
+        }
+    } else if (bonferroni_line) {
+        stop(
+            "Please specify threshold p-value which will be used",
+            " for calculting the Bonferroni-corrected line."
+        )
+    }
+    return(plot)
+}
+
+manhattan_plot(
+    target_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = data_list_m1
+)
+
+library(ggplot2)
+
+ggsave(
+    fig_path("all_mtbi_imputations_all_mc_input_associations.png", TRUE),
+    width = 20,
+    height = 20
+)
+
+target_pvals2 <- target_pvals |>
+    dplyr::select()
+```
+
+
+```{r}
+mc_c_rows <- aris_all_mtbi_imputations_order[956:1227]
+colnames(target_pvals)
+
+
+nrow(target_pvals)
+
+# Who are those solutions?
+mc_b_rows <- aris_all_mtbi_imputations_order[501:806]
+mc_b_solutions <- full_extended_solutions_matrix[mc_b_rows, ]
+
+mc_b_solutions
+
+nrow(full_solutions_matrix)
+data_list_m1[[1]]$"data"$"clusters" <- get_clusters(mc_b_solutions[20, ])
+
+key_associations_df <- calculate_associations(
+    data_list_m1,
+    key_association = "clusters"
+)
+
+manhattan_plot(
+    key_associations_df,
+    key_mode = TRUE,
+    threshold = 0.05,
+    bonferroni_line = TRUE
+)
+
+-log10(0.00001)
+
+library(ggplot2)
+ggsave(fig_path("mc_b_associations.png", TRUE))
+extended_solutions_matrix <- extend_solutions(solutions_matrix, target_list)
+
+# Who are those solutions?
+mc_c_rows <- aris_all_mtbi_imputations_order[956:1227]
+mc_c_solutions <- full_extended_solutions_matrix[mc_c_rows, ]
+mc_c_solutions
+nrow(full_solutions_matrix)
+data_list_m1[[1]]$"data"$"clusters" <- get_clusters(mc_c_solutions[20, ])
+data_list_m1
+key_associations_df <- calculate_associations(
+    data_list_m1,
+    key_association = "clusters"
+)
+manhattan_plot(
+    key_associations_df,
+    key_mode = TRUE,
+    threshold = 0.05,
+    bonferroni_line = TRUE
+)
+library(ggplot2)
+ggsave(fig_path("mc_c_associations.png", TRUE))
+
+# Who are those solutions?
+mc_d_rows <- aris_all_mtbi_imputations_order[1227:1441]
+mc_d_solutions <- full_extended_solutions_matrix[mc_d_rows, ]
+mc_d_solutions
+nrow(full_solutions_matrix)
+data_list_m1[[1]]$"data"$"clusters" <- get_clusters(mc_d_solutions[20, ])
+data_list_m1
+key_associations_df <- calculate_associations(
+    data_list_m1,
+    key_association = "clusters"
+)
+manhattan_plot(
+    key_associations_df,
+    key_mode = TRUE,
+    threshold = 0.05,
+    bonferroni_line = TRUE
+)
+library(ggplot2)
+ggsave(fig_path("mc_d_associations.png", TRUE))
+
+```
+
+
+```{r}
+###############################################################################
+# 4. Calculate pairwise solution similarities
+###############################################################################
+aris_m1 <- calc_om_aris(solutions_matrix_m1)
+
+write_csv(data.frame(aris_m1), proc_path("aris_m1.csv", TRUE))
+
+aris_m1 <- read_csv(proc_path("2023_12_01_aris_m1.csv"))
+aris_m1 <- as.matrix(aris_m1)
+colnames(aris_m1) <- 1:nrow(aris_m1)
+rownames(aris_m1) <- 1:nrow(aris_m1)
+```
+
+Back to more lightweight functions:
+
+```{r}
+###############################################################################
+# 5. Extract order of pairwise solution similarities
+###############################################################################
+aris_m1_heatmap <- similarity_matrix_heatmap(
+    aris_m1,
+    log_graph = FALSE,
+    cluster_rows = TRUE,
+    cluster_columns = TRUE,
+)
+
+aris_m1_heatmap <- ComplexHeatmap::draw(aris_m1_heatmap)
+
+aris_m1_order <- ComplexHeatmap::row_order(aris_m1_heatmap)
+
+write_csv(data.frame(aris_m1_order), proc_path("aris_m1_order.csv", TRUE))
+
+aris_m1_order <- unlist(read_csv(proc_path("2023_12_01_aris_m1_order.csv")))
+
+###############################################################################
+# 5. Visualize reordered settings matrix and similarity matrix
+###############################################################################
+# No saving
+settings_matrix_heatmap(
+    settings_matrix,
+    order = aris_m1_order,
+    show_rownames = FALSE
+)
+
+settings_matrix_heatmap(
+    settings_matrix,
+    order = aris_m1_order,
+    show_rownames = FALSE,
+    save = fig_path("aris_m1_ordered_settings_matrix_heatmap.png", TRUE)
+)
+```
+
+By visual inspection, there appears to be non-random organization based on the parameters k, and snf_scheme.
+Below is the actual adjusted rand index heatmap with these hyperparameters highlighted.
+
+```{r}
+
+aris_m1_annotated_heatmap <- similarity_matrix_heatmap(
+    aris_m1,
+    order = aris_m1_order,
+    log_graph = FALSE,
+    data = solutions_matrix_m1,
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    top_hm = list(
+        "Scheme" = "snf_scheme"
+    ),
+    bottom_bar = list(
+        "K" = "k"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "Scheme" = c(
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
+        )
+    ),
+    col = circlize::colorRamp2(
+        c(min(aris_m1), max(aris_m1)),
+        c("navy", "red")
+    )
+)
+
+# No saving
+aris_m1_annotated_heatmap
+
+# PDF export
+grDevices::pdf(
+    fig_path("aris_m1_annotated_heatmap.pdf", TRUE),
+    width = 10,
+    height = 10
+)
+aris_m1_annotated_heatmap
+grDevices::dev.off()
+
+# PNG export
+grDevices::png(
+    fig_path("aris_m1_annotated_heatmap.png", TRUE),
+    width = 4000,
+    height = 3000,
+    res = 400
+)
+aris_m1_annotated_heatmap
+grDevices::dev.off()
+```
+
+A few "meta clusters" are visible in the pairwise ARI heatmap.
+
+Let's see how they associate with the out of model measures:
+
+```{r}
+
+extended_solutions_matrix_m1 <- extend_solutions(
+    solutions_matrix_m1,
+    oom_list_m1
+)
+
+write_csv(
+    extended_solutions_matrix_m1,
+    proc_path(
+        "extended_solutions_matrix_m1.csv",
+        TRUE
+    )
+)
+
+extended_solutions_matrix_m1 <- read_csv(
+    proc_path(
+        "2023_12_04_extended_solutions_matrix_m1.csv"
+    )
+)
+
+
+oom_m1_pvals <- pval_select(
+    extended_solutions_matrix_m1,
+    negative_log = TRUE
+)
+
+
+pval_hm_m1 <- pval_heatmap(oom_m1_pvals, order = aris_m1_order, max_red = TRUE)
+
+# No saving
+pval_hm_m1
+
+# PNG export
+grDevices::png(
+    fig_path("pval_hm_m1.png", TRUE),
+    width = 4000,
+    height = 3000,
+    res = 400
+)
+pval_hm_m1
+grDevices::dev.off()
+
+extended_solutions_matrix_m1$"mean_neglog_p" <- oom_m1_pvals$"mean_neglog_p"
+
+aris_m1_extended_annotated_heatmap <- similarity_matrix_heatmap(
+    aris_m1,
+    order = aris_m1_order,
+    log_graph = FALSE,
+    data = extended_solutions_matrix_m1,
+    bottom_hm = list(
+        "SNF Scheme" = "snf_scheme"
+    ),
+    top_hm = list(
+        "Impairment Separation" = "mean_neglog_p"
+    ),
+    bottom_bar = list(
+        "K" = "k",
+        "Number of Clusters" = "nclust"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "SNF Scheme" = c(
+            "1" = "orange",
+            "2" = "purple",
+            "3" = "turquoise"
+        ),
+        "Impairment Separation" = hm_colours(oom_m1_pvals$"mean_neglog_p")
+    ),
+    col = circlize::colorRamp2(
+        c(min(aris_m1), max(aris_m1)),
+        c("navy", "red")
+    )
+)
+
+# No saving
+aris_m1_extended_annotated_heatmap
+
+# PNG export
+grDevices::png(
+    fig_path("aris_m1_extended_annotated_heatmap.png", TRUE),
+    width = 4000,
+    height = 3000,
+    res = 400
+)
+aris_m1_extended_annotated_heatmap
+grDevices::dev.off()
+```
+
+Next steps:
+
+- repeat for the other imputations and see how well the structure holds.
+
