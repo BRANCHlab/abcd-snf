@@ -1,0 +1,219 @@
+# SNF in Matched Uninjured Controls
+
+## Importing packages and establishing file paths
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(progressr)
+library(rlist)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+
+mtbi_subjects <- read_csv(sub_path("2023_11_07_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_11_07_uninjured_subjects.csv"))
+```
+
+## Loading data and out of model lists
+
+```{r}
+
+data_list_u1 <- list.load(input_path("2024_01_14_data_list_u1.rds"))
+data_list_u2 <- list.load(input_path("2024_01_14_data_list_u2.rds"))
+data_list_u3 <- list.load(input_path("2024_01_14_data_list_u3.rds"))
+data_list_u4 <- list.load(input_path("2024_01_14_data_list_u4.rds"))
+data_list_u5 <- list.load(input_path("2024_01_14_data_list_u5.rds"))
+data_list_pu1 <- list.load(input_path("2024_01_14_data_list_pu1.rds"))
+data_list_pu2 <- list.load(input_path("2024_01_14_data_list_pu2.rds"))
+data_list_pu3 <- list.load(input_path("2024_01_14_data_list_pu3.rds"))
+data_list_pu4 <- list.load(input_path("2024_01_14_data_list_pu4.rds"))
+data_list_pu5 <- list.load(input_path("2024_01_14_data_list_pu5.rds"))
+oom_list_u1 <- list.load(input_path("2024_01_14_oom_list_u1.rds"))
+oom_list_u2 <- list.load(input_path("2024_01_14_oom_list_u2.rds"))
+oom_list_u3 <- list.load(input_path("2024_01_14_oom_list_u3.rds"))
+oom_list_u4 <- list.load(input_path("2024_01_14_oom_list_u4.rds"))
+oom_list_u5 <- list.load(input_path("2024_01_14_oom_list_u5.rds"))
+oom_list_pu1 <- list.load(input_path("2024_01_14_oom_list_pu1.rds"))
+oom_list_pu2 <- list.load(input_path("2024_01_14_oom_list_pu2.rds"))
+oom_list_pu3 <- list.load(input_path("2024_01_14_oom_list_pu3.rds"))
+oom_list_pu4 <- list.load(input_path("2024_01_14_oom_list_pu4.rds"))
+oom_list_pu5 <- list.load(input_path("2024_01_14_oom_list_pu5.rds"))
+
+```
+
+## Generating custom distance measures
+
+```{r}
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+)
+
+summarize_distance_metrics_list(my_distance_metrics)
+```
+
+## Generating the settings matrix
+
+```{r}
+###############################################################################
+# 3. Generate the settings matrix
+###############################################################################
+settings_matrix <- generate_settings_matrix(
+    data_list_u1,
+    nrow = 200,
+    seed = 42,
+    distance_metrics_list = my_distance_metrics
+)
+
+write_csv(settings_matrix, proc_path("settings_matrix_u.csv", TRUE))
+
+settings_matrix <- read_csv(
+    proc_path(
+        "2024_01_14_settings_matrix_u.csv"
+    )
+)
+```
+
+## SNF for each of the imputations
+
+```{r}
+# Uninjured only imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_u1 <- batch_snf(
+        data_list = data_list_m1,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_u1, proc_path("solutions_matrix_u1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_u2 <- batch_snf(
+        data_list = data_list_m2,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_u2, proc_path("solutions_matrix_u2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_u3 <- batch_snf(
+        data_list = data_list_m3,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_u3, proc_path("solutions_matrix_u3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_u4 <- batch_snf(
+        data_list = data_list_m4,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_u4, proc_path("solutions_matrix_u4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_u5 <- batch_snf(
+        data_list = data_list_m5,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_u5, proc_path("solutions_matrix_u5.csv", TRUE))
+
+# Uninjured pooled imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pu1 <- batch_snf(
+        data_list = data_list_pm1,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pu1, proc_path("solutions_matrix_pu1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pu2 <- batch_snf(
+        data_list = data_list_pm2,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pu2, proc_path("solutions_matrix_pu2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pu3 <- batch_snf(
+        data_list = data_list_pm3,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pu3, proc_path("solutions_matrix_pu3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pu4 <- batch_snf(
+        data_list = data_list_pm4,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pu4, proc_path("solutions_matrix_pu4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_pu5 <- batch_snf(
+        data_list = data_list_pm5,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_pu5, proc_path("solutions_matrix_pu5.csv", TRUE))
+
+```
+
+HERE I AM! (need to do the matching still...)
+
