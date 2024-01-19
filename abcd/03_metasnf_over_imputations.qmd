@@ -427,7 +427,7 @@ aris_all_mtbi_imputations_annotated_heatmap <- similarity_matrix_heatmap(
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     log_graph = FALSE,
-    data = full_extended_solutions_matrix,
+    data = data.frame(full_extended_solutions_matrix),
     top_hm = list(
         "Scheme" = "snf_scheme",
         "Impairment Separation" = "mean_neglog_p"
@@ -466,9 +466,8 @@ aris_all_mtbi_imputations_annotated_heatmap
 # PNG export
 grDevices::png(
     fig_path("aris_all_mtbi_imputations_annotated_heatmap.png", TRUE),
-    width = 4000,
-    height = 4000,
-    res = 400
+    width = 2000,
+    height = 2000,
 )
 aris_all_mtbi_imputations_annotated_heatmap
 grDevices::dev.off()
@@ -637,6 +636,19 @@ mc_reordered_indices <- list(
     "F-I" = c(1442 + 497, 1442 + 513),
     "F-J" = c(1442 + 514, 2000)
 )
+
+split_at <- function(vector, nrow) {
+    split_vec <- rep("A", nrow)
+    if (vector[length(vector)] != nrow) {
+        vector <- c(vector, nrow)
+    }
+    for (i in 1:(length(vector) - 1)) {
+        start <- vector[i]
+        end <- vector[i + 1]
+        split_vec[start:end] <- LETTERS[i + 1]
+    }
+    return(split_vec)
+}
 
 mc_reordered_labels <- split_at(
     c(

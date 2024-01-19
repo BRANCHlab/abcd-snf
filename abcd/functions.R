@@ -107,19 +107,6 @@ pval_heatmap <- function(pval_df, order, max_red = FALSE) {
     return(hm)
 }
 
-split_at <- function(vector, nrow) {
-    split_vec <- rep("A", nrow)
-    if (vector[length(vector)] != nrow) {
-        vector <- c(vector, nrow)
-    }
-    for (i in 1:(length(vector) - 1)) {
-        start <- vector[i]
-        end <- vector[i + 1]
-        split_vec[start:end] <- LETTERS[i + 1]
-    }
-    return(split_vec)
-}
-
 save_pdf <- function(heatmap, path, width, height) {
     grDevices::pdf(
         path,
