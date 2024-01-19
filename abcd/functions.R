@@ -1,10 +1,3 @@
-divergent_colours <- function(column)  {
-    values <- unique(column)
-    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
-    names(colours) <- values
-    return(colours)
-}
-
 data_list_metadata <- function(data_list) {
     merged_df <- metasnf::collapse_dl(data_list)
     merged_df <- merged_df[, colnames(merged_df) != "subjectkey"]
@@ -99,37 +92,6 @@ correlation_data <- function(data_list, order = NULL) {
         "order" = order
     )
     return(results)
-}
-
-pval_select <- function(extended_solutions_matrix,
-                        keep_summary = TRUE,
-                        negative_log = FALSE,
-                        recalculate_summary = TRUE) {
-    pval_df <- extended_solutions_matrix |>
-        dplyr::select(
-            "row_id",
-            dplyr::ends_with("_p"),
-            dplyr::contains("p_val")
-        ) |>
-        data.frame() |>
-        metasnf::numcol_to_numeric()
-    if (!keep_summary) {
-        pval_df <- pval_df |>
-            dplyr::select(-c("min_p_val", "mean_p_val"))
-    }
-    if (negative_log) {
-        neg_log_pval_df <- -log(pval_df)
-        neg_log_pval_df$"row_id" <- pval_df$"row_id"
-        pval_df <- neg_log_pval_df
-        if (recalculate_summary) {
-            mini_df <- pval_df |> dplyr::select(
-                dplyr::ends_with("_p")
-            )
-            pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
-            pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
-        }
-    }
-    return(pval_df)
 }
 
 pval_heatmap <- function(pval_df, order, max_red = FALSE) {
