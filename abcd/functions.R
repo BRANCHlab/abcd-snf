@@ -307,7 +307,10 @@ bar_plot <- function(df, feature) {
     return(plot)
 }
 
-characterize_solution <- function(solution, data_list, plotname) {
+characterize_solution <- function(solution,
+                                  data_list,
+                                  plotname,
+                                  return_plot = TRUE) {
     # Generating the required full dataframe
     cluster_df <- metasnf::get_cluster_df(solution)
     data_df <- metasnf::collapse_dl(data_list)
@@ -318,6 +321,9 @@ characterize_solution <- function(solution, data_list, plotname) {
     full_data$"sex"[full_data$"sex" == 1] <- "M"
     full_data$"race"[full_data$"race" == 0] <- "White"
     full_data$"race"[full_data$"race" == 1] <- "Non-White"
+    if (return_plot == FALSE) {
+        return(full_data)
+    }
     # Identifying features to plot 
     features <- colnames(full_data)[3:length(colnames(full_data))]
     plot_list <- list()
