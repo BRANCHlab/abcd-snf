@@ -12,6 +12,7 @@ library(rlist)
 library(MatchIt)
 library(ggplot2)
 library(patchwork)
+library(ggsignif)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -130,6 +131,10 @@ title_case <- function(string) {
     result <- paste(words, collapse = " ")
     result <- gsub("Mtbi", "mTBI", result)
     result <- gsub("Loc", "LOC", result)
+    result <- gsub("Cbcl", "CBCL", result)
+    result <- gsub("Sds", "SDS", result)
+    result <- gsub("Cortical Sa", "Cortical SA (mm2)", result)
+    result <- gsub("Volume", "Volume (mm3)", result)
     return(result)
 }
 
@@ -170,47 +175,9 @@ scatter_plot <- function(df, feature) {
         theme_bw() +
         theme(
             text = element_text(size = 20),
-            legend.position = "none"
+            legend.position = "none",
+            panel.grid.major.x = element_blank()
         )
-    return(plot)
-}
-
-bar_plot <- function(df, feature) {
-    df <- df |>
-        dplyr::rename("keycol" = !!feature) |>
-        dplyr::select(cluster, keycol) |>
-        dplyr::group_by(cluster) |>
-        dplyr::count(keycol) |>
-        dplyr::mutate(percent = n / sum(n) * 100)
-    print(str(df))
-    df$"keycol" <- factor(df$"keycol")
-    plot <- df |>
-        ggplot(
-            aes(
-                x = cluster,
-                y = percent,
-                fill = keycol
-            )
-        ) + 
-        geom_bar(
-            stat = "identity" ,
-            position = ggplot2::position_stack()
-        ) +
-        geom_text(
-            aes(
-                label = n,
-                y = percent
-            ),
-            size = 6,
-            position = position_stack(vjust = 0.5)
-        ) +
-        labs(
-            x = "Cluster",
-            y = "%",
-            fill = title_case(feature)
-        ) +
-        theme_bw() + 
-        theme(text = element_text(size = 20))
     return(plot)
 }
 
@@ -251,12 +218,52 @@ jitter_plot <- function(df, feature) {
         theme_bw() +
         theme(
             text = element_text(size = 20),
-            legend.position = "none"
+            legend.position = "none",
+            panel.grid.major.x = element_blank()
         )
     return(plot)
 }
 
-# HERE I AM - exporting the plots
+bar_plot <- function(df, feature) {
+    df <- df |>
+        dplyr::rename("keycol" = !!feature) |>
+        dplyr::select(cluster, keycol) |>
+        dplyr::group_by(cluster) |>
+        dplyr::count(keycol) |>
+        dplyr::mutate(percent = n / sum(n) * 100)
+    df$"keycol" <- factor(df$"keycol")
+    plot <- df |>
+        ggplot(
+            aes(
+                x = cluster,
+                y = percent,
+                fill = keycol
+            )
+        ) + 
+        geom_bar(
+            stat = "identity" ,
+            position = ggplot2::position_stack()
+        ) +
+        geom_text(
+            aes(
+                label = n,
+                y = percent
+            ),
+            size = 6,
+            position = position_stack(vjust = 0.5)
+        ) +
+        labs(
+            x = "Cluster",
+            y = "%",
+            fill = title_case(feature)
+        ) +
+        theme_bw() + 
+        theme(
+            text = element_text(size = 20),
+            panel.grid.major.x = element_blank()
+        )
+    return(plot)
+}
 
 characterize_solution <- function(solution, data_list, plotname) {
     # Generating the required full dataframe
@@ -281,31 +288,226 @@ characterize_solution <- function(solution, data_list, plotname) {
         } else {
             plot <- bar_plot(full_data, feature)
         }
-        ggsave(
-            plot = plot,
-            fig_path(
-                paste0(
-                    plotname
-                    "_",
-                    feature,
-                    ".png"
-                ),
-                TRUE
-            )
-        )
+        #ggsave(
+        #    plot = plot,
+        #    fig_path(
+        #        paste0(
+        #            plotname,
+        #            "_",
+        #            feature,
+        #            ".png"
+        #        ),
+        #        TRUE
+        #    ),
+        #    width = 7,
+        #    height = 7
+        #)
         plot_list[[i]] <- plot
+        names(plot_list)[[i]] <- feature
     }
     return(plot_list)
 }
-all_plots <- characterize_solution(
+
+mc_b_plots <- characterize_solution(
     top_mc_b_solution,
-    all_data_list_m1
+    all_data_list_m1,
+    "mtbi_mc_b"
 )
 
-all_plots_pw <- wrap_plots(all_plots)
+outcome_plots <- function(plot_list) {
+    pw <- list(
+        #plot_list$"mtbi_mem_daze",
+        #plot_list$"mtbi_loc",
+        #plot_list$"age",
+        #plot_list$"mtbi_age",
+        #plot_list$"household_income",
+        #plot_list$"pubertal_status",
+        #plot_list$"headache_history",
+        #plot_list$"sex",
+        #plot_list$"previous_mtbis",
+        #plot_list$"brain_volume",
+        #plot_list$"cortical_thickness",
+        #plot_list$"cortical_sa",
+        #plot_list$"major_wm_ndi",
+        #plot_list$"pericortical_wm_ndi",
+        #plot_list$"fmri_cort_cors",
+        #plot_list$"race",
+        #plot_list$"fmri_cort_subcort_cors",
+        #plot_list$"same_sex_friend",
+        #plot_list$"opp_sex_friend",
+        #plot_list$"same_sex_close_friend",
+        #plot_list$"opp_sex_close_friend",
+        #plot_list$"weekend_screentime",
+        #plot_list$"weekday_screentime",
+        #plot_list$"mtbi_mechanism",
+        #plot_list$"school_programs",
+        #plot_list$"non_school_programs",
+        #plot_list$"private_instruction",
+        #plot_list$"programs_this_year",
+        #plot_list$"exercise_time",
+        #plot_list$"prosocial_considerate",
+        #plot_list$"prosocial_helps_hurt",
+        #plot_list$"prosocial_helpful",
+        #plot_list$"family_fight",
+        #plot_list$"family_angry",
+        #plot_list$"family_throw",
+        #plot_list$"family_temper",
+        #plot_list$"family_criticize",
+        #plot_list$"family_hit",
+        #plot_list$"family_peaceful",
+        #plot_list$"family_outdo",
+        #plot_list$"family_yell",
+        #plot_list$"parent_perstr",
+        #plot_list$"parent_anxdep",
+        #plot_list$"parent_withdrawn",
+        #plot_list$"parent_somatic",
+        #plot_list$"parent_thought",
+        #plot_list$"parent_attention",
+        #plot_list$"parent_aggressive",
+        #plot_list$"parent_intrusive",
+        #plot_list$"parent_depress",
+        #plot_list$"parent_anxdisord",
+        #plot_list$"parent_avoidant",
+        #plot_list$"parent_antisocial",
+        #plot_list$"parent_hyperactive",
+        plot_list$"cbcl_anxdep",
+        plot_list$"cbcl_withdep",
+        plot_list$"cbcl_somatic",
+        plot_list$"cbcl_social",
+        plot_list$"cbcl_thought",
+        plot_list$"cbcl_attention",
+        plot_list$"cbcl_rulebreak",
+        plot_list$"cbcl_aggressive",
+        plot_list$"sds_sleep"
+    ) |> wrap_plots()
+    pw
+}
+
+mc_b_outcome_plots <- outcome_plots(mc_b_plots)
+
+mc_b_outcome_plots
+
+
+input_plots <- function(plot_list) {
+    pw <- list(
+        plot_list$"mtbi_mem_daze",
+        plot_list$"mtbi_loc",
+        plot_list$"age",
+        plot_list$"mtbi_age",
+        plot_list$"household_income",
+        plot_list$"pubertal_status",
+        plot_list$"headache_history",
+        plot_list$"sex",
+        plot_list$"previous_mtbis",
+        plot_list$"brain_volume",
+        plot_list$"cortical_thickness",
+        plot_list$"cortical_sa",
+        plot_list$"major_wm_ndi",
+        plot_list$"pericortical_wm_ndi",
+        plot_list$"fmri_cort_cors",
+        plot_list$"race",
+        plot_list$"fmri_cort_subcort_cors",
+        plot_list$"same_sex_friend",
+        plot_list$"opp_sex_friend",
+        plot_list$"same_sex_close_friend",
+        plot_list$"opp_sex_close_friend",
+        plot_list$"weekend_screentime",
+        plot_list$"weekday_screentime",
+        plot_list$"mtbi_mechanism",
+        plot_list$"school_programs",
+        plot_list$"non_school_programs",
+        plot_list$"private_instruction",
+        plot_list$"programs_this_year",
+        plot_list$"exercise_time",
+        plot_list$"prosocial_considerate",
+        plot_list$"prosocial_helps_hurt",
+        plot_list$"prosocial_helpful",
+        plot_list$"family_fight",
+        plot_list$"family_angry",
+        plot_list$"family_throw",
+        plot_list$"family_temper",
+        plot_list$"family_criticize",
+        plot_list$"family_hit",
+        plot_list$"family_peaceful",
+        plot_list$"family_outdo",
+        plot_list$"family_yell",
+        plot_list$"parent_perstr",
+        plot_list$"parent_anxdep",
+        plot_list$"parent_withdrawn",
+        plot_list$"parent_somatic",
+        plot_list$"parent_thought",
+        plot_list$"parent_attention",
+        plot_list$"parent_aggressive",
+        plot_list$"parent_intrusive",
+        plot_list$"parent_depress",
+        plot_list$"parent_anxdisord",
+        plot_list$"parent_avoidant",
+        plot_list$"parent_antisocial",
+        plot_list$"parent_hyperactive"
+    ) |> wrap_plots()
+    pw
+}
+
+mc_b_input_plots <- input_plots(mc_b_plots)
+mc_b_input_plots
+
+
+
+
+mc_b_all_plots <- mtbi_plot_layout(mc_b_plots)
+mc_b_all_plots
 
 ggsave(
-    plot = all_plots_pw,
+    plot = mc_b_all_plots,
+    fig_path("mc_b_all_plots.png", TRUE),
+    width = 35,
+    height = 25
+)
+
+mc_b_main_plots <- list(
+    mc_b_plots$"pubertal_status",
+    mc_b_plots$"brain_volume",
+    mc_b_plots$"sex",
+    mc_b_plots$"weekday_screentime",
+    mc_b_plots$"household_income",
+    mc_b_plots$"race",
+    mc_b_plots$"family_fight",
+    mc_b_plots$"headache_history",
+    mc_b_plots$"mtbi_loc"
+) |> wrap_plots()
+
+mc_b_main_plots
+
+stars <- function(comparisons) {
+    pairs <- strsplit(comparisons, ", ")[[1]]
+    comparisons <- lapply(
+        pairs,
+        function(pair) {
+            strsplit(pair, "-")[[1]]
+        }
+    )
+    geom_signif(
+        comparisons = comparisons,
+        map_signif_level = TRUE,
+        step_increase = 0.1,
+        vjust = 0.5,
+        colour = "black",
+        size = 1,
+        textsize = 10
+    )
+}
+
+mc_b_plots$"headache_history" + stars("1-3, 2-3")
+
+
+# Now the same plot, but with bigger stars:
+
+names(mc_b_plots)
+
+mc_b_plots_pw <- wrap_plots(mc_b_plots)
+
+ggsave(
+    plot = mc_b_plots_pw,
     fig_path("mtbi_mc_b_plots.png", TRUE)
 )
 
@@ -319,6 +521,25 @@ bar_plot(z, "mtbi_mechanism")
 jitter_plot(z, "cbcl_anxdep")
 
 scatter_plot(z, "parent_hyperactive")
+
+
+fit <- aov(mpg ~ gear, data = mtcars)
+summary(fit)
+p <- ggplot(mtcars, aes(x = factor(gear), y = mpg, fill = factor(gear))) +
+  geom_boxplot() +
+  theme_minimal()
+
+p + stat_compare_means(comparisons = list(c("3", "4"), c("3", "5"), c("4", "5")), method = "anova")
+
+
+
+ggplot(
+    iris,
+    aes(x=Species, y=Sepal.Length)) + geom_boxplot() +
+    geom_signif(comparisons = list(c("versicolor", "virginica")), map_signif_level=TRUE)
+
+
+
 
 
 ```
