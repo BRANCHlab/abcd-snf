@@ -1,0 +1,326 @@
+# Characterization of identified meta clusters
+
+## Importing packages and establishing file paths
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(progressr)
+library(rlist)
+library(MatchIt)
+library(ggplot2)
+library(patchwork)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+
+mtbi_subjects <- read_csv(sub_path("2023_11_07_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2023_11_07_uninjured_subjects.csv"))
+matched_uninjured <- read_csv(sub_path("2024_01_15_matched_uninjured.csv"))
+```
+## Loading data and out of model lists
+
+```{r}
+data_list_m1 <- list.load(input_path("2024_01_15_data_list_m1.rds"))
+data_list_m2 <- list.load(input_path("2024_01_15_data_list_m2.rds"))
+data_list_m3 <- list.load(input_path("2024_01_15_data_list_m3.rds"))
+data_list_m4 <- list.load(input_path("2024_01_15_data_list_m4.rds"))
+data_list_m5 <- list.load(input_path("2024_01_15_data_list_m5.rds"))
+data_list_pm1 <- list.load(input_path("2024_01_15_data_list_pm1.rds"))
+data_list_pm2 <- list.load(input_path("2024_01_15_data_list_pm2.rds"))
+data_list_pm3 <- list.load(input_path("2024_01_15_data_list_pm3.rds"))
+data_list_pm4 <- list.load(input_path("2024_01_15_data_list_pm4.rds"))
+data_list_pm5 <- list.load(input_path("2024_01_15_data_list_pm5.rds"))
+oom_list_m1 <- list.load(input_path("2024_01_15_oom_list_m1.rds"))
+oom_list_m2 <- list.load(input_path("2024_01_15_oom_list_m2.rds"))
+oom_list_m3 <- list.load(input_path("2024_01_15_oom_list_m3.rds"))
+oom_list_m4 <- list.load(input_path("2024_01_15_oom_list_m4.rds"))
+oom_list_m5 <- list.load(input_path("2024_01_15_oom_list_m5.rds"))
+oom_list_pm1 <- list.load(input_path("2024_01_15_oom_list_pm1.rds"))
+oom_list_pm2 <- list.load(input_path("2024_01_15_oom_list_pm2.rds"))
+oom_list_pm3 <- list.load(input_path("2024_01_15_oom_list_pm3.rds"))
+oom_list_pm4 <- list.load(input_path("2024_01_15_oom_list_pm4.rds"))
+oom_list_pm5 <- list.load(input_path("2024_01_15_oom_list_pm5.rds"))
+
+data_list_mu1 <- list.load(input_path("2024_01_15_data_list_mu1.rds"))
+data_list_mu2 <- list.load(input_path("2024_01_15_data_list_mu2.rds"))
+data_list_mu3 <- list.load(input_path("2024_01_15_data_list_mu3.rds"))
+data_list_mu4 <- list.load(input_path("2024_01_15_data_list_mu4.rds"))
+data_list_mu5 <- list.load(input_path("2024_01_15_data_list_mu5.rds"))
+data_list_mpu1 <- list.load(input_path("2024_01_15_data_list_mpu1.rds"))
+data_list_mpu2 <- list.load(input_path("2024_01_15_data_list_mpu2.rds"))
+data_list_mpu3 <- list.load(input_path("2024_01_15_data_list_mpu3.rds"))
+data_list_mpu4 <- list.load(input_path("2024_01_15_data_list_mpu4.rds"))
+data_list_mpu5 <- list.load(input_path("2024_01_15_data_list_mpu5.rds"))
+oom_list_mu1 <- list.load(input_path("2024_01_15_oom_list_mu1.rds"))
+oom_list_mu2 <- list.load(input_path("2024_01_15_oom_list_mu2.rds"))
+oom_list_mu3 <- list.load(input_path("2024_01_15_oom_list_mu3.rds"))
+oom_list_mu4 <- list.load(input_path("2024_01_15_oom_list_mu4.rds"))
+oom_list_mu5 <- list.load(input_path("2024_01_15_oom_list_mu5.rds"))
+oom_list_mpu1 <- list.load(input_path("2024_01_15_oom_list_mpu1.rds"))
+oom_list_mpu2 <- list.load(input_path("2024_01_15_oom_list_mpu2.rds"))
+oom_list_mpu3 <- list.load(input_path("2024_01_15_oom_list_mpu3.rds"))
+oom_list_mpu4 <- list.load(input_path("2024_01_15_oom_list_mpu4.rds"))
+oom_list_mpu5 <- list.load(input_path("2024_01_15_oom_list_mpu5.rds"))
+```
+
+## mTBI meta clusters
+
+Meta-cluster B of the mTBI subjects are the ones that are of greatest interest to us.
+That meta-cluster describes 3-cluster solutions that strongly separate the behavioural impairments and that exist across both solo and pooled imputations.
+
+MCs A and C appear to be close variations of B.
+D and E appear to be quite unique and are only found in the solo and pooled imputations respectively.
+
+The tight clusters within F include F-A, F-C, F-D, F-E, and F-J.
+Clusters such as F-A, F-B, F-E, F-F, and F-H show strong separation across some of those mTBI-specific variables. 
+
+
+```{r}
+full_extended_solutions_matrix <- read_csv(
+    proc_path("2024_01_15_full_mtbi_extended_solutions_matrix.csv")
+)
+
+full_extended_solutions_matrix
+
+full_oom_pvals <- pval_select(
+    full_extended_solutions_matrix,
+    negative_log = TRUE
+)
+
+full_extended_solutions_matrix$"mean_neglog_p" <- full_oom_pvals$"mean_neglog_p"
+
+full_extended_solutions_matrix
+
+sm_order <- unlist(
+    read_csv(proc_path("2024_01_15_aris_all_mtbi_imputations_order.csv"))
+)
+names(sm_order) <- NULL
+
+sorted_solutions_matrix <- full_extended_solutions_matrix[sm_order, ]
+
+mc_b_solutions <- sorted_solutions_matrix[501:806, ]
+
+```
+
+### MC B
+
+```{r}
+
+all_data_list_m1 <- c(data_list_m1, oom_list_m1)
+
+top_mc_b_solution <- mc_b_solutions[
+    which(
+        mc_b_solutions$"mean_neglog_p" == max(mc_b_solutions$"mean_neglog_p")
+    ), 
+]
+
+title_case <- function(string) {
+    words <- strsplit(string, "_")[[1]]
+    words <- sapply(
+        words,
+        function(x) {
+            paste0(toupper(substr(x, 1, 1)), substr(x, 2, nchar(x)))
+        }
+    )
+    result <- paste(words, collapse = " ")
+    result <- gsub("Mtbi", "mTBI", result)
+    result <- gsub("Loc", "LOC", result)
+    return(result)
+}
+
+scatter_plot <- function(df, feature) {
+    df <- df |> dplyr::rename("keycol" = !!feature)
+    plot <- df |>
+        dplyr::select(
+            cluster,
+            keycol,
+        ) |>
+        ggplot(
+            aes(
+                x = cluster,
+                y = keycol,
+                colour = cluster
+            )
+        ) + 
+        geom_violin(
+            alpha = 0.4
+        ) +
+        geom_jitter(
+            height = 0,
+            width = 0.1,
+            alpha = 0.8,
+            size = 3,
+        ) +
+        stat_summary(
+            fun = "mean",
+            geom = "point",
+            colour = "black",
+            size = 5
+        ) +
+        labs(
+            x = "Cluster",
+            y = title_case(feature),
+            color = "Cluster"
+        ) +
+        theme_bw() +
+        theme(
+            text = element_text(size = 20),
+            legend.position = "none"
+        )
+    return(plot)
+}
+
+bar_plot <- function(df, feature) {
+    df <- df |>
+        dplyr::rename("keycol" = !!feature) |>
+        dplyr::select(cluster, keycol) |>
+        dplyr::group_by(cluster) |>
+        dplyr::count(keycol) |>
+        dplyr::mutate(percent = n / sum(n) * 100)
+    print(str(df))
+    df$"keycol" <- factor(df$"keycol")
+    plot <- df |>
+        ggplot(
+            aes(
+                x = cluster,
+                y = percent,
+                fill = keycol
+            )
+        ) + 
+        geom_bar(
+            stat = "identity" ,
+            position = ggplot2::position_stack()
+        ) +
+        geom_text(
+            aes(
+                label = n,
+                y = percent
+            ),
+            size = 6,
+            position = position_stack(vjust = 0.5)
+        ) +
+        labs(
+            x = "Cluster",
+            y = "%",
+            fill = title_case(feature)
+        ) +
+        theme_bw() + 
+        theme(text = element_text(size = 20))
+    return(plot)
+}
+
+jitter_plot <- function(df, feature) {
+    df <- df |> dplyr::rename("keycol" = !!feature)
+    plot <- df |>
+        dplyr::select(
+            cluster,
+            keycol
+        ) |>
+        ggplot(
+            aes(
+                x = cluster,
+                y = keycol,
+                color = cluster
+            )
+        ) + 
+        geom_violin(
+            alpha = 0.4
+        ) +
+        geom_jitter(
+            height = 0.1,
+            width = 0.2,
+            alpha = 0.8,
+            size = 3
+        ) +
+        stat_summary(
+            fun = "mean",
+            geom = "point",
+            colour = "black",
+            size = 5
+        ) +
+        labs(
+            x = "Cluster",
+            y = title_case(feature),
+            color = "Cluster"
+        ) +
+        theme_bw() +
+        theme(
+            text = element_text(size = 20),
+            legend.position = "none"
+        )
+    return(plot)
+}
+
+# HERE I AM - exporting the plots
+
+characterize_solution <- function(solution, data_list, plotname) {
+    # Generating the required full dataframe
+    cluster_df <- get_cluster_df(solution)
+    data_df <- collapse_dl(data_list)
+    full_data <- dplyr::inner_join(cluster_df, data_df, by = "subjectkey")
+    full_data$"cluster" <- factor(full_data$"cluster")
+    # Re-coding variables
+    full_data$"sex"[full_data$"sex" == 0] <- "F"
+    full_data$"sex"[full_data$"sex" == 1] <- "M"
+    full_data$"race"[full_data$"race" == 0] <- "White"
+    full_data$"race"[full_data$"race" == 1] <- "Non-White"
+    # Identifying features to plot 
+    features <- colnames(full_data)[3:length(colnames(full_data))]
+    plot_list <- list()
+    for (i in 1:length(features)) {
+        feature <- features[[i]]
+        feature_col <- full_data[, feature]
+        nvals <- length(unique(feature_col))
+        if (is.numeric(feature_col)) {
+            plot <- jitter_plot(full_data, feature)
+        } else {
+            plot <- bar_plot(full_data, feature)
+        }
+        ggsave(
+            plot = plot,
+            fig_path(
+                paste0(
+                    plotname
+                    "_",
+                    feature,
+                    ".png"
+                ),
+                TRUE
+            )
+        )
+        plot_list[[i]] <- plot
+    }
+    return(plot_list)
+}
+all_plots <- characterize_solution(
+    top_mc_b_solution,
+    all_data_list_m1
+)
+
+all_plots_pw <- wrap_plots(all_plots)
+
+ggsave(
+    plot = all_plots_pw,
+    fig_path("mtbi_mc_b_plots.png", TRUE)
+)
+
+
+
+
+bar_plot(z, "cbcl_anxdep")
+
+bar_plot(z, "mtbi_mechanism")
+
+jitter_plot(z, "cbcl_anxdep")
+
+scatter_plot(z, "parent_hyperactive")
+
+
+```
+
+

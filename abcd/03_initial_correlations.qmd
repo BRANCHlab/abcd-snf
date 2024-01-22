@@ -1,4 +1,4 @@
-# Similarity Network Fusion
+# Initial correlations
 
 In this chapter, I generate heatmaps to visit some of the broad correlations between data being used for this subtyping analysis.
 
@@ -19,6 +19,7 @@ sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 mtbi_subjects <- read_csv(sub_path("2023_11_07_mtbi_subjects.csv"))
 uninjured_subjects <- read_csv(sub_path("2023_11_07_uninjured_subjects.csv"))
+matched_uninjured <- read_csv(sub_path("2024_01_15_matched_uninjured.csv"))
 ```
 
 ## Utility functions
@@ -87,12 +88,20 @@ correlation_data <- function(data_list, order = NULL) {
     numeric_dl_df <- keep_numeric(dl_df)
     correlation_matrix <- cor(numeric_dl_df)
     if (is.null(order)) {
-        heatmap <- ComplexHeatmap::Heatmap(correlation_matrix)
+        heatmap <- ComplexHeatmap::Heatmap(
+            correlation_matrix,
+            heatmap_legend_param = list(
+                title = "Corr"
+            )
+        )
     } else {
         heatmap <- ComplexHeatmap::Heatmap(
             correlation_matrix[order, order],
             cluster_rows = FALSE,
-            cluster_columns = FALSE
+            cluster_columns = FALSE,
+            heatmap_legend_param = list(
+                title = "Corr"
+            )
         )
     }
     drawn_heatmap <- ComplexHeatmap::draw(heatmap)
@@ -225,6 +234,27 @@ oom_list_pm2 <- list.load(input_path("2024_01_15_oom_list_pm2.rds"))
 oom_list_pm3 <- list.load(input_path("2024_01_15_oom_list_pm3.rds"))
 oom_list_pm4 <- list.load(input_path("2024_01_15_oom_list_pm4.rds"))
 oom_list_pm5 <- list.load(input_path("2024_01_15_oom_list_pm5.rds"))
+
+data_list_mu1 <- list.load(input_path("2024_01_15_data_list_mu1.rds"))
+data_list_mu2 <- list.load(input_path("2024_01_15_data_list_mu2.rds"))
+data_list_mu3 <- list.load(input_path("2024_01_15_data_list_mu3.rds"))
+data_list_mu4 <- list.load(input_path("2024_01_15_data_list_mu4.rds"))
+data_list_mu5 <- list.load(input_path("2024_01_15_data_list_mu5.rds"))
+data_list_mpu1 <- list.load(input_path("2024_01_15_data_list_mpu1.rds"))
+data_list_mpu2 <- list.load(input_path("2024_01_15_data_list_mpu2.rds"))
+data_list_mpu3 <- list.load(input_path("2024_01_15_data_list_mpu3.rds"))
+data_list_mpu4 <- list.load(input_path("2024_01_15_data_list_mpu4.rds"))
+data_list_mpu5 <- list.load(input_path("2024_01_15_data_list_mpu5.rds"))
+oom_list_mu1 <- list.load(input_path("2024_01_15_oom_list_mu1.rds"))
+oom_list_mu2 <- list.load(input_path("2024_01_15_oom_list_mu2.rds"))
+oom_list_mu3 <- list.load(input_path("2024_01_15_oom_list_mu3.rds"))
+oom_list_mu4 <- list.load(input_path("2024_01_15_oom_list_mu4.rds"))
+oom_list_mu5 <- list.load(input_path("2024_01_15_oom_list_mu5.rds"))
+oom_list_mpu1 <- list.load(input_path("2024_01_15_oom_list_mpu1.rds"))
+oom_list_mpu2 <- list.load(input_path("2024_01_15_oom_list_mpu2.rds"))
+oom_list_mpu3 <- list.load(input_path("2024_01_15_oom_list_mpu3.rds"))
+oom_list_mpu4 <- list.load(input_path("2024_01_15_oom_list_mpu4.rds"))
+oom_list_mpu5 <- list.load(input_path("2024_01_15_oom_list_mpu5.rds"))
 ```
 
 ## Some pairwise variable correlations
@@ -256,8 +286,8 @@ correlation_data_m1$"heatmap"
 save_png(
     correlation_data_m1$"heatmap",
     fig_path("correlation_heatmap_m1.png", TRUE),
-    width = 2500,
-    height = 2500
+    width = 3500,
+    height = 3500
 )
 
 # 2. Heatmap of all correlations, sorted by abs(correlation with race)
@@ -277,13 +307,16 @@ correlation_heatmap_m1_race_only <- ComplexHeatmap::Heatmap(
     correlation_matrix_m1[race_order_m1, "race"],
     cluster_rows = FALSE,
     cluster_columns = FALSE,
-    show_column_names = FALSE
+    show_column_names = FALSE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    )
 )
 save_png(
     correlation_heatmap_m1_race_only,
     fig_path("correlation_heatmap_m1_race_only.png", TRUE),
     width = 2000,
-    height = 2000
+    height = 3000
 )
 
 # 4. Heatmap of all correlations, sorted by abs(correlation with sex)
@@ -303,13 +336,16 @@ correlation_heatmap_m1_sex_only <- ComplexHeatmap::Heatmap(
     correlation_matrix_m1[sex_order_m1, "sex"],
     cluster_rows = FALSE,
     cluster_columns = FALSE,
-    show_column_names = FALSE
+    show_column_names = FALSE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    )
 )
 save_png(
     correlation_heatmap_m1_sex_only,
     fig_path("correlation_heatmap_m1_sex_only.png", TRUE),
     width = 2000,
-    height = 2000
+    height = 3000
 )
 
 ```
@@ -330,178 +366,221 @@ all_var_dl_pm3 <- c(data_list_pm3, oom_list_pm3)
 all_var_dl_pm4 <- c(data_list_pm4, oom_list_pm4)
 all_var_dl_pm5 <- c(data_list_pm5, oom_list_pm5)
 
+all_var_dl_mu1 <- c(data_list_mu1, oom_list_mu1)
+all_var_dl_mu2 <- c(data_list_mu2, oom_list_mu2)
+all_var_dl_mu3 <- c(data_list_mu3, oom_list_mu3)
+all_var_dl_mu4 <- c(data_list_mu4, oom_list_mu4)
+all_var_dl_mu5 <- c(data_list_mu5, oom_list_mu5)
+all_var_dl_mpu1 <- c(data_list_mpu1, oom_list_mpu1)
+all_var_dl_mpu2 <- c(data_list_mpu2, oom_list_mpu2)
+all_var_dl_mpu3 <- c(data_list_mpu3, oom_list_mpu3)
+all_var_dl_mpu4 <- c(data_list_mpu4, oom_list_mpu4)
+all_var_dl_mpu5 <- c(data_list_mpu5, oom_list_mpu5)
+
+correlation_data_m1 <- correlation_data(all_var_dl_m1)
 correlation_data_m2 <- correlation_data(all_var_dl_m2)
 correlation_data_m3 <- correlation_data(all_var_dl_m3)
 correlation_data_m4 <- correlation_data(all_var_dl_m4)
 correlation_data_m5 <- correlation_data(all_var_dl_m5)
+
 correlation_data_pm1 <- correlation_data(all_var_dl_pm1)
+
 correlation_data_pm2 <- correlation_data(all_var_dl_pm2)
 correlation_data_pm3 <- correlation_data(all_var_dl_pm3)
 correlation_data_pm4 <- correlation_data(all_var_dl_pm4)
 correlation_data_pm5 <- correlation_data(all_var_dl_pm5)
+correlation_data_mu1 <- correlation_data(all_var_dl_mu1)
+correlation_data_mu2 <- correlation_data(all_var_dl_mu2)
+correlation_data_mu3 <- correlation_data(all_var_dl_mu3)
+correlation_data_mu4 <- correlation_data(all_var_dl_mu4)
+correlation_data_mu5 <- correlation_data(all_var_dl_mu5)
+correlation_data_mpu1 <- correlation_data(all_var_dl_mpu1)
+correlation_data_mpu2 <- correlation_data(all_var_dl_mpu2)
+correlation_data_mpu3 <- correlation_data(all_var_dl_mpu3)
+correlation_data_mpu4 <- correlation_data(all_var_dl_mpu4)
+correlation_data_mpu5 <- correlation_data(all_var_dl_mpu5)
 
 # A consistent order making use of the restricted variables found in the pooled matrix
-var_order <- colnames(correlation_data_pm1$"correlation_matrix")
+drawn_pm1 <- ComplexHeatmap::draw(correlation_data_pm1$"heatmap")
+var_order <- ComplexHeatmap::row_order(drawn_pm1)
+var_order <- colnames(correlation_data_pm1$"correlation_matrix")[var_order]
 
 write.csv(var_order, proc_path("var_order.csv", TRUE))
-write.csv(
-    data.frame(correlation_data_m1$"correlation_matrix"),
-    proc_path("correlation_matrix_m1.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_m2$"correlation_matrix"),
-    proc_path("correlation_matrix_m2.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_m3$"correlation_matrix"),
-    proc_path("correlation_matrix_m3.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_m4$"correlation_matrix"),
-    proc_path("correlation_matrix_m4.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_m5$"correlation_matrix"),
-    proc_path("correlation_matrix_m5.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_pm1$"correlation_matrix"),
-    proc_path("correlation_matrix_pm1.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_pm2$"correlation_matrix"),
-    proc_path("correlation_matrix_pm2.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_pm3$"correlation_matrix"),
-    proc_path("correlation_matrix_pm3.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_pm4$"correlation_matrix"),
-    proc_path("correlation_matrix_pm4.csv", TRUE)
-)
-write.csv(
-    data.frame(correlation_data_pm5$"correlation_matrix"),
-    proc_path("correlation_matrix_pm5.csv", TRUE)
-)
-```
 
-```{r}
-var_order <- read_csv(proc_path("2024_01_15_var_order.csv"))$"x"
-correlation_matrix_m1 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_m1.csv")
-)
-correlation_matrix_m2 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_m2.csv")
-)
-correlation_matrix_m3 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_m3.csv")
-)
-correlation_matrix_m4 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_m4.csv")
-)
-correlation_matrix_m5 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_m5.csv")
-)
-correlation_matrix_pm1 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_pm1.csv")
-)
-correlation_matrix_pm2 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_pm2.csv")
-)
-correlation_matrix_pm3 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_pm3.csv")
-)
-correlation_matrix_pm4 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_pm4.csv")
-)
-correlation_matrix_pm5 <- read_matrix(
-    proc_path("2024_01_15_correlation_matrix_pm5.csv")
+var_order <- read_csv(proc_path("2024_01_21_var_order.csv"))$"x"
+
+var_order
+
+correlation_data_list <- list(
+    "correlation_data_m1" = correlation_data_m1,
+    "correlation_data_m2" = correlation_data_m2,
+    "correlation_data_m3" = correlation_data_m3,
+    "correlation_data_m4" = correlation_data_m4,
+    "correlation_data_m5" = correlation_data_m5,
+    "correlation_data_pm1" = correlation_data_pm1,
+    "correlation_data_pm2" = correlation_data_pm2,
+    "correlation_data_pm3" = correlation_data_pm3,
+    "correlation_data_pm4" = correlation_data_pm4,
+    "correlation_data_pm5" = correlation_data_pm5,
+    "correlation_data_mu1" = correlation_data_mu1,
+    "correlation_data_mu2" = correlation_data_mu2,
+    "correlation_data_mu3" = correlation_data_mu3,
+    "correlation_data_mu4" = correlation_data_mu4,
+    "correlation_data_mu5" = correlation_data_mu5,
+    "correlation_data_mpu1" = correlation_data_mpu1,
+    "correlation_data_mpu2" = correlation_data_mpu2,
+    "correlation_data_mpu3" = correlation_data_mpu3,
+    "correlation_data_mpu4" = correlation_data_mpu4,
+    "correlation_data_mpu5" = correlation_data_mpu5
 )
 
-canonical_m1 <- correlation_matrix_m1[var_order, var_order]
-canonical_m2 <- correlation_matrix_m2[var_order, var_order]
-canonical_m3 <- correlation_matrix_m3[var_order, var_order]
-canonical_m4 <- correlation_matrix_m4[var_order, var_order]
-canonical_m5 <- correlation_matrix_m5[var_order, var_order]
-canonical_pm1 <- correlation_matrix_pm1[var_order, var_order]
-canonical_pm2 <- correlation_matrix_pm2[var_order, var_order]
-canonical_pm3 <- correlation_matrix_pm3[var_order, var_order]
-canonical_pm4 <- correlation_matrix_pm4[var_order, var_order]
-canonical_pm5 <- correlation_matrix_pm5[var_order, var_order]
+for (i in 1:length(correlation_data_list)) {
+    suffix <- names(correlation_data_list)[[i]]
+    suffix <- gsub("correlation_data_", "", suffix)
+    corr_matrix <- data.frame(correlation_data_list[[i]]$"correlation_matrix")
+    # Save the correlation matrix to file
+    write.csv(
+        corr_matrix,
+        proc_path(paste0("correlation_matrix_", suffix, ".csv"), TRUE)
+    )
+    # Plot the correlation heatmaps
+    canon_matrix <- corr_matrix[var_order, var_order]
+    canon_hm <- ComplexHeatmap::Heatmap(
+        canon_matrix,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        heatmap_legend_param = list(
+            title = "Corr"
+        )
+    )
+    print(canon_hm)
+    hm_name <- paste0("correlation_heatmap_", suffix, ".png")
+    save_png(
+        canon_hm,
+        fig_path(hm_name, TRUE),
+        width = 3000,
+        height = 3000
+    )
+}
 
-m_matrices <- array(
-    c(
-        canonical_m1,
-        canonical_m2,
-        canonical_m3,
-        canonical_m4,
-        canonical_m5
-    ),
-    dim = c(dim(canonical_m1), 5)
+
+# Difference between mTBI alone and pooled mtbi
+mtbi_alone <- (correlation_data_m1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m5$"correlation_matrix"[var_order, var_order]) / 5
+
+mtbi_pooled <- (correlation_data_pm1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm5$"correlation_matrix"[var_order, var_order]) / 5
+
+m_alone_v_pool <- ComplexHeatmap::Heatmap(
+    mtbi_alone - mtbi_pooled,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    )
 )
-# Element-wise means and variances
-m_means <- apply(m_matrices, c(1, 2), mean)
-m_vars <- apply(m_matrices, c(1, 2), var)
-colnames(m_means) <- colnames(canonical_m1)
-rownames(m_means) <- rownames(canonical_m1)
-colnames(m_vars) <- colnames(canonical_m1)
-rownames(m_vars) <- rownames(canonical_m1)
 
-pm_matrices <- array(
-    c(
-        canonical_pm1,
-        canonical_pm2,
-        canonical_pm3,
-        canonical_pm4,
-        canonical_pm5
-    ),
-    dim = c(dim(canonical_pm1), 5)
-)
-pm_means <- apply(pm_matrices, c(1, 2), mean)
-pm_vars <- apply(pm_matrices, c(1, 2), var)
-colnames(pm_means) <- colnames(canonical_pm1)
-rownames(pm_means) <- rownames(canonical_pm1)
-colnames(pm_vars) <- colnames(canonical_pm1)
-rownames(pm_vars) <- rownames(canonical_pm1)
-
-# Average of the mtbi correlations
 save_png(
-    ComplexHeatmap::Heatmap(m_means),
-    fig_path("correlation_heatmap_m_means.png", TRUE),
-    width = 2500,
-    height = 2500
+    m_alone_v_pool,
+    fig_path("mtbi_alone_vs_pooled.png", TRUE),
+    width = 3000,
+    height = 3000
 )
 
-# Average of the pooled correlations
+# Difference between uninjured alone and pooled uninjured
+uninjured_alone <- (correlation_data_mu1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu5$"correlation_matrix"[var_order, var_order]) / 5
+
+uninjured_pooled <- (correlation_data_mpu1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu5$"correlation_matrix"[var_order, var_order]) / 5
+
+u_alone_v_pool <- ComplexHeatmap::Heatmap(
+    uninjured_alone - uninjured_pooled,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    )
+)
+
 save_png(
-    ComplexHeatmap::Heatmap(pm_means),
-    fig_path("correlation_heatmap_pm_means.png", TRUE),
-    width = 2500,
-    height = 2500
+    u_alone_v_pool,
+    fig_path("uninjured_alone_vs_pooled.png", TRUE),
+    width = 3000,
+    height = 3000
 )
 
-# Very small difference in correlations
-max(abs(m_means - pm_means)) # 0.0610264
+# Difference between all mTBI and all uninjured
+mtbi_all <- (
+    correlation_data_m1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_m5$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_pm5$"correlation_matrix"[var_order, var_order]
+) / 10
 
-# Very small variances
-max(abs(m_vars)) # 0.002426604
-max(abs(pm_vars)) # 0.02360992
+uninjured_all <- (
+    correlation_data_mu1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mu5$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu1$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu2$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu3$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu4$"correlation_matrix"[var_order, var_order] +
+    correlation_data_mpu5$"correlation_matrix"[var_order, var_order]
+) / 10
 
-# Difference in correlations between the two groups
+mtbi_vs_uninjured <- ComplexHeatmap::Heatmap(
+    mtbi_all - uninjured_all,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    )
+)
+
+mtbi_vs_uninjured
+
 save_png(
-    ComplexHeatmap::Heatmap(m_means - pm_means),
-    fig_path("difference_in_correlations_m_vs_pm.png", TRUE),
-    width = 2500,
-    height = 2500
+    mtbi_vs_uninjured,
+    fig_path("mtbi_vs_uninjured.png", TRUE),
+    width = 3000,
+    height = 3000
 )
 
-# Difference in absolute correlations between the two groups
+# Difference between mTBI-solo and uninjured-solo
+mtbi_solo_vs_uninjured_solo <- ComplexHeatmap::Heatmap(
+    mtbi_alone - uninjured_alone,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    )
+)
+
 save_png(
-    ComplexHeatmap::Heatmap(abs(m_means) - abs(pm_means)),
-    fig_path("difference_in_abs_correlations_m_vs_pm.png", TRUE),
-    width = 2500,
-    height = 2500
+    mtbi_solo_vs_uninjured_solo,
+    fig_path("mtbi_solo_vs_uninjured_solo.png", TRUE),
+    width = 3000,
+    height = 3000
 )
-
 ```

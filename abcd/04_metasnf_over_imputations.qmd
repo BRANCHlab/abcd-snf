@@ -323,7 +323,6 @@ write_csv(
     data.frame(aris_all_mtbi_imputations_order),
     proc_path("aris_all_mtbi_imputations_order.csv", TRUE)
 )
-
 ```
 
 ### Re-importing the order
@@ -421,6 +420,21 @@ divergent_colours <- function(column)  {
     return(colours)
 }
 
+hm_colours <- function(data, max_red = TRUE) {
+    if (max_red) {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("black", "red")
+        )
+    } else {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("red", "black")
+        )
+    }
+    return(colours)
+}
+
 aris_all_mtbi_imputations_annotated_heatmap <- similarity_matrix_heatmap(
     aris_all_mtbi_imputations,
     order = aris_all_mtbi_imputations_order,
@@ -477,6 +491,19 @@ grDevices::dev.off()
 ## Identifying meta clusters
 
 ```{r}
+split_at <- function(vector, nrow) {
+    split_vec <- rep("A", nrow)
+    if (vector[length(vector)] != nrow) {
+        vector <- c(vector, nrow)
+    }
+    for (i in 1:(length(vector) - 1)) {
+        start <- vector[i]
+        end <- vector[i + 1]
+        split_vec[start:end] <- LETTERS[i + 1]
+    }
+    return(split_vec)
+}
+
 aris_all_mtbi_imputations_chopped_heatmap <- similarity_matrix_heatmap(
     aris_all_mtbi_imputations,
     order = aris_all_mtbi_imputations_order,
@@ -542,9 +569,9 @@ aris_all_mtbi_imputations_chopped_heatmap
 # PNG export
 grDevices::png(
     fig_path("aris_all_mtbi_imputations_chopped_heatmap.png", TRUE),
-    width = 4000,
-    height = 4000,
-    res = 400
+    width = 3000,
+    height = 3000,
+    res = 300
 )
 aris_all_mtbi_imputations_chopped_heatmap
 grDevices::dev.off()
@@ -607,9 +634,9 @@ aris_all_mtbi_mc_f_chopped_heatmap
 # PNG export
 grDevices::png(
     fig_path("aris_all_mtbi_mc_f_chopped_heatmap.png", TRUE),
-    width = 4000,
-    height = 4000,
-    res = 400
+    width = 2500,
+    height = 2500,
+    res = 300
 )
 aris_all_mtbi_mc_f_chopped_heatmap
 grDevices::dev.off()
@@ -636,19 +663,6 @@ mc_reordered_indices <- list(
     "F-I" = c(1442 + 497, 1442 + 513),
     "F-J" = c(1442 + 514, 2000)
 )
-
-split_at <- function(vector, nrow) {
-    split_vec <- rep("A", nrow)
-    if (vector[length(vector)] != nrow) {
-        vector <- c(vector, nrow)
-    }
-    for (i in 1:(length(vector) - 1)) {
-        start <- vector[i]
-        end <- vector[i + 1]
-        split_vec[start:end] <- LETTERS[i + 1]
-    }
-    return(split_vec)
-}
 
 mc_reordered_labels <- split_at(
     c(
@@ -702,7 +716,6 @@ full_input_characterization_m1 <- read_csv(
 
 target_pvals <- full_input_characterization_m1 |>
     p_val_select()
-
 target_pvals$"mc_label" <- names(sorted_mc_labels)
 
 manhattan_plot <- function(data,
@@ -710,7 +723,7 @@ manhattan_plot <- function(data,
                            threshold = NULL,
                            bonferroni_line = FALSE,
                            data_list,
-                           mc_label = "all") {
+                           mc_labels = NULL) {
     row_id <- ""
     variable <- ""
     pval <- ""
@@ -769,8 +782,12 @@ manhattan_plot <- function(data,
         summary_data$"variable",
         levels = unique(summary_data$"variable")
     )
-    if (mc_label != "all") {
-        summary_data <- summary_data[summary_data$"mc_label" == mc_label, ]
+    if (!is.null(mc_labels)) {
+        summary_data <- summary_data[summary_data$"mc_label" %in% mc_labels, ]
+        summary_data$"mc_label" <- factor(
+            summary_data$"mc_label",
+            levels = mc_labels
+        )
     }
     plot <- summary_data |>
         ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
@@ -801,9 +818,7 @@ manhattan_plot <- function(data,
             ),
             plot.title = ggplot2::element_text(hjust = 0.5)
         )
-    if (mc_label == "all") {
-        plot <- plot + ggplot2::facet_wrap(~ mc_label)
-    }
+    plot <- plot + ggplot2::facet_grid(mc_label ~ .)
     if (!is.null(threshold)) {
         plot <- plot + ggplot2::geom_hline(
             yintercept = -log10(threshold),
@@ -827,22 +842,56 @@ manhattan_plot <- function(data,
 }
 
 library(ggplot2)
+# Here I am
+
+all_mtbi_imputations_main_mc_associations <- manhattan_plot(
+    target_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = data_list_m1,
+    mc_labels = c("A", "B", "C", "D", "E")
+)
+
+ggsave(
+    plot = all_mtbi_imputations_main_mc_associations,
+    fig_path("all_mtbi_imputations_main_mc_associations.png", TRUE),
+    width = 8,
+    height = 10
+)
+
+all_mtbi_imputations_f_mc_associations <- manhattan_plot(
+    target_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = data_list_m1,
+    mc_labels = c("F-A", "F-C", "F-E", "F-F", "F-J")
+)
+
+all_mtbi_imputations_f_mc_associations
+
+ggsave(
+    plot = all_mtbi_imputations_f_mc_associations,
+    fig_path("all_mtbi_imputations_f_mc_associations.png", TRUE),
+    width = 8,
+    height = 10
+)
 
 all_mtbi_imputations_all_mc_associations <- manhattan_plot(
     target_pvals,
     threshold = 0.05,
     bonferroni_line = FALSE,
-    data_list = data_list_m1,
-    mc_label = "all"
+    data_list = data_list_m1
 )
-
 ggsave(
     plot = all_mtbi_imputations_all_mc_associations,
     fig_path("all_mtbi_imputations_all_mc_associations.png", TRUE),
-    width = 20,
+    width = 8,
     height = 20
 )
 
+
+
+# Bulk export each MC individually
 for (mc in names(mc_reordered_indices)) {
     mc_plot <- manhattan_plot(
         target_pvals,
@@ -860,47 +909,7 @@ for (mc in names(mc_reordered_indices)) {
         plot = mc_plot,
         fig_path(mc_path, TRUE),
         width = 10,
-        height = 7
+        height = 3
     )
 }
-```
-
-Back to more lightweight functions:
-
-```{r}
-###############################################################################
-# 5. Extract order of pairwise solution similarities
-###############################################################################
-aris_m1_heatmap <- similarity_matrix_heatmap(
-    aris_m1,
-    log_graph = FALSE,
-    cluster_rows = TRUE,
-    cluster_columns = TRUE,
-)
-
-aris_m1_heatmap <- ComplexHeatmap::draw(aris_m1_heatmap)
-
-aris_m1_order <- ComplexHeatmap::row_order(aris_m1_heatmap)
-
-write_csv(data.frame(aris_m1_order), proc_path("aris_m1_order.csv", TRUE))
-
-aris_m1_order <- unlist(read_csv(proc_path("2023_12_01_aris_m1_order.csv")))
-
-###############################################################################
-# 5. Visualize reordered settings matrix and similarity matrix
-###############################################################################
-
-# No saving
-settings_matrix_heatmap(
-    settings_matrix,
-    order = aris_m1_order,
-    show_rownames = FALSE
-)
-
-settings_matrix_heatmap(
-    settings_matrix,
-    order = aris_m1_order,
-    show_rownames = FALSE,
-    save = fig_path("aris_m1_ordered_settings_matrix_heatmap.png", TRUE)
-)
 ```
