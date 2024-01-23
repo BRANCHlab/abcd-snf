@@ -170,6 +170,58 @@ Particularly notable is that the high impairment group was particulary imbalance
 
 The closest candidate within the uninjured group appeared to be MC D-A, which was tight, small but reproducible across unpooled and pooled imputations, and also exhibited a 3 cluster solution with faint separation across impairment measures.
 
+Is it really the case that the CBCL scores are worse in females?
+
+```{r}
+
+top_mc_b_solution
+
+mc_b_data <- characterize_solution(
+    top_mc_b_solution,
+    all_data_list_m1,
+    "mtbi_mc_b",
+    return_plot = FALSE
+)
+
+mc_b_data
+
+mc_b_data |>
+    ggplot(
+        aes(
+            x = cluster,
+            y = cbcl_withdep
+        )
+    ) + 
+    geom_violin() +
+    geom_jitter(
+        aes(
+            x = cluster,
+            y = cbcl_aggressive,
+            colour = sex
+        ),
+        height = 0.05,
+        size = 3,
+        alpha = 0.5
+    )
+
+mc_b_data |>
+    ggplot(
+        aes(
+            x = sex,
+            y = cbcl_aggressive
+        )
+    ) + 
+    geom_violin() +
+    geom_jitter(
+        height = 0.05,
+        size = 3,
+        alpha = 0.5
+    )
+
+
+```
+
+
 ### Uninjured MC D-A
 
 ```{r}
@@ -255,5 +307,7 @@ save_plot_list(mu_top_3c_plots, "uninjured_top_3c")
 
 ```
 
-Now that is pretty interesting!
+Not very similar to the 3c group.
+In the following chapters, an alternative matched uninjured group is explored.
+
 

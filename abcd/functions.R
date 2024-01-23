@@ -190,7 +190,7 @@ scatter_plot <- function(df, feature) {
                 y = keycol,
                 colour = cluster
             )
-        ) + 
+        ) +
         geom_violin(
             alpha = 0.4
         ) +
