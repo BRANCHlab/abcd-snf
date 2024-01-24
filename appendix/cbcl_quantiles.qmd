@@ -59,8 +59,15 @@ These thresholds correspond to the 93rd and 97th percentiles of behavioural impa
 # Exploring all CBCL scores in relation to age and sex
 
 ```{r}
+library(here)
+library(abcdutils)
+library(patchwork)
+library(ggplot2)
+library(readr)
+
 core_path <- path_maker(here(paste0("data/abcd/core")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
 # Parent report of child behaviour (CBCL)
 mh_p_cbcl <- abcd_load(core_path("mental-health/mh_p_cbcl.csv"))
@@ -103,15 +110,24 @@ all_cbcl <- na.omit(all_cbcl)
 
 colnames(all_cbcl) <- gsub("cbcl_scr_syn_", "", colnames(all_cbcl))
 
-###############################################################################
-
-library(patchwork)
-library(ggplot2)
+nrow(all_cbcl) # n = 11856
 
 # All differences by sex
 plot_list <- list()
+m_minus_f_df <- data.frame()
 for (i in 1:length(scales)) {
     scale <- paste0(scales[[i]], "_r")
+    f_mean <- all_cbcl[all_cbcl$"sex" == "F", scale] |> mean()
+    m_mean <- all_cbcl[all_cbcl$"sex" == "M", scale] |> mean()
+    diff <- round(m_mean - f_mean, 4)
+    m_minus_f_df <- rbind(
+        m_minus_f_df,
+        data.frame(
+            symptom = scale,
+            m_minus_f = (m_mean - f_mean)
+        )
+    )
+    diff_text <- paste0("M - F = ", diff)
     cbcl_plot <- all_cbcl |>
         ggplot(
             aes(
@@ -121,7 +137,8 @@ for (i in 1:length(scales)) {
             )
         ) +
         geom_jitter(
-            height = 0
+            height = 0,
+            alpha = 0.05
         ) +
         stat_summary(
             fun = "mean",
@@ -132,30 +149,48 @@ for (i in 1:length(scales)) {
             x = "Sex",
             y = gsub("_r", "", scale)
         ) + 
-        theme(legend.position = "none")
+        annotate(
+            "text",
+            label = diff_text,
+            x = 1.5,
+            y = Inf,
+            vjust = 3,
+            size = 5
+        ) +
+        theme_bw()
+    cbcl_plot <- cbcl_plot + 
+        theme(
+            legend.position = "none",
+            panel.grid.major.x = element_blank()
+        )
     plot_list[[i]] <- cbcl_plot
     names(plot_list)[i] <- scale
-    print(scale)
-    print(all_cbcl[all_cbcl$"sex" == "F", scale] |> mean())
-    print(all_cbcl[all_cbcl$"sex" == "M", scale] |> mean())
-    print("-")
 }
-
-nrow(all_cbcl) # n = 11856
+wrap_plots(plot_list, nrow = 2) 
 
 ggsave(
     plot = wrap_plots(plot_list, nrow = 2),
     fig_path("all_baseline_cbcl_by_sex.png", TRUE),
-    width = 10,
-    height = 10
+    width = 12,
+    height = 5
 )
 
+write_csv(m_minus_f_df, proc_path("cbcl_m_minus_f_df.csv", TRUE))
+
 plot_list <- list()
+over_age_df <- data.frame()
 for (i in 1:length(scales)) {
     scale <- paste0(scales[[i]], "_r")
     lm_fit <- lm(all_cbcl[, scale] ~ all_cbcl[, "interview_age"])
     m <- round(coef(lm_fit)[2], 4)
     b <- round(coef(lm_fit)[1], 4)
+    over_age_df <- rbind(
+        over_age_df,
+        data.frame(
+            symptom = scale,
+            m = m
+        )
+    )
     cbcl_plot <- all_cbcl |>
         ggplot(
             aes(
@@ -168,7 +203,7 @@ for (i in 1:length(scales)) {
         ) +
         labs(
             x = "Age",
-            y = scale
+            y = gsub("_r", "", scale)
         ) + 
         geom_smooth(
             method = "lm",
@@ -180,9 +215,9 @@ for (i in 1:length(scales)) {
                 y = Inf,
                 label = paste("y = ", !!m, "x + ", !!b)
             ),
-            hjust = 1.5,
+            hjust = 1,
             vjust = 5,
-            size = 6,
+            size = 4,
             data = data.frame()
         ) +
         theme(
@@ -191,18 +226,26 @@ for (i in 1:length(scales)) {
         ) +
         theme_minimal()
     plot_list[[i]] <- cbcl_plot
-    #print(
-    #    cor(
-    #        all_cbcl[, "interview_age"],
-    #        all_cbcl[, scale]
-    #    )
-    #)
 }
 wrap_plots(plot_list, nrow = 2)
 
-scale
+ggsave(
+    plot = wrap_plots(plot_list, nrow = 2),
+    fig_path("all_baseline_cbcl_by_age.png", TRUE),
+    width = 15,
+    height = 5
+)
 
+rownames(over_age_df) <- NULL
+write_csv(over_age_df, proc_path("cbcl_over_age_df.csv", TRUE))
 
-lmfit
+m_minus_f_df
 
 ```
+
+## Sex and age adjusted CBCL scores
+
+```{r}
+
+```
+
