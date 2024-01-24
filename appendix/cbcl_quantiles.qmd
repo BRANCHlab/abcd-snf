@@ -4,7 +4,6 @@
 Borderline is 93-97th percentile, clinical is 97th percentile or higher
 
 ```{r}
-
 abcd_cbcl01 <- read_delim(here("data/abcd/raw/abcd_cbcl01.txt"))
 abcd_cbcls01 <- read_delim(here("data/abcd/raw/abcd_cbcls01.txt"))
 
@@ -75,7 +74,6 @@ sex <- dplyr::filter(sex, sex %in% c("M", "F"))
 abcd_y_lt <- abcd_load(core_path("abcd-general/abcd_y_lt.csv"))
 age <- d_interview_age_mtbi <- get_interview_age(abcd_y_lt, t = 0)
 
-
 scales <- c(
     "anxdep",
     "withdep",
@@ -108,6 +106,7 @@ colnames(all_cbcl) <- gsub("cbcl_scr_syn_", "", colnames(all_cbcl))
 ###############################################################################
 
 library(patchwork)
+library(ggplot2)
 
 # All differences by sex
 plot_list <- list()
@@ -117,12 +116,12 @@ for (i in 1:length(scales)) {
         ggplot(
             aes(
                 x = all_cbcl[, "sex"],
-                y = all_cbcl[, scale],
+                y = all_cbcl[, !!scale],
                 color = sex
             )
         ) +
         geom_jitter(
-            height = 0.05
+            height = 0
         ) +
         stat_summary(
             fun = "mean",
@@ -131,45 +130,79 @@ for (i in 1:length(scales)) {
         ) +
         labs(
             x = "Sex",
-            y = scale
+            y = gsub("_r", "", scale)
         ) + 
         theme(legend.position = "none")
     plot_list[[i]] <- cbcl_plot
+    names(plot_list)[i] <- scale
+    print(scale)
+    print(all_cbcl[all_cbcl$"sex" == "F", scale] |> mean())
+    print(all_cbcl[all_cbcl$"sex" == "M", scale] |> mean())
+    print("-")
 }
 
-wrap_plots(plot_list)
+nrow(all_cbcl) # n = 11856
+
+ggsave(
+    plot = wrap_plots(plot_list, nrow = 2),
+    fig_path("all_baseline_cbcl_by_sex.png", TRUE),
+    width = 10,
+    height = 10
+)
 
 plot_list <- list()
 for (i in 1:length(scales)) {
     scale <- paste0(scales[[i]], "_r")
+    lm_fit <- lm(all_cbcl[, scale] ~ all_cbcl[, "interview_age"])
+    m <- round(coef(lm_fit)[2], 4)
+    b <- round(coef(lm_fit)[1], 4)
     cbcl_plot <- all_cbcl |>
         ggplot(
             aes(
                 x = all_cbcl[, "interview_age"],
-                y = all_cbcl[, scale],
+                y = all_cbcl[, !!scale],
             )
         ) +
-        geom_point() +
+        geom_point(
+            alpha = 0.01
+        ) +
         labs(
             x = "Age",
             y = scale
         ) + 
         geom_smooth(
             method = "lm",
-            se = FALSE,
-            color = "blue"
+            se = FALSE
         ) +
-        theme(legend.position = "none")
+        geom_text(
+            aes(
+                x = Inf,
+                y = Inf,
+                label = paste("y = ", !!m, "x + ", !!b)
+            ),
+            hjust = 1.5,
+            vjust = 5,
+            size = 6,
+            data = data.frame()
+        ) +
+        theme(
+            legend.position = "none",
+            text = element_text(family = "Arial", size = 12)
+        ) +
+        theme_minimal()
     plot_list[[i]] <- cbcl_plot
-    print(
-        cor(
-            all_cbcl[, "interview_age"],
-            all_cbcl[, scale]
-        )
-    )
+    #print(
+    #    cor(
+    #        all_cbcl[, "interview_age"],
+    #        all_cbcl[, scale]
+    #    )
+    #)
 }
+wrap_plots(plot_list, nrow = 2)
 
-wrap_plots(plot_list)
+scale
 
+
+lmfit
 
 ```
