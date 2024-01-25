@@ -383,6 +383,17 @@ demographic_plots <- function(plot_list) {
     pw
 }
 
+demographic_plots_uninj <- function(plot_list) {
+    pw <- list(
+        plot_list$"age",
+        plot_list$"household_income",
+        plot_list$"sex",
+        plot_list$"pubertal_status",
+        plot_list$"race"
+    ) |> wrap_plots()
+    pw
+}
+
 neuroimaging_plots <- function(plot_list) {
     layout <- c(
         area(t = 1, l = 1, b = 2, r = 2),
@@ -482,75 +493,166 @@ medical_history_plots <- function(plot_list) {
     pw
 }
 
+medical_history_plots_uninj <- function(plot_list) {
+    pw <- list(
+        plot_list$"headache_history"
+    ) |> wrap_plots()
+    pw
+}
+
 save_plot_list <- function(plot_list, prefix) {
     all_plots <- wrap_plots(plot_list)
-    #outcome_plots <- outcome_plots(plot_list)
-    #demographic_plots <- demographic_plots(plot_list)
-    #neuroimaging_plots <- neuroimaging_plots(plot_list)
-    #acute_symptom_plots <- acute_symptom_plots(plot_list)
-    #parent_psych_plots <- parent_psych_plots(plot_list)
-    #family_env_plots <- family_env_plots(plot_list)
-    #prosocial_plots <- prosocial_plots(plot_list)
-    #healthy_habits_plots <- healthy_habits_plots(plot_list)
-    #medical_history_plots <- medical_history_plots(plot_list)
+    outcome_plots <- outcome_plots(plot_list)
+    demographic_plots <- demographic_plots(plot_list)
+    neuroimaging_plots <- neuroimaging_plots(plot_list)
+    acute_symptom_plots <- acute_symptom_plots(plot_list)
+    parent_psych_plots <- parent_psych_plots(plot_list)
+    family_env_plots <- family_env_plots(plot_list)
+    prosocial_plots <- prosocial_plots(plot_list)
+    healthy_habits_plots <- healthy_habits_plots(plot_list)
+    medical_history_plots <- medical_history_plots(plot_list)
+    print(".")
     ggsave(
         plot = all_plots,
         fig_path(paste0(prefix, "_all_plots.png"), TRUE),
-        width = 33,
+        width = 40,
         height = 33
     )
-    #ggsave(
-    #    plot = outcome_plots,
-    #    fig_path(paste0(prefix, "_outcome_plots.png"), TRUE),
-    #    width = 15,
-    #    height = 15
-    #)
-    #ggsave(
-    #    plot = demographic_plots,
-    #    fig_path(paste0(prefix, "_demographic_plots.png"), TRUE),
-    #    width = 15,
-    #    height = 10
-    #)
-    #ggsave(
-    #    plot = neuroimaging_plots,
-    #    fig_path(paste0(prefix, "_neuroimaging_plots.png"), TRUE),
-    #    width = 15,
-    #    height = 15
-    #)
-    #ggsave(
-    #    plot = acute_symptom_plots,
-    #    fig_path(paste0(prefix, "_acute_symptom_plots.png"), TRUE),
-    #    width = 20,
-    #    height = 7
-    #)
-    #ggsave(
-    #    plot = parent_psych_plots,
-    #    fig_path(paste0(prefix, "_parent_psych_plots.png"), TRUE),
-    #    width = 20,
-    #    height = 13
-    #)
-    #ggsave(
-    #    plot = family_env_plots,
-    #    fig_path(paste0(prefix, "_family_env_plots.png"), TRUE),
-    #    width = 15,
-    #    height = 15
-    #)
-    #ggsave(
-    #    plot = prosocial_plots,
-    #    fig_path(paste0(prefix, "_prosocial_plots.png"), TRUE),
-    #    width = 15,
-    #    height = 8
-    #)
-    #ggsave(
-    #    plot = healthy_habits_plots,
-    #    fig_path(paste0(prefix, "_healthy_habits_plots.png"), TRUE),
-    #    width = 14,
-    #    height = 8
-    #)
-    #ggsave(
-    #    plot = medical_history_plots,
-    #    fig_path(paste0(prefix, "_medical_history_plots.png"), TRUE),
-    #    width = 12,
-    #    height = 6
-    #)
+    print(".")
+    ggsave(
+        plot = outcome_plots,
+        fig_path(paste0(prefix, "_outcome_plots.png"), TRUE),
+        width = 15,
+        height = 15
+    )
+    print(".")
+    ggsave(
+        plot = demographic_plots,
+        fig_path(paste0(prefix, "_demographic_plots.png"), TRUE),
+        width = 15,
+        height = 10
+    )
+    print(".")
+    ggsave(
+        plot = neuroimaging_plots,
+        fig_path(paste0(prefix, "_neuroimaging_plots.png"), TRUE),
+        width = 15,
+        height = 15
+    )
+    print(".")
+    ggsave(
+        plot = acute_symptom_plots,
+        fig_path(paste0(prefix, "_acute_symptom_plots.png"), TRUE),
+        width = 20,
+        height = 7
+    )
+    print(".")
+    ggsave(
+        plot = parent_psych_plots,
+        fig_path(paste0(prefix, "_parent_psych_plots.png"), TRUE),
+        width = 20,
+        height = 13
+    )
+    print(".")
+    ggsave(
+        plot = family_env_plots,
+        fig_path(paste0(prefix, "_family_env_plots.png"), TRUE),
+        width = 15,
+        height = 15
+    )
+    print(".")
+    ggsave(
+        plot = prosocial_plots,
+        fig_path(paste0(prefix, "_prosocial_plots.png"), TRUE),
+        width = 15,
+        height = 8
+    )
+    print(".")
+    ggsave(
+        plot = healthy_habits_plots,
+        fig_path(paste0(prefix, "_healthy_habits_plots.png"), TRUE),
+        width = 14,
+        height = 8
+    )
+    print(".")
+    ggsave(
+        plot = medical_history_plots,
+        fig_path(paste0(prefix, "_medical_history_plots.png"), TRUE),
+        width = 12,
+        height = 6
+    )
+}
+
+save_plot_list_uninj <- function(plot_list, prefix) {
+    all_plots <- wrap_plots(plot_list)
+    outcome_plots <- outcome_plots(plot_list)
+    demographic_plots <- demographic_plots_uninj(plot_list)
+    neuroimaging_plots <- neuroimaging_plots(plot_list)
+    parent_psych_plots <- parent_psych_plots(plot_list)
+    family_env_plots <- family_env_plots(plot_list)
+    prosocial_plots <- prosocial_plots(plot_list)
+    healthy_habits_plots <- healthy_habits_plots(plot_list)
+    medical_history_plots <- medical_history_plots_uninj(plot_list)
+    ggsave(
+        plot = all_plots,
+        fig_path(paste0(prefix, "_all_plots.png"), TRUE),
+        width = 40,
+        height = 33
+    )
+    print(".")
+    ggsave(
+        plot = outcome_plots,
+        fig_path(paste0(prefix, "_outcome_plots.png"), TRUE),
+        width = 15,
+        height = 15
+    )
+    print(".")
+    ggsave(
+        plot = demographic_plots,
+        fig_path(paste0(prefix, "_demographic_plots.png"), TRUE),
+        width = 15,
+        height = 10
+    )
+    print(".")
+    ggsave(
+        plot = neuroimaging_plots,
+        fig_path(paste0(prefix, "_neuroimaging_plots.png"), TRUE),
+        width = 15,
+        height = 15
+    )
+    print(".")
+    ggsave(
+        plot = parent_psych_plots,
+        fig_path(paste0(prefix, "_parent_psych_plots.png"), TRUE),
+        width = 20,
+        height = 13
+    )
+    print(".")
+    ggsave(
+        plot = family_env_plots,
+        fig_path(paste0(prefix, "_family_env_plots.png"), TRUE),
+        width = 15,
+        height = 15
+    )
+    print(".")
+    ggsave(
+        plot = prosocial_plots,
+        fig_path(paste0(prefix, "_prosocial_plots.png"), TRUE),
+        width = 15,
+        height = 8
+    )
+    print(".")
+    ggsave(
+        plot = healthy_habits_plots,
+        fig_path(paste0(prefix, "_healthy_habits_plots.png"), TRUE),
+        width = 14,
+        height = 8
+    )
+    print(".")
+    ggsave(
+        plot = medical_history_plots,
+        fig_path(paste0(prefix, "_medical_history_plots.png"), TRUE),
+        width = 12,
+        height = 6
+    )
 }
