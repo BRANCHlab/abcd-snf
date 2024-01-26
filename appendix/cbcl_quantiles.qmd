@@ -110,6 +110,25 @@ all_cbcl <- na.omit(all_cbcl)
 
 colnames(all_cbcl) <- gsub("cbcl_scr_syn_", "", colnames(all_cbcl))
 
+
+all_cbcl_t_dfs <- list()
+for (i in 1:length(scales)) {
+    scale <- scales[[i]]
+    cbcl_df <- get_cbcl_syndrome_scale(
+        syndrome = scale,
+        mh_p_cbcl,
+        raw = FALSE,
+        t = 0
+    )
+    all_cbcl_t_dfs[[i]] <- cbcl_df
+}
+all_cbcl_t <- merge_df_list(all_cbcl_t_dfs)
+all_cbcl_t <- dplyr::inner_join(all_cbcl_t, sex)
+all_cbcl_t <- dplyr::inner_join(all_cbcl_t, age)
+all_cbcl_t <- na.omit(all_cbcl_t)
+colnames(all_cbcl_t) <- gsub("cbcl_scr_syn_", "", colnames(all_cbcl_t))
+
+
 nrow(all_cbcl) # n = 11856
 
 # All differences by sex
@@ -246,6 +265,23 @@ m_minus_f_df
 ## Sex and age adjusted CBCL scores
 
 ```{r}
+library(ggplot2)
 
+all_cbcl |> colnames()
+all_cbcl_t |> colnames()
+
+all_cbcl_t_and_r <- dplyr::inner_join(all_cbcl, all_cbcl_t) |>
+    na.omit()
+
+
+all_cbcl_t_and_r |> colnames()
+
+all_cbcl_t_and_r |>
+    ggplot(
+        aes(
+            x = anxdep_r,
+            y = anxdep_t
+        )
+    ) + 
+    geom_point(size = 5)
 ```
-
