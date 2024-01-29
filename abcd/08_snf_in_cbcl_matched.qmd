@@ -16,34 +16,34 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subjects <- read_csv(sub_path("2023_11_07_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2023_11_07_uninjured_subjects.csv"))
-cbcl_matched_uninjured <- read_csv(sub_path("2024_01_23_cbcl_matched_uninjured.csv"))
+mtbi_subjects <- read_csv(sub_path("2024_01_28_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_01_28_uninjured_subjects.csv"))
+cbcl_matched_uninjured <- read_csv(sub_path("2024_01_29_cbcl_matched_uninjured.csv"))
 ```
 
 ## Loading data and out of model lists
 
 ```{r}
-data_list_cmu1 <- list.load(input_path("2024_01_23_data_list_cmu1.rds"))
-data_list_cmu2 <- list.load(input_path("2024_01_23_data_list_cmu2.rds"))
-data_list_cmu3 <- list.load(input_path("2024_01_23_data_list_cmu3.rds"))
-data_list_cmu4 <- list.load(input_path("2024_01_23_data_list_cmu4.rds"))
-data_list_cmu5 <- list.load(input_path("2024_01_23_data_list_cmu5.rds"))
-data_list_cmpu1 <- list.load(input_path("2024_01_23_data_list_cmpu1.rds"))
-data_list_cmpu2 <- list.load(input_path("2024_01_23_data_list_cmpu2.rds"))
-data_list_cmpu3 <- list.load(input_path("2024_01_23_data_list_cmpu3.rds"))
-data_list_cmpu4 <- list.load(input_path("2024_01_23_data_list_cmpu4.rds"))
-data_list_cmpu5 <- list.load(input_path("2024_01_23_data_list_cmpu5.rds"))
-oom_list_cmu1 <- list.load(input_path("2024_01_23_oom_list_cmu1.rds"))
-oom_list_cmu2 <- list.load(input_path("2024_01_23_oom_list_cmu2.rds"))
-oom_list_cmu3 <- list.load(input_path("2024_01_23_oom_list_cmu3.rds"))
-oom_list_cmu4 <- list.load(input_path("2024_01_23_oom_list_cmu4.rds"))
-oom_list_cmu5 <- list.load(input_path("2024_01_23_oom_list_cmu5.rds"))
-oom_list_cmpu1 <- list.load(input_path("2024_01_23_oom_list_cmpu1.rds"))
-oom_list_cmpu2 <- list.load(input_path("2024_01_23_oom_list_cmpu2.rds"))
-oom_list_cmpu3 <- list.load(input_path("2024_01_23_oom_list_cmpu3.rds"))
-oom_list_cmpu4 <- list.load(input_path("2024_01_23_oom_list_cmpu4.rds"))
-oom_list_cmpu5 <- list.load(input_path("2024_01_23_oom_list_cmpu5.rds"))
+data_list_cmu1 <- list.load(input_path("2024_01_29_data_list_cmu1.rds"))
+data_list_cmu2 <- list.load(input_path("2024_01_29_data_list_cmu2.rds"))
+data_list_cmu3 <- list.load(input_path("2024_01_29_data_list_cmu3.rds"))
+data_list_cmu4 <- list.load(input_path("2024_01_29_data_list_cmu4.rds"))
+data_list_cmu5 <- list.load(input_path("2024_01_29_data_list_cmu5.rds"))
+data_list_cmpu1 <- list.load(input_path("2024_01_29_data_list_cmpu1.rds"))
+data_list_cmpu2 <- list.load(input_path("2024_01_29_data_list_cmpu2.rds"))
+data_list_cmpu3 <- list.load(input_path("2024_01_29_data_list_cmpu3.rds"))
+data_list_cmpu4 <- list.load(input_path("2024_01_29_data_list_cmpu4.rds"))
+data_list_cmpu5 <- list.load(input_path("2024_01_29_data_list_cmpu5.rds"))
+oom_list_cmu1 <- list.load(input_path("2024_01_29_oom_list_cmu1.rds"))
+oom_list_cmu2 <- list.load(input_path("2024_01_29_oom_list_cmu2.rds"))
+oom_list_cmu3 <- list.load(input_path("2024_01_29_oom_list_cmu3.rds"))
+oom_list_cmu4 <- list.load(input_path("2024_01_29_oom_list_cmu4.rds"))
+oom_list_cmu5 <- list.load(input_path("2024_01_29_oom_list_cmu5.rds"))
+oom_list_cmpu1 <- list.load(input_path("2024_01_29_oom_list_cmpu1.rds"))
+oom_list_cmpu2 <- list.load(input_path("2024_01_29_oom_list_cmpu2.rds"))
+oom_list_cmpu3 <- list.load(input_path("2024_01_29_oom_list_cmpu3.rds"))
+oom_list_cmpu4 <- list.load(input_path("2024_01_29_oom_list_cmpu4.rds"))
+oom_list_cmpu5 <- list.load(input_path("2024_01_29_oom_list_cmpu5.rds"))
 ```
 
 ## Generating custom distance measures
@@ -67,16 +67,19 @@ summarize_distance_metrics_list(my_distance_metrics)
 ## Re-importing the settings matrix
 
 ```{r}
+
 settings_matrix <- read_csv(
     proc_path(
-        "2024_01_15_settings_matrix_mu.csv"
+        "2024_01_29_settings_matrix_mu.csv"
     )
 )
+
 ```
 
 ## SNF for each of the imputations
 
 ```{r}
+
 # Uninjured only imputed
 # Imputation 1
 start <- proc.time()
@@ -200,23 +203,22 @@ progressr::with_progress({
 })
 proc.time() - start
 write_csv(solutions_matrix_cmpu5, proc_path("solutions_matrix_cmpu5.csv", TRUE))
-```
 
-HERE I AM
+```
 
 ## Re-importing the generated solutions
 
 ```{r}
-solutions_matrix_cmu1 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmu1.csv"))
-solutions_matrix_cmu2 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmu2.csv"))
-solutions_matrix_cmu3 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmu3.csv"))
-solutions_matrix_cmu4 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmu4.csv"))
-solutions_matrix_cmu5 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmu5.csv"))
-solutions_matrix_cmpu1 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmpu1.csv"))
-solutions_matrix_cmpu2 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmpu2.csv"))
-solutions_matrix_cmpu3 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmpu3.csv"))
-solutions_matrix_cmpu4 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmpu4.csv"))
-solutions_matrix_cmpu5 <- read_csv(proc_path("2024_01_23_solutions_matrix_cmpu5.csv"))
+solutions_matrix_cmu1 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmu1.csv"))
+solutions_matrix_cmu2 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmu2.csv"))
+solutions_matrix_cmu3 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmu3.csv"))
+solutions_matrix_cmu4 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmu4.csv"))
+solutions_matrix_cmu5 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmu5.csv"))
+solutions_matrix_cmpu1 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmpu1.csv"))
+solutions_matrix_cmpu2 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmpu2.csv"))
+solutions_matrix_cmpu3 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmpu3.csv"))
+solutions_matrix_cmpu4 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmpu4.csv"))
+solutions_matrix_cmpu5 <- read_csv(proc_path("2024_01_29_solutions_matrix_cmpu5.csv"))
 
 all_cmu_imputations <- do.call(
     "rbind",
@@ -269,19 +271,19 @@ write_csv(
 ## Re-importing the ARIs
 
 ```{r}
-aris_cmu1 <- read_csv(proc_path("2024_01_23_aris_cmu1.csv")) |> as.matrix()
-aris_cmu2 <- read_csv(proc_path("2024_01_23_aris_cmu2.csv")) |> as.matrix()
-aris_cmu3 <- read_csv(proc_path("2024_01_23_aris_cmu3.csv")) |> as.matrix()
-aris_cmu4 <- read_csv(proc_path("2024_01_23_aris_cmu4.csv")) |> as.matrix()
-aris_cmu5 <- read_csv(proc_path("2024_01_23_aris_cmu5.csv")) |> as.matrix()
-aris_cmpu1 <- read_csv(proc_path("2024_01_23_aris_cmpu1.csv")) |> as.matrix()
-aris_cmpu2 <- read_csv(proc_path("2024_01_23_aris_cmpu2.csv")) |> as.matrix()
-aris_cmpu3 <- read_csv(proc_path("2024_01_23_aris_cmpu3.csv")) |> as.matrix()
-aris_cmpu4 <- read_csv(proc_path("2024_01_23_aris_cmpu4.csv")) |> as.matrix()
-aris_cmpu5 <- read_csv(proc_path("2024_01_23_aris_cmpu5.csv")) |> as.matrix()
+aris_cmu1 <- read_csv(proc_path("2024_01_29_aris_cmu1.csv")) |> as.matrix()
+aris_cmu2 <- read_csv(proc_path("2024_01_29_aris_cmu2.csv")) |> as.matrix()
+aris_cmu3 <- read_csv(proc_path("2024_01_29_aris_cmu3.csv")) |> as.matrix()
+aris_cmu4 <- read_csv(proc_path("2024_01_29_aris_cmu4.csv")) |> as.matrix()
+aris_cmu5 <- read_csv(proc_path("2024_01_29_aris_cmu5.csv")) |> as.matrix()
+aris_cmpu1 <- read_csv(proc_path("2024_01_29_aris_cmpu1.csv")) |> as.matrix()
+aris_cmpu2 <- read_csv(proc_path("2024_01_29_aris_cmpu2.csv")) |> as.matrix()
+aris_cmpu3 <- read_csv(proc_path("2024_01_29_aris_cmpu3.csv")) |> as.matrix()
+aris_cmpu4 <- read_csv(proc_path("2024_01_29_aris_cmpu4.csv")) |> as.matrix()
+aris_cmpu5 <- read_csv(proc_path("2024_01_29_aris_cmpu5.csv")) |> as.matrix()
 
 aris_all_cmu_imputations <- read_csv(
-    proc_path("2024_01_23_aris_all_cmu_imputations.csv")
+    proc_path("2024_01_29_aris_all_cmu_imputations.csv")
 ) |>
     as.matrix()
 ```

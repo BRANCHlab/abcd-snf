@@ -220,8 +220,6 @@ write_csv(solutions_matrix_pm5, proc_path("solutions_matrix_pm5.csv", TRUE))
 
 ## Re-importing the generated solutions
 
-Here I am - 2024_01_28
-
 ```{r}
 solutions_matrix_m1 <- read_csv(proc_path("2024_01_28_solutions_matrix_m1.csv"))
 solutions_matrix_m2 <- read_csv(proc_path("2024_01_28_solutions_matrix_m2.csv"))
@@ -290,9 +288,10 @@ progressr::with_progress({
     aris_pm5 <- calc_om_aris(solutions_matrix_pm5, progress = TRUE)
 })
 write_csv(data.frame(aris_pm5), proc_path("aris_pm5.csv", TRUE))
-progressr::with_progress({
-    aris_all_mtbi_imputations <- calc_om_aris(all_mtbi_imputations, progress = TRUE)
-})
+
+
+aris_all_mtbi_imputations <- calc_om_aris(all_mtbi_imputations)
+
 write_csv(
     data.frame(aris_all_mtbi_imputations),
     proc_path("aris_all_mtbi_imputations.csv", TRUE)
@@ -315,7 +314,7 @@ aris_pm4 <- read_csv(proc_path("2024_01_15_aris_pm4.csv")) |> as.matrix()
 aris_pm5 <- read_csv(proc_path("2024_01_15_aris_pm5.csv")) |> as.matrix()
 
 aris_all_mtbi_imputations <- read_csv(
-    proc_path("2024_01_15_aris_all_mtbi_imputations.csv")
+    proc_path("2024_01_29_aris_all_mtbi_imputations.csv")
 ) |>
     as.matrix()
 ```
@@ -349,7 +348,7 @@ write_csv(
 
 ```{r}
 aris_all_mtbi_imputations_order <- unlist(
-    read_csv(proc_path("2024_01_15_aris_all_mtbi_imputations_order.csv"))
+    read_csv(proc_path("2024_01_29_aris_all_mtbi_imputations_order.csv"))
 )
 
 names(aris_all_mtbi_imputations_order) <- NULL
@@ -391,10 +390,6 @@ write_csv(
     proc_path("full_mtbi_extended_solutions_matrix.csv", TRUE)
 )
 
-full_extended_solutions_matrix <- read_csv(
-    proc_path("2024_01_24_full_mtbi_extended_solutions_matrix.csv")
-)
-
 pval_select <- function(extended_solutions_matrix,
                         keep_summary = TRUE,
                         negative_log = FALSE,
@@ -423,8 +418,22 @@ pval_select <- function(extended_solutions_matrix,
             pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
         }
     }
+    if (max(pval_df) == Inf) {
+        all_pvals <- pval_df |>
+            dplyr::select(-row_id) |>
+            unlist() |>
+            as.numeric() |>
+            unique() |>
+            sort()
+        max_pval <- all_pvals[length(all_pvals) - 1]
+        pval_df[pval_df == Inf] <- max_pval
+    }
     return(pval_df)
 }
+
+full_extended_solutions_matrix <- read_csv(
+    proc_path("2024_01_29_full_mtbi_extended_solutions_matrix.csv")
+)
 
 full_oom_pvals <- pval_select(
     full_extended_solutions_matrix,
@@ -506,7 +515,6 @@ grDevices::png(
 )
 aris_all_mtbi_imputations_annotated_heatmap
 grDevices::dev.off()
-
 ```
 
 ## Identifying meta clusters
@@ -603,6 +611,9 @@ aamio <- aris_all_mtbi_imputations_order
 mc_f <- aris_all_mtbi_imputations[aamio, aamio]
 mc_f <- mc_f[1441:2000, 1441:2000]
 
+split_vec_f <- c(
+    168, 336, 438, 513
+)
 aris_all_mtbi_mc_f_chopped_heatmap <- similarity_matrix_heatmap(
     mc_f,
     cluster_rows = FALSE,
@@ -618,34 +629,14 @@ aris_all_mtbi_mc_f_chopped_heatmap <- similarity_matrix_heatmap(
     row_split = paste0(
         "F-",
         split_at(
-            vector = c(
-                78,
-                253,
-                290,
-                336,
-                400,
-                438,
-                462,
-                496,
-                513
-            ),
+            vector = split_vec_f,
             nrow = nrow(mc_f)
         )
     ),
     column_split = paste0(
         "F-",
         split_at(
-            vector = c(
-                78,
-                253,
-                290,
-                336,
-                400,
-                438,
-                462,
-                496,
-                513
-            ),
+            vector = split_vec_f,
             nrow = nrow(mc_f)
         )
     )
@@ -673,16 +664,11 @@ mc_reordered_indices <- list(
     "C" = c(807, 956),
     "D" = c(957, 1227),
     "E" = c(1228, 1441),
-    "F-A" = c(1442, 1442 + 78),
-    "F-B" = c(1442 + 79, 1442 + 253),
-    "F-C" = c(1442 + 254, 1442 + 290),
-    "F-D" = c(1442 + 291, 1442 + 336),
-    "F-E" = c(1442 + 337, 1442 + 400),
-    "F-F" = c(1442 + 401, 1442 + 438),
-    "F-G" = c(1442 + 439, 1442 + 462),
-    "F-H" = c(1442 + 463, 1442 + 496),
-    "F-I" = c(1442 + 497, 1442 + 513),
-    "F-J" = c(1442 + 514, 2000)
+    "F-A" = c(1442, 1442 + 168),
+    "F-B" = c(1442 + 169, 1442 + 336),
+    "F-C" = c(1442 + 337, 1442 + 438),
+    "F-D" = c(1442 + 439, 1442 + 513),
+    "F-E" = c(1442 + 514, 2000)
 )
 
 mc_reordered_labels <- split_at(
@@ -692,14 +678,9 @@ mc_reordered_labels <- split_at(
         956,
         1227,
         1441,
-        1442 + 78,
-        1442 + 253,
-        1442 + 290,
+        1442 + 168,
         1442 + 336,
-        1442 + 400,
         1442 + 438,
-        1442 + 462,
-        1442 + 496,
         1442 + 513
     ),
     2000
@@ -709,11 +690,6 @@ mc_reordered_labels <- gsub("G", "F-B", mc_reordered_labels)
 mc_reordered_labels <- gsub("H", "F-C", mc_reordered_labels)
 mc_reordered_labels <- gsub("I", "F-D", mc_reordered_labels)
 mc_reordered_labels <- gsub("J", "F-E", mc_reordered_labels)
-mc_reordered_labels <- gsub("K", "F-F", mc_reordered_labels)
-mc_reordered_labels <- gsub("L", "F-G", mc_reordered_labels)
-mc_reordered_labels <- gsub("M", "F-H", mc_reordered_labels)
-mc_reordered_labels <- gsub("N", "F-I", mc_reordered_labels)
-mc_reordered_labels <- gsub("O", "F-J", mc_reordered_labels)
 
 names(aris_all_mtbi_imputations_order) <- mc_reordered_labels
 
@@ -731,7 +707,7 @@ write_csv(
 
 full_input_characterization_m1 <- read_csv(
     proc_path(
-        "2024_01_18_full_input_characterization_m1.csv"
+        "2024_01_29_full_input_characterization_m1.csv"
     )
 )
 
@@ -886,7 +862,7 @@ all_mtbi_imputations_f_mc_associations <- manhattan_plot(
     threshold = 0.05,
     bonferroni_line = FALSE,
     data_list = data_list_m1,
-    mc_labels = c("F-A", "F-C", "F-E", "F-F", "F-J")
+    mc_labels = c("F-A", "F-B", "F-C", "F-D", "F-E")
 )
 
 all_mtbi_imputations_f_mc_associations
@@ -911,7 +887,6 @@ ggsave(
     height = 20
 )
 
-
 # Bulk export each MC individually
 for (mc in names(mc_reordered_indices)) {
     mc_plot <- manhattan_plot(
@@ -934,3 +909,5 @@ for (mc in names(mc_reordered_indices)) {
     )
 }
 ```
+
+Here i am!
