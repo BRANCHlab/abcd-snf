@@ -326,7 +326,7 @@ write_csv(
 
 ```{r}
 aris_all_uninjured_imputations_order <- unlist(
-    read_csv(proc_path("2024_01_20_aris_all_uninjured_imputations_order.csv"))
+    read_csv(proc_path("2024_01_30_aris_all_uninjured_imputations_order.csv"))
 )
 
 names(aris_all_uninjured_imputations_order) <- NULL
@@ -369,39 +369,8 @@ write_csv(
 )
 
 full_extended_solutions_matrix <- read_csv(
-    proc_path("2024_01_24_full_uninjured_extended_solutions_matrix.csv")
+    proc_path("2024_01_30_full_uninjured_extended_solutions_matrix.csv")
 )
-
-pval_select <- function(extended_solutions_matrix,
-                        keep_summary = TRUE,
-                        negative_log = FALSE,
-                        recalculate_summary = TRUE) {
-    pval_df <- extended_solutions_matrix |>
-        dplyr::select(
-            "row_id",
-            dplyr::ends_with("_p"),
-            dplyr::contains("p_val")
-        ) |>
-        data.frame() |>
-        metasnf::numcol_to_numeric()
-    if (!keep_summary) {
-        pval_df <- pval_df |>
-            dplyr::select(-c("min_p_val", "mean_p_val"))
-    }
-    if (negative_log) {
-        neg_log_pval_df <- -log(pval_df)
-        neg_log_pval_df$"row_id" <- pval_df$"row_id"
-        pval_df <- neg_log_pval_df
-        if (recalculate_summary) {
-            mini_df <- pval_df |> dplyr::select(
-                dplyr::ends_with("_p")
-            )
-            pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
-            pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
-        }
-    }
-    return(pval_df)
-}
 
 full_oom_pvals <- pval_select(
     full_extended_solutions_matrix,
@@ -409,28 +378,6 @@ full_oom_pvals <- pval_select(
 )
 
 full_extended_solutions_matrix$"mean_neglog_p" <- full_oom_pvals$"mean_neglog_p"
-
-divergent_colours <- function(column)  {
-    values <- unique(column)
-    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
-    names(colours) <- values
-    return(colours)
-}
-
-hm_colours <- function(data, max_red = TRUE) {
-    if (max_red) {
-        colours <- circlize::colorRamp2(
-            c(min(data), max(data)),
-            c("black", "red")
-        )
-    } else {
-        colours <- circlize::colorRamp2(
-            c(min(data), max(data)),
-            c("red", "black")
-        )
-    }
-    return(colours)
-}
 
 aris_all_uninjured_imputations_annotated_heatmap <- similarity_matrix_heatmap(
     aris_all_uninjured_imputations,
@@ -477,8 +424,9 @@ aris_all_uninjured_imputations_annotated_heatmap
 # PNG export
 grDevices::png(
     fig_path("aris_all_uninjured_imputations_annotated_heatmap.png", TRUE),
-    width = 2000,
-    height = 2000,
+    width = 3000,
+    height = 3000,
+    res = 300
 )
 aris_all_uninjured_imputations_annotated_heatmap
 grDevices::dev.off()
@@ -487,23 +435,11 @@ grDevices::dev.off()
 ## Identifying meta clusters
 
 ```{r}
-split_at <- function(vector, nrow) {
-    split_vec <- rep("A", nrow)
-    if (vector[length(vector)] != nrow) {
-        vector <- c(vector, nrow)
-    }
-    for (i in 1:(length(vector) - 1)) {
-        start <- vector[i]
-        end <- vector[i + 1]
-        split_vec[start:end] <- LETTERS[i + 1]
-    }
-    return(split_vec)
-}
-
 split_vector <- c(
-    813,
-    1180,
-    1466
+    734,
+    1062,
+    1178,
+    1686
 )
 aris_all_uninjured_imputations_chopped_heatmap <- similarity_matrix_heatmap(
     aris_all_uninjured_imputations,
@@ -558,64 +494,10 @@ aris_all_uninjured_imputations_chopped_heatmap
 grDevices::png(
     fig_path("aris_all_uninjured_imputations_chopped_heatmap.png", TRUE),
     width = 3000,
-    height = 2700,
+    height = 3000,
     res = 300
 )
 aris_all_uninjured_imputations_chopped_heatmap
-grDevices::dev.off()
-
-# A deeper zoom on the smaller heatmaps (manual inspection, trial and error)
-aauio <- aris_all_uninjured_imputations_order
-
-mc_d <- aris_all_uninjured_imputations[aauio, aauio]
-mc_d <- mc_d[1466:2000, 1466:2000]
-
-split_vector <- c(
-    89,
-    135,
-    201,
-    231,
-    325,
-    437,
-    510
-)
-aris_all_uninjured_mc_d_chopped_heatmap <- similarity_matrix_heatmap(
-    mc_d,
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    log_graph = FALSE,
-    scale_diag = "none",
-    heatmap_height = grid::unit(19, "cm"),
-    heatmap_width = grid::unit(19, "cm"),
-    col = circlize::colorRamp2(
-        c(min(aris_all_uninjured_imputations), max(aris_all_uninjured_imputations)),
-        c("navy", "red")
-    ),
-    row_split = paste0(
-        "D-",
-        split_at(
-            split_vector,
-            nrow = nrow(mc_d)
-        )
-    ),
-    column_split = paste0(
-        "D-",
-        split_at(
-            split_vector,
-            nrow = nrow(mc_d)
-        )
-    )
-)
-aris_all_uninjured_mc_d_chopped_heatmap
-
-# PNG export
-grDevices::png(
-    fig_path("aris_all_uninjured_mc_d_chopped_heatmap.png", TRUE),
-    width = 2500,
-    height = 2500,
-    res = 300
-)
-aris_all_uninjured_mc_d_chopped_heatmap
 grDevices::dev.off()
 ```
 
@@ -625,42 +507,22 @@ grDevices::dev.off()
 
 # Indices as they appear in the plots
 mc_reordered_indices <- list(
-    "A" = c(1, 813),
-    "B" = c(814, 1180),
-    "C" = c(1181, 1466),
-    "D-A" = c(1466, 1466 + 89),
-    "D-B" = c(1466 + 90, 1466 + 135),
-    "D-C" = c(1466 + 136, 1466 + 201),
-    "D-D" = c(1466 + 202, 1466 + 231),
-    "D-E" = c(1466 + 232, 1466 + 325),
-    "D-F" = c(1466 + 326, 1466 + 437),
-    "D-G" = c(1466 + 438, 1466 + 510),
-    "D-H" = c(1466 + 511, 2000)
+    "A" = c(1, 734),
+    "B" = c(735, 1062),
+    "C" = c(1063, 1178),
+    "D" = c(1179, 1686),
+    "E" = c(1687, 2000)
 )
 
 mc_reordered_labels <- split_at(
     c(
-        813,
-        1180,
-        1466,
-        1466 + 89,
-        1466 + 135,
-        1466 + 201,
-        1466 + 231,
-        1466 + 325,
-        1466 + 437,
-        1466 + 510
+        734,
+        1062,
+        1178,
+        1686
     ),
     2000
 )
-mc_reordered_labels <- gsub("D", "D-A", mc_reordered_labels)
-mc_reordered_labels <- gsub("E", "D-B", mc_reordered_labels)
-mc_reordered_labels <- gsub("F", "D-C", mc_reordered_labels)
-mc_reordered_labels <- gsub("G", "D-D", mc_reordered_labels)
-mc_reordered_labels <- gsub("H", "D-E", mc_reordered_labels)
-mc_reordered_labels <- gsub("I", "D-F", mc_reordered_labels)
-mc_reordered_labels <- gsub("J", "D-G", mc_reordered_labels)
-mc_reordered_labels <- gsub("K", "D-H", mc_reordered_labels)
 
 names(aris_all_uninjured_imputations_order) <- mc_reordered_labels
 
@@ -678,7 +540,7 @@ write_csv(
 
 full_input_characterization_mu1 <- read_csv(
     proc_path(
-        "2024_01_21_full_input_characterization_mu1.csv"
+        "2024_01_30_full_input_characterization_mu1.csv"
     )
 )
 
@@ -828,7 +690,7 @@ all_uninjured_imputations_main_mc_associations <- manhattan_plot(
     threshold = 0.05,
     bonferroni_line = FALSE,
     data_list = data_list_mu1,
-    mc_labels = c("A", "B", "C")
+    mc_labels = c("A", "B", "C", "E")
 )
 all_uninjured_imputations_main_mc_associations
 
@@ -837,36 +699,6 @@ ggsave(
     fig_path("all_uninjured_imputations_main_mc_associations.png", TRUE),
     width = 8,
     height = 7
-)
-
-all_uninjured_imputations_d_mc_associations <- manhattan_plot(
-    target_pvals,
-    threshold = 0.05,
-    bonferroni_line = FALSE,
-    data_list = data_list_mu1,
-    mc_labels = c("D-A", "D-B", "D-E", "D-G")
-)
-
-all_uninjured_imputations_d_mc_associations
-
-ggsave(
-    plot = all_uninjured_imputations_d_mc_associations,
-    fig_path("all_uninjured_imputations_d_mc_associations.png", TRUE),
-    width = 8,
-    height = 10
-)
-
-all_uninjured_imputations_all_mc_associations <- manhattan_plot(
-    target_pvals,
-    threshold = 0.05,
-    bonferroni_line = FALSE,
-    data_list = data_list_mu1
-)
-ggsave(
-    plot =  all_uninjured_imputations_all_mc_associations,
-    fig_path("all_uninjured_imputations_all_mc_associations.png", TRUE),
-    width = 8,
-    height = 20
 )
 
 # Bulk export each MC individually
@@ -890,4 +722,5 @@ for (mc in names(mc_reordered_indices)) {
         height = 3
     )
 }
+
 ```

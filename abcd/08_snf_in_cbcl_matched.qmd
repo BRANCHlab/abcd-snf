@@ -317,7 +317,7 @@ write_csv(
 
 ```{r}
 aris_all_cmu_imputations_order <- unlist(
-    read_csv(proc_path("2024_01_23_aris_all_cmu_imputations_order.csv"))
+    read_csv(proc_path("2024_01_30_aris_all_cmu_imputations_order.csv"))
 )
 
 names(aris_all_cmu_imputations_order) <- NULL
@@ -360,39 +360,8 @@ write_csv(
 )
 
 full_cmu_extended_solutions_matrix <- read_csv(
-    proc_path("2024_01_23_full_cmu_extended_solutions_matrix.csv")
+    proc_path("2024_01_30_full_cmu_extended_solutions_matrix.csv")
 )
-
-pval_select <- function(extended_solutions_matrix,
-                        keep_summary = TRUE,
-                        negative_log = FALSE,
-                        recalculate_summary = TRUE) {
-    pval_df <- extended_solutions_matrix |>
-        dplyr::select(
-            "row_id",
-            dplyr::ends_with("_p"),
-            dplyr::contains("p_val")
-        ) |>
-        data.frame() |>
-        metasnf::numcol_to_numeric()
-    if (!keep_summary) {
-        pval_df <- pval_df |>
-            dplyr::select(-c("min_p_val", "mean_p_val"))
-    }
-    if (negative_log) {
-        neg_log_pval_df <- -log(pval_df)
-        neg_log_pval_df$"row_id" <- pval_df$"row_id"
-        pval_df <- neg_log_pval_df
-        if (recalculate_summary) {
-            mini_df <- pval_df |> dplyr::select(
-                dplyr::ends_with("_p")
-            )
-            pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
-            pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
-        }
-    }
-    return(pval_df)
-}
 
 full_cmu_oom_pvals <- pval_select(
     full_cmu_extended_solutions_matrix,
@@ -401,28 +370,6 @@ full_cmu_oom_pvals <- pval_select(
 
 full_cmu_extended_solutions_matrix$"mean_neglog_p" <-
     full_cmu_oom_pvals$"mean_neglog_p"
-
-divergent_colours <- function(column)  {
-    values <- unique(column)
-    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
-    names(colours) <- values
-    return(colours)
-}
-
-hm_colours <- function(data, max_red = TRUE) {
-    if (max_red) {
-        colours <- circlize::colorRamp2(
-            c(min(data), max(data)),
-            c("black", "red")
-        )
-    } else {
-        colours <- circlize::colorRamp2(
-            c(min(data), max(data)),
-            c("red", "black")
-        )
-    }
-    return(colours)
-}
 
 aris_all_cmu_imputations_annotated_heatmap <- similarity_matrix_heatmap(
     aris_all_cmu_imputations,
@@ -474,35 +421,421 @@ aris_all_cmu_imputations_annotated_heatmap
 grDevices::png(
     fig_path("aris_all_cmu_imputations_annotated_heatmap.png", TRUE),
     width = 3000,
-    height = 2700,
+    height = 3000,
     res = 300
 )
 aris_all_cmu_imputations_annotated_heatmap
 grDevices::dev.off()
+
+```
+
+## Identifying meta clusters
+
+```{r}
+
+split_vector <- c(
+    435,
+    820,
+    1025,
+    1400,
+    1833
+)
+aris_all_cmu_imputations_chopped_heatmap <- similarity_matrix_heatmap(
+    aris_all_cmu_imputations,
+    order = aris_all_cmu_imputations_order,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    log_graph = FALSE,
+    data = full_cmu_extended_solutions_matrix,
+    top_hm = list(
+        "Scheme" = "snf_scheme",
+        "Impairment Separation" = "mean_neglog_p"
+    ),
+    left_hm = list(
+        "Pooled" = "pooled",
+        "Imputation" = "imputation"
+    ),
+    top_bar = list(
+        "Number of Clusters - 2" = "nclust2"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "Pooled" = c(
+            "yes" = "orange",
+            "no" = "purple"
+        ),
+        "Imputation" = divergent_colours(full_cmu_extended_solutions_matrix$"imputation"),
+        "Scheme" = c(
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
+        ),
+        "Impairment Separation" = hm_colours(full_cmu_extended_solutions_matrix$"mean_neglog_p")
+    ),
+    col = circlize::colorRamp2(
+        c(min(aris_all_cmu_imputations), max(aris_all_cmu_imputations)),
+        c("navy", "red")
+    ),
+    row_split = split_at(
+        vector = split_vector,
+        nrow = 2000
+    ),
+    column_split = split_at(
+        vector = split_vector,
+        nrow = 2000
+    )
+)
+aris_all_cmu_imputations_chopped_heatmap
+
+# PNG export
+grDevices::png(
+    fig_path("aris_all_cmu_imputations_chopped_heatmap.png", TRUE),
+    width = 3000,
+    height = 3000,
+    res = 300
+)
+aris_all_cmu_imputations_chopped_heatmap
+grDevices::dev.off()
+```
+
+## One-MC-at-a-time
+
+```{r}
+
+# Indices as they appear in the plots
+mc_reordered_indices <- list(
+    "A" = c(1, 435),
+    "B" = c(436, 820),
+    "C" = c(821, 1025),
+    "D" = c(1026, 1400),
+    "E" = c(1401, 1833),
+    "E" = c(1834, 2000)
+)
+
+mc_reordered_labels <- split_at(
+    c(
+        435,
+        820,
+        1025,
+        1400,
+        1833,
+        1686
+    ),
+    2000
+)
+
+names(aris_all_cmu_imputations_order) <- mc_reordered_labels
+
+cmu_sorted_mc_labels <- sort(aris_all_cmu_imputations_order)
+
+full_input_characterization_cmu1 <- extend_solutions(
+    full_cmu_solutions_matrix,
+    data_list_cmu1
+)
+
+write_csv(
+    full_input_characterization_cmu1,
+    proc_path("full_input_characterization_cmu1.csv", TRUE)
+)
+
+full_input_characterization_cmu1 <- read_csv(
+    proc_path(
+        "2024_01_30_full_input_characterization_cmu1.csv"
+    )
+)
+
+
+cmu_target_pvals <- full_input_characterization_cmu1 |>
+    p_val_select()
+cmu_target_pvals$"mc_label" <- names(cmu_sorted_mc_labels)
+
+# We are missing the acute symptoms here, but still want to match the colours
+# of the other plots
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+gg_color_hue(5)
+
+manhattan_plot <- function(data,
+                           key_mode = FALSE,
+                           threshold = NULL,
+                           bonferroni_line = FALSE,
+                           data_list,
+                           mc_labels = NULL) {
+    row_id <- ""
+    variable <- ""
+    pval <- ""
+    var_cols <- colnames(data)[endsWith(colnames(data), "_p")]
+    data[, var_cols] <- data[, var_cols] |>
+        apply(
+            MARGIN = 2,
+            FUN = function(x) {
+                -log10(x)
+                raw_p <- -log10(x)
+                new_x <- dplyr::case_when(
+                    raw_p > 5 ~ 5,
+                    raw_p > 4 ~ 4,
+                    raw_p > 3 ~ 3,
+                    raw_p > 2 ~ 2,
+                    raw_p > 1 ~ 1,
+                    raw_p > 0 ~ 0,
+                )
+                new_x
+            }
+        )
+    data$"row_id" <- factor(data$"row_id")
+    data$"mc_label" <- factor(data$"mc_label")
+    data <- data |>
+        tidyr::pivot_longer(
+            !(c(row_id, mc_label)),
+            names_to = "variable",
+            values_to = "pval"
+        ) |>
+        data.frame()
+    summary_data <- data |>
+        dplyr::group_by(
+            mc_label,
+            variable
+        ) |>
+        dplyr::summarize(
+            mean_p = mean(pval),
+            sd_p = sd(pval),
+            se_p = sd_p / sqrt(dplyr::n()),
+            .groups = "drop"
+        )
+    summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
+    ###########################################################################
+    # Merge the summmary plot with domain information from the data_list
+    ###########################################################################
+    dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    summary_data <- merge(
+        summary_data,
+        dl_metadata,
+        by.x = "variable",
+        by.y = "name",
+        all.x = TRUE
+    )
+    summary_data <- summary_data |> dplyr::arrange(domain)
+    summary_data$"variable" <- factor(
+        summary_data$"variable",
+        levels = unique(summary_data$"variable")
+    )
+    if (!is.null(mc_labels)) {
+        summary_data <- summary_data[summary_data$"mc_label" %in% mc_labels, ]
+        summary_data$"mc_label" <- factor(
+            summary_data$"mc_label",
+            levels = mc_labels
+        )
+    }
+    plot <- summary_data |>
+        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
+        ggplot2::geom_jitter(
+            mapping = ggplot2::aes(
+                group = domain,
+                x = variable,
+                y = mean_p,
+                colour = domain
+            ),
+            height = 0,
+            width = 0,
+            size = 5
+        ) +
+        ggplot2::labs(
+            x = "Variable",
+            y = expression("-log"[10]*"(p)"),
+            colour = "Domain"
+        ) +
+        ggplot2::ylim(-log10(0.05), 5) +
+        ggplot2::theme_bw() +
+        ggplot2::labs(y = "Discretized -log10(p)") +
+        ggplot2::scale_color_manual(
+            values = c("#A3A500", "#00BF7D", "#00B0F6", "#E76BF3")
+        ) +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(
+                angle = 90,
+                vjust = 0.5,
+                hjust = 1
+            ),
+            plot.title = ggplot2::element_text(hjust = 0.5)
+        )
+    plot <- plot + ggplot2::facet_grid(mc_label ~ .)
+    if (!is.null(threshold)) {
+        plot <- plot + ggplot2::geom_hline(
+            yintercept = -log10(threshold),
+            linetype = "dashed",
+            colour = "red"
+        )
+        if (bonferroni_line) {
+            plot <- plot + ggplot2::geom_hline(
+                yintercept = -log10(threshold / nrow(data)),
+                linetype = "dashed",
+                colour = "black"
+            )
+        }
+    } else if (bonferroni_line) {
+        stop(
+            "Please specify threshold p-value which will be used",
+            " for calculting the Bonferroni-corrected line."
+        )
+    }
+    return(plot)
+}
+
+library(ggplot2)
+# Here I am
+
+all_cmu_imputations_mc_associations <- manhattan_plot(
+    target_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = data_list_cmu1,
+    mc_labels = c("A", "B", "C", "E")
+)
+
+all_cmu_imputations_mc_associations
+
+ggsave(
+    plot = all_cmu_imputations_mc_associations,
+    fig_path("all_cmu_imputations_mc_associations.png", TRUE),
+    width = 8,
+    height = 7
+)
+
+# Bulk export each MC individually
+for (mc in names(mc_reordered_indices)) {
+    mc_plot <- manhattan_plot(
+        target_pvals,
+        threshold = 0.05,
+        bonferroni_line = FALSE,
+        data_list = data_list_cmu1,
+        mc_label = mc
+    )
+    mc_path <- paste0(
+        "all_cmu_imputations_mc_",
+        gsub("-", "_", tolower(mc)),
+        "_associations.png"
+    )
+    ggsave(
+        plot = mc_plot,
+        fig_path(mc_path, TRUE),
+        width = 10,
+        height = 3
+    )
+}
+```
+
+## Characterization
+
+```{r}
+full_cmu_extended_solutions_matrix <- read_csv(
+    proc_path("2024_01_30_full_cmu_extended_solutions_matrix.csv")
+)
+
+full_cmu_oom_pvals <- pval_select(
+    full_cmu_extended_solutions_matrix,
+    negative_log = TRUE
+)
+
+full_cmu_extended_solutions_matrix$"mean_neglog_p" <- full_cmu_oom_pvals$"mean_neglog_p"
+
+cmu_sm_order <- unlist(
+    read_csv(proc_path("2024_01_30_aris_all_cmu_imputations_order.csv"))
+)
+
+names(cmu_sm_order) <- NULL
+
+cmu_sorted_solutions_matrix <- full_cmu_extended_solutions_matrix[cmu_sm_order, ]
+
+cmu_mc_a_solutions <- cmu_sorted_solutions_matrix[1:435, ]
+cmu_mc_b_solutions <- cmu_sorted_solutions_matrix[436:820, ]
+cmu_mc_c_solutions <- cmu_sorted_solutions_matrix[821:1025, ]
+cmu_mc_d_solutions <- cmu_sorted_solutions_matrix[1026:1400, ]
+cmu_mc_e_solutions <- cmu_sorted_solutions_matrix[1401:1833, ]
+cmu_mc_f_solutions <- cmu_sorted_solutions_matrix[1834:2000, ]
+
+which(cmu_sorted_solutions_matrix$"row_id" == 85 & cmu_sorted_solutions_matrix$"imputation" == "u3")
+
+```
+
+### Setting up total data lists
+
+```{r}
+all_data_list_cmu1 <- c(data_list_cmu1, oom_list_cmu1)
+all_data_list_cmu2 <- c(data_list_cmu2, oom_list_cmu2)
+all_data_list_cmu3 <- c(data_list_cmu3, oom_list_cmu3)
+all_data_list_cmu4 <- c(data_list_cmu4, oom_list_cmu4)
+all_data_list_cmu5 <- c(data_list_cmu5, oom_list_cmu5)
+
+all_data_list_cmpu1 <- c(data_list_cmpu1, oom_list_cmpu1)
+all_data_list_cmpu2 <- c(data_list_cmpu2, oom_list_cmpu2)
+all_data_list_cmpu3 <- c(data_list_cmpu3, oom_list_cmpu3)
+all_data_list_cmpu4 <- c(data_list_cmpu4, oom_list_cmpu4)
+all_data_list_cmpu5 <- c(data_list_cmpu5, oom_list_cmpu5)
+```
+
+### Matched control MC C
+
+```{r}
+
+row <- nrow(cmu_mc_c_solutions) %/% 2
+cmu_mc_c_solution <- cmu_mc_c_solutions[row, ]
+cmu_mc_c_solution$"imputation"
+
+cmu_mc_c_plots <- characterize_solution(
+    cmu_mc_c_solution,
+    all_data_list_cmu5,
+    "cmu_mc_c"
+)
+save_plot_list_uninj(cmu_mc_c_plots, "cmu_mc_c")
+
 ```
 
 ## Optimal 3-cluster solution
+
+This solution is also from MC C
 
 ```{r}
 
 cmu_3c_solutions <- full_cmu_extended_solutions_matrix |>
     dplyr::filter(nclust == 3)
-
 top_ind <- cmu_3c_solutions$"mean_neglog_p" == max(cmu_3c_solutions$"mean_neglog_p")
-
 top_cmu_3c_solution <- cmu_3c_solutions[top_ind, ]
+row <- nrow(top_cmu_3c_solution) %/% 2
+top_cmu_3c_solution <- top_cmu_3c_solution[row, ]
+top_cmu_3c_solution$"imputation"
+top_cmu_3c_solution$"row_id" #85
 
-top_cmu_3c_solution
+get_clusters(top_cmu_3c_solution)
 
-all_data_list_cmu1 <- c(data_list_cmu1, oom_list_cmu1)
+# Restructuring so that the cluster label is the same 
+
+for (i in 1:ncol(top_cmu_3c_solution)) {
+    cname <- colnames(top_cmu_3c_solution)[i]
+    if (grepl("subject_", cname)) {
+        if (top_cmu_3c_solution[1, cname] == 1) {
+            top_cmu_3c_solution[1, cname] <- 2
+        } else if (top_cmu_3c_solution[1, cname] == 2) {
+            top_cmu_3c_solution[1, cname] <- 3
+        } else if (top_cmu_3c_solution[1, cname] == 3) {
+            top_cmu_3c_solution[1, cname] <- 1
+        }
+    }
+}
+
+get_clusters(top_cmu_3c_solution)
 
 cmu_3c_plots <- characterize_solution(
     top_cmu_3c_solution,
-    all_data_list_cmu1,
+    all_data_list_cmu3,
     "cmu_top_3c"
 )
+save_plot_list_uninj(cmu_3c_plots, "cmu_top_3c")
 
-save_plot_list(cmu_3c_plots, "cmu_top_3c")
 ```
 
 Looks much closer to the mTBI group.
+I can follow this up with some permutation testing to examine differences between the two groups.

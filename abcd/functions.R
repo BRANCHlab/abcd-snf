@@ -152,6 +152,16 @@ pval_select <- function(extended_solutions_matrix,
             pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
         }
     }
+    if (max(pval_df) == Inf) {
+        all_pvals <- pval_df |>
+            dplyr::select(-row_id) |>
+            unlist() |>
+            as.numeric() |>
+            unique() |>
+            sort()
+        max_pval <- all_pvals[length(all_pvals) - 1]
+        pval_df[pval_df == Inf] <- max_pval
+    }
     return(pval_df)
 }
 
@@ -306,6 +316,42 @@ bar_plot <- function(df, feature) {
         )
     return(plot)
 }
+
+divergent_colours <- function(column)  {
+    values <- unique(column)
+    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
+    names(colours) <- values
+    return(colours)
+}
+
+hm_colours <- function(data, max_red = TRUE) {
+    if (max_red) {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("black", "red")
+        )
+    } else {
+        colours <- circlize::colorRamp2(
+            c(min(data), max(data)),
+            c("red", "black")
+        )
+    }
+    return(colours)
+}
+
+split_at <- function(vector, nrow) {
+    split_vec <- rep("A", nrow)
+    if (vector[length(vector)] != nrow) {
+        vector <- c(vector, nrow)
+    }
+    for (i in 1:(length(vector) - 1)) {
+        start <- vector[i]
+        end <- vector[i + 1]
+        split_vec[start:end] <- LETTERS[i + 1]
+    }
+    return(split_vec)
+}
+
 
 characterize_solution <- function(solution,
                                   data_list,
