@@ -14,8 +14,6 @@ library(metasnf)
 library(progressr)
 library(rlist)
 library(ggplot2)
-#library(patchwork)
-#library(ggsignif)
 
 source(here("abcd/functions.R"))
 
@@ -33,12 +31,11 @@ mtbi_test <- read_csv(sub_path("2024_01_28_mtbi_subjects_test.csv"))
 # Importing the top mTBI solution and held out subjects
 
 ```{r}
-
 top_mc_b_solution <- read_csv(proc_path("2024_01_30_top_mc_b_solution.csv"))
-
 ```
 
 ```{r}
+
 data_list_m1 <- list.load(input_path("2024_01_28_data_list_m1.rds"))
 data_list_m2 <- list.load(input_path("2024_01_28_data_list_m2.rds"))
 data_list_m3 <- list.load(input_path("2024_01_28_data_list_m3.rds"))
@@ -64,7 +61,34 @@ full_oom_list_m5 <- list.load(input_path("2024_01_31_full_oom_list_m5.rds"))
 ```
 
 ```{r}
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+)
 
-propagated_labels <- lp_row(top_row, full_data_list)
+set.seed(42)
+propagated_labels <- lp_solutions_matrix(
+    top_mc_b_solution,
+    full_data_list_m1,
+    distance_metrics_list = my_distance_metrics
+)
 
+propagated_labels
+
+write_csv(propagated_labels, proc_path("top_mc_b_propagated_labels.csv", TRUE))
+
+propagated_labels <- read_csv(
+    proc_path("2024_01_31_top_mc_b_propagated_labels.csv")
+)
+
+propagated_labels
 ```
+
+## Permutation testing
