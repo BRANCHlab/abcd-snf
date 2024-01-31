@@ -702,3 +702,39 @@ save_plot_list_uninj <- function(plot_list, prefix) {
         height = 6
     )
 }
+
+pull_imputed_vars <- function(original_df, imputed_df, partition = NULL) {
+    if (!is.null(partition)) {
+        original_rows <- nrow(original_df)
+        start <- original_rows * partition + 1
+        end <- original_rows * (partition + 1)
+        partitioned_df <- imputed_df[start:end, colnames(original_df)]
+        return(partitioned_df)
+    } else {
+        df <- imputed_df[, colnames(original_df)]
+        return(df)
+    }
+}
+
+rename_data_list <- function(data_list, name_mapping) {
+    data_list <- data_list |> lapply(
+        function(x) {
+            old_colnames <- colnames(x$"data")
+            new_colnames <- old_colnames |> lapply(
+                function(old_name) {
+                    if (old_name %in% name_mapping) {
+                        name_match <- which(name_mapping == old_name)
+                        new_name <- names(name_mapping)[name_match]
+                    } else {
+                        new_name <- old_name
+                    }
+                    return(new_name)
+                }
+            )
+            colnames(x$"data") <- new_colnames
+            return(x)
+        }
+    )
+    return(data_list)
+}
+
