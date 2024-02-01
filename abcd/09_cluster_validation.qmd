@@ -10,6 +10,7 @@ library(metasnf)
 library(progressr)
 library(rlist)
 library(ggplot2)
+library(patchwork)
 
 source(here("abcd/functions.R"))
 
@@ -27,6 +28,7 @@ mtbi_test <- read_csv(sub_path("2024_01_31_mtbi_subjects_test.csv"))
 ## Importing the top mTBI solution and held out subjects
 
 ```{r}
+
 top_mc_b_solution <- read_csv(proc_path("2024_01_30_top_mc_b_solution.csv"))
 
 data_list_m1 <- list.load(input_path("2024_01_28_data_list_m1.rds"))
@@ -84,7 +86,7 @@ propagated_labels <- read_csv(
 )
 ```
 
-## Permutation testing of label propagated results
+## Plots of associations for label propagation solution
 
 ```{r}
 
@@ -109,6 +111,156 @@ lp_data <- characterize_solution(
     data_list = c(test_data_list_m1, test_oom_list_m1),
     plotname = "label_prop",
     return_plots = FALSE
+)
+
+mock_test_solution <- tidyr::spread(
+    test_results,
+    key = subjectkey,
+    value = cluster
+)
+
+# New Label propagated
+lp_input_characterization <- extend_solutions(
+    mock_test_solution,
+    c(test_data_list_m1, test_oom_list_m1)
+)
+lp_input_characterization$"row_id" <- top_mc_b_solution$"row_id"
+lp_input_pvals <- p_val_select(lp_input_characterization)
+lp_input_pvals$"mc_label" <- "mTBI test"
+lp_input_pvals <- lp_input_pvals |>
+    dplyr::select(
+        -dplyr::contains("mtbi")
+    )
+test_oom_list_m1 <- test_oom_list_m1 |>
+    lapply(
+        function(x) {
+            if (x$"domain" == "B") {
+                x$"domain" <- "!B"
+            }
+            if (x$"domain" == "S") {
+                x$"domain" <- "!S"
+            }
+            return(x)
+        }
+    )
+
+# Original mTBI
+top_mc_b_solution <- read_csv(proc_path("2024_01_30_top_mc_b_solution.csv"))
+top_mc_b_characterization <- extend_solutions(
+    top_mc_b_solution,
+    c(data_list_m1, oom_list_m1)
+)
+top_mc_b_characterization$"row_id" <- top_mc_b_solution$"row_id"
+top_mc_b_pvals <- p_val_select(top_mc_b_characterization)
+top_mc_b_pvals$"mc_label" <- "mTBI train"
+top_mc_b_pvals <- top_mc_b_pvals |>
+    dplyr::select(
+        -dplyr::starts_with("mean"),
+        -dplyr::contains("mtbi")
+    )
+oom_list_m1 <- oom_list_m1 |>
+    lapply(
+        function(x) {
+            if (x$"domain" == "B") {
+                x$"domain" <- "!B"
+            }
+            if (x$"domain" == "S") {
+                x$"domain" <- "!S"
+            }
+            return(x)
+        }
+    )
+
+# Outcome matched uninjured
+top_cmu_3c_solution <- read_csv(proc_path("2024_02_01_top_cmu_3c_solution"))
+data_list_cmu3 <- list.load(input_path("2024_01_29_data_list_cmu3.rds"))
+oom_list_cmu3 <- list.load(input_path("2024_01_29_oom_list_cmu3.rds"))
+top_cmu_3c_characterization <- extend_solutions(
+    top_cmu_3c_solution,
+    c(data_list_cmu3) # it already has the cbcl/sds pvalues
+)
+top_cmu_3c_characterization$"row_id" <- top_cmu_3c_solution$"row_id"
+top_cmu_3c_pvals <- p_val_select(top_cmu_3c_characterization) 
+top_cmu_3c_pvals$"mc_label" <- "Demo/CBCL/SDS Matched"
+top_cmu_3c_pvals <- top_cmu_3c_pvals |>
+    dplyr::select(-dplyr::starts_with("mean"))
+# Rename the CBCL domains to put them last
+oom_list_cmu3 <- oom_list_cmu3 |>
+    lapply(
+        function(x) {
+            if (x$"domain" == "B") {
+                x$"domain" <- "!B"
+            }
+            if (x$"domain" == "S") {
+                x$"domain" <- "!S"
+            }
+            return(x)
+        }
+    )
+
+mtbi_contrast_associations <- manhattan_plot(
+    top_mc_b_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = c(data_list_m1, oom_list_m1)
+)
+mtbi_contrast_associations
+
+cmu_contrast_associations <- manhattan_plot(
+    top_cmu_3c_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = c(data_list_cmu3, oom_list_cmu3)
+)
+cmu_contrast_associations
+
+lp_contrast_associations <- manhattan_plot(
+    lp_input_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = c(test_data_list_m1, test_oom_list_m1)
+)
+lp_contrast_associations
+
+significance_vector <- function(p_val_df) {
+    p_vals <- p_val_df |>
+        dplyr::select(dplyr::ends_with("_p"))
+    print(p_vals)
+    sig_vec <- p_vals[1, ] > 0.05 |>
+        unlist() |>
+        as.vector() |>
+        as.numeric()
+    sig_vec <- ifelse(sig_vec, "black", "red")
+    return(sig_vec)
+}
+
+mtbi_colours <- significance_vector(top_mc_b_pvals)
+cmu_colours <- significance_vector(top_cmu_3c_pvals)
+lp_colours <- significance_vector(lp_input_pvals)
+
+colour_text <- function(associations, sig_vec) {
+    order <- paste0(associations$"data"$"variable", "_p")
+    sig_vec <- sig_vec[, order]
+    associations <- associations +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(
+                colour = sig_vec
+            )
+        )
+    return(associations)
+}
+
+full_plot <-
+    colour_text(cmu_contrast_associations, cmu_colours) /
+    colour_text(mtbi_contrast_associations, mtbi_colours) /
+    colour_text(lp_contrast_associations, lp_colours)
+
+full_plot
+
+ggsave(
+    plot = full_plot,
+    fig_path("full_contrast_associations.png", TRUE),
+    height = 15
 )
 
 ```

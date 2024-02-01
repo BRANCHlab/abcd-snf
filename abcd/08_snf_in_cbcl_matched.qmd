@@ -440,6 +440,7 @@ split_vector <- c(
     1400,
     1833
 )
+
 aris_all_cmu_imputations_chopped_heatmap <- similarity_matrix_heatmap(
     aris_all_cmu_imputations,
     order = aris_all_cmu_imputations_order,
@@ -545,7 +546,6 @@ full_input_characterization_cmu1 <- read_csv(
         "2024_01_30_full_input_characterization_cmu1.csv"
     )
 )
-
 
 cmu_target_pvals <- full_input_characterization_cmu1 |>
     p_val_select()
@@ -809,6 +809,8 @@ top_cmu_3c_solution <- top_cmu_3c_solution[row, ]
 top_cmu_3c_solution$"imputation"
 top_cmu_3c_solution$"row_id" #85
 
+write_csv(top_cmu_3c_solution, proc_path("top_cmu_3c_solution", TRUE))
+
 get_clusters(top_cmu_3c_solution)
 
 # Restructuring so that the cluster label is the same 
@@ -834,6 +836,39 @@ cmu_3c_plots <- characterize_solution(
     "cmu_top_3c"
 )
 save_plot_list_uninj(cmu_3c_plots, "cmu_top_3c")
+
+
+cmu_3c_characterization <- extend_solutions(
+    top_cmu_3c_solution,
+    data_list_cmu3
+)
+cmu_3c_pvals <- p_val_select(cmu_3c_characterization)
+cmu_3c_pvals$"row_id" <- top_cmu_3c_solution$"row_id"
+cmu_3c_pvals$"mc_label" <- "CMU-C"
+
+cmu_3c_pvals <- cmu_3c_pvals |>
+    dplyr::select(
+        -dplyr::starts_with("cbcl"),
+        -dplyr::starts_with("sds"),
+        -dplyr::starts_with("mean")
+    )
+
+cmu_3c_associations <- manhattan_plot(
+    cmu_3c_pvals,
+    threshold = 0.05,
+    bonferroni_line = FALSE,
+    data_list = data_list_cmu3,
+    colours = c("#A3A500", "#00BF7D", "#00B0F6", "#E76BF3")
+)
+
+cmu_3c_associations
+
+ggsave(
+    plot = cmu_3c_associations,
+    fig_path("top_cmu_3c_associations.png", TRUE),
+    width = 10,
+    height = 3
+)
 
 ```
 
