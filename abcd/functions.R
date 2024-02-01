@@ -274,6 +274,10 @@ jitter_plot <- function(df, feature) {
 }
 
 bar_plot <- function(df, feature) {
+    cluster <- ""
+    keycol <- ""
+    percent <- ""
+    n <- ""
     df <- df |>
         dplyr::rename("keycol" = !!feature) |>
         dplyr::select(cluster, keycol) |>
@@ -352,13 +356,18 @@ split_at <- function(vector, nrow) {
     return(split_vec)
 }
 
-
-characterize_solution <- function(solution,
+characterize_solution <- function(solution = NULL,
+                                  cluster_df = NULL,
                                   data_list,
                                   plotname,
-                                  return_plot = TRUE) {
+                                  return_plots = TRUE) {
+    solution <- data.frame(solution)
     # Generating the required full dataframe
-    cluster_df <- metasnf::get_cluster_df(solution)
+    if (is.null(cluster_df)) {
+        cluster_df <- metasnf::get_cluster_df(solution)
+    } else {
+        cluster_df <- data.frame(cluster_df)
+    }
     data_df <- metasnf::collapse_dl(data_list)
     full_data <- dplyr::inner_join(cluster_df, data_df, by = "subjectkey")
     full_data$"cluster" <- factor(full_data$"cluster")
@@ -367,16 +376,15 @@ characterize_solution <- function(solution,
     full_data$"sex"[full_data$"sex" == 1] <- "M"
     full_data$"race"[full_data$"race" == 0] <- "White"
     full_data$"race"[full_data$"race" == 1] <- "Non-White"
-    if (return_plot == FALSE) {
+    if (return_plots == FALSE) {
         return(full_data)
     }
-    # Identifying features to plot 
+    # Identifying features to plot
     features <- colnames(full_data)[3:length(colnames(full_data))]
     plot_list <- list()
-    for (i in 1:length(features)) {
+    for (i in seq_along(features)) {
         feature <- features[[i]]
         feature_col <- full_data[, feature]
-        nvals <- length(unique(feature_col))
         if (is.numeric(feature_col)) {
             plot <- jitter_plot(full_data, feature)
         } else {
@@ -738,3 +746,92 @@ rename_data_list <- function(data_list, name_mapping) {
     return(data_list)
 }
 
+effect_size_raw <- function(x1, x2) {
+    n1 <- length(x1)
+    n2 <- length(x2)
+    s1 <- sd(x1)
+    s2 <- sd(x2)
+    s <- pooled_sd(n1, s1, n2, s2)
+    mean1 <- mean(x1)
+    mean2 <- mean(x2)
+    d <- cohens_d(mean1, mean2, s)
+    return(d)
+}
+
+pooled_sd <- function(n1, s1, n2, s2) {
+    numerator <- ((n1 - 1) * (s1^2)) + ((n2 - 1) * (s2^2))
+    denominator <- n1 + n2 - 2
+    s <- sqrt(numerator / denominator)
+    return(s)
+}
+
+cohens_d <- function(mean1, mean2, pooled_sd) {
+    d <- (mean1 - mean2) / pooled_sd
+    return(d)
+}
+
+tstat <- function(d, n1, n2) {
+    t <- d * sqrt((n1 * n2) / (n1 + n2))
+    return(t)
+}
+
+es_bound <- function(d, n1, n2) {
+    t <- tstat(d, n1, n2)
+    es_data <- compute.es::tes(
+        t = t,
+        n.1 = n1,
+        n.2 = n2,
+        verbose = FALSE
+    )
+    return(
+        list(
+            "lower" = es_data$"l.d",
+            "upper" = es_data$"u.d"
+        )
+    )
+}
+
+cluster_t_test <- function(data, main_group, ref_group, var) {
+    x1 <- data[data$"cluster" %in% main_group, var] |>
+        unlist() |>
+        as.numeric()
+    x2 <- data[data$"cluster" %in% ref_group, var] |>
+        unlist() |>
+        as.numeric()
+    p_val <- t.test(
+        x1,
+        x2,
+        alternative = "two.sided",
+        var.equal = FALSE,
+        conf.level = 0.95
+    )$"p.value"
+    return(p_val)
+}
+
+cluster_d <- function(data, main_group, ref_group, var) {
+    x1 <- data[data$"cluster" %in% main_group, var] |>
+        unlist() |>
+        as.numeric()
+    x2 <- data[data$"cluster" %in% ref_group, var] |>
+        unlist() |>
+        as.numeric()
+    sp <- pooled_sd(
+        length(x1),
+        sd(x1),
+        length(x2),
+        sd(x2)
+    )
+    d <- cohens_d(
+        mean(x1),
+        mean(x2),
+        sp
+    )
+    bounds <- es_bound(
+        d,
+        length(x1),
+        length(x2)
+    )
+    results <- c(d, bounds$"lower", bounds$"upper")
+    names(results) <- c("d", "lower", "upper")
+    return(results)
+}

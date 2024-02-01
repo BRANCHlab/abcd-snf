@@ -1,9 +1,5 @@
 # Validation of Clustering Results
 
-## Label propagation
-
-Here, I check to see if the key inferences observed in the top mTBI cluster still persist when propagated to a held out subset of patients.
-
 ## Importing packages and establishing file paths
 
 ```{r}
@@ -23,18 +19,15 @@ fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 mtbi_subjects <- read_csv(sub_path("2024_01_28_mtbi_subjects.csv"))
-mtbi_train <- read_csv(sub_path("2024_01_28_mtbi_subjects_train.csv"))
-mtbi_test <- read_csv(sub_path("2024_01_28_mtbi_subjects_test.csv"))
+mtbi_train <- read_csv(sub_path("2024_01_31_mtbi_subjects_train.csv"))
+mtbi_test <- read_csv(sub_path("2024_01_31_mtbi_subjects_test.csv"))
 
 ```
 
-# Importing the top mTBI solution and held out subjects
+## Importing the top mTBI solution and held out subjects
 
 ```{r}
 top_mc_b_solution <- read_csv(proc_path("2024_01_30_top_mc_b_solution.csv"))
-```
-
-```{r}
 
 data_list_m1 <- list.load(input_path("2024_01_28_data_list_m1.rds"))
 data_list_m2 <- list.load(input_path("2024_01_28_data_list_m2.rds"))
@@ -60,6 +53,10 @@ full_oom_list_m5 <- list.load(input_path("2024_01_31_full_oom_list_m5.rds"))
 
 ```
 
+## Label propagation
+
+Here, I check to see if the key inferences observed in the top mTBI cluster still persist when propagated to a held out subset of patients.
+
 ```{r}
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -80,15 +77,38 @@ propagated_labels <- lp_solutions_matrix(
     distance_metrics_list = my_distance_metrics
 )
 
-propagated_labels
-
 write_csv(propagated_labels, proc_path("top_mc_b_propagated_labels.csv", TRUE))
 
 propagated_labels <- read_csv(
     proc_path("2024_01_31_top_mc_b_propagated_labels.csv")
 )
-
-propagated_labels
 ```
 
-## Permutation testing
+## Permutation testing of label propagated results
+
+```{r}
+
+test_data_list_m1 <- list.load(input_path("2024_01_31_test_data_list_m1.rds"))
+test_oom_list_m1 <- list.load(input_path("2024_01_31_test_oom_list_m1.rds"))
+
+test_results <- propagated_labels |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
+colnames(test_results) <- c("subjectkey", "cluster")
+
+lp_plots <- characterize_solution(
+    cluster_df = test_results,
+    data_list = c(test_data_list_m1, test_oom_list_m1),
+    plotname = "label_prop"
+)
+
+save_plot_list(lp_plots, "lp_mtbi_mc_b")
+
+lp_data <- characterize_solution(
+    cluster_df = test_results,
+    data_list = c(test_data_list_m1, test_oom_list_m1),
+    plotname = "label_prop",
+    return_plots = FALSE
+)
+
+```

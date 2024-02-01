@@ -140,6 +140,15 @@ mc_a_solution <- mc_a_solutions[250, ]
 mc_a_solution$"imputation"
 
 mc_a_plots <- characterize_solution(
+    solution = mc_a_solution,
+    data_list = all_data_list_pm5,
+    plotname = "mtbi_mc_a",
+    return_plots = FALSE
+)
+
+mc_a_plots |> head()
+
+mc_a_plots <- characterize_solution(
     mc_a_solution,
     all_data_list_pm5,
     "mtbi_mc_a"
@@ -174,6 +183,68 @@ mc_b_plots <- characterize_solution(
 )
 
 save_plot_list(mc_b_plots, "mtbi_mc_b")
+
+mc_b_data <- characterize_solution(
+    solution = top_mc_b_solution,
+    data_list = all_data_list_m1,
+    plotname = "mtbi_mc_b",
+    return_plots = FALSE
+)
+
+write_csv(mc_b_data, proc_path("top_mc_b_data.csv", TRUE))
+
+mc_b_data <- read_csv(proc_path("2024_01_31_top_mc_b_data.csv"))
+
+mc_b_data$"cluster" |> table()
+
+colnames(mc_b_data)
+
+mc_b_data <- mc_b_data |>
+    dplyr::mutate(
+        avg_cbcl =
+            (cbcl_anxdep +
+            cbcl_withdep +
+            cbcl_somatic +
+            cbcl_social +
+            cbcl_thought +
+            cbcl_attention +
+            cbcl_rulebreak +
+            cbcl_aggressive) / 8
+    )
+
+mc_b_data <- mc_b_data |>
+    dplyr::mutate(
+        avg_parent_psych = (
+            parent_aggressive +
+            parent_perstr +
+            parent_anxdep +
+            parent_withdrawn +
+            parent_somatic +
+            parent_thought +
+            parent_attention +
+            parent_aggressive +
+            parent_intrusive +
+            parent_depress +
+            parent_anxdisord +
+            parent_avoidant +
+            parent_antisocial +
+            parent_hyperactive
+        ) / 8
+    )
+
+
+colnames(mc_b_data)[grepl("parent", colnames(mc_b_data))]
+
+cluster_d(mc_b_data, 1, c(2, 3), "total_cbcl")
+
+cluster_d(mc_b_data, 1, c(2, 3), "sds_sleep")
+
+cluster_d(mc_b_data, 1, c(2, 3), "household_income")
+
+cluster_d(mc_b_data, 1, c(2, 3), "avg_parent_psych")
+
+
+
 ```
 
 Based on the plots, MC B can be characterized as follows:
