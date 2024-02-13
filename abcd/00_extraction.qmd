@@ -285,7 +285,8 @@ Demographic variables included in the analyses are:
 d_interview_age_mtbi <- get_interview_age(
     abcd_y_lt,
     mtbi_subjects,
-    t = 0
+    t = 0,
+    as_years = FALSE
 )
 
 write_csv(
@@ -296,7 +297,8 @@ write_csv(
 d_interview_age_uninj <- get_interview_age(
     abcd_y_lt,
     uninjured_subjects,
-    t = 0
+    t = 0,
+    as_years = FALSE
 )
 
 write_csv(
@@ -308,7 +310,13 @@ write_csv(
 #### Injury age
 
 ```{r}
-d_mtbi_age_mtbi <- get_mtbi_age(ph_p_otbi, abcd_y_lt, mtbi_subjects, t = 0)
+d_mtbi_age_mtbi <- get_mtbi_age(
+    ph_p_otbi,
+    abcd_y_lt,
+    mtbi_subjects,
+    t = 0,
+    as_years = FALSE
+)
 
 write_csv(
     d_mtbi_age_mtbi,
@@ -365,176 +373,20 @@ write_csv(
 #### Race
 
 ```{r}
-
-abcd_p_demo$"race_ethnicity"
-
-race_data <- abcd_p_demo |>
-    dplyr::select(
-        "subjectkey",
-        "demo_ethn_v2",
-        "demo_race_a_p___10", # white
-        "demo_race_a_p___11", # black/african american
-        "demo_race_a_p___12", # american indian
-        "demo_race_a_p___13", # alaskan native
-        "demo_race_a_p___14", # native hawaiian
-        "demo_race_a_p___15", # guamanian
-        "demo_race_a_p___16", # samoan
-        "demo_race_a_p___17", # other pacific islander
-        "demo_race_a_p___18", # asian indian
-        "demo_race_a_p___19", # chinese
-        "demo_race_a_p___20", # filipino
-        "demo_race_a_p___21", # japanese
-        "demo_race_a_p___22", # korean
-        "demo_race_a_p___23", # vietnamese
-        "demo_race_a_p___24", # other asian
-        "demo_race_a_p___25", # other race
-        "demo_race_a_p___99", # refuse to answer
-        "demo_race_a_p___77"  # don't know
-    )
-
-# This approach will preserve NAs
-race_data$"white" <- ifelse(
-    race_data$"demo_race_a_p___10" == 1,
-    yes = 1, no = 0
-)
-
-race_data$"black" <- ifelse(
-    race_data$"demo_race_a_p___11" == 1,
-    yes = 1, no = 0
-)
-
-race_data$"asian" <- ifelse(
-    race_data$"demo_race_a_p___18" == 1 |
-    race_data$"demo_race_a_p___19" == 1 |
-    race_data$"demo_race_a_p___20" == 1 |
-    race_data$"demo_race_a_p___21" == 1 |
-    race_data$"demo_race_a_p___22" == 1 |
-    race_data$"demo_race_a_p___23" == 1 |
-    race_data$"demo_race_a_p___24" == 1,
-    yes = 1, no = 0
-)
-
-# american indian / alaskan native
-race_data$"aian" <- ifelse(
-    race_data$"demo_race_a_p___12" == 1 |
-    race_data$"demo_race_a_p___13" == 1,
-    yes = 1, no = 0
-)
-
-# native hawaiian / pacific islander
-race_data$"nhpi" <- ifelse(
-    race_data$"demo_race_a_p___14" == 1 |
-    race_data$"demo_race_a_p___15" == 1 |
-    race_data$"demo_race_a_p___16" == 1 |
-    race_data$"demo_race_a_p___17" == 1,
-    yes = 1, no = 0
-)
-
-# hispanic
-race_data$"hispanic" <- ifelse(
-    race_data$"demo_ethn_v2" == 1,
-    yes = 1, no = 0
-)
-
-# other races
-race_data$"oth" <- ifelse(
-    race_data$"demo_race_a_p___25" == 1,
-    yes = 1, no = 0
-)
-
-race_data$"race_eth" <- NA
-race_data$"race_eth"[race_data$"white" == 1] <- 1 # non-hispanic white
-race_data$"race_eth"[race_data$"black" == 1] <- 2 # non-hispanic black
-race_data$"race_eth"[race_data$"aian" == 1] <- 5 # am. indian, al. native
-race_data$"race_eth"[race_data$"nhpi" == 1] <- 6 # nat. hawaii, pac. isl
-race_data$"race_eth"[race_data$"asian" == 1] <- 4 # asian
-race_data$"race_eth"[race_data$"other" == 1] <- 8 # other
-race_data$"race_eth"[race_data$"demo_race_a_p___77" == 1] <- NA # don't know
-race_data$"race_eth"[race_data$"demo_race_a_p___99" == 1] <- NA # no answer
-
-race_data$"race_eth"[race_data$"mixed" == 1] <- NA # no answer
-
-race_data
-
-race_data
-
-race_data <- race_data |>
-    dplyr::select(
-        "subjectkey",
-        "white",
-        "black",
-        "asian",
-        "aian",
-        "nhpi",
-        "oth"
-    )
-
-race_data$"count" <- race_data$"white" +
-    race_data$"black" +
-    race_data$"asian" +
-    race_data$"aian" +
-    race_data$"nhpi" +
-    race_data$"oth"
-
-race_data$"mixed" <- ifelse(
-    race_data$"count" > 1,
-    yes = 1, no = 0
-)
-
 d_race_mtbi <- get_race(
     abcd_p_demo,
     mtbi_subjects,
-    "condensed_undummied",
     t = 0
 )
-
-race_data <- race_data |>
-    dplyr::select(
-        "white",
-        "black",
-        "asian",
-        "aian",
-        "nhpi",
-        "oth"
-    )
-
-race_data[is.na(race_data)] <- 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-head(race_data)
-
-
-
-
-
 
 write_csv(
     d_race_mtbi,
     input_path("d_race_mtbi.csv", TRUE)
 )
 
-
 d_race_uninj <- get_race(
     abcd_p_demo,
     uninjured_subjects,
-    "condensed_undummied",
     t = 0
 )
 

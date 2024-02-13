@@ -243,7 +243,7 @@ jitter_plot <- function(df, feature) {
                 y = keycol,
                 color = cluster
             )
-        ) + 
+        ) +
         geom_violin(
             alpha = 0.4
         ) +
@@ -722,6 +722,14 @@ pull_imputed_vars <- function(original_df, imputed_df, partition = NULL) {
         df <- imputed_df[, colnames(original_df)]
         return(df)
     }
+}
+
+pick_imputation <- function(df, n_sets, set) {
+    rows <- nrow(df)
+    rows_per_set <- rows / n_sets
+    end <- rows_per_set * set
+    start <- end - rows_per_set + 1
+    return(df[start:end, ])
 }
 
 rename_data_list <- function(data_list, name_mapping) {
