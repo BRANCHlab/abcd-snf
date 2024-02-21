@@ -858,7 +858,6 @@ manhattan_plot <- function(data,
     mean_p <- ""
     mc_label <- ""
     sd_p <- ""
-    print(5)
     var_cols <- colnames(data)[endsWith(colnames(data), "_p")]
     data[, var_cols] <- data[, var_cols] |>
         apply(
@@ -922,7 +921,6 @@ manhattan_plot <- function(data,
             levels = mc_labels
         )
     }
-    print(summary_data)
     plot <- summary_data |>
         ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
         ggplot2::geom_jitter(
