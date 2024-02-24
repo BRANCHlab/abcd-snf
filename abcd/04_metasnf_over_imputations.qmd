@@ -384,6 +384,38 @@ write_csv(
 )
 ```
 
+```{r}
+
+
+mini1 <- extend_solutions(
+    full_solutions_matrix[1:3, ],
+    oom_list_m1,
+    verbose = TRUE
+)
+
+mini2 <- extend_solutions(
+    full_solutions_matrix[1:3, ],
+    oom_list_m1,
+    verbose = TRUE
+)
+
+identical(mini1, mini2)
+
+df
+
+identical(mini1, mini2)
+
+p_columns <- grep("_p$", names(mini1), value = TRUE)
+
+mini1[p_columns][mini1[p_columns] < 0.05] <- 0.05
+
+mini1
+
+
+z <- pval_summaries(mini2)
+
+```
+
 HERE
 
 Re-reading the extended solutions matrices
@@ -404,46 +436,34 @@ full_mtbi_io_extended_solutions_matrix |> colnames()
 
 full_mtbi_io_extended_solutions_matrix[1:5, ]
 
-pval_select <- function(extended_solutions_matrix,
-                        negative_log = FALSE,
-                        recalculate_summary = TRUE) {
-    # Select p-value columns and convert to numeric
-    pval_df <- extended_solutions_matrix |>
-        dplyr::select(
-            "row_id",
-            dplyr::ends_with("_p"),
-            dplyr::contains("p_val")
-        ) |>
-        data.frame() |>
-        metasnf::numcol_to_numeric()
-    # Replace infinite p-values with the highest non-infinite p-value
-    pval_df[pval_df < 1e-10] <- 1e-10
-    #if (max(pval_df) == Inf) {
-    #    all_pvals <- pval_df |>
-    #        dplyr::select(-row_id) |>
-    #        unlist() |>
-    #        as.numeric() |>
-    #        unique() |>
-    #        sort()
-    #    max_pval <- all_pvals[length(all_pvals) - 1]
-    #    pval_df[pval_df == Inf] <- max_pval
-    #}
-    # Convert p-values to negative log p-values
-    if (negative_log) {
-        # Remove summary columns from non-negative log p-value calculations
-        pval_df <- dplyr::select(pval_df, -c("min_p_val", "mean_p_val"))
-        # Negative log conversions
-        neg_log_pval_df <- -log(pval_df)
-        neg_log_pval_df$"row_id" <- pval_df$"row_id"
-        pval_df <- neg_log_pval_df
-        mini_df <- pval_df |> dplyr::select(
-            dplyr::ends_with("_p")
-        )
-    }
-    pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
-    pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
-    return(pval_df)
-}
+#pval_select <- function(extended_solutions_matrix,
+#                        negative_log = FALSE) {
+#    # Select p-value columns and convert to numeric
+#    pval_df <- extended_solutions_matrix |>
+#        dplyr::select(
+#            "row_id",
+#            dplyr::ends_with("_p"),
+#            dplyr::contains("p_val")
+#        ) |>
+#        data.frame() |>
+#        metasnf::numcol_to_numeric()
+#    # Convert p-values to negative log p-values if requested
+#    if (negative_log) {
+#        # Remove summary columns from non-negative log p-value calculations
+#        pval_df <- dplyr::select(pval_df, -c("min_p_val", "mean_p_val"))
+#        # Negative log conversions
+#        neg_log_pval_df <- -log(pval_df)
+#        neg_log_pval_df$"row_id" <- pval_df$"row_id"
+#        pval_df <- neg_log_pval_df
+#        mini_df <- pval_df |> dplyr::select(
+#            dplyr::ends_with("_p")
+#        )
+#        pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
+#        pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
+#    }
+#    return(pval_df)
+#}
+
 full_oom_pvals <- pval_select(
     full_mtbi_io_extended_solutions_matrix,
     negative_log = TRUE
