@@ -124,47 +124,6 @@ save_png <- function(heatmap, path, width, height, res = 300) {
     )
 }
 
-pval_select <- function(extended_solutions_matrix,
-                        keep_summary = TRUE,
-                        negative_log = FALSE,
-                        recalculate_summary = TRUE) {
-    pval_df <- extended_solutions_matrix |>
-        dplyr::select(
-            "row_id",
-            dplyr::ends_with("_p"),
-            dplyr::contains("p_val")
-        ) |>
-        data.frame() |>
-        metasnf::numcol_to_numeric()
-    if (!keep_summary) {
-        pval_df <- pval_df |>
-            dplyr::select(-c("min_p_val", "mean_p_val"))
-    }
-    if (negative_log) {
-        neg_log_pval_df <- -log(pval_df)
-        neg_log_pval_df$"row_id" <- pval_df$"row_id"
-        pval_df <- neg_log_pval_df
-        if (recalculate_summary) {
-            mini_df <- pval_df |> dplyr::select(
-                dplyr::ends_with("_p")
-            )
-            pval_df$"mean_neglog_p" <- apply(mini_df, 1, FUN = mean)
-            pval_df$"max_neglog_p" <- apply(mini_df, 1, FUN = max)
-        }
-    }
-    if (max(pval_df) == Inf) {
-        all_pvals <- pval_df |>
-            dplyr::select(-row_id) |>
-            unlist() |>
-            as.numeric() |>
-            unique() |>
-            sort()
-        max_pval <- all_pvals[length(all_pvals) - 1]
-        pval_df[pval_df == Inf] <- max_pval
-    }
-    return(pval_df)
-}
-
 title_case <- function(string) {
     words <- strsplit(string, "_")[[1]]
     words <- sapply(
@@ -948,7 +907,8 @@ manhattan_plot <- function(data,
                 vjust = 0.5,
                 hjust = 1
             ),
-            plot.title = ggplot2::element_text(hjust = 0.5)
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            text = element_text(size = 20)
         )
     if (!is.null(colours)) {
         plot <- plot + ggplot2::scale_colour_manual(values = colours)
