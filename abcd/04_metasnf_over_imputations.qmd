@@ -361,11 +361,42 @@ full_solutions_matrix <- cbind(all_mtbi_imputations, imputation_labels)
 
 full_solutions_matrix$"nclust2" <- full_solutions_matrix$"nclust" - 2
 
-full_mtbi_io_extended_solutions_matrix <- extend_solutions(
-    full_solutions_matrix,
+z <- extend_solutions(
+    full_solutions_matrix[1:3, ],
     target_list = c(data_list_m1, oom_list_m1),
-    verbose = TRUE
+    verbose = TRUE,
+    min_pval = 1e-10
 )
+
+pval_cols <- z[, endsWith(colnames(z), "_p")]
+
+pval_cols[pval_cols < 1e-10]
+
+pval_cols
+
+
+
+ncol(z)
+
+my_df <- z[1:3, 400:410]
+
+z[1:3, 400:410] |>
+    numcol_to_numeric() |>
+    dplyr::mutate(
+        dplyr::across(
+            dplyr::ends_with("_p"),
+            ~ ifelse(
+                . < 1e-10,
+                999,
+                .
+            )
+        )
+    )
+
+
+pval_summaries(z)$"sex_p" < 1e-10
+
+full_mtbi_io_extended_solutions_matrix
 
 write_csv(
     full_mtbi_io_extended_solutions_matrix,
@@ -375,7 +406,8 @@ write_csv(
 full_mtbi_o_extended_solutions_matrix <- extend_solutions(
     full_solutions_matrix,
     oom_list_m1,
-    verbose = TRUE
+    verbose = TRUE,
+    min_pval = 1e-10
 )
 
 write_csv(
