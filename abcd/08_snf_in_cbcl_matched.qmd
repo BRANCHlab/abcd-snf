@@ -627,9 +627,6 @@ for (mc in c("A", "B", "C", "D", "E")) {
 }
 ```
 
-End run here (2024-02-25 18:52)
-
-
 ## Replication in demographic-corrected data
 
 ```{r}
@@ -1027,9 +1024,6 @@ write_csv(
     solutions_matrix_no_demo_cmpu5,
     proc_path("solutions_matrix_no_demo_cmpu5.csv", TRUE)
 )
-###############################################################################
-# Here, 2024-02-25 19:00
-###############################################################################
 
 solutions_matrix_no_demo_cmu1 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu1.csv"))
 solutions_matrix_no_demo_cmu2 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu2.csv"))
@@ -1305,13 +1299,15 @@ grDevices::dev.off()
 ## Identifying meta clusters
 
 ```{r}
+
 split_vec = c(
     295,
     395,
     915,
     1020,
-    1350,
-    1400,
+    1255,
+    1345,
+    1405,
     1500
 )
 aris_all_cmu_imputations_chopped_heatmap_nd <- similarity_matrix_heatmap(
@@ -1381,9 +1377,9 @@ aris_all_cmu_imputations_chopped_heatmap_nd
 grDevices::dev.off()
 ```
 
-Am here 2024-02-25 23:24
-
 ## One-MC-at-a-time
+
+Candidate clusters here are A, B, D, F, and H
 
 ```{r}
 library(ggplot2)
@@ -1408,9 +1404,15 @@ oom_no_demo_cmu1_renamed <- oom_list_no_demo_cmu1 |> lapply(
 
 my_manhattan_plot <- function(solutions_matrix,
                               sorted_labels,
-                              mcs,
+                              mcs = NULL,
                               data_list,
                               colours) {
+    if (is.null(mcs)) {
+        mcs <- sorted_labels |>
+            names() |>
+            unique() |>
+            sort()
+    }
     target_pvals <- pval_select(solutions_matrix)
     target_pvals$"mc_label" <- names(sorted_labels)
     target_pvals <- dplyr::select(
@@ -1428,12 +1430,10 @@ my_manhattan_plot <- function(solutions_matrix,
     return(mc_associations)
 }
 
-# Candidates are A, B, C, D, E, F, H, J
-
 cmu_io_main_mc_associations_no_demo <- my_manhattan_plot(
     full_cmu_io_extended_solutions_matrix_no_demo,
     sorted_labels = sorted_mc_labels_no_demo,
-    mcs = c("A", "B", "C", "D", "E", "F", "G"),
+    mcs = c("A", "B", "D", "F", "H"),
     data_list = c(oom_no_demo_cmu1_renamed, dl_no_demo_cmu1_renamed),
     colours = c(
         "I-AS" = "#1B9E77",
@@ -1447,6 +1447,8 @@ cmu_io_main_mc_associations_no_demo <- my_manhattan_plot(
 )
 cmu_io_main_mc_associations_no_demo
 
+#F looks pretty good!
+
 ggsave(
     plot = cmu_io_main_mc_associations_no_demo,
     fig_path("cmu_io_main_mc_associations_no_demo.png", TRUE),
@@ -1455,7 +1457,7 @@ ggsave(
 )
 
 # Bulk export each MC individually
-for (mc in c("A", "B", "C", "D", "E", "F", "G")) {
+for (mc in c("A", "B", "C", "D", "E", "F", "G", "H", "I")) {
     print(mc)
     mc_plot <- my_manhattan_plot(
         full_cmu_io_extended_solutions_matrix_no_demo,
@@ -1485,29 +1487,6 @@ for (mc in c("A", "B", "C", "D", "E", "F", "G")) {
     )
 }
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
