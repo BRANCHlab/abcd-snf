@@ -935,3 +935,114 @@ manhattan_plot <- function(data,
     }
     return(plot)
 }
+
+my_similarity_matrix_heatmap <- function(aris,
+                                         aris_order,
+                                         extended_solutions,
+                                         split_vector) {
+    pvals <- pval_select(extended_solutions, negative_log = TRUE)
+    extended_solutions$"mean_neglog_p" <- pvals$"mean_neglog_p"
+    mc_heatmap <- similarity_matrix_heatmap(
+        aris,
+        order = aris_order,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        log_graph = FALSE,
+        data = extended_solutions,
+        top_hm = list(
+            "Scheme" = "snf_scheme",
+            "Impairment Separation" = "mean_neglog_p"
+        ),
+        left_hm = list(
+            "Pooled" = "pooled",
+            "Imputation" = "imputation"
+        ),
+        top_bar = list(
+            "Number of Clusters - 2" = "nclust2"
+        ),
+        scale_diag = "none",
+        heatmap_height = grid::unit(19, "cm"),
+        heatmap_width = grid::unit(19, "cm"),
+        annotation_colours = list(
+            "Pooled" = c(
+                "yes" = "orange",
+                "no" = "purple"
+            ),
+            "Imputation" = divergent_colours(
+                extended_solutions$"imputation"
+            ),
+            "Scheme" = c(
+                "1" = "#7FC97F",
+                "2" = "#BEAED4",
+                "3" = "#FDC086"
+            ),
+            "Impairment Separation" = hm_colours(
+                extended_solutions$"mean_neglog_p"
+            )
+        ),
+        col = circlize::colorRamp2(
+            c(min(aris), max(aris)),
+            c("navy", "red")
+        ),
+        row_split = split_at(
+            vector = split_vector,
+            nrow = 2000
+        ),
+        column_split = split_at(
+            vector = split_vector,
+            nrow = 2000
+        )
+    )
+    return(mc_heatmap)
+}
+
+my_manhattan_plot <- function(solutions_matrix,
+                              aris_order,
+                              split_vector,
+                              mcs = NULL,
+                              data_list,
+                              target_list,
+                              colours) {
+    # Managing the MC labels
+    reordered_labels <- split_at(split_vector, 2000)
+    names(aris_order) <- reordered_labels
+    sorted_labels <- sort(aris_order)
+    # Reformatting the data lists to pull names
+    data_list_renamed <- data_list |> lapply(
+        function(x) {
+            x$"domain" <- paste0("I-", x$"domain")
+            return(x)
+        }
+    )
+    target_list_renamed <- target_list |> lapply(
+        function(x) {
+            x$"domain" <- paste0("O-", x$"domain")
+            return(x)
+        }
+    )
+    data_list <- c(data_list_renamed, target_list_renamed)
+    # Extract p-values
+    target_pvals <- pval_select(solutions_matrix)
+    target_pvals$"mc_label" <- names(sorted_labels)
+    target_pvals <- dplyr::select(
+        target_pvals,
+        -dplyr::starts_with(c("mean", "min"))
+    )
+    # Assign all MCs if none specified
+    if (is.null(mcs)) {
+        mcs <- sorted_labels |>
+            names() |>
+            unique() |>
+            sort()
+    }
+    # Main call to manhattan plot
+    mc_associations <- manhattan_plot(
+        target_pvals,
+        threshold = 0.05,
+        bonferroni_line = FALSE,
+        data_list = data_list,
+        mc_labels = mcs,
+        colours = colours
+    )
+    return(mc_associations)
+}

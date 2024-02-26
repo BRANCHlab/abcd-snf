@@ -359,6 +359,7 @@ imputation_labels <- data.frame(
         rep("no", 1000)
     )
 )
+
 full_solutions_matrix <- cbind(all_uninjured_imputations, imputation_labels)
 full_solutions_matrix$"nclust2" <- full_solutions_matrix$"nclust" - 2
 
@@ -400,7 +401,9 @@ write_csv(
     full_mu_io_extended_solutions_matrix,
     proc_path("full_mu_io_extended_solutions_matrix.csv", TRUE)
 )
+```
 
+```{r}
 full_mu_o_extended_solutions_matrix <- read_csv(
     proc_path("2024_02_25_full_mu_o_extended_solutions_matrix.csv")
 )
@@ -408,200 +411,63 @@ full_mu_o_extended_solutions_matrix <- read_csv(
 full_mu_io_extended_solutions_matrix <- read_csv(
     proc_path("2024_02_25_full_mu_io_extended_solutions_matrix.csv")
 )
-
-full_o_oom_pvals <- pval_select(
-    full_mu_o_extended_solutions_matrix,
-    negative_log = TRUE
-)
-
-full_mu_o_extended_solutions_matrix$"mean_neglog_p" <-
-    full_o_oom_pvals$"mean_neglog_p"
-
-###############################################################################
-
-aris_all_uninjured_imputations_annotated_heatmap <- similarity_matrix_heatmap(
-    aris_all_uninjured_imputations,
-    order = aris_all_uninjured_imputations_order,
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    log_graph = FALSE,
-    data = data.frame(full_mu_o_extended_solutions_matrix),
-    top_hm = list(
-        "Scheme" = "snf_scheme",
-        "Impairment Separation" = "mean_neglog_p"
-    ),
-    left_hm = list(
-        "Pooled" = "pooled",
-        "Imputation" = "imputation"
-    ),
-    top_bar = list(
-        "Number of Clusters - 2" = "nclust2"
-    ),
-    scale_diag = "none",
-    heatmap_height = grid::unit(19, "cm"),
-    heatmap_width = grid::unit(19, "cm"),
-    annotation_colours = list(
-        "Pooled" = c(
-            "yes" = "orange",
-            "no" = "purple"
-        ),
-        "Imputation" = divergent_colours(
-            full_mu_o_extended_solutions_matrix$"imputation"
-        ),
-        "Scheme" = c(
-            "1" = "#7FC97F",
-            "2" = "#BEAED4",
-            "3" = "#FDC086"
-        ),
-        "Impairment Separation" = hm_colours(
-            full_mu_o_extended_solutions_matrix$"mean_neglog_p"
-        )
-    ),
-    col = circlize::colorRamp2(
-        c(
-            min(aris_all_uninjured_imputations),
-            max(aris_all_uninjured_imputations)
-        ),
-        c("navy", "red")
-    )
-)
-
-aris_all_uninjured_imputations_annotated_heatmap
-
-# PNG export
-grDevices::png(
-    fig_path("aris_all_uninjured_imputations_annotated_heatmap.png", TRUE),
-    width = 3000,
-    height = 3000,
-    res = 300
-)
-aris_all_uninjured_imputations_annotated_heatmap
-grDevices::dev.off()
 ```
-
-## Identifying meta clusters
 
 ```{r}
 
-split_vector <- c(
+split_vec <- c(
     682,
     1070,
     1555
 )
-aris_all_uninjured_imputations_chopped_heatmap <- similarity_matrix_heatmap(
-    aris_all_uninjured_imputations,
-    order = aris_all_uninjured_imputations_order,
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    log_graph = FALSE,
-    data = data.frame(full_mu_o_extended_solutions_matrix),
-    top_hm = list(
-        "Scheme" = "snf_scheme",
-        "Impairment Separation" = "mean_neglog_p"
-    ),
-    left_hm = list(
-        "Pooled" = "pooled",
-        "Imputation" = "imputation"
-    ),
-    top_bar = list(
-        "Number of Clusters - 2" = "nclust2"
-    ),
-    scale_diag = "none",
-    heatmap_height = grid::unit(19, "cm"),
-    heatmap_width = grid::unit(19, "cm"),
-    annotation_colours = list(
-        "Pooled" = c(
-            "yes" = "orange",
-            "no" = "purple"
-        ),
-        "Imputation" = divergent_colours(
-            full_mu_o_extended_solutions_matrix$"imputation"
-        ),
-        "Scheme" = c(
-            "1" = "#7FC97F",
-            "2" = "#BEAED4",
-            "3" = "#FDC086"
-        ),
-        "Impairment Separation" = hm_colours(
-            full_mu_o_extended_solutions_matrix$"mean_neglog_p"
-        )
-    ),
-    col = circlize::colorRamp2(
-        c(min(aris_all_uninjured_imputations), max(aris_all_uninjured_imputations)),
-        c("navy", "red")
-    ),
-    row_split = split_at(
-        vector = split_vector,
-        nrow = 2000
-    ),
-    column_split = split_at(
-        vector = split_vector,
-        nrow = 2000
-    )
+mu_mc_heatmap <- my_similarity_matrix_heatmap(
+    aris = aris_all_uninjured_imputations,
+    aris_order = aris_all_uninjured_imputations_order,
+    extended_solutions = full_mu_o_extended_solutions_matrix,
+    split_vector = split_vec
 )
-aris_all_uninjured_imputations_chopped_heatmap
+mu_mc_heatmap
 
 # PNG export
 grDevices::png(
-    fig_path("aris_all_uninjured_imputations_chopped_heatmap.png", TRUE),
+    fig_path("mu_mc_heatmap.png", TRUE),
     width = 3000,
     height = 3000,
     res = 300
 )
-aris_all_uninjured_imputations_chopped_heatmap
+mu_mc_heatmap
 grDevices::dev.off()
 ```
 
 ## One-MC-at-a-time
 
 ```{r}
-library(ggplot2)
+#library(ggplot2)
+#
+#mc_reordered_labels <- split_at(split_vector, 2000)
+#names(aris_all_uninjured_imputations_order) <- mc_reordered_labels
+#sorted_mc_labels <- sort(aris_all_uninjured_imputations_order)
+#
+#dl_mu1_renamed <- data_list_mu1 |> lapply(
+#    function(x) {
+#        x$"domain" <- paste0("I-", x$"domain")
+#        return(x)
+#    }
+#)
+#
+#oom_mu1_renamed <- oom_list_mu1 |> lapply(
+#    function(x) {
+#        x$"domain" <- paste0("O-", x$"domain")
+#        return(x)
+#    }
+#)
 
-mc_reordered_labels <- split_at(split_vector, 2000)
-names(aris_all_uninjured_imputations_order) <- mc_reordered_labels
-sorted_mc_labels <- sort(aris_all_uninjured_imputations_order)
-
-dl_mu1_renamed <- data_list_mu1 |> lapply(
-    function(x) {
-        x$"domain" <- paste0("I-", x$"domain")
-        return(x)
-    }
-)
-
-oom_mu1_renamed <- oom_list_mu1 |> lapply(
-    function(x) {
-        x$"domain" <- paste0("O-", x$"domain")
-        return(x)
-    }
-)
-
-my_manhattan_plot <- function(solutions_matrix,
-                              sorted_labels,
-                              mcs,
-                              data_list,
-                              colours) {
-    target_pvals <- pval_select(solutions_matrix)
-    target_pvals$"mc_label" <- names(sorted_labels)
-    target_pvals <- dplyr::select(
-        target_pvals,
-        -dplyr::starts_with(c("mean", "min"))
-    )
-    mc_associations <- manhattan_plot(
-        target_pvals,
-        threshold = 0.05,
-        bonferroni_line = FALSE,
-        data_list = data_list,
-        mc_labels = mcs,
-        colours = colours
-    )
-    return(mc_associations)
-}
-
-uninjured_io_all_mc_associations <- my_manhattan_plot(
-    full_mu_io_extended_solutions_matrix,
-    sorted_labels = sorted_mc_labels,
-    mcs = c("A", "B", "D"),
-    data_list = c(oom_mu1_renamed, dl_mu1_renamed),
+mu_mc_manhattan <- my_manhattan_plot(
+    solutions_matrix = full_mu_io_extended_solutions_matrix,
+    aris_order = aris_all_uninjured_imputations_order,
+    split_vector = split_vec,
+    data_list = data_list_mu1,
+    target_list = oom_list_mu1,
     colours = c(
         "I-D" = "#D95F02",
         "I-N" = "#7570B3",
@@ -611,23 +477,24 @@ uninjured_io_all_mc_associations <- my_manhattan_plot(
         "O-B" = "#A6761D"
     )
 )
-
-uninjured_io_all_mc_associations
+mu_mc_manhattan
 
 ggsave(
-    plot = uninjured_io_all_mc_associations,
-    fig_path("uninjured_io_all_mc_associations.png", TRUE),
+    plot = mu_mc_manhattan,
+    fig_path("mu_mc_manhattan.png", TRUE),
     width = 15,
-    height = 8
+    height = 4 * 2.5
 )
 
 # Bulk export each MC individually
 for (mc in c("A", "B", "C", "D")) {
     mc_plot <- my_manhattan_plot(
-        full_mu_io_extended_solutions_matrix,
-        sorted_labels = sorted_mc_labels,
+        solutions_matrix = full_mu_io_extended_solutions_matrix,
+        aris_order = aris_all_uninjured_imputations_order,
+        split_vector = split_vec,
         mcs = mc,
-        data_list = c(oom_mu1_renamed, dl_mu1_renamed),
+        data_list = data_list_mu1,
+        target_list = oom_list_mu1,
         colours = c(
             "I-D" = "#D95F02",
             "I-N" = "#7570B3",
@@ -638,18 +505,21 @@ for (mc in c("A", "B", "C", "D")) {
         )
     )
     mc_path <- paste0(
-        "mu_io_mc_",
+        "mu_mc_",
         gsub("-", "_", tolower(mc)),
-        "_associations.png"
+        "_manhattan.png"
     )
     ggsave(
         plot = mc_plot,
         fig_path(mc_path, TRUE),
         width = 15,
-        height = 6
+        height = 5
     )
 }
+
 ```
+
+2024-02-26 here
 
 ## Replication in demographic-corrected data
 
