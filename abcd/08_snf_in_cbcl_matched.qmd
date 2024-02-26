@@ -629,6 +629,896 @@ for (mc in c("A", "B", "C", "D", "E")) {
 
 End run here (2024-02-25 18:52)
 
+
+## Replication in demographic-corrected data
+
+```{r}
+
+data_list_cmu1 <- list.load(input_path("2024_02_14_data_list_cmu1.rds"))
+data_list_cmu2 <- list.load(input_path("2024_02_14_data_list_cmu2.rds"))
+data_list_cmu3 <- list.load(input_path("2024_02_14_data_list_cmu3.rds"))
+data_list_cmu4 <- list.load(input_path("2024_02_14_data_list_cmu4.rds"))
+data_list_cmu5 <- list.load(input_path("2024_02_14_data_list_cmu5.rds"))
+data_list_cmpu1 <- list.load(input_path("2024_02_14_data_list_cmpu1.rds"))
+data_list_cmpu2 <- list.load(input_path("2024_02_14_data_list_cmpu2.rds"))
+data_list_cmpu3 <- list.load(input_path("2024_02_14_data_list_cmpu3.rds"))
+data_list_cmpu4 <- list.load(input_path("2024_02_14_data_list_cmpu4.rds"))
+data_list_cmpu5 <- list.load(input_path("2024_02_14_data_list_cmpu5.rds"))
+oom_list_cmu1 <- list.load(input_path("2024_02_14_oom_list_cmu1.rds"))
+oom_list_cmu2 <- list.load(input_path("2024_02_14_oom_list_cmu2.rds"))
+oom_list_cmu3 <- list.load(input_path("2024_02_14_oom_list_cmu3.rds"))
+oom_list_cmu4 <- list.load(input_path("2024_02_14_oom_list_cmu4.rds"))
+oom_list_cmu5 <- list.load(input_path("2024_02_14_oom_list_cmu5.rds"))
+oom_list_cmpu1 <- list.load(input_path("2024_02_14_oom_list_cmpu1.rds"))
+oom_list_cmpu2 <- list.load(input_path("2024_02_14_oom_list_cmpu2.rds"))
+oom_list_cmpu3 <- list.load(input_path("2024_02_14_oom_list_cmpu3.rds"))
+oom_list_cmpu4 <- list.load(input_path("2024_02_14_oom_list_cmpu4.rds"))
+oom_list_cmpu5 <- list.load(input_path("2024_02_14_oom_list_cmpu5.rds"))
+
+data_list_no_demo_cmu1 <- data_list_cmu1
+data_list_no_demo_cmu2 <- data_list_cmu2
+data_list_no_demo_cmu3 <- data_list_cmu3
+data_list_no_demo_cmu4 <- data_list_cmu4
+data_list_no_demo_cmu5 <- data_list_cmu5
+data_list_no_demo_cmpu1 <- data_list_cmpu1
+data_list_no_demo_cmpu2 <- data_list_cmpu2
+data_list_no_demo_cmpu3 <- data_list_cmpu3
+data_list_no_demo_cmpu4 <- data_list_cmpu4
+data_list_no_demo_cmpu5 <- data_list_cmpu5
+oom_list_no_demo_cmu1 <- oom_list_cmu1
+oom_list_no_demo_cmu2 <- oom_list_cmu2
+oom_list_no_demo_cmu3 <- oom_list_cmu3
+oom_list_no_demo_cmu4 <- oom_list_cmu4
+oom_list_no_demo_cmu5 <- oom_list_cmu5
+oom_list_no_demo_cmpu1 <- oom_list_cmpu1
+oom_list_no_demo_cmpu2 <- oom_list_cmpu2
+oom_list_no_demo_cmpu3 <- oom_list_cmpu3
+oom_list_no_demo_cmpu4 <- oom_list_cmpu4
+oom_list_no_demo_cmpu5 <- oom_list_cmpu5
+
+demo_list_cmu1 <- data_list_no_demo_cmu1[c(1, 2, 3, 4)]
+demo_list_cmu2 <- data_list_no_demo_cmu2[c(1, 2, 3, 4)]
+demo_list_cmu3 <- data_list_no_demo_cmu3[c(1, 2, 3, 4)]
+demo_list_cmu4 <- data_list_no_demo_cmu4[c(1, 2, 3, 4)]
+demo_list_cmu5 <- data_list_no_demo_cmu5[c(1, 2, 3, 4)]
+demo_list_cmpu1 <- data_list_no_demo_cmpu1[c(1, 2, 3, 4)]
+demo_list_cmpu2 <- data_list_no_demo_cmpu2[c(1, 2, 3, 4)]
+demo_list_cmpu3 <- data_list_no_demo_cmpu3[c(1, 2, 3, 4)]
+demo_list_cmpu4 <- data_list_no_demo_cmpu4[c(1, 2, 3, 4)]
+demo_list_cmpu5 <- data_list_no_demo_cmpu5[c(1, 2, 3, 4)]
+data_list_no_demo_cmu1[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmu2[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmu3[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmu4[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmu5[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmpu1[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmpu2[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmpu3[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmpu4[c(1, 2, 3, 4)] <- NULL
+data_list_no_demo_cmpu5[c(1, 2, 3, 4)] <- NULL
+
+data_list_no_demo_cmu1 <- remove_signal(data_list_no_demo_cmu1, demo_list_cmu1)
+data_list_no_demo_cmu2 <- remove_signal(data_list_no_demo_cmu2, demo_list_cmu2)
+data_list_no_demo_cmu3 <- remove_signal(data_list_no_demo_cmu3, demo_list_cmu3)
+data_list_no_demo_cmu4 <- remove_signal(data_list_no_demo_cmu4, demo_list_cmu4)
+data_list_no_demo_cmu5 <- remove_signal(data_list_no_demo_cmu5, demo_list_cmu5)
+data_list_no_demo_cmpu1 <- remove_signal(data_list_no_demo_cmpu1, demo_list_cmpu1)
+data_list_no_demo_cmpu2 <- remove_signal(data_list_no_demo_cmpu2, demo_list_cmpu2)
+data_list_no_demo_cmpu3 <- remove_signal(data_list_no_demo_cmpu3, demo_list_cmpu3)
+data_list_no_demo_cmpu4 <- remove_signal(data_list_no_demo_cmpu4, demo_list_cmpu4)
+data_list_no_demo_cmpu5 <- remove_signal(data_list_no_demo_cmpu5, demo_list_cmpu5)
+oom_list_no_demo_cmu1 <- remove_signal(oom_list_no_demo_cmu1, demo_list_cmu1)
+oom_list_no_demo_cmu2 <- remove_signal(oom_list_no_demo_cmu2, demo_list_cmu2)
+oom_list_no_demo_cmu3 <- remove_signal(oom_list_no_demo_cmu3, demo_list_cmu3)
+oom_list_no_demo_cmu4 <- remove_signal(oom_list_no_demo_cmu4, demo_list_cmu4)
+oom_list_no_demo_cmu5 <- remove_signal(oom_list_no_demo_cmu5, demo_list_cmu5)
+oom_list_no_demo_cmpu1 <- remove_signal(oom_list_no_demo_cmpu1, demo_list_cmpu1)
+oom_list_no_demo_cmpu2 <- remove_signal(oom_list_no_demo_cmpu2, demo_list_cmpu2)
+oom_list_no_demo_cmpu3 <- remove_signal(oom_list_no_demo_cmpu3, demo_list_cmpu3)
+oom_list_no_demo_cmpu4 <- remove_signal(oom_list_no_demo_cmpu4, demo_list_cmpu4)
+oom_list_no_demo_cmpu5 <- remove_signal(oom_list_no_demo_cmpu5, demo_list_cmpu5)
+
+list.save(data_list_no_demo_cmu1, input_path("data_list_no_demo_cmu1.rds", TRUE))
+list.save(data_list_no_demo_cmu2, input_path("data_list_no_demo_cmu2.rds", TRUE))
+list.save(data_list_no_demo_cmu3, input_path("data_list_no_demo_cmu3.rds", TRUE))
+list.save(data_list_no_demo_cmu4, input_path("data_list_no_demo_cmu4.rds", TRUE))
+list.save(data_list_no_demo_cmu5, input_path("data_list_no_demo_cmu5.rds", TRUE))
+list.save(
+    data_list_no_demo_cmpu1,
+    input_path("data_list_no_demo_cmpu1.rds", TRUE)
+)
+list.save(
+    data_list_no_demo_cmpu2,
+    input_path("data_list_no_demo_cmpu2.rds", TRUE)
+)
+list.save(
+    data_list_no_demo_cmpu3,
+    input_path("data_list_no_demo_cmpu3.rds", TRUE)
+)
+list.save(
+    data_list_no_demo_cmpu4,
+    input_path("data_list_no_demo_cmpu4.rds", TRUE)
+)
+list.save(
+    data_list_no_demo_cmpu5,
+    input_path("data_list_no_demo_cmpu5.rds", TRUE)
+)
+list.save(oom_list_no_demo_cmu1, input_path("oom_list_no_demo_cmu1.rds", TRUE))
+list.save(oom_list_no_demo_cmu2, input_path("oom_list_no_demo_cmu2.rds", TRUE))
+list.save(oom_list_no_demo_cmu3, input_path("oom_list_no_demo_cmu3.rds", TRUE))
+list.save(oom_list_no_demo_cmu4, input_path("oom_list_no_demo_cmu4.rds", TRUE))
+list.save(oom_list_no_demo_cmu5, input_path("oom_list_no_demo_cmu5.rds", TRUE))
+list.save(oom_list_no_demo_cmpu1, input_path("oom_list_no_demo_cmpu1.rds", TRUE))
+list.save(oom_list_no_demo_cmpu2, input_path("oom_list_no_demo_cmpu2.rds", TRUE))
+list.save(oom_list_no_demo_cmpu3, input_path("oom_list_no_demo_cmpu3.rds", TRUE))
+list.save(oom_list_no_demo_cmpu4, input_path("oom_list_no_demo_cmpu4.rds", TRUE))
+list.save(oom_list_no_demo_cmpu5, input_path("oom_list_no_demo_cmpu5.rds", TRUE))
+
+data_list_no_demo_cmu1 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmu1.rds"
+    )
+)
+data_list_no_demo_cmu2 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmu2.rds"
+    )
+)
+data_list_no_demo_cmu3 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmu3.rds"
+    )
+)
+data_list_no_demo_cmu4 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmu4.rds"
+    )
+)
+data_list_no_demo_cmu5 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmu5.rds"
+    )
+)
+data_list_no_demo_cmpu1 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmpu1.rds"
+    )
+)
+data_list_no_demo_cmpu2 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmpu2.rds"
+    )
+)
+data_list_no_demo_cmpu3 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmpu3.rds"
+    )
+)
+data_list_no_demo_cmpu4 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmpu4.rds"
+    )
+)
+data_list_no_demo_cmpu5 <- list.load(
+    input_path(
+        "2024_02_25_data_list_no_demo_cmpu5.rds"
+    )
+)
+oom_list_no_demo_cmu1 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmu1.rds"
+    )
+)
+oom_list_no_demo_cmu2 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmu2.rds"
+    )
+)
+oom_list_no_demo_cmu3 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmu3.rds"
+    )
+)
+oom_list_no_demo_cmu4 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmu4.rds"
+    )
+)
+oom_list_no_demo_cmu5 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmu5.rds"
+    )
+)
+oom_list_no_demo_cmpu1 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmpu1.rds"
+    )
+)
+oom_list_no_demo_cmpu2 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmpu2.rds"
+    )
+)
+oom_list_no_demo_cmpu3 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmpu3.rds"
+    )
+)
+oom_list_no_demo_cmpu4 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmpu4.rds"
+    )
+)
+oom_list_no_demo_cmpu5 <- list.load(
+    input_path(
+        "2024_02_25_oom_list_no_demo_cmpu5.rds"
+    )
+)
+
+settings_matrix_no_demo_cmu1 <- generate_settings_matrix(
+    data_list_no_demo_cmu1,
+    nrow = 200,
+    seed = 42,
+    distance_metrics_list = my_distance_metrics
+)
+
+write_csv(
+    settings_matrix_no_demo_cmu1,
+    proc_path("settings_matrix_no_demo_cmu1.csv", TRUE)
+)
+
+settings_matrix_no_demo_cmu1 <- read_csv(
+    proc_path("2024_02_25_settings_matrix_no_demo_cmu1.csv")
+)
+
+###############################################################################
+# SNF!
+###############################################################################
+
+# Uninjured only imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmu1 <- batch_snf(
+        data_list = data_list_no_demo_cmu1,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmu1,
+    proc_path("solutions_matrix_no_demo_cmu1.csv", TRUE)
+)
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmu2 <- batch_snf(
+        data_list = data_list_no_demo_cmu2,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmu2,
+    proc_path("solutions_matrix_no_demo_cmu2.csv", TRUE)
+)
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmu3 <- batch_snf(
+        data_list = data_list_no_demo_cmu3,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmu3,
+    proc_path("solutions_matrix_no_demo_cmu3.csv", TRUE)
+)
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmu4 <- batch_snf(
+        data_list = data_list_no_demo_cmu4,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmu4,
+    proc_path("solutions_matrix_no_demo_cmu4.csv", TRUE)
+)
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmu5 <- batch_snf(
+        data_list = data_list_no_demo_cmu5,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmu5,
+    proc_path("solutions_matrix_no_demo_cmu5.csv", TRUE)
+)
+# mTBI and uninjured pooled imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmpu1 <- batch_snf(
+        data_list = data_list_no_demo_cmpu1,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmpu1,
+    proc_path("solutions_matrix_no_demo_cmpu1.csv", TRUE)
+)
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmpu2 <- batch_snf(
+        data_list = data_list_no_demo_cmpu2,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmpu2,
+    proc_path("solutions_matrix_no_demo_cmpu2.csv", TRUE)
+)
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmpu3 <- batch_snf(
+        data_list = data_list_no_demo_cmpu3,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmpu3,
+    proc_path("solutions_matrix_no_demo_cmpu3.csv", TRUE)
+)
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmpu4 <- batch_snf(
+        data_list = data_list_no_demo_cmpu4,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmpu4,
+    proc_path("solutions_matrix_no_demo_cmpu4.csv", TRUE)
+)
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_no_demo_cmpu5 <- batch_snf(
+        data_list = data_list_no_demo_cmpu5,
+        settings_matrix = settings_matrix_no_demo_cmu1,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(
+    solutions_matrix_no_demo_cmpu5,
+    proc_path("solutions_matrix_no_demo_cmpu5.csv", TRUE)
+)
+###############################################################################
+# Here, 2024-02-25 19:00
+###############################################################################
+
+solutions_matrix_no_demo_cmu1 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu1.csv"))
+solutions_matrix_no_demo_cmu2 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu2.csv"))
+solutions_matrix_no_demo_cmu3 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu3.csv"))
+solutions_matrix_no_demo_cmu4 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu4.csv"))
+solutions_matrix_no_demo_cmu5 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmu5.csv"))
+solutions_matrix_no_demo_cmpu1 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmpu1.csv"))
+solutions_matrix_no_demo_cmpu2 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmpu2.csv"))
+solutions_matrix_no_demo_cmpu3 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmpu3.csv"))
+solutions_matrix_no_demo_cmpu4 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmpu4.csv"))
+solutions_matrix_no_demo_cmpu5 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_cmpu5.csv"))
+
+all_cmu_imputations_no_demo <- do.call(
+    "rbind",
+    list(
+        solutions_matrix_no_demo_cmu1,
+        solutions_matrix_no_demo_cmu2,
+        solutions_matrix_no_demo_cmu3,
+        solutions_matrix_no_demo_cmu4,
+        solutions_matrix_no_demo_cmu5,
+        solutions_matrix_no_demo_cmpu1,
+        solutions_matrix_no_demo_cmpu2,
+        solutions_matrix_no_demo_cmpu3,
+        solutions_matrix_no_demo_cmpu4,
+        solutions_matrix_no_demo_cmpu5
+    )
+)
+
+aris_cmu1_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmu1, verbose = TRUE)
+write_csv(data.frame(aris_cmu1_no_demo), proc_path("aris_cmu1_no_demo.csv", TRUE))
+aris_cmu2_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmu2, verbose = TRUE)
+write_csv(data.frame(aris_cmu2_no_demo), proc_path("aris_cmu2_no_demo.csv", TRUE))
+aris_cmu3_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmu3, verbose = TRUE)
+write_csv(data.frame(aris_cmu3_no_demo), proc_path("aris_cmu3_no_demo.csv", TRUE))
+aris_cmu4_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmu4, verbose = TRUE)
+write_csv(data.frame(aris_cmu4_no_demo), proc_path("aris_cmu4_no_demo.csv", TRUE))
+aris_cmu5_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmu5, verbose = TRUE)
+write_csv(data.frame(aris_cmu5_no_demo), proc_path("aris_cmu5_no_demo.csv", TRUE))
+aris_cmpu1_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmpu1, verbose = TRUE)
+write_csv(data.frame(aris_cmpu1_no_demo), proc_path("aris_cmpu1_no_demo.csv", TRUE))
+aris_cmpu2_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmpu2, verbose = TRUE)
+write_csv(data.frame(aris_cmpu2_no_demo), proc_path("aris_cmpu2_no_demo.csv", TRUE))
+aris_cmpu3_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmpu3, verbose = TRUE)
+write_csv(data.frame(aris_cmpu3_no_demo), proc_path("aris_cmpu3_no_demo.csv", TRUE))
+aris_cmpu4_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmpu4, verbose = TRUE)
+write_csv(data.frame(aris_cmpu4_no_demo), proc_path("aris_cmpu4_no_demo.csv", TRUE))
+aris_cmpu5_no_demo <- calc_om_aris(solutions_matrix_no_demo_cmpu5, verbose = TRUE)
+write_csv(data.frame(aris_cmpu5_no_demo), proc_path("aris_cmpu5_no_demo.csv", TRUE))
+aris_all_cmu_imputations_no_demo <- calc_om_aris(
+    all_cmu_imputations_no_demo,
+    verbose = TRUE
+)
+write_csv(
+    data.frame(aris_all_cmu_imputations_no_demo),
+    proc_path("aris_all_cmu_imputations_no_demo.csv", TRUE)
+)
+
+```
+
+## Re-importing the ARIs
+
+```{r}
+aris_cmu1_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu1_no_demo.csv")) |>
+    as.matrix()
+aris_cmu2_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu2_no_demo.csv")) |>
+    as.matrix()
+aris_cmu3_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu3_no_demo.csv")) |>
+    as.matrix()
+aris_cmu4_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu4_no_demo.csv")) |>
+    as.matrix()
+aris_cmu5_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu5_no_demo.csv")) |>
+    as.matrix()
+aris_cmpu1_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu1_no_demo.csv")) |>
+    as.matrix()
+aris_cmpu2_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu2_no_demo.csv")) |>
+    as.matrix()
+aris_cmpu3_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu3_no_demo.csv")) |>
+    as.matrix()
+aris_cmpu4_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu4_no_demo.csv")) |>
+    as.matrix()
+aris_cmpu5_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu5_no_demo.csv")) |>
+    as.matrix()
+aris_all_cmu_imputations_no_demo <- read_csv(
+    proc_path("2024_02_25_aris_all_cmu_imputations_no_demo.csv")
+) |>
+    as.matrix()
+```
+
+
+## Plotting the ARIs
+
+### Initial plot across all ARIs to extract order
+
+```{r}
+aris_all_cmu_imputations_no_demo_heatmap <- similarity_matrix_heatmap(
+    aris_all_cmu_imputations_no_demo,
+    log_graph = FALSE,
+    cluster_rows = TRUE,
+    cluster_columns = TRUE
+)
+
+aris_all_cmu_imputations_no_demo_heatmap <- ComplexHeatmap::draw(
+    aris_all_cmu_imputations_no_demo_heatmap
+)
+aris_all_cmu_imputations_order_no_demo <- ComplexHeatmap::row_order(
+    aris_all_cmu_imputations_no_demo_heatmap
+)
+
+write_csv(
+    data.frame(aris_all_cmu_imputations_order_no_demo),
+    proc_path("aris_all_cmu_imputations_order_no_demo.csv", TRUE)
+)
+```
+
+### Re-importing the order
+
+```{r}
+aris_all_cmu_imputations_order_no_demo <- unlist(
+    read_csv(
+        proc_path(
+            "2024_02_25_aris_all_cmu_imputations_order_no_demo.csv"
+        )
+    )
+)
+
+names(aris_all_cmu_imputations_order_no_demo) <- NULL
+```
+
+## Full imputation meta clustering plot with impairment levels
+
+```{r}
+imputation_labels <- data.frame(
+    "imputation" = c(
+        rep("mu1", 200),
+        rep("mu2", 200),
+        rep("mu3", 200),
+        rep("mu4", 200),
+        rep("mu5", 200),
+        rep("mpu1", 200),
+        rep("mpu2", 200),
+        rep("mpu3", 200),
+        rep("mpu4", 200),
+        rep("mpu5", 200)
+    ),
+    "pooled" = c(
+        rep("yes", 1000),
+        rep("no", 1000)
+    )
+)
+
+full_solutions_matrix_no_demo <- cbind(
+    all_cmu_imputations_no_demo,
+    imputation_labels
+)
+
+full_solutions_matrix_no_demo$"nclust2" <-
+    full_solutions_matrix_no_demo$"nclust" - 2
+
+full_cmu_o_extended_solutions_matrix_no_demo <- extend_solutions(
+    full_solutions_matrix_no_demo,
+    oom_list_no_demo_cmu1,
+    verbose = TRUE,
+    min_pval = 1e-10
+)
+write_csv(
+    full_cmu_o_extended_solutions_matrix_no_demo,
+    proc_path("full_cmu_o_extended_solutions_matrix_no_demo.csv", TRUE)
+)
+full_cmu_io_extended_solutions_matrix_no_demo <- extend_solutions(
+    full_solutions_matrix_no_demo,
+    target_list = c(data_list_no_demo_cmu1, oom_list_no_demo_cmu1),
+    verbose = TRUE,
+    min_pval = 1e-10
+)
+write_csv(
+    full_cmu_io_extended_solutions_matrix_no_demo,
+    proc_path("full_cmu_io_extended_solutions_matrix_no_demo.csv", TRUE)
+)
+
+```
+
+```{r}
+full_cmu_o_extended_solutions_matrix_no_demo <- read_csv(
+    proc_path("2024_02_25_full_cmu_o_extended_solutions_matrix_no_demo.csv")
+)
+
+full_cmu_io_extended_solutions_matrix_no_demo <- read_csv(
+    proc_path("2024_02_25_full_cmu_io_extended_solutions_matrix_no_demo.csv")
+)
+```
+
+###############################################################################
+
+```{r}
+full_o_oom_pvals_no_demo <- pval_select(
+    full_cmu_o_extended_solutions_matrix_no_demo,
+    negative_log = TRUE
+)
+
+full_io_oom_pvals_no_demo <- pval_select(
+    full_cmu_io_extended_solutions_matrix_no_demo,
+    negative_log = TRUE
+)
+
+full_cmu_io_extended_solutions_matrix_no_demo$"mean_neglog_p" <-
+    full_io_oom_pvals_no_demo$"mean_neglog_p"
+
+full_cmu_o_extended_solutions_matrix_no_demo$"mean_neglog_p" <-
+    full_o_oom_pvals_no_demo$"mean_neglog_p"
+
+aris_all_cmu_imputations_annotated_heatmap_nd <- similarity_matrix_heatmap(
+    aris_all_cmu_imputations_no_demo,
+    order = aris_all_cmu_imputations_order_no_demo,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    log_graph = FALSE,
+    data = data.frame(full_cmu_o_extended_solutions_matrix_no_demo),
+    top_hm = list(
+        "Scheme" = "snf_scheme",
+        "Impairment Separation" = "mean_neglog_p"
+    ),
+    left_hm = list(
+        "Pooled" = "pooled",
+        "Imputation" = "imputation"
+    ),
+    top_bar = list(
+        "Number of Clusters - 2" = "nclust2"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "Pooled" = c(
+            "yes" = "orange",
+            "no" = "purple"
+        ),
+        "Imputation" = divergent_colours(
+            full_cmu_o_extended_solutions_matrix_no_demo$"imputation"
+        ),
+        "Scheme" = c(
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
+        ),
+        "Impairment Separation" = hm_colours(
+            full_cmu_o_extended_solutions_matrix_no_demo$"mean_neglog_p"
+        )
+    ),
+    col = circlize::colorRamp2(
+        c(
+            min(aris_all_cmu_imputations_no_demo),
+            max(aris_all_cmu_imputations_no_demo)
+        ),
+        c("navy", "red")
+    )
+)
+aris_all_cmu_imputations_annotated_heatmap_nd
+
+```
+
+```{r}
+# PNG export
+grDevices::png(
+    fig_path("aris_all_cmu_imputations_annotated_heatmap_nd.png", TRUE),
+    width = 3000,
+    height = 3000,
+    res = 300
+)
+aris_all_cmu_imputations_annotated_heatmap_nd
+grDevices::dev.off()
+```
+
+## Identifying meta clusters
+
+```{r}
+split_vec = c(
+    295,
+    395,
+    915,
+    1020,
+    1350,
+    1400,
+    1500
+)
+aris_all_cmu_imputations_chopped_heatmap_nd <- similarity_matrix_heatmap(
+    aris_all_cmu_imputations_no_demo,
+    order = aris_all_cmu_imputations_order_no_demo,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    log_graph = FALSE,
+    data = data.frame(full_cmu_o_extended_solutions_matrix_no_demo),
+    top_hm = list(
+        "Scheme" = "snf_scheme",
+        "Impairment Separation" = "mean_neglog_p"
+    ),
+    left_hm = list(
+        "Pooled" = "pooled",
+        "Imputation" = "imputation"
+    ),
+    top_bar = list(
+        "Number of Clusters - 2" = "nclust2"
+    ),
+    scale_diag = "none",
+    heatmap_height = grid::unit(19, "cm"),
+    heatmap_width = grid::unit(19, "cm"),
+    annotation_colours = list(
+        "Pooled" = c(
+            "yes" = "orange",
+            "no" = "purple"
+        ),
+        "Imputation" = divergent_colours(
+            full_cmu_o_extended_solutions_matrix_no_demo$"imputation"
+        ),
+        "Scheme" = c(
+            "1" = "#7FC97F",
+            "2" = "#BEAED4",
+            "3" = "#FDC086"
+        ),
+        "Impairment Separation" = hm_colours(
+            full_cmu_o_extended_solutions_matrix_no_demo$"mean_neglog_p"
+        )
+    ),
+    col = circlize::colorRamp2(
+        c(
+            min(aris_all_cmu_imputations_no_demo),
+            max(aris_all_cmu_imputations_no_demo)
+        ),
+        c("navy", "red")
+    ),
+    row_split = split_at(
+        vector = split_vec,
+        nrow = 2000
+    ),
+    column_split = split_at(
+        vector = split_vec,
+        nrow = 2000
+    )
+)
+aris_all_cmu_imputations_chopped_heatmap_nd
+
+# PNG export
+grDevices::png(
+    fig_path("aris_all_cmu_imputations_chopped_heatmap_nd.png", TRUE),
+    width = 3000,
+    height = 3000,
+    res = 300
+)
+aris_all_cmu_imputations_chopped_heatmap_nd
+grDevices::dev.off()
+```
+
+Am here 2024-02-25 23:24
+
+## One-MC-at-a-time
+
+```{r}
+library(ggplot2)
+
+mc_reordered_labels_no_demo <- split_at(split_vec, 2000)
+names(aris_all_cmu_imputations_order_no_demo) <- mc_reordered_labels_no_demo
+sorted_mc_labels_no_demo <- sort(aris_all_cmu_imputations_order_no_demo)
+
+dl_no_demo_cmu1_renamed <- data_list_no_demo_cmu1 |> lapply(
+    function(x) {
+        x$"domain" <- paste0("I-", x$"domain")
+        return(x)
+    }
+)
+
+oom_no_demo_cmu1_renamed <- oom_list_no_demo_cmu1 |> lapply(
+    function(x) {
+        x$"domain" <- paste0("O-", x$"domain")
+        return(x)
+    }
+)
+
+my_manhattan_plot <- function(solutions_matrix,
+                              sorted_labels,
+                              mcs,
+                              data_list,
+                              colours) {
+    target_pvals <- pval_select(solutions_matrix)
+    target_pvals$"mc_label" <- names(sorted_labels)
+    target_pvals <- dplyr::select(
+        target_pvals,
+        -dplyr::starts_with(c("mean", "min"))
+    )
+    mc_associations <- manhattan_plot(
+        target_pvals,
+        threshold = 0.05,
+        bonferroni_line = FALSE,
+        data_list = data_list,
+        mc_labels = mcs,
+        colours = colours
+    )
+    return(mc_associations)
+}
+
+# Candidates are A, B, C, D, E, F, H, J
+
+cmu_io_main_mc_associations_no_demo <- my_manhattan_plot(
+    full_cmu_io_extended_solutions_matrix_no_demo,
+    sorted_labels = sorted_mc_labels_no_demo,
+    mcs = c("A", "B", "C", "D", "E", "F", "G"),
+    data_list = c(oom_no_demo_cmu1_renamed, dl_no_demo_cmu1_renamed),
+    colours = c(
+        "I-AS" = "#1B9E77",
+        "I-D" = "#D95F02",
+        "I-N" = "#7570B3",
+        "I-MH" = "#E7298A",
+        "I-P" = "#66A61E",
+        "O-S" = "#E6AB02",
+        "O-B" = "#A6761D"
+    )
+)
+cmu_io_main_mc_associations_no_demo
+
+ggsave(
+    plot = cmu_io_main_mc_associations_no_demo,
+    fig_path("cmu_io_main_mc_associations_no_demo.png", TRUE),
+    width = 15,
+    height = 12
+)
+
+# Bulk export each MC individually
+for (mc in c("A", "B", "C", "D", "E", "F", "G")) {
+    print(mc)
+    mc_plot <- my_manhattan_plot(
+        full_cmu_io_extended_solutions_matrix_no_demo,
+        sorted_labels = sorted_mc_labels_no_demo,
+        mcs = mc,
+        data_list = c(oom_no_demo_cmu1_renamed, dl_no_demo_cmu1_renamed),
+        colours = c(
+            "I-AS" = "#1B9E77",
+            "I-D" = "#D95F02",
+            "I-N" = "#7570B3",
+            "I-MH" = "#E7298A",
+            "I-P" = "#66A61E",
+            "O-S" = "#E6AB02",
+            "O-B" = "#A6761D"
+        )
+    )
+    mc_path <- paste0(
+        "cmu_io_mc_",
+        gsub("-", "_", tolower(mc)),
+        "_no_demo_associations.png"
+    )
+    ggsave(
+        plot = mc_plot,
+        fig_path(mc_path, TRUE),
+        width = 15,
+        height = 6
+    )
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################################
+
 ## Characterization
 
 ```{r}
