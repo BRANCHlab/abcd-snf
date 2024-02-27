@@ -65,12 +65,20 @@ correlation_data <- function(data_list, order = NULL) {
     numeric_dl_df <- keep_numeric(dl_df)
     correlation_matrix <- cor(numeric_dl_df)
     if (is.null(order)) {
-        heatmap <- ComplexHeatmap::Heatmap(correlation_matrix)
+        heatmap <- ComplexHeatmap::Heatmap(
+            correlation_matrix,
+            heatmap_legend_param = list(
+                title = "Corr"
+            )
+        )
     } else {
         heatmap <- ComplexHeatmap::Heatmap(
             correlation_matrix[order, order],
             cluster_rows = FALSE,
-            cluster_columns = FALSE
+            cluster_columns = FALSE,
+            heatmap_legend_param = list(
+                title = "Corr"
+            )
         )
     }
     drawn_heatmap <- ComplexHeatmap::draw(heatmap)
@@ -942,6 +950,7 @@ my_similarity_matrix_heatmap <- function(aris,
                                          split_vector) {
     pvals <- pval_select(extended_solutions, negative_log = TRUE)
     extended_solutions$"mean_neglog_p" <- pvals$"mean_neglog_p"
+    extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     mc_heatmap <- similarity_matrix_heatmap(
         aris,
         order = aris_order,
@@ -1053,4 +1062,36 @@ split_letters <- function(split_vec, n = 2000) {
         unique() |>
         sort()
     return(split_letters)
+}
+
+my_corr_plot <- function(data_list, target_list, order) {
+    # Merging and dummying the data lists
+    full_data_list <- c(data_list, target_list)
+    race_pos <- which(summarize_dl(full_data_list)$"name" == "d_race")
+    mech_pos <- which(summarize_dl(full_data_list)$"name" == "as_mechanism")
+    full_data_list[[race_pos]]$"data" <- full_data_list[[race_pos]]$"data" |>
+        fastDummies::dummy_cols(
+            "race",
+            remove_first_dummy = TRUE,
+            remove_selected_columns = TRUE
+        )
+    full_data_list[[mech_pos]]$"data" <- full_data_list[[mech_pos]]$"data" |>
+        fastDummies::dummy_cols(
+            "mtbi_mechanism",
+            remove_first_dummy = TRUE,
+            remove_selected_columns = TRUE
+        )
+    ###########################################################################
+    order <- order |>
+        unlist() |>
+        as.character()
+    ###########################################################################
+    # First, make sure that the main order is restricted to just those vars
+    # present in the join data_list.
+    dl_df <- collapse_dl(full_data_list)
+    df_cols <- colnames(dl_df)[-1] # the first col is subjectkey
+    order <- order[order %in% df_cols]
+    new_order <- match(order, df_cols)
+    corr_data <- correlation_data(full_data_list, order = new_order)
+    return(corr_data)
 }

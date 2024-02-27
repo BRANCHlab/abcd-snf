@@ -405,6 +405,7 @@ full_mtbi_io_extended_solutions_matrix <- read_csv(
 
 split_vec = c(
     233,
+    350,
     500,
     723,
     830,
@@ -418,7 +419,6 @@ mtbi_mc_heatmap <- my_similarity_matrix_heatmap(
     extended_solutions = full_mtbi_o_extended_solutions_matrix,
     split_vector = split_vec
 )
-
 mtbi_mc_heatmap
 
 # PNG export
@@ -458,11 +458,11 @@ ggsave(
     plot = mtbi_manhattan,
     fig_path("mtbi_manhattan.png", TRUE),
     width = 15,
-    height = 8 * 2.5
+    height = 2.5 * length(split_letters(split_vec))
 )
 
 # Bulk export each MC individually
-for (mc in c("A", "B", "C", "D", "E")) {
+for (mc in split_letters(split_vec)) {
     mc_plot <- my_manhattan_plot(
         solutions_matrix = full_mtbi_io_extended_solutions_matrix,
         aris_order = aris_all_mtbi_imputations_order,
@@ -492,6 +492,7 @@ for (mc in c("A", "B", "C", "D", "E")) {
         height = 5
     )
 }
+
 ```
 
 ## Replication in demographic-corrected data
@@ -544,7 +545,6 @@ demo_list_m2 <- data_list_no_demo_m2[c(4, 6, 7, 8)]
 demo_list_m3 <- data_list_no_demo_m3[c(4, 6, 7, 8)]
 demo_list_m4 <- data_list_no_demo_m4[c(4, 6, 7, 8)]
 demo_list_m5 <- data_list_no_demo_m5[c(4, 6, 7, 8)]
-
 demo_list_pm1 <- data_list_no_demo_pm1[c(1, 2, 3, 4)]
 demo_list_pm2 <- data_list_no_demo_pm2[c(1, 2, 3, 4)]
 demo_list_pm3 <- data_list_no_demo_pm3[c(1, 2, 3, 4)]
@@ -556,7 +556,6 @@ data_list_no_demo_m2[c(4, 6, 7, 8)] <- NULL
 data_list_no_demo_m3[c(4, 6, 7, 8)] <- NULL
 data_list_no_demo_m4[c(4, 6, 7, 8)] <- NULL
 data_list_no_demo_m5[c(4, 6, 7, 8)] <- NULL
-
 data_list_no_demo_pm1[c(1, 2, 3, 4)] <- NULL
 data_list_no_demo_pm2[c(1, 2, 3, 4)] <- NULL
 data_list_no_demo_pm3[c(1, 2, 3, 4)] <- NULL
@@ -573,6 +572,7 @@ data_list_no_demo_pm2 <- remove_signal(data_list_no_demo_pm2, demo_list_pm2)
 data_list_no_demo_pm3 <- remove_signal(data_list_no_demo_pm3, demo_list_pm3)
 data_list_no_demo_pm4 <- remove_signal(data_list_no_demo_pm4, demo_list_pm4)
 data_list_no_demo_pm5 <- remove_signal(data_list_no_demo_pm5, demo_list_pm5)
+
 oom_list_no_demo_m1 <- remove_signal(oom_list_no_demo_m1, demo_list_m1)
 oom_list_no_demo_m2 <- remove_signal(oom_list_no_demo_m2, demo_list_m2)
 oom_list_no_demo_m3 <- remove_signal(oom_list_no_demo_m3, demo_list_m3)
@@ -584,6 +584,18 @@ oom_list_no_demo_pm3 <- remove_signal(oom_list_no_demo_pm3, demo_list_pm3)
 oom_list_no_demo_pm4 <- remove_signal(oom_list_no_demo_pm4, demo_list_pm4)
 oom_list_no_demo_pm5 <- remove_signal(oom_list_no_demo_pm5, demo_list_pm5)
 
+# Adding back the demographic variables post-correction
+data_list_re_demo_m1 <- c(data_list_no_demo_m1, demo_list_m1)
+data_list_re_demo_m2 <- c(data_list_no_demo_m2, demo_list_m2)
+data_list_re_demo_m3 <- c(data_list_no_demo_m3, demo_list_m3)
+data_list_re_demo_m4 <- c(data_list_no_demo_m4, demo_list_m4)
+data_list_re_demo_m5 <- c(data_list_no_demo_m5, demo_list_m5)
+data_list_re_demo_pm1 <- c(data_list_no_demo_pm1, demo_list_pm1)
+data_list_re_demo_pm2 <- c(data_list_no_demo_pm2, demo_list_pm2)
+data_list_re_demo_pm3 <- c(data_list_no_demo_pm3, demo_list_pm3)
+data_list_re_demo_pm4 <- c(data_list_no_demo_pm4, demo_list_pm4)
+data_list_re_demo_pm5 <- c(data_list_no_demo_pm5, demo_list_pm5)
+
 list.save(data_list_no_demo_m1, input_path("data_list_no_demo_m1.rds", TRUE))
 list.save(data_list_no_demo_m2, input_path("data_list_no_demo_m2.rds", TRUE))
 list.save(data_list_no_demo_m3, input_path("data_list_no_demo_m3.rds", TRUE))
@@ -594,6 +606,17 @@ list.save(data_list_no_demo_pm2, input_path("data_list_no_demo_pm2.rds", TRUE))
 list.save(data_list_no_demo_pm3, input_path("data_list_no_demo_pm3.rds", TRUE))
 list.save(data_list_no_demo_pm4, input_path("data_list_no_demo_pm4.rds", TRUE))
 list.save(data_list_no_demo_pm5, input_path("data_list_no_demo_pm5.rds", TRUE))
+list.save(data_list_re_demo_m1, input_path("data_list_re_demo_m1.rds", TRUE))
+list.save(data_list_re_demo_m2, input_path("data_list_re_demo_m2.rds", TRUE))
+list.save(data_list_re_demo_m3, input_path("data_list_re_demo_m3.rds", TRUE))
+list.save(data_list_re_demo_m4, input_path("data_list_re_demo_m4.rds", TRUE))
+list.save(data_list_re_demo_m5, input_path("data_list_re_demo_m5.rds", TRUE))
+list.save(data_list_re_demo_pm1, input_path("data_list_re_demo_pm1.rds", TRUE))
+list.save(data_list_re_demo_pm2, input_path("data_list_re_demo_pm2.rds", TRUE))
+list.save(data_list_re_demo_pm3, input_path("data_list_re_demo_pm3.rds", TRUE))
+list.save(data_list_re_demo_pm4, input_path("data_list_re_demo_pm4.rds", TRUE))
+list.save(data_list_re_demo_pm5, input_path("data_list_re_demo_pm5.rds", TRUE))
+
 list.save(oom_list_no_demo_m1, input_path("oom_list_no_demo_m1.rds", TRUE))
 list.save(oom_list_no_demo_m2, input_path("oom_list_no_demo_m2.rds", TRUE))
 list.save(oom_list_no_demo_m3, input_path("oom_list_no_demo_m3.rds", TRUE))
@@ -604,7 +627,10 @@ list.save(oom_list_no_demo_pm2, input_path("oom_list_no_demo_pm2.rds", TRUE))
 list.save(oom_list_no_demo_pm3, input_path("oom_list_no_demo_pm3.rds", TRUE))
 list.save(oom_list_no_demo_pm4, input_path("oom_list_no_demo_pm4.rds", TRUE))
 list.save(oom_list_no_demo_pm5, input_path("oom_list_no_demo_pm5.rds", TRUE))
+```
 
+
+```{r}
 data_list_no_demo_m1 <- list.load(
     input_path(
         "2024_02_25_data_list_no_demo_m1.rds"
@@ -655,57 +681,171 @@ data_list_no_demo_pm5 <- list.load(
         "2024_02_25_data_list_no_demo_pm5.rds"
     )
 )
+data_list_re_demo_m1 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_m1.rds"
+    )
+)
+data_list_re_demo_m2 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_m2.rds"
+    )
+)
+data_list_re_demo_m3 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_m3.rds"
+    )
+)
+data_list_re_demo_m4 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_m4.rds"
+    )
+)
+data_list_re_demo_m5 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_m5.rds"
+    )
+)
+data_list_re_demo_pm1 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_pm1.rds"
+    )
+)
+data_list_re_demo_pm2 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_pm2.rds"
+    )
+)
+data_list_re_demo_pm3 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_pm3.rds"
+    )
+)
+data_list_re_demo_pm4 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_pm4.rds"
+    )
+)
+data_list_re_demo_pm5 <- list.load(
+    input_path(
+        "2024_02_27_data_list_re_demo_pm5.rds"
+    )
+)
 oom_list_no_demo_m1 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_m1.rds"
+        "2024_02_27_oom_list_no_demo_m1.rds"
     )
 )
 oom_list_no_demo_m2 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_m2.rds"
+        "2024_02_27_oom_list_no_demo_m2.rds"
     )
 )
 oom_list_no_demo_m3 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_m3.rds"
+        "2024_02_27_oom_list_no_demo_m3.rds"
     )
 )
 oom_list_no_demo_m4 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_m4.rds"
+        "2024_02_27_oom_list_no_demo_m4.rds"
     )
 )
 oom_list_no_demo_m5 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_m5.rds"
+        "2024_02_27_oom_list_no_demo_m5.rds"
     )
 )
 oom_list_no_demo_pm1 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_pm1.rds"
+        "2024_02_27_oom_list_no_demo_pm1.rds"
     )
 )
 oom_list_no_demo_pm2 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_pm2.rds"
+        "2024_02_27_oom_list_no_demo_pm2.rds"
     )
 )
 oom_list_no_demo_pm3 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_pm3.rds"
+        "2024_02_27_oom_list_no_demo_pm3.rds"
     )
 )
 oom_list_no_demo_pm4 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_pm4.rds"
+        "2024_02_27_oom_list_no_demo_pm4.rds"
     )
 )
 oom_list_no_demo_pm5 <- list.load(
     input_path(
-        "2024_02_25_oom_list_no_demo_pm5.rds"
+        "2024_02_27_oom_list_no_demo_pm5.rds"
     )
 )
+```
 
+Showing that the demographic variables have been removed from the data list.
+
+```{r}
+fdl <- c(data_list_m1, oom_list_m1)
+
+fdl
+race_pos <- which(summarize_dl(fdl)$"name" == "d_race")
+mech_pos <- which(summarize_dl(fdl)$"name" == "as_mechanism")
+fdl[[race_pos]]$"data" <- fdl[[race_pos]]$"data" |>
+    fastDummies::dummy_cols(
+        "race",
+        remove_first_dummy = TRUE,
+        remove_selected_columns = TRUE
+    )
+fdl[[mech_pos]]$"data" <- fdl[[mech_pos]]$"data" |>
+    fastDummies::dummy_cols(
+        "mtbi_mechanism",
+        remove_first_dummy = TRUE,
+        remove_selected_columns = TRUE
+    )
+
+m1_corr_data <- correlation_data(fdl)
+m1_corr_mat <- m1_corr_data$"correlation_matrix"
+corr_order <- colnames(m1_corr_mat)[m1_corr_data$"order"]
+write_csv(data.frame(corr_order), proc_path("mtbi_corr_order.csv", TRUE))
+```
+
+```{r}
+corr_order <- read_csv(proc_path("2024_02_27_mtbi_corr_order.csv"))
+
+re_m1_corr_data <- correlation_data(data_list_re_demo_m1)
+
+re_m1_corr_mat <- re_m1_corr_data$"correlation_matrix"
+re_m1_corr_data$"heatmap"
+
+mtbi_corr <- my_corr_plot(
+    data_list_m1,
+    oom_list_m1,
+    order = corr_order
+)
+
+mtbi_nd_corr <- my_corr_plot(
+    data_list_re_demo_m1,
+    oom_list_no_demo_m1,
+    order = corr_order
+)
+
+save_png(
+    mtbi_corr$"heatmap",
+    fig_path("mtbi_corr_heatmap.png", TRUE),
+    width = 3500,
+    height = 3500
+)
+
+save_png(
+    mtbi_nd_corr$"heatmap",
+    fig_path("mtbi_nd_corr_heatmap.png", TRUE),
+    width = 3500,
+    height = 3500
+)
+```
+
+```{r}
 settings_matrix_no_demo <- generate_settings_matrix(
     data_list_no_demo_m1,
     nrow = 200,
@@ -725,7 +865,6 @@ settings_matrix_no_demo <- read_csv(
 ###############################################################################
 # SNF!
 ###############################################################################
-
 # mTBI only imputed
 # Imputation 1
 start <- proc.time()
@@ -879,17 +1018,38 @@ write_csv(
     solutions_matrix_no_demo_pm5,
     proc_path("solutions_matrix_no_demo_pm5.csv", TRUE)
 )
-
-solutions_matrix_no_demo_m1 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_m1.csv"))
-solutions_matrix_no_demo_m2 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_m2.csv"))
-solutions_matrix_no_demo_m3 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_m3.csv"))
-solutions_matrix_no_demo_m4 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_m4.csv"))
-solutions_matrix_no_demo_m5 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_m5.csv"))
-solutions_matrix_no_demo_pm1 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_pm1.csv"))
-solutions_matrix_no_demo_pm2 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_pm2.csv"))
-solutions_matrix_no_demo_pm3 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_pm3.csv"))
-solutions_matrix_no_demo_pm4 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_pm4.csv"))
-solutions_matrix_no_demo_pm5 <- read_csv(proc_path("2024_02_25_solutions_matrix_no_demo_pm5.csv"))
+```
+```{r}
+solutions_matrix_no_demo_m1 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_m1.csv")
+)
+solutions_matrix_no_demo_m2 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_m2.csv")
+)
+solutions_matrix_no_demo_m3 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_m3.csv")
+)
+solutions_matrix_no_demo_m4 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_m4.csv")
+)
+solutions_matrix_no_demo_m5 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_m5.csv")
+)
+solutions_matrix_no_demo_pm1 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_pm1.csv")
+)
+solutions_matrix_no_demo_pm2 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_pm2.csv")
+)
+solutions_matrix_no_demo_pm3 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_pm3.csv")
+)
+solutions_matrix_no_demo_pm4 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_pm4.csv")
+)
+solutions_matrix_no_demo_pm5 <- read_csv(
+    proc_path("2024_02_25_solutions_matrix_no_demo_pm5.csv")
+)
 
 all_mtbi_imputations_no_demo <- do.call(
     "rbind",
@@ -907,6 +1067,9 @@ all_mtbi_imputations_no_demo <- do.call(
     )
 )
 
+```
+
+```{r}
 aris_m1_no_demo <- calc_om_aris(solutions_matrix_no_demo_m1, verbose = TRUE)
 write_csv(data.frame(aris_m1_no_demo), proc_path("aris_m1_no_demo.csv", TRUE))
 aris_m2_no_demo <- calc_om_aris(solutions_matrix_no_demo_m2, verbose = TRUE)
@@ -936,7 +1099,6 @@ write_csv(
     data.frame(aris_all_mtbi_imputations_no_demo),
     proc_path("aris_all_mtbi_imputations_no_demo.csv", TRUE)
 )
-
 ```
 
 ## Re-importing the ARIs
@@ -1023,16 +1185,12 @@ full_solutions_matrix_no_demo <- cbind(
     imputation_labels
 )
 
-full_solutions_matrix_no_demo$"nclust2" <-
-    full_solutions_matrix_no_demo$"nclust" - 2
-
 full_mtbi_o_extended_solutions_matrix_no_demo <- extend_solutions(
     full_solutions_matrix_no_demo,
     oom_list_no_demo_m1,
     verbose = TRUE,
     min_pval = 1e-10
 )
-
 write_csv(
     full_mtbi_o_extended_solutions_matrix_no_demo,
     proc_path("full_mtbi_o_extended_solutions_matrix_no_demo.csv", TRUE)
@@ -1040,7 +1198,7 @@ write_csv(
 
 full_mtbi_io_extended_solutions_matrix_no_demo <- extend_solutions(
     full_solutions_matrix_no_demo,
-    target_list = c(data_list_no_demo_m1, oom_list_no_demo_m1),
+    target_list = c(data_list_re_demo_m1, oom_list_no_demo_m1),
     verbose = TRUE,
     min_pval = 1e-10
 )
@@ -1057,11 +1215,12 @@ full_mtbi_o_extended_solutions_matrix_no_demo <- read_csv(
 )
 
 full_mtbi_io_extended_solutions_matrix_no_demo <- read_csv(
-    proc_path("2024_02_25_full_mtbi_io_extended_solutions_matrix_no_demo.csv")
+    proc_path("2024_02_27_full_mtbi_io_extended_solutions_matrix_no_demo.csv")
 )
 ```
 
 ```{r}
+
 split_vec = c(
     417,
     683,
@@ -1073,7 +1232,6 @@ split_vec = c(
     1510,
     1890
 )
-
 mtbi_nd_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = aris_all_mtbi_imputations_no_demo,
     aris_order = aris_all_mtbi_imputations_order_no_demo,
@@ -1142,7 +1300,7 @@ mtbi_nd_manhattan <- my_manhattan_plot(
     solutions_matrix = full_mtbi_io_extended_solutions_matrix_no_demo,
     aris_order = aris_all_mtbi_imputations_order_no_demo,
     split_vector = split_vec,
-    data_list = data_list_no_demo_m1,
+    data_list = data_list_re_demo_m1,
     target_list = oom_list_no_demo_m1,
     colours = c(
         "I-AS" = "#1B9E77",

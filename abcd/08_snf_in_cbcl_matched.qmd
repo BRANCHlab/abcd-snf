@@ -411,52 +411,27 @@ cmu_mc_heatmap
 grDevices::dev.off()
 ```
 
-2024-02-26 19:18 here
-
 ## One-MC-at-a-time
 
 ```{r}
-library(ggplot2)
 
-mc_reordered_labels <- split_at(split_vector, 2000)
-names(aris_all_cmu_imputations_order) <- mc_reordered_labels
-sorted_mc_labels <- sort(aris_all_cmu_imputations_order)
-
-dl_cmu1_renamed <- data_list_cmu1 |> lapply(
-    function(x) {
-        x$"domain" <- paste0("I-", x$"domain")
-        return(x)
-    }
-)
-
-oom_cmu1_renamed <- oom_list_cmu1 |> lapply(
-    function(x) {
-        x$"domain" <- paste0("O-", x$"domain")
-        return(x)
-    }
-)
-
-my_manhattan_plot <- function(solutions_matrix,
-                              sorted_labels,
-                              mcs,
-                              data_list,
-                              colours) {
-    target_pvals <- pval_select(solutions_matrix)
-    target_pvals$"mc_label" <- names(sorted_labels)
-    target_pvals <- dplyr::select(
-        target_pvals,
-        -dplyr::starts_with(c("mean", "min"))
+cmu_manhattan <- my_manhattan_plot(
+    solutions_matrix = full_cmu_io_extended_solutions_matrix,
+    aris_order = aris_all_cmu_imputations_order,
+    split_vector = split_vec,
+    data_list = data_list_cmu1,
+    target_list = oom_list_cmu1,
+    colours = c(
+        "I-AS" = "#1B9E77",
+        "I-D" = "#D95F02",
+        "I-N" = "#7570B3",
+        "I-MH" = "#E7298A",
+        "I-P" = "#66A61E",
+        "O-S" = "#E6AB02",
+        "O-B" = "#A6761D"
     )
-    mc_associations <- manhattan_plot(
-        target_pvals,
-        threshold = 0.05,
-        bonferroni_line = FALSE,
-        data_list = data_list,
-        mc_labels = mcs,
-        colours = colours
-    )
-    return(mc_associations)
-}
+)
+cmu_manhattan
 
 cmu_io_all_mc_associations <- my_manhattan_plot(
     full_cmu_io_extended_solutions_matrix,
@@ -464,6 +439,7 @@ cmu_io_all_mc_associations <- my_manhattan_plot(
     mcs = c("A", "B", "C", "D", "E"),
     data_list = c(oom_cmu1_renamed, dl_cmu1_renamed),
     colours = c(
+        "I-AS" = "#1B9E77",
         "I-D" = "#D95F02",
         "I-N" = "#7570B3",
         "I-MH" = "#E7298A",
