@@ -1046,3 +1046,11 @@ my_manhattan_plot <- function(solutions_matrix,
     )
     return(mc_associations)
 }
+
+split_letters <- function(split_vec, n = 2000) {
+    split_letters <- split_vec |>
+        split_at(2000) |>
+        unique() |>
+        sort()
+    return(split_letters)
+}
