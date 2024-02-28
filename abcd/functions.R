@@ -327,7 +327,9 @@ characterize_solution <- function(solution = NULL,
                                   cluster_df = NULL,
                                   data_list,
                                   plotname,
+                                  individual_plots = TRUE,
                                   return_plots = TRUE) {
+    # Formatting
     solution <- data.frame(solution)
     # Generating the required full dataframe
     if (is.null(cluster_df)) {
@@ -341,13 +343,12 @@ characterize_solution <- function(solution = NULL,
     # Re-coding variables
     full_data$"sex"[full_data$"sex" == 0] <- "F"
     full_data$"sex"[full_data$"sex" == 1] <- "M"
-    full_data$"race"[full_data$"race" == 0] <- "White"
-    full_data$"race"[full_data$"race" == 1] <- "Non-White"
     if (return_plots == FALSE) {
         return(full_data)
     }
-    # Identifying features to plot
+    # Identifying features to plot (first cols are cluster and subjectkey)
     features <- colnames(full_data)[3:length(colnames(full_data))]
+    # Generating plot for every variable
     plot_list <- list()
     for (i in seq_along(features)) {
         feature <- features[[i]]
@@ -357,27 +358,60 @@ characterize_solution <- function(solution = NULL,
         } else {
             plot <- bar_plot(full_data, feature)
         }
-        ggsave(
-            plot = plot,
-            fig_path(
+        if (individual_plots) {
+            print(
                 paste0(
-                    plotname,
-                    "_",
-                    feature,
-                    ".png"
-                ),
-                TRUE
-            ),
-            width = 7,
-            height = 7
-        )
+                    i, "/", length(features), ": ",
+                    "Plotting ",
+                    feature
+                )
+            )
+            ggsave(
+                plot = plot,
+                filename = paste0(plotname, "_", feature, ".png"),
+                width = 7,
+                height = 7
+            )
+        }
         plot_list[[i]] <- plot
         names(plot_list)[[i]] <- feature
     }
-    return(plot_list)
+    # Generating group plots
+    print("Plotting all-plot grid")
+    all_plots(plot_list, plotname)
+    print("Plotting outcome plots")
+    outcome_plots(plot_list, plotname)
+    print("Plotting demographic plots")
+    demographic_plots(plot_list, plotname)
+    print("Plotting neuroimaging plots")
+    neuroimaging_plots(plot_list, plotname)
+    print("Plotting acute symptom plots")
+    acute_symptom_plots(plot_list, plotname)
+    print("Plotting parent psych plots")
+    parent_psych_plots(plot_list, plotname)
+    print("Plotting family env plots")
+    family_env_plots(plot_list, plotname)
+    print("Plotting prosocial plots")
+    prosocial_plots(plot_list, plotname)
+    print("Plotting healthy habits plots")
+    healthy_habits_plots(plot_list, plotname)
+    print("Plotting medical history plots")
+    medical_history_plots(plot_list, plotname)
+    print("Done")
+    #return(plot_list)
 }
 
-outcome_plots <- function(plot_list) {
+all_plots <- function(plot_list, plotname) {
+    pw <- wrap_plots(plot_list)
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_all_plots.png"),
+        width = 40,
+        height = 33
+    )
+}
+
+outcome_plots <- function(plot_list, plotname) {
     pw <- list(
         plot_list$"cbcl_anxdep",
         plot_list$"cbcl_withdep",
@@ -389,33 +423,34 @@ outcome_plots <- function(plot_list) {
         plot_list$"cbcl_aggressive",
         plot_list$"sds_sleep"
     ) |> wrap_plots()
-    pw
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_outcome_plots.png"),
+        width = 15,
+        height = 15
+    )
 }
 
-demographic_plots <- function(plot_list) {
-    pw <- list(
+demographic_plots <- function(plot_list, plotname) {
+    plot_list <- list(
         plot_list$"age",
         plot_list$"mtbi_age",
         plot_list$"household_income",
         plot_list$"sex",
         plot_list$"pubertal_status",
         plot_list$"race"
-    ) |> wrap_plots()
-    pw
+    )
+    plot_list <- Filter(Negate(is.null), plot_list)
+    pw <- wrap_plots(plot_list)
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_demographic_plots.png"),
+        width = 15,
+        height = 10
+    )
 }
 
-demographic_plots_uninj <- function(plot_list) {
-    pw <- list(
-        plot_list$"age",
-        plot_list$"household_income",
-        plot_list$"sex",
-        plot_list$"pubertal_status",
-        plot_list$"race"
-    ) |> wrap_plots()
-    pw
-}
-
-neuroimaging_plots <- function(plot_list) {
+neuroimaging_plots <- function(plot_list, plotname) {
     layout <- c(
         area(t = 1, l = 1, b = 2, r = 2),
         area(t = 1, l = 3, b = 2, r = 4),
@@ -425,7 +460,7 @@ neuroimaging_plots <- function(plot_list) {
         area(t = 5, l = 2, b = 6, r = 3),
         area(t = 5, l = 4, b = 6, r = 5)
     )
-    plot_list$"brain_volume" +
+    pw <- plot_list$"brain_volume" +
         plot_list$"cortical_sa" +
         plot_list$"cortical_thickness" +
         plot_list$"major_wm_ndi" +
@@ -433,18 +468,35 @@ neuroimaging_plots <- function(plot_list) {
         plot_list$"fmri_cort_cors" +
         plot_list$"fmri_cort_subcort_cors" +
         plot_layout(design = layout)
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_neuroimaging_plots.png"),
+        width = 15,
+        height = 15
+    )
 }
 
-acute_symptom_plots <- function(plot_list) {
+acute_symptom_plots <- function(plot_list, plotname) {
     pw <- list(
         plot_list$"mtbi_mem_daze",
         plot_list$"mtbi_loc",
         plot_list$"mtbi_mechanism"
-    ) |> wrap_plots()
-    pw
+    )
+    filtered_list <- Filter(Negate(is.null), pw)
+    if (length(filtered_list) >= 1) {
+        as_plots <- wrap_plots(filtered_list)
+        ggsave(
+            plot = as_plots,
+            filename = paste0(plotname, "_as_plots.png"),
+            width = 20,
+            height = 7
+        )
+    } else {
+        print("No acute symptom plots in list.")
+    }
 }
 
-parent_psych_plots <- function(plot_list) {
+parent_psych_plots <- function(plot_list, plotname) {
     pw <- list(
         plot_list$"parent_perstr",
         plot_list$"parent_anxdep",
@@ -455,15 +507,20 @@ parent_psych_plots <- function(plot_list) {
         plot_list$"parent_aggressive",
         plot_list$"parent_intrusive",
         plot_list$"parent_depress",
-        #plot_list$"parent_anxdisord",
+        plot_list$"parent_anxdisord",
         plot_list$"parent_avoidant",
         plot_list$"parent_antisocial",
         plot_list$"parent_hyperactive"
     ) |> wrap_plots()
-    pw
+    ggplot2::ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_parent_psych_plots.png"),
+        width = 20,
+        height = 13
+    )
 }
 
-family_env_plots <- function(plot_list) {
+family_env_plots <- function(plot_list, plotname) {
     pw <- list(
         plot_list$"family_fight",
         plot_list$"family_angry",
@@ -475,10 +532,15 @@ family_env_plots <- function(plot_list) {
         plot_list$"family_outdo",
         plot_list$"family_yell"
     ) |> wrap_plots()
-    pw
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_family_env_plots.png"),
+        width = 15,
+        height = 15
+    )
 }
 
-prosocial_plots <- function(plot_list) {
+prosocial_plots <- function(plot_list, plotname) {
     layout <- c(
         area(t = 1, l = 1, b = 2, r = 2),
         area(t = 1, l = 3, b = 2, r = 4),
@@ -488,192 +550,50 @@ prosocial_plots <- function(plot_list) {
         area(t = 3, l = 4, b = 4, r = 5),
         area(t = 3, l = 6, b = 4, r = 7)
     )
-    plot_list$"same_sex_friend" +
-    plot_list$"opp_sex_friend" +
-    plot_list$"same_sex_close_friend" +
-    plot_list$"opp_sex_close_friend" +
-    plot_list$"prosocial_considerate" +
-    plot_list$"prosocial_helps_hurt" +
-    plot_list$"prosocial_helpful" + plot_layout(design = layout)
+    pw <-
+        plot_list$"same_sex_friend" +
+        plot_list$"opp_sex_friend" +
+        plot_list$"same_sex_close_friend" +
+        plot_list$"opp_sex_close_friend" +
+        plot_list$"prosocial_considerate" +
+        plot_list$"prosocial_helps_hurt" +
+        plot_list$"prosocial_helpful" +
+        plot_layout(design = layout)
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_prosocial_plots.png"),
+        width = 15,
+        height = 8
+    )
 }
 
-healthy_habits_plots <- function(plot_list) {
-    plot_list$"weekday_screentime" +
-    plot_list$"school_programs" +
-    plot_list$"non_school_programs" +
-    plot_list$"programs_this_year" +
-    plot_list$"private_instruction" +
-    plot_list$"exercise_time"
+healthy_habits_plots <- function(plot_list, plotname) {
+    pw <-
+        plot_list$"weekday_screentime" +
+        plot_list$"school_programs" +
+        plot_list$"non_school_programs" +
+        plot_list$"programs_this_year" +
+        plot_list$"private_instruction" +
+        plot_list$"exercise_time"
+    ggsave(
+        plot = pw,
+        filename = paste0(plotname, "_healthy_habits_plots.png"),
+        width = 14,
+        height = 8
+    )
 }
 
-medical_history_plots <- function(plot_list) {
-    pw <- list(
+medical_history_plots <- function(plot_list, plotname) {
+    plot_list <- list(
         plot_list$"headache_history",
         plot_list$"previous_mtbis"
-    ) |> wrap_plots()
-    pw
-}
-
-medical_history_plots_uninj <- function(plot_list) {
-    pw <- list(
-        plot_list$"headache_history"
-    ) |> wrap_plots()
-    pw
-}
-
-save_plot_list <- function(plot_list, prefix) {
-    all_plots <- wrap_plots(plot_list)
-    outcome_plots <- outcome_plots(plot_list)
-    demographic_plots <- demographic_plots(plot_list)
-    neuroimaging_plots <- neuroimaging_plots(plot_list)
-    acute_symptom_plots <- acute_symptom_plots(plot_list)
-    parent_psych_plots <- parent_psych_plots(plot_list)
-    family_env_plots <- family_env_plots(plot_list)
-    prosocial_plots <- prosocial_plots(plot_list)
-    healthy_habits_plots <- healthy_habits_plots(plot_list)
-    medical_history_plots <- medical_history_plots(plot_list)
-    print(".")
-    ggsave(
-        plot = all_plots,
-        fig_path(paste0(prefix, "_all_plots.png"), TRUE),
-        width = 40,
-        height = 33
     )
-    print(".")
+    plot_list <- Filter(Negate(is.null), plot_list)
+    pw <- wrap_plots(plot_list)
     ggsave(
-        plot = outcome_plots,
-        fig_path(paste0(prefix, "_outcome_plots.png"), TRUE),
-        width = 15,
-        height = 15
-    )
-    print(".")
-    ggsave(
-        plot = demographic_plots,
-        fig_path(paste0(prefix, "_demographic_plots.png"), TRUE),
-        width = 15,
-        height = 10
-    )
-    print(".")
-    ggsave(
-        plot = neuroimaging_plots,
-        fig_path(paste0(prefix, "_neuroimaging_plots.png"), TRUE),
-        width = 15,
-        height = 15
-    )
-    print(".")
-    ggsave(
-        plot = acute_symptom_plots,
-        fig_path(paste0(prefix, "_acute_symptom_plots.png"), TRUE),
-        width = 20,
-        height = 7
-    )
-    print(".")
-    ggsave(
-        plot = parent_psych_plots,
-        fig_path(paste0(prefix, "_parent_psych_plots.png"), TRUE),
-        width = 20,
-        height = 13
-    )
-    print(".")
-    ggsave(
-        plot = family_env_plots,
-        fig_path(paste0(prefix, "_family_env_plots.png"), TRUE),
-        width = 15,
-        height = 15
-    )
-    print(".")
-    ggsave(
-        plot = prosocial_plots,
-        fig_path(paste0(prefix, "_prosocial_plots.png"), TRUE),
-        width = 15,
-        height = 8
-    )
-    print(".")
-    ggsave(
-        plot = healthy_habits_plots,
-        fig_path(paste0(prefix, "_healthy_habits_plots.png"), TRUE),
-        width = 14,
-        height = 8
-    )
-    print(".")
-    ggsave(
-        plot = medical_history_plots,
-        fig_path(paste0(prefix, "_medical_history_plots.png"), TRUE),
-        width = 12,
-        height = 6
-    )
-}
-
-save_plot_list_uninj <- function(plot_list, prefix) {
-    all_plots <- wrap_plots(plot_list)
-    outcome_plots <- outcome_plots(plot_list)
-    demographic_plots <- demographic_plots_uninj(plot_list)
-    neuroimaging_plots <- neuroimaging_plots(plot_list)
-    parent_psych_plots <- parent_psych_plots(plot_list)
-    family_env_plots <- family_env_plots(plot_list)
-    prosocial_plots <- prosocial_plots(plot_list)
-    healthy_habits_plots <- healthy_habits_plots(plot_list)
-    medical_history_plots <- medical_history_plots_uninj(plot_list)
-    ggsave(
-        plot = all_plots,
-        fig_path(paste0(prefix, "_all_plots.png"), TRUE),
-        width = 40,
-        height = 33
-    )
-    print(".")
-    ggsave(
-        plot = outcome_plots,
-        fig_path(paste0(prefix, "_outcome_plots.png"), TRUE),
-        width = 15,
-        height = 15
-    )
-    print(".")
-    ggsave(
-        plot = demographic_plots,
-        fig_path(paste0(prefix, "_demographic_plots.png"), TRUE),
-        width = 15,
-        height = 10
-    )
-    print(".")
-    ggsave(
-        plot = neuroimaging_plots,
-        fig_path(paste0(prefix, "_neuroimaging_plots.png"), TRUE),
-        width = 15,
-        height = 15
-    )
-    print(".")
-    ggsave(
-        plot = parent_psych_plots,
-        fig_path(paste0(prefix, "_parent_psych_plots.png"), TRUE),
-        width = 20,
-        height = 13
-    )
-    print(".")
-    ggsave(
-        plot = family_env_plots,
-        fig_path(paste0(prefix, "_family_env_plots.png"), TRUE),
-        width = 15,
-        height = 15
-    )
-    print(".")
-    ggsave(
-        plot = prosocial_plots,
-        fig_path(paste0(prefix, "_prosocial_plots.png"), TRUE),
-        width = 15,
-        height = 8
-    )
-    print(".")
-    ggsave(
-        plot = healthy_habits_plots,
-        fig_path(paste0(prefix, "_healthy_habits_plots.png"), TRUE),
-        width = 14,
-        height = 8
-    )
-    print(".")
-    ggsave(
-        plot = medical_history_plots,
-        fig_path(paste0(prefix, "_medical_history_plots.png"), TRUE),
-        width = 12,
+        plot = pw,
+        filename = paste0(plotname, "_medical_history_plots.png"),
+        width = 6 * length(plot_list),
         height = 6
     )
 }
@@ -1067,20 +987,24 @@ split_letters <- function(split_vec, n = 2000) {
 my_corr_plot <- function(data_list, target_list, order) {
     # Merging and dummying the data lists
     full_data_list <- c(data_list, target_list)
-    race_pos <- which(summarize_dl(full_data_list)$"name" == "d_race")
-    mech_pos <- which(summarize_dl(full_data_list)$"name" == "as_mechanism")
-    full_data_list[[race_pos]]$"data" <- full_data_list[[race_pos]]$"data" |>
-        fastDummies::dummy_cols(
-            "race",
-            remove_first_dummy = TRUE,
-            remove_selected_columns = TRUE
-        )
-    full_data_list[[mech_pos]]$"data" <- full_data_list[[mech_pos]]$"data" |>
-        fastDummies::dummy_cols(
-            "mtbi_mechanism",
-            remove_first_dummy = TRUE,
-            remove_selected_columns = TRUE
-        )
+    if ("d_race" %in% summarize_dl(full_data_list)$"name") {
+        race_i <- which(summarize_dl(full_data_list)$"name" == "d_race")
+        full_data_list[[race_i]]$"data" <- full_data_list[[race_i]]$"data" |>
+            fastDummies::dummy_cols(
+                "race",
+                remove_first_dummy = TRUE,
+                remove_selected_columns = TRUE
+            )
+    }
+    if ("as_mechanism" %in% summarize_dl(full_data_list)$"name") {
+        mech_i <- which(summarize_dl(full_data_list)$"name" == "as_mechanism")
+        full_data_list[[mech_i]]$"data" <- full_data_list[[mech_i]]$"data" |>
+            fastDummies::dummy_cols(
+                "mtbi_mechanism",
+                remove_first_dummy = TRUE,
+                remove_selected_columns = TRUE
+            )
+    }
     ###########################################################################
     order <- order |>
         unlist() |>
@@ -1094,4 +1018,40 @@ my_corr_plot <- function(data_list, target_list, order) {
     new_order <- match(order, df_cols)
     corr_data <- correlation_data(full_data_list, order = new_order)
     return(corr_data)
+}
+
+representative_mc <- function(split_vector,
+                              aris,
+                              ari_order,
+                              solutions_matrix,
+                              group_name,
+                              possible_data) {
+    # Formatting
+    ari_order <- unlist(ari_order)
+    # Sorting
+    aris <- aris[ari_order, ari_order]
+    solutions_matrix <- solutions_matrix[ari_order, ]
+    # Assigning meta clusters to the solutions matrix and ARI matrix
+    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    aris$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    mcs <- split_at(split_vector, nrow(solutions_matrix)) |>
+        unique()
+    for (mc in mcs) {
+        mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
+        mc_ari <- aris[aris$"mc" == mc, ]
+        mc_ari$"mc" <- NULL
+        rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
+        rep_sol <- mc_sm[rep_mc, ]
+        sol_row_id <- rep_sol$"row_id"
+        sol_imp <- rep_sol$"imputation"
+        sol_name <- paste0("mc_", mc, "_row_id_", sol_row_id, "_", sol_imp)
+        sol_name <- paste0(group_name, "_", sol_name)
+        sol_name <- tolower(sol_name)
+        write_csv(rep_sol, proc_path(paste0(sol_name, ".csv"), TRUE))
+        characterize_solution(
+            solution = rep_sol,
+            data_list = possible_data[[sol_imp]],
+            plotname = fig_path(sol_name,  TRUE)
+        )
+    }
 }
