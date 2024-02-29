@@ -398,7 +398,7 @@ characterize_solution <- function(solution = NULL,
     print("Plotting medical history plots")
     medical_history_plots(plot_list, plotname)
     print("Done")
-    #return(plot_list)
+    return(plot_list)
 }
 
 all_plots <- function(plot_list, plotname) {

@@ -391,6 +391,7 @@ split_vec <- c(
     1440,
     1780
 )
+
 cmu_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = aris_all_cmu_imputations,
     aris_order = aris_all_cmu_imputations_order,
@@ -433,38 +434,23 @@ cmu_manhattan <- my_manhattan_plot(
 )
 cmu_manhattan
 
-cmu_io_all_mc_associations <- my_manhattan_plot(
-    full_cmu_io_extended_solutions_matrix,
-    sorted_labels = sorted_mc_labels,
-    mcs = c("A", "B", "C", "D", "E"),
-    data_list = c(oom_cmu1_renamed, dl_cmu1_renamed),
-    colours = c(
-        "I-AS" = "#1B9E77",
-        "I-D" = "#D95F02",
-        "I-N" = "#7570B3",
-        "I-MH" = "#E7298A",
-        "I-P" = "#66A61E",
-        "O-S" = "#E6AB02",
-        "O-B" = "#A6761D"
-    )
-)
-
-cmu_io_all_mc_associations
-
 ggsave(
-    plot = cmu_io_all_mc_associations,
-    fig_path("cmu_io_all_mc_associations.png", TRUE),
+    plot = cmu_manhattan,
+    fig_path("cmu_manhattan.png", TRUE),
     width = 15,
     height = 12
 )
 
 # Bulk export each MC individually
-for (mc in c("A", "B", "C", "D", "E")) {
+for (mc in split_letters(split_vec)) {
+    print(mc)
     mc_plot <- my_manhattan_plot(
-        full_cmu_io_extended_solutions_matrix,
-        sorted_labels = sorted_mc_labels,
+        solutions_matrix = full_cmu_io_extended_solutions_matrix,
+        aris_order = aris_all_cmu_imputations_order,
+        split_vector = split_vec,
         mcs = mc,
-        data_list = c(oom_cmu1_renamed, dl_cmu1_renamed),
+        data_list = data_list_cmu1,
+        target_list = oom_list_cmu1,
         colours = c(
             "I-D" = "#D95F02",
             "I-N" = "#7570B3",
@@ -475,9 +461,9 @@ for (mc in c("A", "B", "C", "D", "E")) {
         )
     )
     mc_path <- paste0(
-        "cmu_io_mc_",
+        "cmu_mc_",
         gsub("-", "_", tolower(mc)),
-        "_associations.png"
+        "_manhattan.png"
     )
     ggsave(
         plot = mc_plot,
@@ -486,6 +472,7 @@ for (mc in c("A", "B", "C", "D", "E")) {
         height = 6
     )
 }
+
 ```
 
 ## Replication in demographic-corrected data
