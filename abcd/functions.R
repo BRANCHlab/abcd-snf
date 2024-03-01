@@ -867,75 +867,123 @@ manhattan_plot <- function(data,
 my_similarity_matrix_heatmap <- function(aris,
                                          aris_order,
                                          extended_solutions,
-                                         split_vector) {
+                                         split_vector = NULL,
+                                         show_clusters = TRUE) {
     pvals <- pval_select(extended_solutions, negative_log = TRUE)
     extended_solutions$"mean_neglog_p" <- pvals$"mean_neglog_p"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
-    mc_heatmap <- similarity_matrix_heatmap(
-        aris,
-        order = aris_order,
-        cluster_rows = FALSE,
-        cluster_columns = FALSE,
-        log_graph = FALSE,
-        data = extended_solutions,
-        top_hm = list(
-            "Scheme" = "snf_scheme",
-            "Impairment Separation" = "mean_neglog_p"
-        ),
-        left_hm = list(
-            "Pooled" = "pooled",
-            "Imputation" = "imputation"
-        ),
-        top_bar = list(
-            "Number of Clusters - 2" = "nclust2"
-        ),
-        scale_diag = "none",
-        heatmap_height = grid::unit(19, "cm"),
-        heatmap_width = grid::unit(19, "cm"),
-        annotation_colours = list(
-            "Pooled" = c(
-                "yes" = "orange",
-                "no" = "purple"
+    if (show_clusters) {
+        mc_heatmap <- similarity_matrix_heatmap(
+            aris,
+            order = aris_order,
+            cluster_rows = FALSE,
+            cluster_columns = FALSE,
+            log_graph = FALSE,
+            data = extended_solutions,
+            top_hm = list(
+                "Scheme" = "snf_scheme",
+                "Impairment Separation" = "mean_neglog_p"
             ),
-            "Imputation" = divergent_colours(
-                extended_solutions$"imputation"
+            left_hm = list(
+                "Pooled" = "pooled",
+                "Imputation" = "imputation"
             ),
-            "Scheme" = c(
-                "1" = "#7FC97F",
-                "2" = "#BEAED4",
-                "3" = "#FDC086"
+            top_bar = list(
+                "Number of Clusters - 2" = "nclust2"
             ),
-            "Impairment Separation" = hm_colours(
-                extended_solutions$"mean_neglog_p"
+            scale_diag = "none",
+            heatmap_height = grid::unit(19, "cm"),
+            heatmap_width = grid::unit(19, "cm"),
+            annotation_colours = list(
+                "Pooled" = c(
+                    "yes" = "orange",
+                    "no" = "purple"
+                ),
+                "Imputation" = divergent_colours(
+                    extended_solutions$"imputation"
+                ),
+                "Scheme" = c(
+                    "1" = "#7FC97F",
+                    "2" = "#BEAED4",
+                    "3" = "#FDC086"
+                ),
+                "Impairment Separation" = hm_colours(
+                    extended_solutions$"mean_neglog_p"
+                )
+            ),
+            col = circlize::colorRamp2(
+                c(min(aris), max(aris)),
+                c("navy", "red")
+            ),
+            row_split = split_at(
+                vector = split_vector,
+                nrow = 2000
+            ),
+            column_split = split_at(
+                vector = split_vector,
+                nrow = 2000
             )
-        ),
-        col = circlize::colorRamp2(
-            c(min(aris), max(aris)),
-            c("navy", "red")
-        ),
-        row_split = split_at(
-            vector = split_vector,
-            nrow = 2000
-        ),
-        column_split = split_at(
-            vector = split_vector,
-            nrow = 2000
         )
-    )
+    } else {
+        mc_heatmap <- similarity_matrix_heatmap(
+            aris,
+            order = aris_order,
+            cluster_rows = FALSE,
+            cluster_columns = FALSE,
+            log_graph = FALSE,
+            data = extended_solutions,
+            top_hm = list(
+                "Scheme" = "snf_scheme",
+                "Impairment Separation" = "mean_neglog_p"
+            ),
+            left_hm = list(
+                "Pooled" = "pooled",
+                "Imputation" = "imputation"
+            ),
+            scale_diag = "none",
+            heatmap_height = grid::unit(19, "cm"),
+            heatmap_width = grid::unit(19, "cm"),
+            annotation_colours = list(
+                "Pooled" = c(
+                    "yes" = "orange",
+                    "no" = "purple"
+                ),
+                "Imputation" = divergent_colours(
+                    extended_solutions$"imputation"
+                ),
+                "Scheme" = c(
+                    "1" = "#7FC97F",
+                    "2" = "#BEAED4",
+                    "3" = "#FDC086"
+                ),
+                "Impairment Separation" = hm_colours(
+                    extended_solutions$"mean_neglog_p"
+                )
+            ),
+            col = circlize::colorRamp2(
+                c(min(aris), max(aris)),
+                c("navy", "red")
+            )
+        )
+    }
     return(mc_heatmap)
 }
 
+
 my_manhattan_plot <- function(solutions_matrix,
-                              aris_order,
-                              split_vector,
+                              aris_order = NULL,
+                              split_vector = NULL,
+                              sorted_labels = NULL,
                               mcs = NULL,
                               data_list,
                               target_list,
                               colours) {
-    # Managing the MC labels
-    reordered_labels <- split_at(split_vector, 2000)
-    names(aris_order) <- reordered_labels
-    sorted_labels <- sort(aris_order)
+    if (is.null(sorted_labels)) {
+        # Managing the MC labels
+        reordered_labels <- split_at(split_vector, 2000)
+        names(aris_order) <- reordered_labels
+        sorted_labels <- sort(aris_order)
+    }
     # Reformatting the data lists to pull names
     data_list_renamed <- data_list |> lapply(
         function(x) {
