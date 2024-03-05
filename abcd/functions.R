@@ -1103,3 +1103,16 @@ representative_mc <- function(split_vector,
         )
     }
 }
+
+subject_filter_dl <- function(data_list, subject_vector) {
+    subject_vector <- paste0("subject_", subject_vector)
+    data_list <- data_list |>
+        lapply(
+            function(x) {
+                x$"data" <- x$"data"[x$"data"$"subjectkey" %in% subject_vector, ]
+                return(x)
+            }
+        )
+    return(data_list)
+}
+

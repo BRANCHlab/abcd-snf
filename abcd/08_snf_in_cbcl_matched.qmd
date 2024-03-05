@@ -1497,3 +1497,307 @@ ggsave(
 
 Looks much closer to the mTBI group.
 I can follow this up with some permutation testing to examine differences between the two groups.
+
+# Replication in 3C-restricted solutions
+
+```{r}
+
+settings_matrix_3c <- read_csv(
+    proc_path("2024_03_01_settings_matrix_mu_3c.csv")
+)
+
+```
+
+## SNF for each of the imputations
+
+```{r}
+# Uninjured only imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmu1 <- batch_snf(
+        data_list = data_list_cmu1,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmu1, proc_path("solutions_matrix_3c_cmu1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmu2 <- batch_snf(
+        data_list = data_list_cmu2,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmu2, proc_path("solutions_matrix_3c_cmu2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmu3 <- batch_snf(
+        data_list = data_list_cmu3,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmu3, proc_path("solutions_matrix_3c_cmu3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmu4 <- batch_snf(
+        data_list = data_list_cmu4,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmu4, proc_path("solutions_matrix_3c_cmu4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmu5 <- batch_snf(
+        data_list = data_list_cmu5,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmu5, proc_path("solutions_matrix_3c_cmu5.csv", TRUE))
+#
+# Uninjured pooled imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmpu1 <- batch_snf(
+        data_list = data_list_cmpu1,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmpu1, proc_path("solutions_matrix_3c_cmpu1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmpu2 <- batch_snf(
+        data_list = data_list_cmpu2,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmpu2, proc_path("solutions_matrix_3c_cmpu2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmpu3 <- batch_snf(
+        data_list = data_list_cmpu3,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmpu3, proc_path("solutions_matrix_3c_cmpu3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmpu4 <- batch_snf(
+        data_list = data_list_cmpu4,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmpu4, proc_path("solutions_matrix_3c_cmpu4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_3c_cmpu5 <- batch_snf(
+        data_list = data_list_cmpu5,
+        settings_matrix = settings_matrix_3c,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_3c_cmpu5, proc_path("solutions_matrix_3c_cmpu5.csv", TRUE))
+```
+
+2024-03-05
+
+this code and above should continue fleshing out the 3C forced solution.
+
+Below is looking at why the previous uninjured group could recover the mTBI solution.
+
+# Old CBCL matched group check
+
+## 1 - old people, new race coding
+
+```{r}
+data_list_ocmu1 <- list.load(input_path("2024_03_05_data_list_ocmu1.rds"))
+data_list_ocmu2 <- list.load(input_path("2024_03_05_data_list_ocmu2.rds"))
+data_list_ocmu3 <- list.load(input_path("2024_03_05_data_list_ocmu3.rds"))
+data_list_ocmu4 <- list.load(input_path("2024_03_05_data_list_ocmu4.rds"))
+data_list_ocmu5 <- list.load(input_path("2024_03_05_data_list_ocmu5.rds"))
+data_list_ocmpu1 <- list.load(input_path("2024_03_05_data_list_ocmpu1.rds"))
+data_list_ocmpu2 <- list.load(input_path("2024_03_05_data_list_ocmpu2.rds"))
+data_list_ocmpu3 <- list.load(input_path("2024_03_05_data_list_ocmpu3.rds"))
+data_list_ocmpu4 <- list.load(input_path("2024_03_05_data_list_ocmpu4.rds"))
+data_list_ocmpu5 <- list.load(input_path("2024_03_05_data_list_ocmpu5.rds"))
+oom_list_ocmu1 <- list.load(input_path("2024_03_05_oom_list_ocmu1.rds"))
+oom_list_ocmu2 <- list.load(input_path("2024_03_05_oom_list_ocmu2.rds"))
+oom_list_ocmu3 <- list.load(input_path("2024_03_05_oom_list_ocmu3.rds"))
+oom_list_ocmu4 <- list.load(input_path("2024_03_05_oom_list_ocmu4.rds"))
+oom_list_ocmu5 <- list.load(input_path("2024_03_05_oom_list_ocmu5.rds"))
+oom_list_ocmpu1 <- list.load(input_path("2024_03_05_oom_list_ocmpu1.rds"))
+oom_list_ocmpu2 <- list.load(input_path("2024_03_05_oom_list_ocmpu2.rds"))
+oom_list_ocmpu3 <- list.load(input_path("2024_03_05_oom_list_ocmpu3.rds"))
+oom_list_ocmpu4 <- list.load(input_path("2024_03_05_oom_list_ocmpu4.rds"))
+oom_list_ocmpu5 <- list.load(input_path("2024_03_05_oom_list_ocmpu5.rds"))
+```
+
+```{r}
+
+settings_matrix <- read_csv(
+    proc_path(
+        "2024_02_14_settings_matrix_mu.csv"
+    )
+)
+
+# Uninjured only imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmu1 <- batch_snf(
+        data_list = data_list_ocmu1,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmu1, proc_path("solutions_matrix_ocmu1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmu2 <- batch_snf(
+        data_list = data_list_ocmu2,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmu2, proc_path("solutions_matrix_ocmu2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmu3 <- batch_snf(
+        data_list = data_list_ocmu3,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmu3, proc_path("solutions_matrix_ocmu3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmu4 <- batch_snf(
+        data_list = data_list_ocmu4,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmu4, proc_path("solutions_matrix_ocmu4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmu5 <- batch_snf(
+        data_list = data_list_ocmu5,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmu5, proc_path("solutions_matrix_ocmu5.csv", TRUE))
+#
+# Uninjured pooled imputed
+# Imputation 1
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmpu1 <- batch_snf(
+        data_list = data_list_ocmpu1,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmpu1, proc_path("solutions_matrix_ocmpu1.csv", TRUE))
+# Imputation 2
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmpu2 <- batch_snf(
+        data_list = data_list_ocmpu2,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmpu2, proc_path("solutions_matrix_ocmpu2.csv", TRUE))
+# Imputation 3
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmpu3 <- batch_snf(
+        data_list = data_list_ocmpu3,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmpu3, proc_path("solutions_matrix_ocmpu3.csv", TRUE))
+# Imputation 4
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmpu4 <- batch_snf(
+        data_list = data_list_ocmpu4,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmpu4, proc_path("solutions_matrix_ocmpu4.csv", TRUE))
+# Imputation 5
+start <- proc.time()
+progressr::with_progress({
+    solutions_matrix_ocmpu5 <- batch_snf(
+        data_list = data_list_ocmpu5,
+        settings_matrix = settings_matrix,
+        distance_metrics_list = my_distance_metrics,
+        processes = "max"
+    )
+})
+proc.time() - start
+write_csv(solutions_matrix_ocmpu5, proc_path("solutions_matrix_ocmpu5.csv", TRUE))
+```
