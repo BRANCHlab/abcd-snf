@@ -1,0 +1,250 @@
+# Profiling parallel ARI calculations
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(progressr)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+
+mtbi_subjects <- read_csv(sub_path("2024_02_13_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_02_13_uninjured_subjects.csv"))
+cbcl_matched_uninjured <- read_csv(sub_path("2024_02_14_cbcl_matched_uninjured.csv"))
+
+solutions_matrix_3c_cmu1 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmu1.csv"))
+solutions_matrix_3c_cmu2 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmu2.csv"))
+solutions_matrix_3c_cmu3 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmu3.csv"))
+solutions_matrix_3c_cmu4 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmu4.csv"))
+solutions_matrix_3c_cmu5 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmu5.csv"))
+solutions_matrix_3c_cmpu1 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmpu1.csv"))
+solutions_matrix_3c_cmpu2 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmpu2.csv"))
+solutions_matrix_3c_cmpu3 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmpu3.csv"))
+solutions_matrix_3c_cmpu4 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmpu4.csv"))
+solutions_matrix_3c_cmpu5 <- read_csv(proc_path("2024_03_07_solutions_matrix_3c_cmpu5.csv"))
+
+solutions_matrix_3c_cmu <- do.call(
+    "rbind",
+    list(
+        solutions_matrix_3c_cmu1,
+        solutions_matrix_3c_cmu2,
+        solutions_matrix_3c_cmu3,
+        solutions_matrix_3c_cmu4,
+        solutions_matrix_3c_cmu5,
+        solutions_matrix_3c_cmpu1,
+        solutions_matrix_3c_cmpu2,
+        solutions_matrix_3c_cmpu3,
+        solutions_matrix_3c_cmpu4,
+        solutions_matrix_3c_cmpu5
+    )
+)
+```
+
+```{r}
+
+profiling_data <- data.frame(
+    rows = numeric(),
+    processes = numeric(),
+    location = numeric(),
+    progress = logical(),
+    time = numeric()
+)
+for (row_counts in c(5, 10, 50, 100, 300)) {
+    for (proc_count in list(1, "max")) {
+        for (prog in c(TRUE, FALSE)) {
+            print(paste0("Row count: ", row_counts))
+            print(paste0("Processes: ", proc_count))
+            print(paste0("Progress: ", prog))
+            mini <- solutions_matrix_3c_cmu[1:row_counts, ]
+            if (proc_count == "max") {
+                nproc <- future::availableCores()
+            } else {
+                nproc <- 1
+            }
+            start <- proc.time()
+            aris <- calc_om_aris(mini, processes = nproc, progress = FALSE)
+            t <- proc.time() - start
+            profiling_data <- rbind(
+                profiling_data,
+                data.frame(
+                    rows = row_counts,
+                    processes = nproc,
+                    location = "local",
+                    progress = prog,
+                    time = t[[3]]
+                )
+            )
+        }
+    }
+}
+write_csv(profiling_data, proc_path("parallel_ari_profiling_local.csv", TRUE))
+
+
+profiling_data <- data.frame(
+    rows = numeric(),
+    processes = numeric(),
+    location = numeric(),
+    progress = logical(),
+    time = numeric()
+)
+for (row_counts in c(5, 10, 50, 100, 300)) {
+    for (proc_count in list(1, "max")) {
+        for (prog in c(TRUE, FALSE)) {
+            print(paste0("Row count: ", row_counts))
+            print(paste0("Processes: ", proc_count))
+            print(paste0("Progress: ", prog))
+            mini <- solutions_matrix_3c_cmu[1:row_counts, ]
+            if (proc_count == "max") {
+                nproc <- future::availableCores()
+            } else {
+                nproc <- 1
+            }
+            start <- proc.time()
+            aris <- calc_om_aris(mini, processes = nproc, progress = FALSE)
+            t <- proc.time() - start
+            profiling_data <- rbind(
+                profiling_data,
+                data.frame(
+                    rows = row_counts,
+                    processes = nproc,
+                    location = "hpc",
+                    progress = prog,
+                    time = t[[3]]
+                )
+            )
+        }
+    }
+}
+write_csv(profiling_data, proc_path("parallel_ari_profiling_hpc.csv", TRUE))
+
+pdlocal <- read_csv(proc_path("2024_03_08_parallel_ari_profiling_local.csv"))
+pdhpc <- read_csv(proc_path("2024_03_08_parallel_ari_profiling_hpc.csv"))
+
+pd <- rbind(pdlocal, pdhpc)
+
+library(ggplot2)
+
+pd$"processes" <- as.factor(pd$"processes")
+pd$uid <- paste0(pd$"processes", pd$"location", pd$"progress")
+
+low_row_plot <- ggplot() +
+    geom_point(
+        data = pd,
+        aes(
+            x = rows,
+            y = time,
+            shape = factor(progress),
+            color = factor(processes)
+        ),
+        size = 4,
+        alpha = 0.8
+    ) +
+    geom_line(
+        data = pd,
+        aes(
+            x = rows,
+            y = time,
+            group = factor(uid),
+            color = location
+        )
+    ) +
+    theme_bw()
+
+ggsave(
+    plot = low_row_plot,
+    fig_path("ari_profiling.png", TRUE),
+    width = 5,
+    height = 5
+)
+
+
+profiling_data <- data.frame(
+    rows = numeric(),
+    processes = numeric(),
+    location = numeric(),
+    progress = logical(),
+    time = numeric()
+)
+nproc <- future::availableCores()
+for (row_counts in c(5, 300, 1000)) {
+        for (prog in c(TRUE, FALSE)) {
+            print(paste0("Row count: ", row_counts))
+            print(paste0("Progress: ", prog))
+            mini <- solutions_matrix_3c_cmu[1:row_counts, ]
+            if (prog) {
+                start <- proc.time()
+                progressr::with_progress({aris <- calc_om_aris(mini, processes = nproc, progress = prog)})
+                t <- proc.time() - start
+            } else {
+                start <- proc.time()
+                aris <- calc_om_aris(mini, processes = nproc, progress = prog)
+                t <- proc.time() - start
+            }
+            profiling_data <- rbind(
+                profiling_data,
+                data.frame(
+                    rows = row_counts,
+                    processes = nproc,
+                    location = "local",
+                    progress = prog,
+                    time = t[[3]]
+                )
+            )
+        }
+    }
+}
+write_csv(profiling_data, proc_path("parallel_ari_profiling_local.csv", TRUE))
+
+
+profiling_data <- data.frame(
+    rows = numeric(),
+    processes = numeric(),
+    location = numeric(),
+    progress = logical(),
+    time = numeric()
+)
+for (row_counts in c(5, 10, 50, 100, 300)) {
+    for (proc_count in list(1, "max")) {
+        for (prog in c(TRUE, FALSE)) {
+            print(paste0("Row count: ", row_counts))
+            print(paste0("Processes: ", proc_count))
+            print(paste0("Progress: ", prog))
+            mini <- solutions_matrix_3c_cmu[1:row_counts, ]
+            if (proc_count == "max") {
+                nproc <- future::availableCores()
+            } else {
+                nproc <- 1
+            }
+            if (prog) {
+                start <- proc.time()
+                progressr::with_progress({aris <- calc_om_aris(mini, processes = nproc, progress = FALSE)})
+                t <- proc.time() - start
+            } else {
+                start <- proc.time()
+                aris <- calc_om_aris(mini, processes = nproc, progress = FALSE)
+                t <- proc.time() - start
+            }
+            profiling_data <- rbind(
+                profiling_data,
+                data.frame(
+                    rows = row_counts,
+                    processes = nproc,
+                    location = "hpc",
+                    progress = prog,
+                    time = t[[3]]
+                )
+            )
+        }
+    }
+}
+write_csv(profiling_data, proc_path("parallel_ari_profiling_hpc.csv", TRUE))
+
+
+```
+
+
+

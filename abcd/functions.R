@@ -1109,10 +1109,22 @@ subject_filter_dl <- function(data_list, subject_vector) {
     data_list <- data_list |>
         lapply(
             function(x) {
-                x$"data" <- x$"data"[x$"data"$"subjectkey" %in% subject_vector, ]
+                x$"data" <-
+                    x$"data"[x$"data"$"subjectkey" %in% subject_vector, ]
                 return(x)
             }
         )
     return(data_list)
 }
 
+ari_order <- function(ari_matrix) {
+    heatmap <- similarity_matrix_heatmap(
+        ari_matrix,
+        log_graph = FALSE,
+        cluster_rows = TRUE,
+        cluster_columns = TRUE
+    )
+    heatmap <- ComplexHeatmap::draw(heatmap)
+    order <- ComplexHeatmap::row_order(heatmap)
+    return(order)
+}
