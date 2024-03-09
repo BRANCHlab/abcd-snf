@@ -44,7 +44,48 @@ solutions_matrix_3c_cmu <- do.call(
 )
 ```
 
+
+
 ```{r}
+
+ari_profiler <- function(sm, rows, procs, name) {
+    profiling_data <- data.frame(
+        rows = numeric(),
+        processes = numeric(),
+        name = numeric(),
+        time = numeric()
+    )
+    for (row_counts in rows) {
+        for (proc_count in procs) {
+            print(paste0("Row count: ", row_counts))
+            print(paste0("Processes: ", proc_count))
+            mini <- sm[1:row_counts, ]
+            start <- proc.time()
+            aris <- calc_om_aris(mini, processes = proc_count)
+            t <- proc.time() - start
+            profiling_data <- rbind(
+                profiling_data,
+                data.frame(
+                    rows = row_counts,
+                    processes = proc_count,
+                    name = name,
+                    time = t[[3]]
+                )
+            )
+        }
+    }
+    return(profiling_data)
+}
+ari_profiler(
+    sm = solutions_matrix_3c_cmu,
+    rows = c(100),
+    procs = c(1, "max"),
+    name = "home"
+)
+
+start <- proc.time()
+aris <- calc_om_aris(mini, processes = nproc, progress = FALSE)
+t <- proc.time() - start
 
 profiling_data <- data.frame(
     rows = numeric(),
@@ -242,8 +283,6 @@ for (row_counts in c(5, 10, 50, 100, 300)) {
     }
 }
 write_csv(profiling_data, proc_path("parallel_ari_profiling_hpc.csv", TRUE))
-
-
 ```
 
 
