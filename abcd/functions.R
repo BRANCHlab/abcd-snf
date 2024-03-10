@@ -1,3 +1,4 @@
+
 library(metasnf)
 library(patchwork)
 library(ggplot2)
@@ -354,7 +355,8 @@ characterize_solution <- function(solution = NULL,
                                   data_list,
                                   plotname,
                                   individual_plots = TRUE,
-                                  return_plots = TRUE) {
+                                  return_plots = TRUE,
+                                  group_plots = TRUE) {
     # Formatting
     solution <- data.frame(solution)
     # Generating the required full dataframe
@@ -405,24 +407,26 @@ characterize_solution <- function(solution = NULL,
     # Generating group plots
     print("Plotting all-plot grid")
     all_plots(plot_list, plotname)
-    print("Plotting outcome plots")
-    outcome_plots(plot_list, plotname)
-    print("Plotting demographic plots")
-    demographic_plots(plot_list, plotname)
-    print("Plotting neuroimaging plots")
-    neuroimaging_plots(plot_list, plotname)
-    print("Plotting acute symptom plots")
-    acute_symptom_plots(plot_list, plotname)
-    print("Plotting parent psych plots")
-    parent_psych_plots(plot_list, plotname)
-    print("Plotting family env plots")
-    family_env_plots(plot_list, plotname)
-    print("Plotting prosocial plots")
-    prosocial_plots(plot_list, plotname)
-    print("Plotting healthy habits plots")
-    healthy_habits_plots(plot_list, plotname)
-    print("Plotting medical history plots")
-    medical_history_plots(plot_list, plotname)
+    if (group_plots) {
+        print("Plotting outcome plots")
+        outcome_plots(plot_list, plotname)
+        print("Plotting demographic plots")
+        demographic_plots(plot_list, plotname)
+        print("Plotting neuroimaging plots")
+        neuroimaging_plots(plot_list, plotname)
+        print("Plotting acute symptom plots")
+        acute_symptom_plots(plot_list, plotname)
+        print("Plotting parent psych plots")
+        parent_psych_plots(plot_list, plotname)
+        print("Plotting family env plots")
+        family_env_plots(plot_list, plotname)
+        print("Plotting prosocial plots")
+        prosocial_plots(plot_list, plotname)
+        print("Plotting healthy habits plots")
+        healthy_habits_plots(plot_list, plotname)
+        print("Plotting medical history plots")
+        medical_history_plots(plot_list, plotname)
+    }
     print("Done")
     return(plot_list)
 }
@@ -989,6 +993,14 @@ my_similarity_matrix_heatmap <- function(aris,
             col = circlize::colorRamp2(
                 c(min(aris), max(aris)),
                 c("navy", "red")
+            ),
+            row_split = split_at(
+                vector = split_vector,
+                nrow = 2000
+            ),
+            column_split = split_at(
+                vector = split_vector,
+                nrow = 2000
             )
         )
     }
@@ -1099,7 +1111,9 @@ representative_mc <- function(split_vector,
                               ari_order,
                               solutions_matrix,
                               group_name,
-                              possible_data) {
+                              possible_data,
+                              individual_plots = TRUE,
+                              group_plots = TRUE) {
     # Formatting
     ari_order <- unlist(ari_order)
     # Sorting
@@ -1125,7 +1139,9 @@ representative_mc <- function(split_vector,
         characterize_solution(
             solution = rep_sol,
             data_list = possible_data[[sol_imp]],
-            plotname = fig_path(sol_name,  TRUE)
+            plotname = fig_path(sol_name,  TRUE),
+            individual_plots = individual_plots,
+            group_plots = group_plots
         )
     }
 }
@@ -1153,4 +1169,79 @@ ari_order <- function(ari_matrix) {
     heatmap <- ComplexHeatmap::draw(heatmap)
     order <- ComplexHeatmap::row_order(heatmap)
     return(order)
+}
+
+my_manhattan_save <- function(manhattan_plot, name) {
+    mcs <- length(levels(cmu_3c_manhattan[[1]]$"mc_label"))
+    ggsave(
+        plot = manhattan_plot,
+        filename = name,
+        width = 15,
+        height = mcs * 2.5
+    )
+}
+
+my_manhattan_bulk_save <- function(split_vector,
+                                   solutions_matrix,
+                                   ari_order,
+                                   data_list,
+                                   target_list,
+                                   prefix) {
+    full_manhattan <- my_manhattan_plot(
+        solutions_matrix = solutions_matrix,
+        aris_order = ari_order,
+        split_vector = split_vec,
+        data_list = data_list,
+        target_list = target_list,
+        colours = c(
+            "I-D" = "#D95F02",
+            "I-N" = "#7570B3",
+            "I-MH" = "#E7298A",
+            "I-P" = "#66A61E",
+            "O-S" = "#E6AB02",
+            "O-B" = "#A6761D"
+        )
+    )
+    print(
+        paste0(
+            "Saving full plot at ",
+            fig_path(paste0(prefix, "_manhattan.png"), TRUE)
+        )
+    )
+    my_manhattan_save(
+        full_manhattan,
+        fig_path(paste0(prefix, "_manhattan.png"), TRUE)
+    )
+    print("Saving individual MC plots...")
+    for (mc in split_letters(split_vector)) {
+        print(mc)
+        mc_plot <- my_manhattan_plot(
+            solutions_matrix = solutions_matrix,
+            aris_order = ari_order,
+            split_vector = split_vec,
+            mcs = mc,
+            data_list = data_list,
+            target_list = target_list,
+            colours = c(
+                "I-D" = "#D95F02",
+                "I-N" = "#7570B3",
+                "I-MH" = "#E7298A",
+                "I-P" = "#66A61E",
+                "O-S" = "#E6AB02",
+                "O-B" = "#A6761D"
+            )
+        )
+        mc_path <- paste0(
+            prefix,
+            "_mc_",
+            gsub("-", "_", tolower(mc)),
+            "_manhattan.png"
+        )
+        ggsave(
+            plot = mc_plot,
+            fig_path(mc_path, TRUE),
+            width = 15,
+            height = 6
+        )
+    }
 }

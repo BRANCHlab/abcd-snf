@@ -69,12 +69,7 @@ summarize_distance_metrics_list(my_distance_metrics)
 ## Re-importing the settings matrix
 
 ```{r}
-settings_matrix <- read_csv(
-    proc_path(
-        "2024_02_14_settings_matrix_mu.csv"
-    )
-)
-
+settings_matrix <- read_csv( proc_path( "2024_02_14_settings_matrix_mu.csv"))
 ```
 
 ## SNF for each of the imputations
@@ -266,8 +261,6 @@ write_csv(
     proc_path("aris_all_cmu_imputations.csv", TRUE)
 )
 ```
-
-This is presumably done after 02-15? Double check to make sure it all ran fine.
 
 ## Re-importing the ARIs
 
@@ -841,10 +834,6 @@ settings_matrix_no_demo_cmu1 <- read_csv(
     proc_path("2024_02_25_settings_matrix_no_demo_cmu1.csv")
 )
 
-###############################################################################
-# SNF!
-###############################################################################
-
 # Uninjured only imputed
 # Imputation 1
 start <- proc.time()
@@ -1079,26 +1068,6 @@ write_csv(
 ## Re-importing the ARIs
 
 ```{r}
-aris_cmu1_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu1_no_demo.csv")) |>
-    as.matrix()
-aris_cmu2_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu2_no_demo.csv")) |>
-    as.matrix()
-aris_cmu3_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu3_no_demo.csv")) |>
-    as.matrix()
-aris_cmu4_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu4_no_demo.csv")) |>
-    as.matrix()
-aris_cmu5_no_demo <- read_csv(proc_path("2024_02_25_aris_cmu5_no_demo.csv")) |>
-    as.matrix()
-aris_cmpu1_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu1_no_demo.csv")) |>
-    as.matrix()
-aris_cmpu2_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu2_no_demo.csv")) |>
-    as.matrix()
-aris_cmpu3_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu3_no_demo.csv")) |>
-    as.matrix()
-aris_cmpu4_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu4_no_demo.csv")) |>
-    as.matrix()
-aris_cmpu5_no_demo <- read_csv(proc_path("2024_02_25_aris_cmpu5_no_demo.csv")) |>
-    as.matrix()
 aris_all_cmu_imputations_no_demo <- read_csv(
     proc_path("2024_02_25_aris_all_cmu_imputations_no_demo.csv")
 ) |>
@@ -1228,7 +1197,6 @@ cmu_nd_io_esm$"cbcl_aggressive_p" <- cmu_nd_o_esm$"cbcl_aggressive_p"
 
 write_csv(cmu_nd_o_esm, proc_path("cmu_nd_o_esm.csv", TRUE))
 write_csv(cmu_nd_io_esm, proc_path("cmu_nd_io_esm.csv", TRUE))
-
 ```
 
 ```{r}
@@ -1237,7 +1205,6 @@ cmu_nd_io_esm <- read_csv(proc_path("2024_02_27_cmu_nd_io_esm.csv"))
 ```
 
 ```{r}
-
 split_vec = c(
     295,
     395,
@@ -1268,9 +1235,6 @@ grDevices::png(
 )
 cmu_nd_mc_heatmap
 grDevices::dev.off()
-
-
-
 ```
 
 ## One-MC-at-a-time
@@ -1340,167 +1304,9 @@ for (mc in split_letters(split_vec)) {
 
 ```
 
-
-
-
-
-
-
-
-
-###############################################################################
-
-## Characterization
+## Replication in 3C-restricted solutions
 
 ```{r}
-full_cmu_extended_solutions_matrix <- read_csv(
-    proc_path("2024_02_14_full_cmu_extended_solutions_matrix.csv")
-)
-
-full_cmu_oom_pvals <- pval_select(
-    full_cmu_extended_solutions_matrix,
-    negative_log = TRUE
-)
-
-full_cmu_extended_solutions_matrix$"mean_neglog_p" <- full_cmu_oom_pvals$"mean_neglog_p"
-
-cmu_sm_order <- unlist(
-    read_csv(proc_path("2024_02_14_aris_all_cmu_imputations_order.csv"))
-)
-
-names(cmu_sm_order) <- NULL
-
-cmu_sorted_solutions_matrix <- full_cmu_extended_solutions_matrix[cmu_sm_order, ]
-
-cmu_mc_a_solutions <- cmu_sorted_solutions_matrix[1:435, ]
-cmu_mc_b_solutions <- cmu_sorted_solutions_matrix[436:820, ]
-cmu_mc_c_solutions <- cmu_sorted_solutions_matrix[821:1025, ]
-cmu_mc_d_solutions <- cmu_sorted_solutions_matrix[1026:1400, ]
-cmu_mc_e_solutions <- cmu_sorted_solutions_matrix[1401:1833, ]
-cmu_mc_f_solutions <- cmu_sorted_solutions_matrix[1834:2000, ]
-
-which(cmu_sorted_solutions_matrix$"row_id" == 85 & cmu_sorted_solutions_matrix$"imputation" == "u3")
-
-```
-
-### Setting up total data lists
-
-```{r}
-all_data_list_cmu1 <- c(data_list_cmu1, oom_list_cmu1)
-all_data_list_cmu2 <- c(data_list_cmu2, oom_list_cmu2)
-all_data_list_cmu3 <- c(data_list_cmu3, oom_list_cmu3)
-all_data_list_cmu4 <- c(data_list_cmu4, oom_list_cmu4)
-all_data_list_cmu5 <- c(data_list_cmu5, oom_list_cmu5)
-
-all_data_list_cmpu1 <- c(data_list_cmpu1, oom_list_cmpu1)
-all_data_list_cmpu2 <- c(data_list_cmpu2, oom_list_cmpu2)
-all_data_list_cmpu3 <- c(data_list_cmpu3, oom_list_cmpu3)
-all_data_list_cmpu4 <- c(data_list_cmpu4, oom_list_cmpu4)
-all_data_list_cmpu5 <- c(data_list_cmpu5, oom_list_cmpu5)
-```
-
-### Matched control MC C
-
-```{r}
-
-row <- nrow(cmu_mc_c_solutions) %/% 2
-cmu_mc_c_solution <- cmu_mc_c_solutions[row, ]
-cmu_mc_c_solution$"imputation"
-
-cmu_mc_c_plots <- characterize_solution(
-    cmu_mc_c_solution,
-    all_data_list_cmu5,
-    "cmu_mc_c"
-)
-save_plot_list_uninj(cmu_mc_c_plots, "cmu_mc_c")
-
-```
-
-## Optimal 3-cluster solution
-
-This solution is also from MC C
-
-```{r}
-
-cmu_3c_solutions <- full_cmu_extended_solutions_matrix |>
-    dplyr::filter(nclust == 3)
-top_ind <- cmu_3c_solutions$"mean_neglog_p" == max(cmu_3c_solutions$"mean_neglog_p")
-top_cmu_3c_solution <- cmu_3c_solutions[top_ind, ]
-row <- nrow(top_cmu_3c_solution) %/% 2
-top_cmu_3c_solution <- top_cmu_3c_solution[row, ]
-top_cmu_3c_solution$"imputation"
-top_cmu_3c_solution$"row_id" #85
-
-write_csv(top_cmu_3c_solution, proc_path("top_cmu_3c_solution", TRUE))
-
-get_clusters(top_cmu_3c_solution)
-
-# Restructuring so that the cluster label is the same
-
-for (i in 1:ncol(top_cmu_3c_solution)) {
-    cname <- colnames(top_cmu_3c_solution)[i]
-    if (grepl("subject_", cname)) {
-        if (top_cmu_3c_solution[1, cname] == 1) {
-            top_cmu_3c_solution[1, cname] <- 2
-        } else if (top_cmu_3c_solution[1, cname] == 2) {
-            top_cmu_3c_solution[1, cname] <- 3
-        } else if (top_cmu_3c_solution[1, cname] == 3) {
-            top_cmu_3c_solution[1, cname] <- 1
-        }
-    }
-}
-
-get_clusters(top_cmu_3c_solution)
-
-cmu_3c_plots <- characterize_solution(
-    top_cmu_3c_solution,
-    all_data_list_cmu3,
-    "cmu_top_3c"
-)
-save_plot_list_uninj(cmu_3c_plots, "cmu_top_3c")
-
-
-cmu_3c_characterization <- extend_solutions(
-    top_cmu_3c_solution,
-    data_list_cmu3
-)
-cmu_3c_pvals <- p_val_select(cmu_3c_characterization)
-cmu_3c_pvals$"row_id" <- top_cmu_3c_solution$"row_id"
-cmu_3c_pvals$"mc_label" <- "CMU-C"
-
-cmu_3c_pvals <- cmu_3c_pvals |>
-    dplyr::select(
-        -dplyr::starts_with("cbcl"),
-        -dplyr::starts_with("sds"),
-        -dplyr::starts_with("mean")
-    )
-
-cmu_3c_associations <- manhattan_plot(
-    cmu_3c_pvals,
-    threshold = 0.05,
-    bonferroni_line = FALSE,
-    data_list = data_list_cmu3,
-    colours = c("#A3A500", "#00BF7D", "#00B0F6", "#E76BF3")
-)
-
-cmu_3c_associations
-
-ggsave(
-    plot = cmu_3c_associations,
-    fig_path("top_cmu_3c_associations.png", TRUE),
-    width = 10,
-    height = 3
-)
-
-```
-
-Looks much closer to the mTBI group.
-I can follow this up with some permutation testing to examine differences between the two groups.
-
-# Replication in 3C-restricted solutions
-
-```{r}
-
 settings_matrix_3c <- read_csv(
     proc_path("2024_03_01_settings_matrix_mu_3c.csv")
 )
@@ -1515,7 +1321,6 @@ clust_algs_list <- generate_clust_algs_list(
 ## SNF for each of the imputations
 
 ```{r}
-
 # Uninjured only imputed
 # Imputation 1
 start <- proc.time()
@@ -1649,7 +1454,6 @@ progressr::with_progress({
 })
 proc.time() - start
 write_csv(solutions_matrix_3c_cmpu5, proc_path("solutions_matrix_3c_cmpu5.csv", TRUE))
-
 ```
 
 
@@ -1690,8 +1494,6 @@ print(proc.time() - start)
 write_csv(data.frame(cmu_3c_ari), proc_path("cmu_3c_ari.csv", TRUE))
 ```
 
-here 2024-03-08
-
 ```{r}
 cmu_3c_ari <- read_csv(proc_path("2024_03_08_cmu_3c_ari.csv")) |> as.matrix()
 ```
@@ -1702,7 +1504,7 @@ write_csv(data.frame(cmu_3c_ari_order), proc_path("cmu_3c_ari_order.csv", TRUE))
 ```
 
 ```{r}
-cmu_3c_ari_order <- unlist(read_csv(proc_path("2024_03_08_cmu_3c_ari_order.csv")))
+cmu_3c_ari_order <- unlist(read_csv(proc_path("2024_03_10_cmu_3c_ari_order.csv")))
 names(cmu_3c_ari_order) <- NULL
 ```
 
@@ -1728,8 +1530,6 @@ imputation_labels <- data.frame(
 
 cmu_3c_solutions_matrix <- cbind(solutions_matrix_3c_cmu, imputation_labels)
 
-cmu_3c_solutions_matrix$"nclust"
-
 cmu_3c_o_esm <- extend_solutions(
     cmu_3c_solutions_matrix,
     oom_list_cmu1,
@@ -1749,49 +1549,52 @@ write_csv(cmu_3c_io_esm, proc_path("cmu_3c_io_esm.csv", TRUE))
 
 
 ```{r}
-cmu_3c_o_esm <- read_csv(proc_path("2024_03_07_cmu_3c_o_esm.csv"))
-cmu_3c_io_esm <- read_csv(proc_path("2024_03_07_cmu_3c_io_esm.csv"))
+cmu_3c_o_esm <- read_csv(proc_path("2024_03_10_cmu_3c_o_esm.csv"))
+cmu_3c_io_esm <- read_csv(proc_path("2024_03_10_cmu_3c_io_esm.csv"))
 ```
 
 ```{r}
 
 split_vec <- c(
-    487,
-    610,
-    1015,
-    1070,
-    1135,
-    1180,
-    1555,
-    1845,
-    1945
+    95,
+    380,
+    590,
+    700,
+    850,
+    990,
+    1170,
+    1290,
+    1810,
+    1900
 )
 cmu_3c_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = cmu_3c_ari,
     aris_order = cmu_3c_ari_order,
     extended_solutions = cmu_3c_o_esm,
-    split_vector = split_vec
+    split_vector = split_vec,
+    show_clusters = FALSE
 )
 cmu_3c_mc_heatmap
 
 # PNG export
 grDevices::png(
-    fig_path("ocmu_mc_heatmap.png", TRUE),
-    width = 3000,
-    height = 3000,
-    res = 300
+    fig_path("cmu_3c_mc_heatmap.png", TRUE),
+    width = 1000,
+    height = 1000,
+    res = 100
 )
-ocmu_mc_heatmap
+cmu_3c_mc_heatmap
 grDevices::dev.off()
 ```
 
 ```{r}
-ocmu_manhattan <- my_manhattan_plot(
-    solutions_matrix = ocmu_io_esm,
-    aris_order = ocmu_ari_order,
+
+cmu_3c_manhattan <- my_manhattan_plot(
+    solutions_matrix = cmu_3c_io_esm,
+    aris_order = cmu_3c_ari_order,
     split_vector = split_vec,
-    data_list = data_list_ocmu1,
-    target_list = oom_list_ocmu1,
+    data_list = data_list_cmu1,
+    target_list = oom_list_cmu1,
     colours = c(
         "I-AS" = "#1B9E77",
         "I-D" = "#D95F02",
@@ -1802,72 +1605,44 @@ ocmu_manhattan <- my_manhattan_plot(
         "O-B" = "#A6761D"
     )
 )
-ocmu_manhattan
+cmu_3c_manhattan
 
-ggsave(
-    plot = ocmu_manhattan,
-    fig_path("ocmu_manhattan.png", TRUE),
-    width = 15,
-    height = 10*2.5
+
+my_manhattan_save(cmu_3c_manhattan, fig_path("cmu_3c_manhattan.png", TRUE))
+
+my_manhattan_bulk_save(
+    split_vec,
+    cmu_3c_io_esm,
+    cmu_3c_ari_order,
+    data_list_cmu1,
+    oom_list_cmu1,
+    "cmu_3c"
 )
 
-# Bulk export each MC individually
-for (mc in split_letters(split_vec)) {
-    print(mc)
-    mc_plot <- my_manhattan_plot(
-        solutions_matrix = ocmu_io_esm,
-        aris_order = ocmu_ari_order,
-        split_vector = split_vec,
-        mcs = mc,
-        data_list = data_list_ocmu1,
-        target_list = oom_list_ocmu1,
-        colours = c(
-            "I-D" = "#D95F02",
-            "I-N" = "#7570B3",
-            "I-MH" = "#E7298A",
-            "I-P" = "#66A61E",
-            "O-S" = "#E6AB02",
-            "O-B" = "#A6761D"
-        )
-    )
-    mc_path <- paste0(
-        "ocmu_mc_",
-        gsub("-", "_", tolower(mc)),
-        "_manhattan.png"
-    )
-    ggsave(
-        plot = mc_plot,
-        fig_path(mc_path, TRUE),
-        width = 15,
-        height = 6
-    )
-}
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 2024-03-05
 
 this code and above should continue fleshing out the 3C forced solution.
 
 Below is looking at why the previous uninjured group could recover the mTBI solution.
+
+
+
+Consider deleting below if 3C works out.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Old CBCL matched group check
 
