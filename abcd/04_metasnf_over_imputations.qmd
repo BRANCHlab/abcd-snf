@@ -811,35 +811,82 @@ write_csv(data.frame(corr_order), proc_path("mtbi_corr_order.csv", TRUE))
 ```
 
 ```{r}
+
 corr_order <- read_csv(proc_path("2024_02_27_mtbi_corr_order.csv"))
 
 #re_m1_corr_data <- correlation_data(data_list_re_demo_m1)
 #re_m1_corr_mat <- re_m1_corr_data$"correlation_matrix"
 
-mtbi_corr <- my_corr_plot(
+m_corr <- my_corr_plot(
     data_list_m1,
     oom_list_m1,
     order = corr_order
 )
+save_png(
+    m_corr$"heatmap",
+    fig_path("m_corr_heatmap.png", TRUE),
+    width = 2000,
+    height = 2000
+)
 
-mtbi_nd_corr <- my_corr_plot(
+pm_corr <- my_corr_plot(
+    data_list_pm2,
+    oom_list_pm2,
+    order = corr_order
+)
+save_png(
+    pm_corr$"heatmap",
+    fig_path("pm_corr_heatmap.png", TRUE),
+    width = 2000,
+    height = 2000
+)
+
+colnames(m_corr$"correlation_matrix") %in% colnames(pm_corr$"correlation_matrix")
+
+# m vs. pm
+
+m_vs_pm_corr_hm <- diff_heatmap(
+    m_corr$"correlation_matrix",
+    pm_corr$"correlation_matrix"
+)
+
+save_png(
+    m_vs_pm_corr_hm,
+    fig_path("m_vs_pm_corr_heatmap.png", TRUE),
+    width = 2000,
+    height = 2000
+)
+
+abs_m_vs_pm_corr_hm <- diff_heatmap(
+    m_corr$"correlation_matrix",
+    pm_corr$"correlation_matrix",
+    abs = TRUE
+)
+
+
+m_vs_pm_corr_hm
+
+abs_m_vs_pm_corr_hm
+
+save_png(
+    abs_m_vs_pm_corr_hm,
+    fig_path("abs_m_vs_pm_corr_heatmap.png", TRUE),
+    width = 2000,
+    height = 2000
+)
+
+
+
+nd_m_corr <- my_corr_plot(
     data_list_re_demo_m1,
     oom_list_no_demo_m1,
     order = corr_order
 )
-
 save_png(
-    mtbi_corr$"heatmap",
-    fig_path("mtbi_corr_heatmap.png", TRUE),
-    width = 3500,
-    height = 3500
-)
-
-save_png(
-    mtbi_nd_corr$"heatmap",
-    fig_path("mtbi_nd_corr_heatmap.png", TRUE),
-    width = 3500,
-    height = 3500
+    nd_m_corr$"heatmap",
+    fig_path("nd_m_corr_heatmap.png", TRUE),
+    width = 2000,
+    height = 2000
 )
 ```
 

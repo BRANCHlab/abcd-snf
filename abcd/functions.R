@@ -91,6 +91,32 @@ correlation_data <- function(data_list, order = NULL) {
     return(results)
 }
 
+diff_heatmap <- function(corr1, corr2, abs = FALSE) {
+    # keeping shared columns only
+    cols1 <- colnames(corr1) %in% colnames(corr2)
+    cols2 <- colnames(corr2) %in% colnames(corr1)
+    corr1 <- corr1[cols1, cols1]
+    corr2 <- corr2[cols2, cols2]
+    # calculate difference
+    if (abs) {
+        diff <- abs(corr1) - abs(corr2)
+        caption <- "Δ|Corr|"
+    } else {
+        diff <- corr1 - corr2
+        caption <- "ΔCorr"
+    }
+    # plot heatmap
+    heatmap <- ComplexHeatmap::Heatmap(
+        diff,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        heatmap_legend_param = list(
+            title = caption
+        )
+    )
+    return(heatmap)
+}
+
 pval_heatmap <- function(pval_df, order, max_red = FALSE) {
     pval_df <- pval_df |> dplyr::select(-"row_id")
     pval_matrix <- as.matrix(pval_df[order, ])
@@ -114,7 +140,7 @@ save_pdf <- function(heatmap, path, width, height) {
     grDevices::dev.off()
 }
 
-save_png <- function(heatmap, path, width, height, res = 300) {
+save_png <- function(heatmap, path, width, height, res = 150) {
     tryCatch(
         {
             grDevices::png(
