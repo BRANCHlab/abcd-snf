@@ -234,7 +234,7 @@ solutions_matrix_pm2 <- read_csv(proc_path("2024_02_14_solutions_matrix_pm2.csv"
 solutions_matrix_pm3 <- read_csv(proc_path("2024_02_14_solutions_matrix_pm3.csv"))
 solutions_matrix_pm4 <- read_csv(proc_path("2024_02_14_solutions_matrix_pm4.csv"))
 solutions_matrix_pm5 <- read_csv(proc_path("2024_02_14_solutions_matrix_pm5.csv"))
-#
+
 all_mtbi_imputations <- do.call(
     "rbind",
     list(
@@ -273,6 +273,7 @@ aris_pm5 <- calc_om_aris(solutions_matrix_pm5, verbose = TRUE)
 write_csv(data.frame(aris_pm5), proc_path("aris_pm5.csv", TRUE))
 
 aris_all_mtbi_imputations <- calc_om_aris(all_mtbi_imputations, verbose = TRUE)
+
 write_csv(
     data.frame(aris_all_mtbi_imputations),
     proc_path("aris_all_mtbi_imputations.csv", TRUE)
@@ -283,17 +284,6 @@ write_csv(
 ## Re-importing the ARIs
 
 ```{r}
-aris_m1 <- read_csv(proc_path("2024_02_15_aris_m1.csv")) |> as.matrix()
-aris_m2 <- read_csv(proc_path("2024_02_15_aris_m2.csv")) |> as.matrix()
-aris_m3 <- read_csv(proc_path("2024_02_15_aris_m3.csv")) |> as.matrix()
-aris_m4 <- read_csv(proc_path("2024_02_15_aris_m4.csv")) |> as.matrix()
-aris_m5 <- read_csv(proc_path("2024_02_15_aris_m5.csv")) |> as.matrix()
-aris_pm1 <- read_csv(proc_path("2024_02_15_aris_pm1.csv")) |> as.matrix()
-aris_pm2 <- read_csv(proc_path("2024_02_15_aris_pm2.csv")) |> as.matrix()
-aris_pm3 <- read_csv(proc_path("2024_02_15_aris_pm3.csv")) |> as.matrix()
-aris_pm4 <- read_csv(proc_path("2024_02_15_aris_pm4.csv")) |> as.matrix()
-aris_pm5 <- read_csv(proc_path("2024_02_15_aris_pm5.csv")) |> as.matrix()
-
 aris_all_mtbi_imputations <- read_csv(
     proc_path("2024_02_15_aris_all_mtbi_imputations.csv")
 ) |>
@@ -338,6 +328,7 @@ names(aris_all_mtbi_imputations_order) <- NULL
 ## Full imputation meta clustering plot with impairment levels
 
 ```{r}
+
 imputation_labels <- data.frame(
     "imputation" = c(
         rep("m1", 200),
@@ -392,11 +383,11 @@ write_csv(
 The "o" is for just extending on the output variables (CBCL/SDS), while the "io" is for both input and output variables.
 
 ```{r}
-full_mtbi_o_extended_solutions_matrix <- read_csv(
+mtbi_o_esm <- read_csv(
     proc_path("2024_02_24_full_mtbi_o_extended_solutions_matrix.csv")
 )
 
-full_mtbi_io_extended_solutions_matrix <- read_csv(
+mtbi_io_esm <- read_csv(
     proc_path("2024_02_24_full_mtbi_io_extended_solutions_matrix.csv")
 )
 ```
@@ -417,7 +408,7 @@ split_vec <- c(
 mtbi_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = aris_all_mtbi_imputations,
     aris_order = aris_all_mtbi_imputations_order,
-    extended_solutions = full_mtbi_o_extended_solutions_matrix,
+    extended_solutions = mtbi_o_esm,
     split_vector = split_vec
 )
 mtbi_mc_heatmap
@@ -425,12 +416,13 @@ mtbi_mc_heatmap
 # PNG export
 grDevices::png(
     fig_path("mtbi_mc_heatmap.png", TRUE),
-    width = 3000,
-    height = 3000,
-    res = 300
+    width = 1000,
+    height = 900,
+    res = 100
 )
 mtbi_mc_heatmap
 grDevices::dev.off()
+
 ```
 
 ## One-MC-at-a-time
