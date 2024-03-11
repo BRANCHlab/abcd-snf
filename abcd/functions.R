@@ -1,4 +1,3 @@
-
 library(metasnf)
 library(patchwork)
 library(ggplot2)
@@ -902,6 +901,11 @@ my_similarity_matrix_heatmap <- function(aris,
     pvals <- pval_select(extended_solutions, negative_log = TRUE)
     extended_solutions$"mean_neglog_p" <- pvals$"mean_neglog_p"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
+    if (!is.null(split_vector)) {
+        splits <- split_at(vector = split_vector, nrow = 2000)
+    } else {
+        splits <- NULL
+    }
     if (show_clusters) {
         mc_heatmap <- similarity_matrix_heatmap(
             aris,
@@ -945,14 +949,8 @@ my_similarity_matrix_heatmap <- function(aris,
                 c(min(aris), max(aris)),
                 c("navy", "red")
             ),
-            row_split = split_at(
-                vector = split_vector,
-                nrow = 2000
-            ),
-            column_split = split_at(
-                vector = split_vector,
-                nrow = 2000
-            )
+            row_split = splits,
+            column_split = splits
         )
     } else {
         mc_heatmap <- similarity_matrix_heatmap(
@@ -994,19 +992,12 @@ my_similarity_matrix_heatmap <- function(aris,
                 c(min(aris), max(aris)),
                 c("navy", "red")
             ),
-            row_split = split_at(
-                vector = split_vector,
-                nrow = 2000
-            ),
-            column_split = split_at(
-                vector = split_vector,
-                nrow = 2000
-            )
+            row_split = splits,
+            column_split = splits
         )
     }
     return(mc_heatmap)
 }
-
 
 my_manhattan_plot <- function(solutions_matrix,
                               aris_order = NULL,
@@ -1172,7 +1163,7 @@ ari_order <- function(ari_matrix) {
 }
 
 my_manhattan_save <- function(manhattan_plot, name) {
-    mcs <- length(levels(cmu_3c_manhattan[[1]]$"mc_label"))
+    mcs <- length(levels(manhattan_plot[[1]]$"mc_label"))
     ggsave(
         plot = manhattan_plot,
         filename = name,
@@ -1194,6 +1185,7 @@ my_manhattan_bulk_save <- function(split_vector,
         data_list = data_list,
         target_list = target_list,
         colours = c(
+            "I-AS" = "#1B9E77",
             "I-D" = "#D95F02",
             "I-N" = "#7570B3",
             "I-MH" = "#E7298A",
@@ -1223,6 +1215,7 @@ my_manhattan_bulk_save <- function(split_vector,
             data_list = data_list,
             target_list = target_list,
             colours = c(
+                "I-AS" = "#1B9E77",
                 "I-D" = "#D95F02",
                 "I-N" = "#7570B3",
                 "I-MH" = "#E7298A",
@@ -1244,4 +1237,15 @@ my_manhattan_bulk_save <- function(split_vector,
             height = 6
         )
     }
+}
+
+mc_heatmap_save <- function(heatmap, path) {
+    grDevices::png(
+        filename = path,
+        width = 1000,
+        height = 900,
+        res = 100
+    )
+    print(heatmap)
+    grDevices::dev.off()
 }

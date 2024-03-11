@@ -286,20 +286,8 @@ write_csv(
 ## Re-importing the ARIs
 
 ```{r}
-aris_mu1 <- read_csv(proc_path("2024_02_15_aris_mu1.csv")) |> as.matrix()
-aris_mu2 <- read_csv(proc_path("2024_02_15_aris_mu2.csv")) |> as.matrix()
-aris_mu3 <- read_csv(proc_path("2024_02_15_aris_mu3.csv")) |> as.matrix()
-aris_mu4 <- read_csv(proc_path("2024_02_15_aris_mu4.csv")) |> as.matrix()
-aris_mu5 <- read_csv(proc_path("2024_02_15_aris_mu5.csv")) |> as.matrix()
-aris_mpu1 <- read_csv(proc_path("2024_02_15_aris_mpu1.csv")) |> as.matrix()
-aris_mpu2 <- read_csv(proc_path("2024_02_15_aris_mpu2.csv")) |> as.matrix()
-aris_mpu3 <- read_csv(proc_path("2024_02_15_aris_mpu3.csv")) |> as.matrix()
-aris_mpu4 <- read_csv(proc_path("2024_02_15_aris_mpu4.csv")) |> as.matrix()
-aris_mpu5 <- read_csv(proc_path("2024_02_15_aris_mpu5.csv")) |> as.matrix()
-
-aris_all_uninjured_imputations <- read_csv(
-    proc_path("2024_02_15_aris_all_uninjured_imputations.csv")
-) |>
+mu_ari <- proc_path("2024_02_15_aris_all_uninjured_imputations.csv") |>
+    read_csv() |>
     as.matrix()
 ```
 
@@ -308,33 +296,12 @@ aris_all_uninjured_imputations <- read_csv(
 ### Initial plot across all ARIs to extract order
 
 ```{r}
-aris_all_uninjured_imputations_heatmap <- similarity_matrix_heatmap(
-    aris_all_uninjured_imputations,
-    log_graph = FALSE,
-    cluster_rows = TRUE,
-    cluster_columns = TRUE
-)
-
-aris_all_uninjured_imputations_heatmap <- ComplexHeatmap::draw(
-    aris_all_uninjured_imputations_heatmap
-)
-aris_all_uninjured_imputations_order <- ComplexHeatmap::row_order(
-    aris_all_uninjured_imputations_heatmap
-)
-
-write_csv(
-    data.frame(aris_all_uninjured_imputations_order),
-    proc_path("aris_all_uninjured_imputations_order.csv", TRUE)
-)
+mu_ari_order <- ari_order(mu_ari)
+write_csv(data.frame(mu_ari_order), proc_path("mu_ari_order.csv", TRUE))
 ```
 
-### Re-importing the order
-
 ```{r}
-aris_all_uninjured_imputations_order <- unlist(
-    read_csv(proc_path("2024_02_25_aris_all_uninjured_imputations_order.csv"))
-)
-
+mu_ari_order <- unlist(read_csv(proc_path("2024_03_11_mu_ari_order.csv")))
 names(aris_all_uninjured_imputations_order) <- NULL
 ```
 
@@ -405,11 +372,11 @@ write_csv(
 ```
 
 ```{r}
-full_mu_o_extended_solutions_matrix <- read_csv(
+mu_o_esm <- read_csv(
     proc_path("2024_02_25_full_mu_o_extended_solutions_matrix.csv")
 )
 
-full_mu_io_extended_solutions_matrix <- read_csv(
+mu_io_esm <- read_csv(
     proc_path("2024_02_25_full_mu_io_extended_solutions_matrix.csv")
 )
 ```
@@ -426,22 +393,14 @@ split_vec <- c(
     1558
 )
 mu_mc_heatmap <- my_similarity_matrix_heatmap(
-    aris = aris_all_uninjured_imputations,
-    aris_order = aris_all_uninjured_imputations_order,
-    extended_solutions = full_mu_o_extended_solutions_matrix,
+    aris = mu_ari,
+    aris_order = mu_ari_order,
+    extended_solutions = mu_o_esm,
     split_vector = split_vec
 )
 mu_mc_heatmap
 
-# PNG export
-grDevices::png(
-    fig_path("mu_mc_heatmap.png", TRUE),
-    width = 3000,
-    height = 3000,
-    res = 300
-)
-mu_mc_heatmap
-grDevices::dev.off()
+mc_heatmap_save(mu_mc_heatmap, fig_path("mu_mc_heatmap.png", TRUE))
 ```
 
 ## One-MC-at-a-time
@@ -1379,7 +1338,6 @@ for (mc in split_letters(split_vec)) {
 ## Replication in matched uninjured group, but with forced 3C
 
 ```{r}
-
 clust_algs_list <- generate_clust_algs_list(
     "three_cluster_spectral" = spectral_three,
     disable_base = TRUE
@@ -1402,11 +1360,9 @@ write_csv(settings_matrix_3c, proc_path("settings_matrix_mu_3c.csv", TRUE))
 settings_matrix_3c <- read_csv(
     proc_path("2024_03_01_settings_matrix_mu_3c.csv")
 )
-
 ```
 
 ```{r}
-
 # Uninjured only imputed
 # Imputation 1
 start <- proc.time()
@@ -1607,27 +1563,6 @@ solutions_matrix_mu_3c <- do.call(
 ## Calculating pairwise ARIs
 
 ```{r}
-
-#mu_3c_mu1_ari <- calc_om_aris(solutions_matrix_3c_mu1, verbose = TRUE)
-write_csv(data.frame(mu_3c_mu1_ari), proc_path("mu_3c_mu1_ari.csv", TRUE))
-#mu_3c_mu2_ari <- calc_om_aris(solutions_matrix_3c_mu2, verbose = TRUE)
-write_csv(data.frame(mu_3c_mu2_ari), proc_path("mu_3c_mu2_ari.csv", TRUE))
-#mu_3c_mu3_ari <- calc_om_aris(solutions_matrix_3c_mu3, verbose = TRUE)
-write_csv(data.frame(mu_3c_mu3_ari), proc_path("mu_3c_mu3_ari.csv", TRUE))
-#mu_3c_mu4_ari <- calc_om_aris(solutions_matrix_3c_mu4, verbose = TRUE)
-write_csv(data.frame(mu_3c_mu4_ari), proc_path("mu_3c_mu4_ari.csv", TRUE))
-#mu_3c_mu5_ari <- calc_om_aris(solutions_matrix_3c_mu5, verbose = TRUE)
-write_csv(data.frame(mu_3c_mu5_ari), proc_path("mu_3c_mu5_ari.csv", TRUE))
-#mu_3c_mpu1_ari <- calc_om_aris(solutions_matrix_3c_mpu1, verbose = TRUE)
-write_csv(data.frame(mu_3c_mpu1_ari), proc_path("mu_3c_mpu1_ari.csv", TRUE))
-#mu_3c_mpu2_ari <- calc_om_aris(solutions_matrix_3c_mpu2, verbose = TRUE)
-write_csv(data.frame(mu_3c_mpu2_ari), proc_path("mu_3c_mpu2_ari.csv", TRUE))
-#mu_3c_mpu3_ari <- calc_om_aris(solutions_matrix_3c_mpu3, verbose = TRUE)
-write_csv(data.frame(mu_3c_mpu3_ari), proc_path("mu_3c_mpu3_ari.csv", TRUE))
-#mu_3c_mpu4_ari <- calc_om_aris(solutions_matrix_3c_mpu4, verbose = TRUE)
-write_csv(data.frame(mu_3c_mpu4_ari), proc_path("mu_3c_mpu4_ari.csv", TRUE))
-#mu_3c_mpu5_ari <- calc_om_aris(solutions_matrix_3c_mpu5, verbose = TRUE)
-write_csv(data.frame(mu_3c_mpu5_ari), proc_path("mu_3c_mpu5_ari.csv", TRUE))
 mu_3c_ari <- calc_om_aris(solutions_matrix_mu_3c, verbose = TRUE)
 write_csv(data.frame(mu_3c_ari), proc_path("mu_3c_ari.csv", TRUE))
 ```
@@ -1635,19 +1570,7 @@ write_csv(data.frame(mu_3c_ari), proc_path("mu_3c_ari.csv", TRUE))
 ## Re-importing the ARIs
 
 ```{r}
-
-mu_3c_mu1_ari <- read_csv(proc_path("2024_03_01_mu_3c_mu1_ari.csv")) |> as.matrix()
-mu_3c_mu2_ari <- read_csv(proc_path("2024_03_01_mu_3c_mu2_ari.csv")) |> as.matrix()
-mu_3c_mu3_ari <- read_csv(proc_path("2024_03_01_mu_3c_mu3_ari.csv")) |> as.matrix()
-mu_3c_mu4_ari <- read_csv(proc_path("2024_03_01_mu_3c_mu4_ari.csv")) |> as.matrix()
-mu_3c_mu5_ari <- read_csv(proc_path("2024_03_01_mu_3c_mu5_ari.csv")) |> as.matrix()
-mu_3c_mpu1_ari <- read_csv(proc_path("2024_03_01_mu_3c_mpu1_ari.csv")) |> as.matrix()
-mu_3c_mpu2_ari <- read_csv(proc_path("2024_03_01_mu_3c_mpu2_ari.csv")) |> as.matrix()
-mu_3c_mpu3_ari <- read_csv(proc_path("2024_03_01_mu_3c_mpu3_ari.csv")) |> as.matrix()
-mu_3c_mpu4_ari <- read_csv(proc_path("2024_03_01_mu_3c_mpu4_ari.csv")) |> as.matrix()
-mu_3c_mpu5_ari <- read_csv(proc_path("2024_03_01_mu_3c_mpu5_ari.csv")) |> as.matrix()
 mu_3c_ari <- read_csv(proc_path("2024_03_01_mu_3c_ari.csv")) |> as.matrix()
-
 ```
 
 ## Plotting the ARIs
@@ -1655,26 +1578,15 @@ mu_3c_ari <- read_csv(proc_path("2024_03_01_mu_3c_ari.csv")) |> as.matrix()
 ### Initial plot across all ARIs to extract order
 
 ```{r}
-
-mu_3c_heatmap <- similarity_matrix_heatmap(
-    mu_3c_ari,
-    log_graph = FALSE,
-    cluster_rows = TRUE,
-    cluster_columns = TRUE
-)
-
-mu_3c_heatmap <- ComplexHeatmap::draw(mu_3c_heatmap)
-mu_3c_order <- ComplexHeatmap::row_order(mu_3c_heatmap)
-
-write_csv(data.frame(mu_3c_order), proc_path("mu_3c_order.csv", TRUE))
-
+mu_3c_ari_order <- ari_order(mu_3c_ari)
+write_csv(data.frame(mu_3c_ari_order), proc_path("mu_3c_ari_order.csv", TRUE))
 ```
 
 ### Re-importing the order
 
 ```{r}
-mu_3c_order <- unlist(read_csv(proc_path("2024_03_01_mu_3c_order.csv")))
-names(mu_3c_order) <- NULL
+mu_3c_ari_order <- unlist(read_csv(proc_path("2024_03_11_mu_3c_ari_order.csv")))
+names(mu_3c_ari_order) <- NULL
 ```
 
 ## Full imputation meta clustering plot with impairment levels
@@ -1727,7 +1639,6 @@ write_csv(
 
 ```{r}
 mu_3c_o_esm <- read_csv(proc_path("2024_03_01_mu_3c_o_esm.csv"))
-
 mu_3c_io_esm <- read_csv(proc_path("2024_03_01_mu_3c_io_esm.csv"))
 ```
 
@@ -1735,25 +1646,14 @@ mu_3c_io_esm <- read_csv(proc_path("2024_03_01_mu_3c_io_esm.csv"))
 
 mu_3c_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = mu_3c_ari,
-    aris_order = mu_3c_order,
+    aris_order = mu_3c_ari_order,
     extended_solutions = mu_3c_o_esm,
     show_clusters = FALSE
 )
 mu_3c_mc_heatmap
 
-# PNG export
-grDevices::png(
-    fig_path("mu_3c_mc_heatmap.png", TRUE),
-    width = 3000,
-    height = 3000,
-    res = 300
-)
-mu_3c_mc_heatmap
-grDevices::dev.off()
-
+mc_heatmap_save(mu_3c_mc_heatmap, fig_path("mu_3c_mc_heatmap.png", TRUE))
 ```
-
-There doesn't really seem to be any meta clusters that are particularly good at separating out the behavioural measures.
 
 ```{r}
 
