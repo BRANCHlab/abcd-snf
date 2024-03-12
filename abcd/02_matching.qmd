@@ -25,22 +25,23 @@ uninjured_subjects <- read_csv(sub_path("2024_03_12_uninjured_subjects.csv"))
 Finding matched uninjured controls for each mtbi subject based on demographic variables.
 
 ```{r}
-d_interview_age_mtbi_train_imp_1 <- read_csv(input_path("2024_02_13_d_interview_age_mtbi_train_imp_1.csv"))
-d_sex_mtbi_train_imp_1 <- read_csv(input_path("2024_02_13_d_sex_mtbi_train_imp_1.csv"))
-d_income_mtbi_train_imp_1 <- read_csv(input_path("2024_02_13_d_income_mtbi_train_imp_1.csv"))
-d_race_mtbi_train_imp_1 <- read_csv(input_path("2024_02_13_d_race_mtbi_train_imp_1.csv"))
+d_interview_age_mtbi_train_imp_1 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_train_imp_1.csv"))
+d_sex_mtbi_train_imp_1 <- read_csv(input_path("2024_03_12_d_sex_mtbi_train_imp_1.csv"))
+d_income_mtbi_train_imp_1 <- read_csv(input_path("2024_03_12_d_income_mtbi_train_imp_1.csv"))
+d_race_mtbi_train_imp_1 <- read_csv(input_path("2024_03_12_d_race_mtbi_train_imp_1.csv"))
 
-d_interview_age_uninj_imp_1 <- read_csv(input_path("2024_02_13_d_interview_age_uninj_imp_1.csv"))
-d_sex_uninj_imp_1 <- read_csv(input_path("2024_02_13_d_sex_uninj_imp_1.csv"))
-d_income_uninj_imp_1 <- read_csv(input_path("2024_02_13_d_income_uninj_imp_1.csv"))
-d_race_uninj_imp_1 <- read_csv(input_path("2024_02_13_d_race_uninj_imp_1.csv"))
+d_interview_age_uninj_imp_1 <- read_csv(input_path("2024_03_12_d_interview_age_uninj_imp_1.csv"))
+d_sex_uninj_imp_1 <- read_csv(input_path("2024_03_12_d_sex_uninj_imp_1.csv"))
+d_income_uninj_imp_1 <- read_csv(input_path("2024_03_12_d_income_uninj_imp_1.csv"))
+d_race_uninj_imp_1 <- read_csv(input_path("2024_03_12_d_race_uninj_imp_1.csv"))
 
 mtbi_matching_df <- list(
     d_interview_age_mtbi_train_imp_1,
     d_sex_mtbi_train_imp_1,
     d_income_mtbi_train_imp_1,
     d_race_mtbi_train_imp_1
-) |> merge_df_list()
+) |>
+    merge_df_list()
 
 mtbi_matching_df$"mtbi" <- 1
 
@@ -49,22 +50,21 @@ uninjured_matching_df <- list(
     d_sex_uninj_imp_1,
     d_income_uninj_imp_1,
     d_race_uninj_imp_1
-) |> merge_df_list()
+) |>
+    merge_df_list()
 
 uninjured_matching_df$"mtbi" <- 0
 
 matching_df <- rbind(mtbi_matching_df, uninjured_matching_df)
 
-# Create a formula for matching
-
-# Use the nearest neighbor matching method (you can explore other methods)
+# Nearest neighbour matching
 matching_results <- matchit(
     formula(mtbi ~ household_income + race + interview_age + sex),
     data = matching_df,
     method = "nearest"
 )
 
-# Print summary information about the matching
+# The uninjured matching has 0 mean diff on all matching variables
 summary(matching_results)
 
 # Obtain the matched data
@@ -81,36 +81,37 @@ write_csv(matched_uninjured, sub_path("matched_uninjured.csv", TRUE))
 ## Loading data and out of model lists
 
 ```{r}
-matched_uninjured <- read_csv(sub_path("2024_02_14_matched_uninjured.csv"))
+matched_uninjured <- read_csv(sub_path("2024_03_12_matched_uninjured.csv"))
 
-data_list_u1 <- list.load(input_path("2024_02_14_data_list_u1.rds"))
-data_list_u2 <- list.load(input_path("2024_02_14_data_list_u2.rds"))
-data_list_u3 <- list.load(input_path("2024_02_14_data_list_u3.rds"))
-data_list_u4 <- list.load(input_path("2024_02_14_data_list_u4.rds"))
-data_list_u5 <- list.load(input_path("2024_02_14_data_list_u5.rds"))
-data_list_pu1 <- list.load(input_path("2024_02_14_data_list_pu1.rds"))
-data_list_pu2 <- list.load(input_path("2024_02_14_data_list_pu2.rds"))
-data_list_pu3 <- list.load(input_path("2024_02_14_data_list_pu3.rds"))
-data_list_pu4 <- list.load(input_path("2024_02_14_data_list_pu4.rds"))
-data_list_pu5 <- list.load(input_path("2024_02_14_data_list_pu5.rds"))
+data_list_u1 <- list.load(input_path("2024_03_12_data_list_u1.rds"))
+data_list_u2 <- list.load(input_path("2024_03_12_data_list_u2.rds"))
+data_list_u3 <- list.load(input_path("2024_03_12_data_list_u3.rds"))
+data_list_u4 <- list.load(input_path("2024_03_12_data_list_u4.rds"))
+data_list_u5 <- list.load(input_path("2024_03_12_data_list_u5.rds"))
+data_list_pu1 <- list.load(input_path("2024_03_12_data_list_pu1.rds"))
+data_list_pu2 <- list.load(input_path("2024_03_12_data_list_pu2.rds"))
+data_list_pu3 <- list.load(input_path("2024_03_12_data_list_pu3.rds"))
+data_list_pu4 <- list.load(input_path("2024_03_12_data_list_pu4.rds"))
+data_list_pu5 <- list.load(input_path("2024_03_12_data_list_pu5.rds"))
 
-oom_list_u1 <- list.load(input_path("2024_02_14_oom_list_u1.rds"))
-oom_list_u2 <- list.load(input_path("2024_02_14_oom_list_u2.rds"))
-oom_list_u3 <- list.load(input_path("2024_02_14_oom_list_u3.rds"))
-oom_list_u4 <- list.load(input_path("2024_02_14_oom_list_u4.rds"))
-oom_list_u5 <- list.load(input_path("2024_02_14_oom_list_u5.rds"))
-oom_list_pu1 <- list.load(input_path("2024_02_14_oom_list_pu1.rds"))
-oom_list_pu2 <- list.load(input_path("2024_02_14_oom_list_pu2.rds"))
-oom_list_pu3 <- list.load(input_path("2024_02_14_oom_list_pu3.rds"))
-oom_list_pu4 <- list.load(input_path("2024_02_14_oom_list_pu4.rds"))
-oom_list_pu5 <- list.load(input_path("2024_02_14_oom_list_pu5.rds"))
+oom_list_u1 <- list.load(input_path("2024_03_12_oom_list_u1.rds"))
+oom_list_u2 <- list.load(input_path("2024_03_12_oom_list_u2.rds"))
+oom_list_u3 <- list.load(input_path("2024_03_12_oom_list_u3.rds"))
+oom_list_u4 <- list.load(input_path("2024_03_12_oom_list_u4.rds"))
+oom_list_u5 <- list.load(input_path("2024_03_12_oom_list_u5.rds"))
+oom_list_pu1 <- list.load(input_path("2024_03_12_oom_list_pu1.rds"))
+oom_list_pu2 <- list.load(input_path("2024_03_12_oom_list_pu2.rds"))
+oom_list_pu3 <- list.load(input_path("2024_03_12_oom_list_pu3.rds"))
+oom_list_pu4 <- list.load(input_path("2024_03_12_oom_list_pu4.rds"))
+oom_list_pu5 <- list.load(input_path("2024_03_12_oom_list_pu5.rds"))
 
 subject_filter_dl <- function(data_list, subject_vector) {
     subject_vector <- paste0("subject_", subject_vector)
     data_list <- data_list |>
         lapply(
             function(x) {
-                x$"data" <- x$"data"[x$"data"$"subjectkey" %in% subject_vector, ]
+                keep_subs <- x$"data"$"subjectkey" %in% subject_vector
+                x$"data" <- x$"data"[keep_subs, ]
                 return(x)
             }
         )
