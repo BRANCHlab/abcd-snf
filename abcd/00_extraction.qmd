@@ -1,13 +1,12 @@
 # Data extraction
 
-## Libraries, path names, and importing of raw data
+Load libraries and establish paths.
 
 ```{r}
 library(ggplot2)
 library(readr)
 library(dplyr)
 library(here)
-library(knitr)
 library(abcdutils)
 
 core_path <- path_maker(here(paste0("data/abcd/core")))
@@ -15,143 +14,66 @@ input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
-# Data dictionary
-dd <- read_csv("/home/prashanth/mnt/hpf/external/abcd/5.0/data-dictionary/data_dictionary.csv")
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+```
 
+Import raw data.
+
+```{r}
 # Ohio TBI screen
-ph_p_otbi <- abcd_load(
-    core_path("physical-health/ph_p_otbi.csv")
-)
-
+ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
 # Age
-abcd_y_lt <- abcd_load(
-    core_path("abcd-general/abcd_y_lt.csv")
-)
-
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
 # Pubertal development scale, youth report
-ph_y_pds <- abcd_load(
-    core_path("physical-health/ph_y_pds.csv")
-)
-
+ph_y_pds <- import("physical-health/ph_y_pds.csv")
 # Pubertal development scale, parent report
-ph_p_pds <- abcd_load(
-    core_path("physical-health/ph_p_pds.csv")
-)
-
+ph_p_pds <- import("physical-health/ph_p_pds.csv")
 # Parent report of gender identity
-gish_p_gi <- abcd_load(
-    core_path("gender-identity-sexual-health/gish_p_gi.csv")
-)
-
-# Youth report of gender identity
-gish_y_gi <- abcd_load(
-    core_path("gender-identity-sexual-health/gish_y_gi.csv")
-)
-
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
 # Demographic data
-abcd_p_demo <- abcd_load(
-    core_path("abcd-general/abcd_p_demo.csv")
-)
-
+abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
 # Medical history
-ph_p_mhx <- abcd_load(
-    core_path("physical-health/ph_p_mhx.csv")
-)
-
+ph_p_mhx <- import("physical-health/ph_p_mhx.csv")
 # Subcortical volumes (ASEG)
-mri_y_smr_vol_aseg <- abcd_load(
-    core_path("imaging/mri_y_smr_vol_aseg.csv")
-)
-
+mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
 # Desikan cortical thicknesses
-mri_y_smr_thk_dsk <- abcd_load(
-    core_path("imaging/mri_y_smr_thk_dsk.csv")
-)
-
+mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
 # Desikan cortical surface areas
-mri_y_smr_area_dsk <- abcd_load(
-    core_path("imaging/mri_y_smr_area_dsk.csv")
-)
-
+mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
 # Neurite density (AtlasTrack, all fibers)
-mri_y_rsi_rnd_at <- abcd_load(
-    core_path("imaging/mri_y_rsi_rnd_at.csv")
-)
-
+mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
 # Neurite density (Desikan, peri-cortical WM)
-mri_y_rsi_rnd_wm_dsk <- abcd_load(
-    core_path("imaging/mri_y_rsi_rnd_wm_dsk.csv")
-)
-
+mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
 # Neurite density (Destriux, peri-cortical WM)
-mri_y_rsi_rnd_wm_dst <- abcd_load(
-    core_path("imaging/mri_y_rsi_rnd_wm_dst.csv")
-)
-
+mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
 # rs-fMRI cortical-cortical correlations
-mri_y_rsfmr_cor_gp_gp <- abcd_load(
-    core_path("imaging/mri_y_rsfmr_cor_gp_gp.csv")
-)
-
+mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
 # rs-fMRI cortical-subcortical correlations
-mri_y_rsfmr_cor_gp_aseg <- abcd_load(
-    core_path("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
-)
-
+mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
 # Loneliness
-mh_y_or <- abcd_load(
-    core_path("mental-health/mh_y_or.csv")
-)
-
+mh_y_or <- import("mental-health/mh_y_or.csv")
 # Screen time
-nt_p_stq <- abcd_load(
-    core_path("novel-technologies/nt_p_stq.csv")
-)
-
+nt_p_stq <- import("novel-technologies/nt_p_stq.csv")
 # Participation in sports and activities
-ph_p_saiq <- abcd_load(
-    core_path("physical-health/ph_p_saiq.csv")
-)
-
+ph_p_saiq <- import("physical-health/ph_p_saiq.csv")
 # Exercise habits
-ph_y_yrb <- abcd_load(
-    core_path("physical-health/ph_y_yrb.csv")
-)
-
+ph_y_yrb <- import("physical-health/ph_y_yrb.csv")
 # Youth report of prosocial behaviour
-ce_y_psb <- abcd_load(
-    core_path("culture-environment/ce_y_psb.csv")
-)
-
+ce_y_psb <- import("culture-environment/ce_y_psb.csv")
 # Parent report of prosocial behaviour
-ce_p_psb <- abcd_load(
-    core_path("culture-environment/ce_p_psb.csv")
-)
-
+ce_p_psb <- import("culture-environment/ce_p_psb.csv")
 # Youth report of family function
-ce_y_fes <- abcd_load(
-    core_path("culture-environment/ce_y_fes.csv")
-)
-
+ce_y_fes <- import("culture-environment/ce_y_fes.csv")
 # Parent report of family function
-ce_p_fes <- abcd_load(
-    core_path("culture-environment/ce_p_fes.csv")
-)
-
+ce_p_fes <- import("culture-environment/ce_p_fes.csv")
 # Parent ASEBA self-report (psychopathology)
-mh_p_asr <- abcd_load(
-    core_path("mental-health/mh_p_asr.csv")
-)
-
+mh_p_asr <- import("mental-health/mh_p_asr.csv")
 # Parent report of child behaviour (CBCL)
-mh_p_cbcl <- abcd_load(
-    core_path("mental-health/mh_p_cbcl.csv")
-)
-
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
 # Sleep disturbance scale
-ph_p_sds <- abcd_load(
-    core_path("physical-health/ph_p_sds.csv")
-)
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
 ```
 
 ## Subjects
@@ -201,8 +123,8 @@ write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
 # Note that the longitudinal subjects have not been filtered in any way based on
 #  whether or not they also had an mTBI at baseline or another timepoint
-mtbi_subjects <- read_csv(sub_path("2024_02_13_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_02_13_uninjured_subjects.csv"))
+mtbi_subjects <- read_csv(sub_path("2024_03_12_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_03_12_uninjured_subjects.csv"))
 ```
 
 A few types of injuries were handled differently from the rest in the above code.
@@ -262,8 +184,7 @@ write_csv(
 
 ```{r}
 # Baseline values of subjects with injuries prior to baseline
-as_loc_mtbi <-
-    get_mtbi_loc(ph_p_otbi, abcd_y_lt, mtbi_subjects, t = 0)
+as_loc_mtbi <- get_mtbi_loc(ph_p_otbi, abcd_y_lt, mtbi_subjects, t = 0)
 
 write_csv(
     as_loc_mtbi,
@@ -379,6 +300,7 @@ write_csv(
 d_race_mtbi <- get_race(
     abcd_p_demo,
     mtbi_subjects,
+    asian_as_other = TRUE, # distinct Asian category only has N = 4
     t = 0
 )
 
@@ -390,6 +312,7 @@ write_csv(
 d_race_uninj <- get_race(
     abcd_p_demo,
     uninjured_subjects,
+    asian_as_other = TRUE,
     t = 0
 )
 
@@ -403,6 +326,7 @@ d_pubertal_status_mtbi <- get_pubertal_status(
     ph_p_pds,
     ph_y_pds,
     mtbi_subjects,
+    max_value = 3,
     t = 0
 )
 
@@ -415,6 +339,7 @@ d_pubertal_status_uninj <- get_pubertal_status(
     ph_p_pds,
     ph_y_pds,
     uninjured_subjects,
+    max_value = 3,
     t = 0
 )
 
@@ -458,9 +383,11 @@ write_csv(
 #### Number of previous mTBIs
 
 ```{r}
-mh_mtbi_count_mtbi <- get_mtbi_count(ph_p_otbi,
+mh_mtbi_count_mtbi <- get_mtbi_count(
+    ph_p_otbi,
     abcd_y_lt,
     mtbi_subjects,
+    cutoff = 3, # N = 4 and 5 only occur once
     t = 0
 )
 
@@ -471,6 +398,7 @@ write_csv(
 mh_mtbi_count_uninj <- get_mtbi_count(ph_p_otbi,
     abcd_y_lt,
     uninjured_subjects,
+    cutoff = 3,
     t = 0
 )
 
@@ -675,23 +603,19 @@ p_loneliness_mtbi <- get_loneliness(
     mh_y_or,
     gish_p_gi,
     mtbi_subjects,
+    discretize = TRUE,
     t = 0
 )
-
-write_csv(
-    p_loneliness_mtbi, input_path("p_loneliness_mtbi.csv", date = TRUE)
-)
+write_csv(p_loneliness_mtbi, input_path("p_loneliness_mtbi.csv", date = TRUE))
 
 p_loneliness_uninj <- get_loneliness(
     mh_y_or,
     gish_p_gi,
     uninjured_subjects,
+    discretize = TRUE,
     t = 0
 )
-
-write_csv(
-    p_loneliness_uninj, input_path("p_loneliness_uninj.csv", date = TRUE)
-)
+write_csv(p_loneliness_uninj, input_path("p_loneliness_uninj.csv", date = TRUE))
 ```
 
 #### Healthy behaviours
@@ -775,9 +699,9 @@ p_prosocial_mtbi <- get_prosocial_behaviour(
     ce_p_psb,
     ce_y_psb,
     mtbi_subjects,
+    no_zero = TRUE,
     t = 0
 )
-
 write_csv(
     p_prosocial_mtbi, input_path("p_prosocial_mtbi.csv", date = TRUE)
 )
@@ -786,9 +710,9 @@ p_prosocial_uninj <- get_prosocial_behaviour(
     ce_p_psb,
     ce_y_psb,
     uninjured_subjects,
+    no_zero = TRUE,
     t = 0
 )
-
 write_csv(
     p_prosocial_uninj, input_path("p_prosocial_uninj.csv", date = TRUE)
 )
@@ -803,6 +727,7 @@ p_fam_fn_mtbi <- get_family_function(
     mtbi_subjects,
     t = 0
 )
+
 write_csv(
     p_fam_fn_mtbi,
     input_path("p_fam_fn_mtbi.csv", date = TRUE)
@@ -830,7 +755,6 @@ p_parent_psych_mtbi <- get_parent_psychopathology(
     t = 0,
     raw = FALSE
 )
-
 write_csv(
     p_parent_psych_mtbi,
     input_path("p_parent_psych_mtbi.csv", date = TRUE)
@@ -842,7 +766,6 @@ p_parent_psych_uninj <- get_parent_psychopathology(
     t = 0,
     raw = FALSE
 )
-
 write_csv(
     p_parent_psych_uninj, input_path("p_parent_psych_uninj.csv", date = TRUE)
 )
@@ -864,7 +787,6 @@ cbcl_anxdep_mtbi <- get_cbcl_syndrome_scale(
     subjects = mtbi_subjects,
     t = 0
 )
-
 write_csv(
     cbcl_anxdep_mtbi,
     input_path("cbcl_anxdep_mtbi.csv", date = TRUE)
@@ -1120,13 +1042,13 @@ write_csv(
 
 The analysis in this script were last completed on September 20th, 2023, under the following conditions:
 
-R version 4.3.1 (2023-06-16)
+R version 4.3.2 (2023-10-31)
 Platform: x86_64-pc-linux-gnu (64-bit)
-Running under: CentOS Linux 7 (Core)
+Running under: Ubuntu 22.04.4 LTS
 
 Matrix products: default
-BLAS:   /hpf/tools/centos7/R/4.3.1/lib64/R/lib/libRblas.so
-LAPACK: /hpf/tools/centos7/R/4.3.1/lib64/R/lib/libRlapack.so;  LAPACK version 3.11.0
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.20.so;  LAPACK version 3.10.0
 
 locale:
  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C
@@ -1136,26 +1058,27 @@ locale:
  [9] LC_ADDRESS=C               LC_TELEPHONE=C
 [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C
 
-time zone: America/Toronto
+time zone: America/New_York
 tzcode source: system (glibc)
 
 attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base
 
 other attached packages:
-[1] abcdutils_0.1.1 knitr_1.43      here_1.0.1      dplyr_1.1.2
-[5] readr_2.1.4     ggplot2_3.4.2   colorout_1.2-2
+ [1] knitr_1.42       dplyr_1.1.4      ggplot2_3.5.0    patchwork_1.2.0
+ [5] rlist_0.4.6.2    progressr_0.14.0 metasnf_0.4.4    here_1.0.1
+ [9] abcdutils_0.1.1  readr_2.1.5
 
 loaded via a namespace (and not attached):
- [1] crayon_1.5.2      vctrs_0.6.3       cli_3.6.1         xfun_0.39
- [5] rlang_1.1.1       purrr_1.0.1       generics_0.1.3    data.table_1.14.8
- [9] bit_4.0.5         glue_1.6.2        colorspace_2.1-0  rprojroot_2.0.3
-[13] hms_1.1.3         scales_1.2.1      fansi_1.0.4       grid_4.3.1
-[17] munsell_0.5.0     tibble_3.2.1      tzdb_0.4.0        lifecycle_1.0.3
-[21] compiler_4.3.1    pkgconfig_2.0.3   R6_2.5.1          tidyselect_1.2.0
-[25] utf8_1.2.3        parallel_4.3.1    vroom_1.6.3       pillar_1.9.0
-[29] magrittr_2.0.3    bit64_4.0.5       tools_4.3.1       withr_2.5.0
-[33] gtable_0.3.3
+ [1] bit_4.0.5         gtable_0.3.4      compiler_4.3.2    crayon_1.5.2
+ [5] tidyselect_1.2.0  parallel_4.3.2    scales_1.3.0      R6_2.5.1
+ [9] labeling_0.4.3    generics_0.1.3    tibble_3.2.1      munsell_0.5.0
+[13] rprojroot_2.0.3   pillar_1.9.0      tzdb_0.4.0        rlang_1.1.3
+[17] utf8_1.2.4        xfun_0.39         bit64_4.0.5       cli_3.6.2
+[21] withr_3.0.0       magrittr_2.0.3    digest_0.6.34     grid_4.3.2
+[25] vroom_1.6.5       hms_1.1.3         lifecycle_1.0.4   vctrs_0.6.5
+[29] glue_1.7.0        data.table_1.15.0 farver_2.1.1      fansi_1.0.6
+[33] colorspace_2.1-0  purrr_1.0.2       tools_4.3.2       pkgconfig_2.0.3
 
 Output obtained from the following command:
 

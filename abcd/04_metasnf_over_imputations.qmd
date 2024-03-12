@@ -47,6 +47,14 @@ oom_list_pm4 <- list.load(input_path("2024_02_14_oom_list_pm4.rds"))
 oom_list_pm5 <- list.load(input_path("2024_02_14_oom_list_pm5.rds"))
 ```
 
+Examining distributions among these variables:
+
+```{r}
+
+dl_dist_plots(data_list_m1, size = 0.2)
+
+```
+
 ## Generating custom distance measures
 
 ```{r}
@@ -578,6 +586,8 @@ oom_list_nd_pm3 <- remove_signal(oom_list_nd_pm3, demo_list_pm3, sig_digs = 3)
 oom_list_nd_pm4 <- remove_signal(oom_list_nd_pm4, demo_list_pm4, sig_digs = 3)
 oom_list_nd_pm5 <- remove_signal(oom_list_nd_pm5, demo_list_pm5, sig_digs = 3)
 
+data_list_nd_m1 |> summarize_dl()
+
 # Adding back the demographic variables post-correction
 data_list_re_demo_m1 <- c(data_list_nd_m1, demo_list_m1)
 data_list_re_demo_m2 <- c(data_list_nd_m2, demo_list_m2)
@@ -933,8 +943,6 @@ write_csv(
 )
 ```
 
-2024-03-11
-
 ```{r}
 solutions_matrix_nd_m1 <- read_csv(proc_path("2024_03_11_solutions_matrix_nd_m1.csv"))
 solutions_matrix_nd_m2 <- read_csv(proc_path("2024_03_11_solutions_matrix_nd_m2.csv"))
@@ -1054,11 +1062,66 @@ mtbi_nd_mc_heatmap
 
 
 mc_heatmap_save(mtbi_nd_mc_heatmap, fig_path("mtbi_nd_mc_heatmap.png", TRUE))
+
+mtbi_nd_o_esm |>
+    dplyr::filter(
+        row_id == 23
+    )
+
+
+top_c <- select_solution(mtbi_nd_io_esm, 23, "m1")
+colnames(top_c)
+top_c$"opp_sex_friend_p"
+
+z1 <- top_c |>
+    get_cluster_df()
+
+z2 <- data_list_rd_pm2 |>
+    collapse_dl()
+
+z3 <- dplyr::inner_join(z1, z2, by = "subjectkey")
+
+colnames(z3)
+
+data_list_rd_m1 |>
+    collapse_dl() |>
+    colnames()
+
+nd_distributions <- dl_dist_plots(data_list_rd_m1)
+
+nd_distributions
+
+ggsave(
+    plot = nd_distributions,
+    filename = fig_path("nd_distributions.png", TRUE),
+    height = 20
+)
+
+# subject_NDAR_INVH9DY5DU5
+
+z3
+
+#2024_03_11_mtbi_nd_mc_c_row_id_23_pm2_all_plots.png
+
 ```
+
+Looks like MCs A, C, D, E, G, H, possibly I have something interesting happening
+Demographic separation appears to be high in A, C, and D.
 
 ## One-MC-at-a-time
 
 ```{r}
+
+z <- collapse_dl(data_list_rd_pm2)
+
+colnames(z)
+
+z |>
+    ggplot(aes(x = race, y = opp_sex_friend, colour = same_sex_friend)) +
+    geom_point()
+
+z$""
+
 
 data_list_rd_m1[[23]][[1]]$"race" |> table()
 
@@ -1068,7 +1131,6 @@ data_list_rd_m1[[23]][[1]]$"race" |> table()
 data_list_rd_m1 |> summarize_dl()
 
 data_list_rd_m1[[12]][[1]]
-
 
 mtbi_nd_manhattan <- my_manhattan_plot(
     solutions_matrix = mtbi_nd_io_esm,

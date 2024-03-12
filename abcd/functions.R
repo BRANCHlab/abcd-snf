@@ -1249,3 +1249,34 @@ mc_heatmap_save <- function(heatmap, path) {
     print(heatmap)
     grDevices::dev.off()
 }
+
+select_solution <- function(solutions_matrix, row, imp) {
+    solution <- solutions_matrix |>
+        dplyr::filter(
+            solutions_matrix$"row_id" == row,
+            solutions_matrix$"imputation" == imp
+        )
+    return(solution)
+}
+
+dist_plots <- function(data_list = NULL, df = NULL, size = 4) {
+    if (is.null(df)) {
+        df <- collapse_dl(data_list)
+    }
+    vars <- colnames(df)[-1]
+    plot_list <- list()
+    for (var in vars) {
+        plot <- df |>
+            ggplot(aes(x = TRUE, y = !!sym(var))) +
+            geom_jitter(size = size, alpha = 0.8, height = 0.1) +
+            labs(title = var, x = "") +
+            theme_bw() +
+            theme(
+                axis.text.x = element_blank(),
+                axis.ticks.x = element_blank()
+            )
+        plot_list[[length(plot_list) + 1]] <- plot
+    }
+    all_plots <- wrap_plots(plot_list)
+    return(all_plots)
+}
