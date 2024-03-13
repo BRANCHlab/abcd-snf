@@ -783,11 +783,6 @@ manhattan_plot <- function(data,
                 raw_p <- -log10(x)
                 new_x <- dplyr::case_when(
                     raw_p > 5 ~ 5,
-                    #raw_p > 4 ~ 4,
-                    #raw_p > 3 ~ 3,
-                    #raw_p > 2 ~ 2,
-                    #raw_p > 1 ~ 1,
-                    #raw_p > 0 ~ 0,
                     TRUE ~ raw_p
                 )
                 new_x
@@ -795,6 +790,7 @@ manhattan_plot <- function(data,
         )
     data$"row_id" <- factor(data$"row_id")
     data$"mc_label" <- factor(data$"mc_label")
+    print(colnames(data))
     data <- data |>
         tidyr::pivot_longer(
             !(c(row_id, mc_label)),
@@ -809,8 +805,6 @@ manhattan_plot <- function(data,
         ) |>
         dplyr::summarize(
             mean_p = mean(pval),
-            sd_p = sd(pval),
-            se_p = sd_p / sqrt(dplyr::n()),
             .groups = "drop"
         )
     summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
@@ -892,6 +886,149 @@ manhattan_plot <- function(data,
     }
     return(plot)
 }
+
+manhattan_plot2 <- function(esm,
+                            threshold = NULL,
+                            data_list,
+                            colours = NULL) {
+    ###########################################################################
+    # Formatting esm as dataframe
+    ###########################################################################
+    esm <- data.frame(esm)
+    ###########################################################################
+    # Select row_id, label, and p-value related columns only
+    ###########################################################################
+    if (!"label" %in% colnames(esm)) {
+        esm$"label" <- esm$"row_id"
+    }
+    esm <- esm |>
+        dplyr::select(
+            "row_id",
+            "label",
+            dplyr::ends_with("_p")
+        )
+    ###########################################################################
+    # Convert row_id and label to factors
+    ###########################################################################
+    esm$"row_id" <- factor(esm$"row_id")
+    esm$"label" <- factor(esm$"label")
+    ###########################################################################
+    # Suppress warnings related to non-standard evaluation
+    ###########################################################################
+    row_id <- ""
+    variable <- ""
+    pval <- ""
+    domain <- ""
+    mean_p <- ""
+    mc_label <- ""
+    sd_p <- ""
+    ###########################################################################
+    # Columns that end with _p are truncated by the threshold of p = 1e-5
+    ###########################################################################
+    var_cols <- colnames(esm)[endsWith(colnames(esm), "_p")]
+    cutoff_var_cols <- esm[, var_cols] |>
+        apply(
+            MARGIN = 2,
+            FUN = function(x) {
+                p <- -log10(x)
+                if (length(p) == 1) {
+                    if (p > 5) {
+                        p <- 5
+                    }
+                } else {
+                    p[p > 5] <- 5
+                }
+                return(p)
+            }
+        ) |>
+            as.matrix()
+    if (dim(cutoff_var_cols)[2] == 1) {
+        cutoff_var_cols <- t(cutoff_var_cols)
+    }
+    esm[, var_cols] <- cutoff_var_cols
+    esm <- esm |>
+        tidyr::pivot_longer(
+            !(c(row_id, label)),
+            names_to = "variable",
+            values_to = "pval"
+        ) |>
+        data.frame()
+    summary_data <- esm |>
+        dplyr::group_by(
+            label,
+            variable
+        ) |>
+        dplyr::summarize(
+            mean_p = mean(pval),
+            .groups = "drop"
+        )
+    summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
+    ###########################################################################
+    # Merge the summmary plot with domain information from the data_list
+    ###########################################################################
+    print(5)
+    dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    summary_data <- merge(
+        summary_data,
+        dl_metadata,
+        by.x = "variable",
+        by.y = "name",
+        all.x = TRUE
+    )
+    summary_data <- summary_data |> dplyr::arrange(domain)
+    summary_data$"variable" <- factor(
+        summary_data$"variable",
+        levels = unique(summary_data$"variable")
+    )
+    labels <- unique(esm$"label")
+    print(head(summary_data))
+    plot <- summary_data |>
+        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
+        ggplot2::geom_jitter(
+            mapping = ggplot2::aes(
+                group = domain,
+                x = variable,
+                y = mean_p,
+                colour = domain
+            ),
+            height = 0,
+            width = 0,
+            size = 5
+        ) +
+        ggplot2::labs(
+            x = "Variable",
+            y = expression("-log"[10] * "(p)"),
+            colour = "Domain"
+        ) +
+        ggplot2::ylim(0, 5) +
+        ggplot2::theme_bw() +
+        ggplot2::labs(y = "Discretized -log10(p)") +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(
+                angle = 90,
+                vjust = 0.5,
+                hjust = 1
+            ),
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            text = element_text(size = 20)
+        )
+    if (!is.null(colours)) {
+        plot <- plot + ggplot2::scale_colour_manual(values = colours)
+    }
+    plot <- plot + ggplot2::facet_grid(label ~ .)
+    ###########################################################################
+    # Add p-value threshold if requested
+    ###########################################################################
+    if (!is.null(threshold)) {
+        plot <- plot + ggplot2::geom_hline(
+            yintercept = -log10(threshold),
+            linetype = "dashed",
+            colour = "red"
+        )
+    }
+    return(plot)
+}
+
 
 my_similarity_matrix_heatmap <- function(aris,
                                          aris_order,
@@ -1136,6 +1273,41 @@ representative_mc <- function(split_vector,
         )
     }
 }
+
+get_rep_solutions <- function(split_vector,
+                              aris,
+                              ari_order,
+                              solutions_matrix,
+                              group_name,
+                              possible_data) {
+    # Re-sort the solutions matrix based on the aris
+    ari_order <- unlist(ari_order)
+    aris <- aris[ari_order, ari_order]
+    solutions_matrix <- solutions_matrix[ari_order, ]
+    # Assign meta cluster labels
+    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    aris$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    mcs <- unique(split_at(split_vector, nrow(solutions_matrix)))
+    # Iterate through the meta clusters and keep the representative solution
+    rep_solutions <- data.frame()
+    for (mc in mcs) {
+        mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
+        mc_ari <- aris[aris$"mc" == mc, ]
+        mc_ari$"mc" <- NULL
+        # The most representative solution
+        rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
+        rep_solution <- mc_sm[rep_mc, ]
+        #sol_row_id <- rep_solution$"row_id"
+        #sol_imp <- rep_solution$"imputation"
+        #sol_name <- paste0("mc_", mc, "_row_id_", sol_row_id, "_", sol_imp)
+        #sol_name <- paste0(group_name, "_", sol_name)
+        #sol_name <- tolower(sol_name)
+        rep_solutions <- rbind(rep_solutions, rep_solution)
+        #write_csv(rep_sol, proc_path(paste0(sol_name, ".csv"), TRUE))
+    }
+    return(rep_solutions)
+}
+
 
 subject_filter_dl <- function(data_list, subject_vector) {
     subject_vector <- paste0("subject_", subject_vector)
