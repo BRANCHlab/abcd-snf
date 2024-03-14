@@ -822,7 +822,6 @@ mtbi_nd_sm <- do.call(
         solutions_matrix_nd_pm5
     )
 )
-
 ```
 
 ```{r}
@@ -891,27 +890,74 @@ mtbi_nd_o_esm <- read_csv(proc_path("2024_03_12_mtbi_nd_o_esm.csv"))
 mtbi_nd_io_esm <- read_csv(proc_path("2024_03_12_mtbi_nd_io_esm.csv"))
 ```
 
+p-values are wrong...
+
+p-values fixed, next up is to look at the settings matrix. See what happened.
+
 ```{r}
 
-mtbi_nd_split_vec <- c(
-    300,
-    380,
-    520,
-    750,
-    780,
-    995,
-    1175,
-    1320,
-    1430,
-    1650,
-    1955
+rep_solutions <- get_rep_solutions(
+    ari = mtbi_nd_ari,
+    split_vector = mtbi_nd_split_vec,
+    ari_order = mtbi_nd_ari_order,
+    solutions_matrix = mtbi_nd_io_esm
 )
+
+b <- rep_solutions[2, ]
+
+b
+
+b_pvals <- pval_select(b)
+
+b_cluster_df <- get_cluster_df(b)
+
+nd_df <- collapse_dl(c(data_list_rd_m1, oom_list_nd_m1))
+
+nd_df
+
+data_list_rd_m1 |> summarize_dl()
+
+get_cluster_pval(
+    b_cluster_df,
+    nd_df,
+    "categorical",
+    "race"
+)
+
+# 0.8306083...
+
+bsm <- mtbi_nd_sm[mtbi_nd_sm$"row_id" == 197 & mtbi_nd_sm$"imputation" == "m4", ]
+
+summarize_dl(data_list_rd_m1)
+
+mini_dl <- data_list_rd_m1
+test_extension <- extend_solutions(
+    bsm,
+    target_list = mini_dl,
+    min_pval = 1e-10
+)
+test_extension
+
+bsm
+
+extend_solutions(
+    bsm,
+    target_list = c(data_list_rd_m1, oom_list_nd_m1),
+    min_pval = 1e-10,
+    processes = "max"
+)
+
+
+```
+
+```{r}
+
+mtbi_nd_split_vec <- c(300, 380, 520, 750, 995, 1175, 1320, 1430)
 
 write_csv(data.frame(mtbi_nd_split_vec), proc_path("mtbi_nd_split_vec.csv", TRUE))
 mtbi_nd_split_vec <- read_csv(proc_path("2024_03_13_mtbi_nd_split_vec.csv")) |>
     unlist() |>
     as.numeric()
-
 mtbi_nd_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = mtbi_nd_ari,
     aris_order = mtbi_nd_ari_order,
@@ -930,28 +976,45 @@ MCs A, B, D, G, and I look most robust.
 
 ```{r}
 
-get_rep_solutions
+rep_solutions <- get_rep_solutions(
+    ari = mtbi_nd_ari,
+    split_vector = mtbi_nd_split_vec,
+    ari_order = mtbi_nd_ari_order,
+    solutions_matrix = mtbi_nd_io_esm
+)
+
+rep_solutions$"label" <- rep_solutions$"mc"
+
+manhattan_plot2(
+    rep_solutions,
+    data_list = data_list_rd_m1,
+    target_list = oom_list_nd_m1,
+    threshold = 0.05
+)
+
+pval_select(rep_solutions[2, ])
+
+summarize_dl(data_list_rd_m1)
+
+debug_df <- c(data_list_rd_m1, oom_list_nd_m1) |> collapse_dl()
+cluster_df <- get_cluster_df(rep_solutions[2, ])
+
+debug_df <- dplyr::inner_join(debug_df, cluster_df, by = "subjectkey")
+
+debug_df
 
 
-dist_plots(data_list_rd_m1)
 
-
-mtbi_nd_io_esm[1:2, c(1, 430:433)]
-
-data <- mtbi_nd_io_esm[1:2, ]
-
-data$"label"
-
-z <- manhattan_plot2(
-    data,
-    data_list = data_list_rd_m1
+z <- get_cluster_pval(
+    cluster_df,
+    debug_df,
+    "discrete",
+    "opp_sex_close_friend"
 )
 
 z
 
-colnames(z)
-
-head(pval_select(data))
+pval_select(rep_solutions[2, ])
 
 
 mtbi_nd_manhattan <- my_manhattan_plot(
@@ -972,21 +1035,6 @@ mtbi_nd_manhattan <- my_manhattan_plot(
     )
 )
 
-mtbi_nd_manhattan
-
-select_solution(mtbi_nd_io_esm, 139, "m3") |>
-    pval_select()
-
-which(mtbi_nd_io_esm$"opp_sex_friend_p" == min(mtbi_nd_io_esm$"opp_sex_friend_p"))
-
-z <- mtbi_nd_io_esm[c(204, 205),  ]
-
-z$"mc_label" <- "A"
-manhattan_plot(
-    z,
-    data_list = data_list_rd_m1
-)
-
 my_manhattan_bulk_save(
     split_vector = mtbi_nd_split_vec,
     solutions_matrix = mtbi_nd_io_esm,
@@ -995,6 +1043,8 @@ my_manhattan_bulk_save(
     target_list = oom_list_nd_m1,
     "mtbi_nd"
 )
+
+
 
 data_list_rd_m1 |> summarize_dl()
 

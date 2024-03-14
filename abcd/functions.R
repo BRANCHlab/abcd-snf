@@ -890,7 +890,18 @@ manhattan_plot <- function(data,
 manhattan_plot2 <- function(esm,
                             threshold = NULL,
                             data_list,
+                            target_list,
                             colours = NULL) {
+    ###########################################################################
+    # Suppress warnings related to non-standard evaluation
+    ###########################################################################
+    row_id <- ""
+    variable <- ""
+    pval <- ""
+    domain <- ""
+    mean_p <- ""
+    mc_label <- ""
+    sd_p <- ""
     ###########################################################################
     # Formatting esm as dataframe
     ###########################################################################
@@ -913,15 +924,23 @@ manhattan_plot2 <- function(esm,
     esm$"row_id" <- factor(esm$"row_id")
     esm$"label" <- factor(esm$"label")
     ###########################################################################
-    # Suppress warnings related to non-standard evaluation
+    # Re-assign names to the data list and target list
     ###########################################################################
-    row_id <- ""
-    variable <- ""
-    pval <- ""
-    domain <- ""
-    mean_p <- ""
-    mc_label <- ""
-    sd_p <- ""
+    if (!is.null(target_list)) {
+        data_list_renamed <- data_list |> lapply(
+            function(x) {
+                x$"domain" <- paste0("I-", x$"domain")
+                return(x)
+            }
+        )
+        target_list_renamed <- target_list |> lapply(
+            function(x) {
+                x$"domain" <- paste0("O-", x$"domain")
+                return(x)
+            }
+        )
+        data_list <- c(data_list_renamed, target_list_renamed)
+    }
     ###########################################################################
     # Columns that end with _p are truncated by the threshold of p = 1e-5
     ###########################################################################
@@ -966,8 +985,9 @@ manhattan_plot2 <- function(esm,
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
     ###########################################################################
-    print(5)
     dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    n_outcomes <- length(which(startsWith(dl_metadata$"domain", "O")))
+    n_vars <- nrow(dl_metadata)
     summary_data <- merge(
         summary_data,
         dl_metadata,
@@ -981,7 +1001,6 @@ manhattan_plot2 <- function(esm,
         levels = unique(summary_data$"variable")
     )
     labels <- unique(esm$"label")
-    print(head(summary_data))
     plot <- summary_data |>
         ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
         ggplot2::geom_jitter(
@@ -1011,11 +1030,22 @@ manhattan_plot2 <- function(esm,
             ),
             plot.title = ggplot2::element_text(hjust = 0.5),
             text = element_text(size = 20)
+        ) +
+        ggplot2::scale_colour_manual(
+            values = c(
+                "I-AS" = "#85929e",
+                "I-D" = "#bb8fce",
+                "I-N" = "#e59866",
+                "I-MH" = "#7fb3d5",
+                "I-P" = "#52be80",
+                "O-S" = "#d98880",
+                "O-B" = "#ff3131"
+            )
+        ) +
+        ggplot2::facet_grid(label ~ .) +
+        ggplot2::geom_vline(
+            xintercept = (n_vars - n_outcomes + 0.5)
         )
-    if (!is.null(colours)) {
-        plot <- plot + ggplot2::scale_colour_manual(values = colours)
-    }
-    plot <- plot + ggplot2::facet_grid(label ~ .)
     ###########################################################################
     # Add p-value threshold if requested
     ###########################################################################
@@ -1274,36 +1304,36 @@ representative_mc <- function(split_vector,
     }
 }
 
-get_rep_solutions <- function(split_vector,
-                              aris,
+get_rep_solutions <- function(ari,
+                              split_vector,
                               ari_order,
-                              solutions_matrix,
-                              group_name,
-                              possible_data) {
+                              solutions_matrix) {
+    ###########################################################################
     # Re-sort the solutions matrix based on the aris
+    ###########################################################################
     ari_order <- unlist(ari_order)
-    aris <- aris[ari_order, ari_order]
+    ari <- data.frame(ari[ari_order, ari_order])
     solutions_matrix <- solutions_matrix[ari_order, ]
-    # Assign meta cluster labels
-    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    aris$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    ###########################################################################
+    # Extract and assign meta cluster labels
+    ###########################################################################
     mcs <- unique(split_at(split_vector, nrow(solutions_matrix)))
+    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    ari$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    ###########################################################################
     # Iterate through the meta clusters and keep the representative solution
+    ###########################################################################
     rep_solutions <- data.frame()
     for (mc in mcs) {
+        # Subset to just those solutions within the MC
         mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
-        mc_ari <- aris[aris$"mc" == mc, ]
+        # Subset the corresponding ARIs
+        mc_ari <- ari[ari$"mc" == mc, ]
         mc_ari$"mc" <- NULL
         # The most representative solution
         rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
         rep_solution <- mc_sm[rep_mc, ]
-        #sol_row_id <- rep_solution$"row_id"
-        #sol_imp <- rep_solution$"imputation"
-        #sol_name <- paste0("mc_", mc, "_row_id_", sol_row_id, "_", sol_imp)
-        #sol_name <- paste0(group_name, "_", sol_name)
-        #sol_name <- tolower(sol_name)
         rep_solutions <- rbind(rep_solutions, rep_solution)
-        #write_csv(rep_sol, proc_path(paste0(sol_name, ".csv"), TRUE))
     }
     return(rep_solutions)
 }
