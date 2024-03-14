@@ -790,7 +790,6 @@ manhattan_plot <- function(data,
         )
     data$"row_id" <- factor(data$"row_id")
     data$"mc_label" <- factor(data$"mc_label")
-    print(colnames(data))
     data <- data |>
         tidyr::pivot_longer(
             !(c(row_id, mc_label)),
@@ -920,7 +919,6 @@ manhattan_plot2 <- function(esm,
     pval <- ""
     domain <- ""
     mean_p <- ""
-    mc_label <- ""
     sd_p <- ""
     ###########################################################################
     # Columns that end with _p are truncated by the threshold of p = 1e-5
@@ -966,7 +964,6 @@ manhattan_plot2 <- function(esm,
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
     ###########################################################################
-    print(5)
     dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
     summary_data <- merge(
         summary_data,
@@ -981,7 +978,6 @@ manhattan_plot2 <- function(esm,
         levels = unique(summary_data$"variable")
     )
     labels <- unique(esm$"label")
-    print(head(summary_data))
     plot <- summary_data |>
         ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
         ggplot2::geom_jitter(
@@ -1028,7 +1024,6 @@ manhattan_plot2 <- function(esm,
     }
     return(plot)
 }
-
 
 my_similarity_matrix_heatmap <- function(aris,
                                          aris_order,
@@ -1277,11 +1272,10 @@ representative_mc <- function(split_vector,
 get_rep_solutions <- function(split_vector,
                               aris,
                               ari_order,
-                              solutions_matrix,
-                              group_name,
-                              possible_data) {
+                              solutions_matrix) {
     # Re-sort the solutions matrix based on the aris
     ari_order <- unlist(ari_order)
+    aris <- data.frame(aris)
     aris <- aris[ari_order, ari_order]
     solutions_matrix <- solutions_matrix[ari_order, ]
     # Assign meta cluster labels
@@ -1297,17 +1291,10 @@ get_rep_solutions <- function(split_vector,
         # The most representative solution
         rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
         rep_solution <- mc_sm[rep_mc, ]
-        #sol_row_id <- rep_solution$"row_id"
-        #sol_imp <- rep_solution$"imputation"
-        #sol_name <- paste0("mc_", mc, "_row_id_", sol_row_id, "_", sol_imp)
-        #sol_name <- paste0(group_name, "_", sol_name)
-        #sol_name <- tolower(sol_name)
         rep_solutions <- rbind(rep_solutions, rep_solution)
-        #write_csv(rep_sol, proc_path(paste0(sol_name, ".csv"), TRUE))
     }
     return(rep_solutions)
 }
-
 
 subject_filter_dl <- function(data_list, subject_vector) {
     subject_vector <- paste0("subject_", subject_vector)

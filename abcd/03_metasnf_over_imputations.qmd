@@ -358,6 +358,7 @@ my_manhattan_bulk_save(
 ## Replication in demographic-corrected data
 
 ```{r}
+
 data_list_m1 <- list.load(input_path("2024_03_12_data_list_m1.rds"))
 data_list_m2 <- list.load(input_path("2024_03_12_data_list_m2.rds"))
 data_list_m3 <- list.load(input_path("2024_03_12_data_list_m3.rds"))
@@ -379,6 +380,7 @@ oom_list_pm3 <- list.load(input_path("2024_03_12_oom_list_pm3.rds"))
 oom_list_pm4 <- list.load(input_path("2024_03_12_oom_list_pm4.rds"))
 oom_list_pm5 <- list.load(input_path("2024_03_12_oom_list_pm5.rds"))
 
+# demo_lists just contain the demographic variables
 demo_list_m1 <- data_list_m1[summarize_dl(data_list_m1)$"domain" == "D"]
 demo_list_m2 <- data_list_m2[summarize_dl(data_list_m2)$"domain" == "D"]
 demo_list_m3 <- data_list_m3[summarize_dl(data_list_m3)$"domain" == "D"]
@@ -390,6 +392,19 @@ demo_list_pm3 <- data_list_pm3[summarize_dl(data_list_pm3)$"domain" == "D"]
 demo_list_pm4 <- data_list_pm4[summarize_dl(data_list_pm4)$"domain" == "D"]
 demo_list_pm5 <- data_list_pm5[summarize_dl(data_list_pm5)$"domain" == "D"]
 
+# categorical lists just contain the categorical variables
+cat_list_m1 <- data_list_m1[summarize_dl(data_list_m1)$"type" == "categorical"]
+cat_list_m2 <- data_list_m2[summarize_dl(data_list_m2)$"type" == "categorical"]
+cat_list_m3 <- data_list_m3[summarize_dl(data_list_m3)$"type" == "categorical"]
+cat_list_m4 <- data_list_m4[summarize_dl(data_list_m4)$"type" == "categorical"]
+cat_list_m5 <- data_list_m5[summarize_dl(data_list_m5)$"type" == "categorical"]
+cat_list_pm1 <- data_list_pm1[summarize_dl(data_list_pm1)$"type" == "categorical"]
+cat_list_pm2 <- data_list_pm2[summarize_dl(data_list_pm2)$"type" == "categorical"]
+cat_list_pm3 <- data_list_pm3[summarize_dl(data_list_pm3)$"type" == "categorical"]
+cat_list_pm4 <- data_list_pm4[summarize_dl(data_list_pm4)$"type" == "categorical"]
+cat_list_pm5 <- data_list_pm5[summarize_dl(data_list_pm5)$"type" == "categorical"]
+
+# copies of the data_lists
 data_list_nd_m1 <- data_list_m1
 data_list_nd_m2 <- data_list_m2
 data_list_nd_m3 <- data_list_m3
@@ -411,6 +426,7 @@ oom_list_nd_pm3 <- oom_list_pm3
 oom_list_nd_pm4 <- oom_list_pm4
 oom_list_nd_pm5 <- oom_list_pm5
 
+# Removing the demographic variables from the copies of the data lists
 data_list_nd_m1[summarize_dl(data_list_nd_m1)$"domain" == "D"] <- NULL
 data_list_nd_m2[summarize_dl(data_list_nd_m2)$"domain" == "D"] <- NULL
 data_list_nd_m3[summarize_dl(data_list_nd_m3)$"domain" == "D"] <- NULL
@@ -421,6 +437,18 @@ data_list_nd_pm2[summarize_dl(data_list_nd_pm2)$"domain" == "D"] <- NULL
 data_list_nd_pm3[summarize_dl(data_list_nd_pm3)$"domain" == "D"] <- NULL
 data_list_nd_pm4[summarize_dl(data_list_nd_pm4)$"domain" == "D"] <- NULL
 data_list_nd_pm5[summarize_dl(data_list_nd_pm5)$"domain" == "D"] <- NULL
+
+# Remove any categorical variables from the copies of the data lists
+data_list_nd_m1[summarize_dl(data_list_nd_m1)$"type" == "categorical"] <- NULL
+data_list_nd_m2[summarize_dl(data_list_nd_m2)$"type" == "categorical"] <- NULL
+data_list_nd_m3[summarize_dl(data_list_nd_m3)$"type" == "categorical"] <- NULL
+data_list_nd_m4[summarize_dl(data_list_nd_m4)$"type" == "categorical"] <- NULL
+data_list_nd_m5[summarize_dl(data_list_nd_m5)$"type" == "categorical"] <- NULL
+data_list_nd_pm1[summarize_dl(data_list_nd_pm1)$"type" == "categorical"] <- NULL
+data_list_nd_pm2[summarize_dl(data_list_nd_pm2)$"type" == "categorical"] <- NULL
+data_list_nd_pm3[summarize_dl(data_list_nd_pm3)$"type" == "categorical"] <- NULL
+data_list_nd_pm4[summarize_dl(data_list_nd_pm4)$"type" == "categorical"] <- NULL
+data_list_nd_pm5[summarize_dl(data_list_nd_pm5)$"type" == "categorical"] <- NULL
 
 data_list_nd_m1 <- remove_signal(data_list_nd_m1, demo_list_m1, sig_digs = 3)
 data_list_nd_m2 <- remove_signal(data_list_nd_m2, demo_list_m2, sig_digs = 3)
@@ -444,16 +472,17 @@ oom_list_nd_pm4 <- remove_signal(oom_list_nd_pm4, demo_list_pm4, sig_digs = 3)
 oom_list_nd_pm5 <- remove_signal(oom_list_nd_pm5, demo_list_pm5, sig_digs = 3)
 
 # Adding back the demographic variables post-correction
-data_list_rd_m1 <- c(data_list_nd_m1, demo_list_m1)
-data_list_rd_m2 <- c(data_list_nd_m2, demo_list_m2)
-data_list_rd_m3 <- c(data_list_nd_m3, demo_list_m3)
-data_list_rd_m4 <- c(data_list_nd_m4, demo_list_m4)
-data_list_rd_m5 <- c(data_list_nd_m5, demo_list_m5)
-data_list_rd_pm1 <- c(data_list_nd_pm1, demo_list_pm1)
-data_list_rd_pm2 <- c(data_list_nd_pm2, demo_list_pm2)
-data_list_rd_pm3 <- c(data_list_nd_pm3, demo_list_pm3)
-data_list_rd_pm4 <- c(data_list_nd_pm4, demo_list_pm4)
-data_list_rd_pm5 <- c(data_list_nd_pm5, demo_list_pm5)
+data_list_rd_m1 <- unique(c(data_list_nd_m1, demo_list_m1, cat_list_m1))
+data_list_rd_m2 <- unique(c(data_list_nd_m2, demo_list_m2, cat_list_m2))
+data_list_rd_m3 <- unique(c(data_list_nd_m3, demo_list_m3, cat_list_m3))
+data_list_rd_m4 <- unique(c(data_list_nd_m4, demo_list_m4, cat_list_m4))
+data_list_rd_m5 <- unique(c(data_list_nd_m5, demo_list_m5, cat_list_m5))
+data_list_rd_pm1 <- unique(c(data_list_nd_pm1, demo_list_pm1, cat_list_pm1))
+data_list_rd_pm2 <- unique(c(data_list_nd_pm2, demo_list_pm2, cat_list_pm2))
+data_list_rd_pm3 <- unique(c(data_list_nd_pm3, demo_list_pm3, cat_list_pm3))
+data_list_rd_pm4 <- unique(c(data_list_nd_pm4, demo_list_pm4, cat_list_pm4))
+data_list_rd_pm5 <- unique(c(data_list_nd_pm5, demo_list_pm5, cat_list_pm5))
+
 
 list.save(data_list_nd_m1, input_path("data_list_nd_m1.rds", TRUE))
 list.save(data_list_nd_m2, input_path("data_list_nd_m2.rds", TRUE))
@@ -465,6 +494,7 @@ list.save(data_list_nd_pm2, input_path("data_list_nd_pm2.rds", TRUE))
 list.save(data_list_nd_pm3, input_path("data_list_nd_pm3.rds", TRUE))
 list.save(data_list_nd_pm4, input_path("data_list_nd_pm4.rds", TRUE))
 list.save(data_list_nd_pm5, input_path("data_list_nd_pm5.rds", TRUE))
+
 list.save(data_list_rd_m1, input_path("data_list_rd_m1.rds", TRUE))
 list.save(data_list_rd_m2, input_path("data_list_rd_m2.rds", TRUE))
 list.save(data_list_rd_m3, input_path("data_list_rd_m3.rds", TRUE))
@@ -486,43 +516,48 @@ list.save(oom_list_nd_pm2, input_path("oom_list_nd_pm2.rds", TRUE))
 list.save(oom_list_nd_pm3, input_path("oom_list_nd_pm3.rds", TRUE))
 list.save(oom_list_nd_pm4, input_path("oom_list_nd_pm4.rds", TRUE))
 list.save(oom_list_nd_pm5, input_path("oom_list_nd_pm5.rds", TRUE))
+
 ```
 
 
 ```{r}
-data_list_nd_m1 <- list.load(input_path("2024_03_12_data_list_nd_m1.rds"))
-data_list_nd_m2 <- list.load(input_path("2024_03_12_data_list_nd_m2.rds"))
-data_list_nd_m3 <- list.load(input_path("2024_03_12_data_list_nd_m3.rds"))
-data_list_nd_m4 <- list.load(input_path("2024_03_12_data_list_nd_m4.rds"))
-data_list_nd_m5 <- list.load(input_path("2024_03_12_data_list_nd_m5.rds"))
-data_list_nd_pm1 <- list.load(input_path("2024_03_12_data_list_nd_pm1.rds"))
-data_list_nd_pm2 <- list.load(input_path("2024_03_12_data_list_nd_pm2.rds"))
-data_list_nd_pm3 <- list.load(input_path("2024_03_12_data_list_nd_pm3.rds"))
-data_list_nd_pm4 <- list.load(input_path("2024_03_12_data_list_nd_pm4.rds"))
-data_list_nd_pm5 <- list.load(input_path("2024_03_12_data_list_nd_pm5.rds"))
-data_list_rd_m1 <- list.load(input_path("2024_03_12_data_list_rd_m1.rds"))
-data_list_rd_m2 <- list.load(input_path("2024_03_12_data_list_rd_m2.rds"))
-data_list_rd_m3 <- list.load(input_path("2024_03_12_data_list_rd_m3.rds"))
-data_list_rd_m4 <- list.load(input_path("2024_03_12_data_list_rd_m4.rds"))
-data_list_rd_m5 <- list.load(input_path("2024_03_12_data_list_rd_m5.rds"))
-data_list_rd_pm1 <- list.load(input_path("2024_03_12_data_list_rd_pm1.rds"))
-data_list_rd_pm2 <- list.load(input_path("2024_03_12_data_list_rd_pm2.rds"))
-data_list_rd_pm3 <- list.load(input_path("2024_03_12_data_list_rd_pm3.rds"))
-data_list_rd_pm4 <- list.load(input_path("2024_03_12_data_list_rd_pm4.rds"))
-data_list_rd_pm5 <- list.load(input_path("2024_03_12_data_list_rd_pm5.rds"))
-oom_list_nd_m1 <- list.load(input_path("2024_03_12_oom_list_nd_m1.rds"))
-oom_list_nd_m2 <- list.load(input_path("2024_03_12_oom_list_nd_m2.rds"))
-oom_list_nd_m3 <- list.load(input_path("2024_03_12_oom_list_nd_m3.rds"))
-oom_list_nd_m4 <- list.load(input_path("2024_03_12_oom_list_nd_m4.rds"))
-oom_list_nd_m5 <- list.load(input_path("2024_03_12_oom_list_nd_m5.rds"))
-oom_list_nd_pm1 <- list.load(input_path("2024_03_12_oom_list_nd_pm1.rds"))
-oom_list_nd_pm2 <- list.load(input_path("2024_03_12_oom_list_nd_pm2.rds"))
-oom_list_nd_pm3 <- list.load(input_path("2024_03_12_oom_list_nd_pm3.rds"))
-oom_list_nd_pm4 <- list.load(input_path("2024_03_12_oom_list_nd_pm4.rds"))
-oom_list_nd_pm5 <- list.load(input_path("2024_03_12_oom_list_nd_pm5.rds"))
+data_list_nd_m1 <- list.load(input_path("2024_03_14_data_list_nd_m1.rds"))
+data_list_nd_m2 <- list.load(input_path("2024_03_14_data_list_nd_m2.rds"))
+data_list_nd_m3 <- list.load(input_path("2024_03_14_data_list_nd_m3.rds"))
+data_list_nd_m4 <- list.load(input_path("2024_03_14_data_list_nd_m4.rds"))
+data_list_nd_m5 <- list.load(input_path("2024_03_14_data_list_nd_m5.rds"))
+data_list_nd_pm1 <- list.load(input_path("2024_03_14_data_list_nd_pm1.rds"))
+data_list_nd_pm2 <- list.load(input_path("2024_03_14_data_list_nd_pm2.rds"))
+data_list_nd_pm3 <- list.load(input_path("2024_03_14_data_list_nd_pm3.rds"))
+data_list_nd_pm4 <- list.load(input_path("2024_03_14_data_list_nd_pm4.rds"))
+data_list_nd_pm5 <- list.load(input_path("2024_03_14_data_list_nd_pm5.rds"))
+
+data_list_rd_m1 <- list.load(input_path("2024_03_14_data_list_rd_m1.rds"))
+data_list_rd_m2 <- list.load(input_path("2024_03_14_data_list_rd_m2.rds"))
+data_list_rd_m3 <- list.load(input_path("2024_03_14_data_list_rd_m3.rds"))
+data_list_rd_m4 <- list.load(input_path("2024_03_14_data_list_rd_m4.rds"))
+data_list_rd_m5 <- list.load(input_path("2024_03_14_data_list_rd_m5.rds"))
+data_list_rd_pm1 <- list.load(input_path("2024_03_14_data_list_rd_pm1.rds"))
+data_list_rd_pm2 <- list.load(input_path("2024_03_14_data_list_rd_pm2.rds"))
+data_list_rd_pm3 <- list.load(input_path("2024_03_14_data_list_rd_pm3.rds"))
+data_list_rd_pm4 <- list.load(input_path("2024_03_14_data_list_rd_pm4.rds"))
+data_list_rd_pm5 <- list.load(input_path("2024_03_14_data_list_rd_pm5.rds"))
+
+oom_list_nd_m1 <- list.load(input_path("2024_03_14_oom_list_nd_m1.rds"))
+oom_list_nd_m2 <- list.load(input_path("2024_03_14_oom_list_nd_m2.rds"))
+oom_list_nd_m3 <- list.load(input_path("2024_03_14_oom_list_nd_m3.rds"))
+oom_list_nd_m4 <- list.load(input_path("2024_03_14_oom_list_nd_m4.rds"))
+oom_list_nd_m5 <- list.load(input_path("2024_03_14_oom_list_nd_m5.rds"))
+oom_list_nd_pm1 <- list.load(input_path("2024_03_14_oom_list_nd_pm1.rds"))
+oom_list_nd_pm2 <- list.load(input_path("2024_03_14_oom_list_nd_pm2.rds"))
+oom_list_nd_pm3 <- list.load(input_path("2024_03_14_oom_list_nd_pm3.rds"))
+oom_list_nd_pm4 <- list.load(input_path("2024_03_14_oom_list_nd_pm4.rds"))
+oom_list_nd_pm5 <- list.load(input_path("2024_03_14_oom_list_nd_pm5.rds"))
 ```
 
 Showing that the demographic variables have been removed from the data list.
+
+Chunk below should be re-run outside of HPC
 
 ```{r}
 
@@ -550,12 +585,7 @@ m1_corr_mat <- m1_corr_data$"correlation_matrix"
 corr_order <- colnames(m1_corr_mat)[m1_corr_data$"order"]
 write_csv(data.frame(corr_order), proc_path("mtbi_corr_order.csv", TRUE))
 
-```
-
-Chunk below should be re-run outside of HPC
-
-```{r}
-corr_order <- read_csv(proc_path("2024_03_12_mtbi_corr_order.csv"))
+corr_order <- read_csv(proc_path("2024_03_14_mtbi_corr_order.csv"))
 
 m_corr <- my_corr_plot(
     data_list_m1,
@@ -629,18 +659,12 @@ nd_settings_matrix <- generate_settings_matrix(
     distance_metrics_list = my_distance_metrics
 )
 
-colnames(nd_settings_matrix)
-
-# Avoid any inclusion of loneliness into the corrected data
-#settings_matrix_nd$"inc_p_loneliness" <- 0
-
 write_csv(nd_settings_matrix, proc_path("nd_settings_matrix.csv", TRUE))
 
-nd_settings_matrix <- read_csv(proc_path("2024_03_12_nd_settings_matrix.csv"))
+nd_settings_matrix <- read_csv(proc_path("2024_03_14_nd_settings_matrix.csv"))
 ```
 
 ```{r}
-
 # Imputation 1
 start <- proc.time()
 progressr::with_progress({
@@ -792,20 +816,19 @@ write_csv(
     solutions_matrix_nd_pm5,
     proc_path("solutions_matrix_nd_pm5.csv", TRUE)
 )
-
 ```
 
 ```{r}
-solutions_matrix_nd_m1 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_m1.csv"))
-solutions_matrix_nd_m2 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_m2.csv"))
-solutions_matrix_nd_m3 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_m3.csv"))
-solutions_matrix_nd_m4 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_m4.csv"))
-solutions_matrix_nd_m5 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_m5.csv"))
-solutions_matrix_nd_pm1 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_pm1.csv"))
-solutions_matrix_nd_pm2 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_pm2.csv"))
-solutions_matrix_nd_pm3 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_pm3.csv"))
-solutions_matrix_nd_pm4 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_pm4.csv"))
-solutions_matrix_nd_pm5 <- read_csv(proc_path("2024_03_12_solutions_matrix_nd_pm5.csv"))
+solutions_matrix_nd_m1 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m1.csv"))
+solutions_matrix_nd_m2 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m2.csv"))
+solutions_matrix_nd_m3 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m3.csv"))
+solutions_matrix_nd_m4 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m4.csv"))
+solutions_matrix_nd_m5 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m5.csv"))
+solutions_matrix_nd_pm1 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm1.csv"))
+solutions_matrix_nd_pm2 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm2.csv"))
+solutions_matrix_nd_pm3 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm3.csv"))
+solutions_matrix_nd_pm4 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm4.csv"))
+solutions_matrix_nd_pm5 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm5.csv"))
 
 mtbi_nd_sm <- do.call(
     "rbind",
@@ -831,7 +854,7 @@ write_csv(data.frame(mtbi_nd_ari), proc_path("mtbi_nd_ari.csv", TRUE))
 ```
 
 ```{r}
-mtbi_nd_ari <- read_csv(proc_path("2024_03_12_mtbi_nd_ari.csv")) |> as.matrix()
+mtbi_nd_ari <- read_csv(proc_path("2024_03_14_mtbi_nd_ari.csv")) |> as.matrix()
 ```
 
 ```{r}
@@ -840,7 +863,7 @@ write_csv(data.frame(mtbi_nd_ari_order), proc_path("mtbi_nd_ari_order.csv", TRUE
 ```
 
 ```{r}
-mtbi_nd_ari_order <- unlist(read_csv(proc_path("2024_03_12_mtbi_nd_ari_order.csv")))
+mtbi_nd_ari_order <- unlist(read_csv(proc_path("2024_03_14_mtbi_nd_ari_order.csv")))
 names(mtbi_nd_ari_order) <- NULL
 ```
 
@@ -870,6 +893,15 @@ mtbi_nd_sm <- cbind(mtbi_nd_sm, imputation_labels)
 ```
 
 ```{r}
+
+mtbi_nd_i_esm <- extend_solutions(
+    mtbi_nd_sm,
+    data_list_nd_m1,
+    min_pval = 1e-10,
+    processes = "max"
+)
+write_csv(mtbi_nd_i_esm, proc_path("mtbi_nd_i_esm.csv", TRUE))
+
 mtbi_nd_o_esm <- extend_solutions(
     mtbi_nd_sm,
     oom_list_nd_m1,
@@ -877,6 +909,12 @@ mtbi_nd_o_esm <- extend_solutions(
     processes = "max"
 )
 write_csv(mtbi_nd_o_esm, proc_path("mtbi_nd_o_esm.csv", TRUE))
+
+
+colnames(mtbi_nd_sm)
+
+summarize_dl(data_list_rd_m1)
+
 mtbi_nd_io_esm <- extend_solutions(
     mtbi_nd_sm,
     target_list = c(data_list_rd_m1, oom_list_nd_m1),
@@ -884,75 +922,114 @@ mtbi_nd_io_esm <- extend_solutions(
     processes = "max"
 )
 write_csv(mtbi_nd_io_esm, proc_path("mtbi_nd_io_esm.csv", TRUE))
+
 ```
 
 ```{r}
-mtbi_nd_o_esm <- read_csv(proc_path("2024_03_12_mtbi_nd_o_esm.csv"))
-mtbi_nd_io_esm <- read_csv(proc_path("2024_03_12_mtbi_nd_io_esm.csv"))
+mtbi_nd_i_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_i_esm.csv"))
+mtbi_nd_o_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_o_esm.csv"))
+mtbi_nd_io_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_io_esm.csv"))
 ```
 
 ```{r}
 
 mtbi_nd_split_vec <- c(
-    300,
-    380,
+    340,
     520,
-    750,
-    780,
-    995,
+    725,
+    770,
+    1030,
     1175,
-    1320,
-    1430,
-    1650,
-    1955
+    1770
 )
-
-write_csv(data.frame(mtbi_nd_split_vec), proc_path("mtbi_nd_split_vec.csv", TRUE))
-mtbi_nd_split_vec <- read_csv(proc_path("2024_03_13_mtbi_nd_split_vec.csv")) |>
-    unlist() |>
-    as.numeric()
-
 mtbi_nd_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = mtbi_nd_ari,
     aris_order = mtbi_nd_ari_order,
     extended_solutions = mtbi_nd_o_esm,
     split_vector = mtbi_nd_split_vec
 )
+
 mtbi_nd_mc_heatmap
 
 mc_heatmap_save(mtbi_nd_mc_heatmap, fig_path("mtbi_nd_mc_heatmap.png", TRUE))
 
 ```
 
-MCs A, B, D, G, and I look most robust.
+MCs A, B, D, F, and H look most robust.
+
+```{r}
+write_csv(data.frame(mtbi_nd_split_vec), proc_path("mtbi_nd_split_vec.csv", TRUE))
+mtbi_nd_split_vec <- read_csv(proc_path("2024_03_14_mtbi_nd_split_vec.csv")) |>
+    unlist() |>
+    as.numeric()
+```
+
 
 ## One-MC-at-a-time
 
 ```{r}
 
-get_rep_solutions
+mtbi_nd_manhattan <- my_manhattan_plot(
+    solutions_matrix = mtbi_nd_io_esm,
+    aris_order = mtbi_nd_ari_order,
+    split_vector = mtbi_nd_split_vec,
+    data_list = data_list_rd_m1,
+    target_list = oom_list_nd_m1,
+    colours = c(
+        "I-AS" = "#1B9E77",
+        "I-D" = "#D95F02",
+        "I-N" = "#7570B3",
+        "I-MH" = "#E7298A",
+        "I-P" = "#66A61E",
+        "O-S" = "#E6AB02",
+        "O-B" = "#A6761D"
+    )
+)
+mtbi_nd_manhattan
 
-
-dist_plots(data_list_rd_m1)
-
-
-mtbi_nd_io_esm[1:2, c(1, 430:433)]
-
-data <- mtbi_nd_io_esm[1:2, ]
-
-data$"label"
-
-z <- manhattan_plot2(
-    data,
-    data_list = data_list_rd_m1
+rep_solutions <- get_rep_solutions(
+    mtbi_nd_split_vec,
+    mtbi_nd_ari,
+    mtbi_nd_ari_order,
+    mtbi_nd_io_esm
 )
 
-z
+rep_solutions$"label" <- rep_solutions$"mc"
 
-colnames(z)
+manhattan_plot2(
+    rep_solutions,
+    data_list = c(data_list_rd_m1, oom_list_nd_m1)
+)
 
-head(pval_select(data))
+rep_solutions
 
+q <- collapse_dl(data_list_rd_m1)
+
+
+q |>
+    ggplot(aes(x = age, y = mtbi_age)) +
+    geom_jitter() +
+    geom_smooth(method = "lm", se = FALSE, color = "red")
+
+ggplot(df, aes(x = x, y = y)) +
+  geom_point() +  # Scatter plot
+
+a_df <- get_cluster_df(rep_solutions[1, ])
+rd_dl <- collapse_dl(data_list_rd_m1)
+
+eval_df <- dplyr::inner_join(a_df, rd_dl, by = "subjectkey")
+eval_df$"cluster" <- factor(eval_df$"cluster")
+
+eval_df |>
+    ggplot(aes(x = cluster, y = age)) +
+    geom_boxplot()
+
+get_cluster_pval(
+    a_df,
+    rd_dl,
+    "discrete",
+    "age"
+)
 
 mtbi_nd_manhattan <- my_manhattan_plot(
     solutions_matrix = mtbi_nd_io_esm,
@@ -999,10 +1076,10 @@ my_manhattan_bulk_save(
 data_list_rd_m1 |> summarize_dl()
 
 
-mtbi_nd_io_esm <- read_csv(proc_path("2024_03_12_mtbi_nd_io_esm.csv"))
-mtbi_nd_ari <- read_csv(proc_path("2024_03_12_mtbi_nd_ari.csv"))
-mtbi_nd_ari_order <- read_csv(proc_path("2024_03_12_mtbi_nd_ari_order.csv"))
-mtbi_nd_split_vec <- read_csv(proc_path("2024_03_13_mtbi_nd_split_vec.csv")) |>
+mtbi_nd_io_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_io_esm.csv"))
+mtbi_nd_ari <- read_csv(proc_path("2024_03_14_mtbi_nd_ari.csv"))
+mtbi_nd_ari_order <- read_csv(proc_path("2024_03_14_mtbi_nd_ari_order.csv"))
+mtbi_nd_split_vec <- read_csv(proc_path("2024_03_14_mtbi_nd_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 
