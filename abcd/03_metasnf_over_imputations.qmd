@@ -845,7 +845,6 @@ mtbi_nd_sm <- do.call(
         solutions_matrix_nd_pm5
     )
 )
-
 ```
 
 ```{r}
@@ -931,6 +930,10 @@ mtbi_nd_o_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_o_esm.csv"))
 mtbi_nd_io_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_io_esm.csv"))
 ```
 
+p-values are wrong...
+
+p-values fixed, next up is to look at the settings matrix. See what happened.
+
 ```{r}
 
 mtbi_nd_split_vec <- c(
@@ -942,6 +945,7 @@ mtbi_nd_split_vec <- c(
     1175,
     1770
 )
+
 mtbi_nd_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = mtbi_nd_ari,
     aris_order = mtbi_nd_ari_order,
@@ -988,11 +992,31 @@ mtbi_nd_manhattan <- my_manhattan_plot(
 mtbi_nd_manhattan
 
 rep_solutions <- get_rep_solutions(
-    mtbi_nd_split_vec,
-    mtbi_nd_ari,
-    mtbi_nd_ari_order,
-    mtbi_nd_io_esm
+    ari = mtbi_nd_ari,
+    split_vector = mtbi_nd_split_vec,
+    ari_order = mtbi_nd_ari_order,
+    solutions_matrix = mtbi_nd_io_esm
 )
+
+rep_solutions$"label" <- rep_solutions$"mc"
+
+manhattan_plot2(
+    rep_solutions,
+    data_list = data_list_rd_m1,
+    target_list = oom_list_nd_m1,
+    threshold = 0.05
+)
+
+pval_select(rep_solutions[2, ])
+
+summarize_dl(data_list_rd_m1)
+
+debug_df <- c(data_list_rd_m1, oom_list_nd_m1) |> collapse_dl()
+cluster_df <- get_cluster_df(rep_solutions[2, ])
+
+debug_df <- dplyr::inner_join(debug_df, cluster_df, by = "subjectkey")
+
+debug_df
 
 rep_solutions$"label" <- rep_solutions$"mc"
 
@@ -1001,7 +1025,7 @@ manhattan_plot2(
     data_list = c(data_list_rd_m1, oom_list_nd_m1)
 )
 
-rep_solutions
+pval_select(rep_solutions[2, ])
 
 q <- collapse_dl(data_list_rd_m1)
 
@@ -1049,21 +1073,6 @@ mtbi_nd_manhattan <- my_manhattan_plot(
     )
 )
 
-mtbi_nd_manhattan
-
-select_solution(mtbi_nd_io_esm, 139, "m3") |>
-    pval_select()
-
-which(mtbi_nd_io_esm$"opp_sex_friend_p" == min(mtbi_nd_io_esm$"opp_sex_friend_p"))
-
-z <- mtbi_nd_io_esm[c(204, 205),  ]
-
-z$"mc_label" <- "A"
-manhattan_plot(
-    z,
-    data_list = data_list_rd_m1
-)
-
 my_manhattan_bulk_save(
     split_vector = mtbi_nd_split_vec,
     solutions_matrix = mtbi_nd_io_esm,
@@ -1072,6 +1081,8 @@ my_manhattan_bulk_save(
     target_list = oom_list_nd_m1,
     "mtbi_nd"
 )
+
+
 
 data_list_rd_m1 |> summarize_dl()
 
