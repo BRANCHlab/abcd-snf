@@ -964,22 +964,13 @@ manhattan_plot2 <- function(esm,
         cutoff_var_cols <- t(cutoff_var_cols)
     }
     esm[, var_cols] <- cutoff_var_cols
-    esm <- esm |>
+    summary_data <- esm |>
         tidyr::pivot_longer(
             !(c(row_id, label)),
             names_to = "variable",
-            values_to = "pval"
+            values_to = "neg_log_pval"
         ) |>
         data.frame()
-    summary_data <- esm |>
-        dplyr::group_by(
-            label,
-            variable
-        ) |>
-        dplyr::summarize(
-            mean_p = mean(pval),
-            .groups = "drop"
-        )
     summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
@@ -1006,7 +997,7 @@ manhattan_plot2 <- function(esm,
             mapping = ggplot2::aes(
                 group = domain,
                 x = variable,
-                y = mean_p,
+                y = neg_log_pval,
                 colour = domain
             ),
             height = 0,
