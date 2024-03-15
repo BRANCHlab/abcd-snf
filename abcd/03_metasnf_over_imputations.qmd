@@ -380,6 +380,27 @@ oom_list_pm3 <- list.load(input_path("2024_03_12_oom_list_pm3.rds"))
 oom_list_pm4 <- list.load(input_path("2024_03_12_oom_list_pm4.rds"))
 oom_list_pm5 <- list.load(input_path("2024_03_12_oom_list_pm5.rds"))
 
+dist_plots(data_list_m1, size = 1)
+```
+
+Variables that seem to not be too discrete:
+- age
+- mtbi_age?
+- brain volume
+- cortical thickness
+- cortical surface area
+- major white matter neuride density
+- pericortical wm
+- fmri cort cors
+- fmri cort subcort cors
+- weekend and weekday screentime?
+- maybe school programs, non school programs, programs this year, but idk
+- exercise time
+- parent vars?
+
+
+```{r}
+
 # demo_lists just contain the demographic variables
 demo_list_m1 <- data_list_m1[summarize_dl(data_list_m1)$"domain" == "D"]
 demo_list_m2 <- data_list_m2[summarize_dl(data_list_m2)$"domain" == "D"]
@@ -392,19 +413,7 @@ demo_list_pm3 <- data_list_pm3[summarize_dl(data_list_pm3)$"domain" == "D"]
 demo_list_pm4 <- data_list_pm4[summarize_dl(data_list_pm4)$"domain" == "D"]
 demo_list_pm5 <- data_list_pm5[summarize_dl(data_list_pm5)$"domain" == "D"]
 
-# categorical lists just contain the categorical variables
-cat_list_m1 <- data_list_m1[summarize_dl(data_list_m1)$"type" == "categorical"]
-cat_list_m2 <- data_list_m2[summarize_dl(data_list_m2)$"type" == "categorical"]
-cat_list_m3 <- data_list_m3[summarize_dl(data_list_m3)$"type" == "categorical"]
-cat_list_m4 <- data_list_m4[summarize_dl(data_list_m4)$"type" == "categorical"]
-cat_list_m5 <- data_list_m5[summarize_dl(data_list_m5)$"type" == "categorical"]
-cat_list_pm1 <- data_list_pm1[summarize_dl(data_list_pm1)$"type" == "categorical"]
-cat_list_pm2 <- data_list_pm2[summarize_dl(data_list_pm2)$"type" == "categorical"]
-cat_list_pm3 <- data_list_pm3[summarize_dl(data_list_pm3)$"type" == "categorical"]
-cat_list_pm4 <- data_list_pm4[summarize_dl(data_list_pm4)$"type" == "categorical"]
-cat_list_pm5 <- data_list_pm5[summarize_dl(data_list_pm5)$"type" == "categorical"]
-
-# copies of the data_lists
+# create copies of the data_lists
 data_list_nd_m1 <- data_list_m1
 data_list_nd_m2 <- data_list_m2
 data_list_nd_m3 <- data_list_m3
@@ -438,18 +447,6 @@ data_list_nd_pm3[summarize_dl(data_list_nd_pm3)$"domain" == "D"] <- NULL
 data_list_nd_pm4[summarize_dl(data_list_nd_pm4)$"domain" == "D"] <- NULL
 data_list_nd_pm5[summarize_dl(data_list_nd_pm5)$"domain" == "D"] <- NULL
 
-# Remove any categorical variables from the copies of the data lists
-data_list_nd_m1[summarize_dl(data_list_nd_m1)$"type" == "categorical"] <- NULL
-data_list_nd_m2[summarize_dl(data_list_nd_m2)$"type" == "categorical"] <- NULL
-data_list_nd_m3[summarize_dl(data_list_nd_m3)$"type" == "categorical"] <- NULL
-data_list_nd_m4[summarize_dl(data_list_nd_m4)$"type" == "categorical"] <- NULL
-data_list_nd_m5[summarize_dl(data_list_nd_m5)$"type" == "categorical"] <- NULL
-data_list_nd_pm1[summarize_dl(data_list_nd_pm1)$"type" == "categorical"] <- NULL
-data_list_nd_pm2[summarize_dl(data_list_nd_pm2)$"type" == "categorical"] <- NULL
-data_list_nd_pm3[summarize_dl(data_list_nd_pm3)$"type" == "categorical"] <- NULL
-data_list_nd_pm4[summarize_dl(data_list_nd_pm4)$"type" == "categorical"] <- NULL
-data_list_nd_pm5[summarize_dl(data_list_nd_pm5)$"type" == "categorical"] <- NULL
-
 data_list_nd_m1 <- remove_signal(data_list_nd_m1, demo_list_m1, sig_digs = 3)
 data_list_nd_m2 <- remove_signal(data_list_nd_m2, demo_list_m2, sig_digs = 3)
 data_list_nd_m3 <- remove_signal(data_list_nd_m3, demo_list_m3, sig_digs = 3)
@@ -472,17 +469,16 @@ oom_list_nd_pm4 <- remove_signal(oom_list_nd_pm4, demo_list_pm4, sig_digs = 3)
 oom_list_nd_pm5 <- remove_signal(oom_list_nd_pm5, demo_list_pm5, sig_digs = 3)
 
 # Adding back the demographic variables post-correction
-data_list_rd_m1 <- unique(c(data_list_nd_m1, demo_list_m1, cat_list_m1))
-data_list_rd_m2 <- unique(c(data_list_nd_m2, demo_list_m2, cat_list_m2))
-data_list_rd_m3 <- unique(c(data_list_nd_m3, demo_list_m3, cat_list_m3))
-data_list_rd_m4 <- unique(c(data_list_nd_m4, demo_list_m4, cat_list_m4))
-data_list_rd_m5 <- unique(c(data_list_nd_m5, demo_list_m5, cat_list_m5))
-data_list_rd_pm1 <- unique(c(data_list_nd_pm1, demo_list_pm1, cat_list_pm1))
-data_list_rd_pm2 <- unique(c(data_list_nd_pm2, demo_list_pm2, cat_list_pm2))
-data_list_rd_pm3 <- unique(c(data_list_nd_pm3, demo_list_pm3, cat_list_pm3))
-data_list_rd_pm4 <- unique(c(data_list_nd_pm4, demo_list_pm4, cat_list_pm4))
-data_list_rd_pm5 <- unique(c(data_list_nd_pm5, demo_list_pm5, cat_list_pm5))
-
+data_list_rd_m1 <- c(data_list_nd_m1, demo_list_m1)
+data_list_rd_m2 <- c(data_list_nd_m2, demo_list_m2)
+data_list_rd_m3 <- c(data_list_nd_m3, demo_list_m3)
+data_list_rd_m4 <- c(data_list_nd_m4, demo_list_m4)
+data_list_rd_m5 <- c(data_list_nd_m5, demo_list_m5)
+data_list_rd_pm1 <- c(data_list_nd_pm1, demo_list_pm1)
+data_list_rd_pm2 <- c(data_list_nd_pm2, demo_list_pm2)
+data_list_rd_pm3 <- c(data_list_nd_pm3, demo_list_pm3)
+data_list_rd_pm4 <- c(data_list_nd_pm4, demo_list_pm4)
+data_list_rd_pm5 <- c(data_list_nd_pm5, demo_list_pm5)
 
 list.save(data_list_nd_m1, input_path("data_list_nd_m1.rds", TRUE))
 list.save(data_list_nd_m2, input_path("data_list_nd_m2.rds", TRUE))
@@ -516,7 +512,6 @@ list.save(oom_list_nd_pm2, input_path("oom_list_nd_pm2.rds", TRUE))
 list.save(oom_list_nd_pm3, input_path("oom_list_nd_pm3.rds", TRUE))
 list.save(oom_list_nd_pm4, input_path("oom_list_nd_pm4.rds", TRUE))
 list.save(oom_list_nd_pm5, input_path("oom_list_nd_pm5.rds", TRUE))
-
 ```
 
 
@@ -554,6 +549,292 @@ oom_list_nd_pm3 <- list.load(input_path("2024_03_14_oom_list_nd_pm3.rds"))
 oom_list_nd_pm4 <- list.load(input_path("2024_03_14_oom_list_nd_pm4.rds"))
 oom_list_nd_pm5 <- list.load(input_path("2024_03_14_oom_list_nd_pm5.rds"))
 ```
+
+Take a look to see if we have any non-linearities
+
+```{r}
+corrected_features <- data_list_nd_m1 |>
+    collapse_dl() |>
+    colnames()
+
+demo_features <- demo_list_m1 |>
+    collapse_dl() |>
+    colnames()
+
+# remove subjectkey
+corrected_features <- corrected_features[-1]
+demo_features <- demo_features[-1]
+
+for (i in seq_along(demo_features)) {
+    plot_list <- list()
+    for (j in seq_along(corrected_features)) {
+        print(demo_features[i])
+        print(corrected_features[j])
+        plot <- dl_scatter(
+            data_list_rd_m1,
+            demo_features[i],
+            corrected_features[j]
+        )
+        plot_list[[length(plot_list) + 1]] <- plot
+    }
+    all_plots <- wrap_plots(plot_list)
+    ggsave(
+        plot = all_plots,
+        filename = fig_path(
+            paste0("corrected_", demo_features[i], ".png"),
+            TRUE
+        ),
+        width = 20,
+        height = 15
+    )
+}
+
+```
+
+Based on the resuling plots, here are the variables that seem best adjusted relative to each demographic factor:
+
+- age
+    - mtbi_mem_daze
+    - brain_volume
+    - cortical_thickness
+    - cortical_sa
+    - major_wm_ndi
+    - pericortical_wm_ndi
+    - fmri_cort_cors
+    - fmri_subcort_cors
+    - opp_sex_friend
+    - same_sex_close_friend
+    - opp_sex_close_friend
+    - weekend_screentime
+    - weekday_screentime
+    - maybe school_programs
+    - non_school_programs
+    - private_instruction
+    - programs_this_year
+    - exercise_time
+    - family_fight
+    - family_angry
+    - family_temper
+    - family_yell
+    - parent_perstr
+    - parent_anxdep
+    - parent_withdrawn
+    - parent_somatic
+    - parent_thought
+    - parent_attention
+    - parent_aggressive
+    - parent_depress
+    - parent_anxidord
+    - parent_avoidant
+    - parent_antisocial
+    - parent_hyperactive
+- household_income
+    - brain_volume
+    - cortical_thickness
+    - cortical_sa
+    - major_wm_ndi
+    - pericortical_wm_ndi
+    - fmri_cort_cors
+    - fmri_cort_subcort_cors
+    - exercise_time
+- mtbi_age
+    - brain_volume
+    - cortical_thickness
+    - cortical_sa
+    - major_wm_ndi
+    - pericortical_wm_ndi
+    - fmri_cort_cors
+    - fmri_cort_subcort_cors
+    - same_sex_friend
+    - same_sex_close_friend
+    - opp_sex_close_friend
+    - weekend_screentime
+    - weekday_screentime
+    - school_programs
+    - non_school_programs
+    - programs_this_year
+    - exercise_time
+    - family_fight
+    - family_angry
+    - family_throw
+- pubertal_status
+    - mtbi_loc
+    - brain_volume
+    - cortical_thickness
+    - cortical_sa
+    - major_wm_ndi
+    - pericortical_wm_ndi
+    - fmri_cort_cors
+    - fmri_cort_subcort_cors
+    - same_sex_friend
+    - same_sex_close_friend
+    - exercise_time
+- race
+    - brain_volume
+    - cortical_thickness
+    - cortical_sa
+    - major_wm_ndi
+    - pericortical_wm_ndi
+    - fmri_cort_cors
+    - fmri_cort_subcort_cors
+    - same_sex_friend
+    - exercise_time
+    - parent_perstr
+    - parent_anxdep
+    - parent_attention
+    - parent_depress
+- sex
+    - mtbi_mem_daze
+    - mtbi_mechanism
+    - mtbi_loc
+    - brain_volume
+    - cortical_thickness
+    - cortical_sa
+    - major_wm_ndi
+    - pericortical_wm_ndi
+    - fmri_cort_cors
+    - fmri_cort_subcort_cors
+    - opp_sex_friend
+    - same_sex_close_friend
+    - weekday_screentime
+    - non_school_programs
+    - programs_this_year
+    - exercise_time
+    - parent_perstr
+    - most parent psychopath scores
+
+```{r}
+
+age_compatible <- c(
+    "mtbi_mem_daze",
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors",
+    "opp_sex_friend",
+    "same_sex_close_friend",
+    "opp_sex_close_friend",
+    "weekend_screentime",
+    "weekday_screentime",
+    "school_programs",
+    "non_school_programs",
+    "private_instruction",
+    "programs_this_year",
+    "exercise_time",
+    "family_fight",
+    "family_angry",
+    "family_temper",
+    "family_yell",
+    "parent_perstr",
+    "parent_anxdep",
+    "parent_withdrawn",
+    "parent_somatic",
+    "parent_thought",
+    "parent_attention",
+    "parent_aggressive",
+    "parent_depress",
+    "parent_anxidord",
+    "parent_avoidant",
+    "parent_antisocial",
+    "parent_hyperactive"
+)
+income_compatible <- c(
+    "mtbi_mem_daze",
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors",
+    "exercise_time"
+)
+mtbi_age_compatible <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors",
+    "same_sex_friend",
+    "same_sex_close_friend",
+    "opp_sex_close_friend",
+    "weekend_screentime",
+    "weekday_screentime",
+    "school_programs",
+    "non_school_programs",
+    "programs_this_year",
+    "exercise_time",
+    "family_fight",
+    "family_angry",
+    "family_throw"
+)
+pubertal_status_compatible <- c(
+    "mtbi_loc",
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors",
+    "same_sex_friend",
+    "same_sex_close_friend",
+    "exercise_time"
+)
+race_compatible <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors",
+    "same_sex_friend",
+    "exercise_time",
+    "parent_perstr",
+    "parent_anxdep",
+    "parent_attention",
+    "parent_depress"
+)
+sex_compatible <- c(
+    "mtbi_mem_daze",
+    "mtbi_mechanism",
+    "mtbi_loc",
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors",
+    "opp_sex_friend",
+    "same_sex_close_friend",
+    "weekday_screentime",
+    "non_school_programs",
+    "programs_this_year",
+    "exercise_time",
+    "parent_perstr"
+)
+
+compat_vecs <- list(
+    age_compatible,
+    income_compatible,
+    mtbi_age_compatible,
+    pubertal_status_compatible,
+    race_compatible,
+    sex_compatible
+)
+
+Reduce(intersect, compat_vecs)
+
+
+```
+
 
 Showing that the demographic variables have been removed from the data list.
 
@@ -1064,15 +1345,6 @@ q <- collapse_dl(data_list_rd_m1)
 
 
 summarize_dl(data_list_rd_m1)
-
-xy_plot <- function(q, var1, var2) {
-    plot <- q |>
-        ggplot(aes(x = !!sym(var1), y = !!sym(var2))) +
-        geom_jitter(width = 0.1, height = 0.1) +
-        geom_smooth(method = "lm", se = FALSE, color = "red") +
-        theme_bw()
-    return(plot)
-}
 
 # Non-linearities
 xy_plot(q, "previous_mtbis", "race")

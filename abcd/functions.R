@@ -1470,3 +1470,14 @@ dist_plots <- function(data_list = NULL, df = NULL, size = 4) {
     all_plots <- wrap_plots(plot_list)
     return(all_plots)
 }
+
+dl_scatter <- function(data_list, var1, var2) {
+    dl_df <- data.frame(collapse_dl(data_list))
+    plot <- dl_df |>
+        ggplot(aes(x = dl_df[, var1], y = dl_df[, var2])) +
+        geom_jitter(width = 0.1, height = 0.1, alpha = 0.7) +
+        geom_smooth(method = "lm", se = FALSE, color = "red") +
+        labs(x = var1, y = var2) +
+        theme_bw()
+    return(plot)
+}
