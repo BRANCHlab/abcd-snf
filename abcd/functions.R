@@ -890,6 +890,8 @@ manhattan_plot2 <- function(esm,
                             threshold = NULL,
                             data_list,
                             target_list,
+                            variable_order = NULL,
+                            xints = "outcomes",
                             colours = NULL) {
     ###########################################################################
     # Suppress warnings related to non-standard evaluation
@@ -986,10 +988,22 @@ manhattan_plot2 <- function(esm,
         all.x = TRUE
     )
     summary_data <- summary_data |> dplyr::arrange(domain)
-    summary_data$"variable" <- factor(
-        summary_data$"variable",
-        levels = unique(summary_data$"variable")
-    )
+    ###########################################################################
+    # Proper ordering of variables through factor level assignment
+    ###########################################################################
+    if (is.null(variable_order)) {
+        summary_data$"variable" <- factor(
+            summary_data$"variable",
+            levels = unique(summary_data$"variable")
+        )
+    } else {
+        involved_vars <- unique(summary_data$"variable")
+        variable_order <- variable_order[variable_order %in% involved_vars]
+        summary_data$"variable" <- factor(
+            summary_data$"variable",
+            levels = variable_order
+        )
+    }
     labels <- unique(esm$"label")
     plot <- summary_data |>
         ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
@@ -1011,7 +1025,7 @@ manhattan_plot2 <- function(esm,
         ) +
         ggplot2::ylim(0, 5) +
         ggplot2::theme_bw() +
-        ggplot2::labs(y = "Discretized -log10(p)") +
+        ggplot2::labs(y = "-log10(p)") +
         ggplot2::theme(
             axis.text.x = ggplot2::element_text(
                 angle = 90,
@@ -1032,10 +1046,22 @@ manhattan_plot2 <- function(esm,
                 "O-B" = "#ff3131"
             )
         ) +
-        ggplot2::facet_grid(label ~ .) +
-        ggplot2::geom_vline(
-            xintercept = (n_vars - n_outcomes + 0.5)
-        )
+        ggplot2::facet_grid(label ~ .)
+    ###########################################################################
+    # Prepping x-intercept positions
+    ###########################################################################
+    if (!is.null(xints)) {
+        if (identical(xints, "outcomes")) {
+            plot <- plot + ggplot2::geom_vline(
+                xintercept = n_vars - n_outcomes + 0.5
+            )
+        } else {
+            xints <- xints + 0.5
+            plot <- plot + ggplot2::geom_vline(
+                xintercept = xints
+            )
+        }
+    }
     ###########################################################################
     # Add p-value threshold if requested
     ###########################################################################
@@ -1293,10 +1319,15 @@ representative_mc <- function(split_vector,
     }
 }
 
+# Restrict a set of solutions matrix to the most representative solutions
+# based on their adjusted Rand Index.
 get_rep_solutions <- function(ari,
                               split_vector,
                               ari_order,
-                              solutions_matrix) {
+                              solutions_matrix,
+                              labels = NULL,
+                              exclude_mcs = NULL,
+                              include_mcs = NULL) {
     ###########################################################################
     # Re-sort the solutions matrix based on the aris
     ###########################################################################
@@ -1323,6 +1354,29 @@ get_rep_solutions <- function(ari,
         rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
         rep_solution <- mc_sm[rep_mc, ]
         rep_solutions <- rbind(rep_solutions, rep_solution)
+    }
+    ###########################################################################
+    # Assign labels to the representative solutions
+    ###########################################################################
+    if (is.null(labels)) {
+        labels <- rep_solutions$"mc"
+    }
+    rep_solutions$"label" <- labels
+    ###########################################################################
+    # Restrict representative solutions based on the inclusion/exclusion lists
+    ###########################################################################
+    if (!is.null(exclude_mcs) & !is.null(include_mcs)) {
+        warning(
+            "`exclude_mcs` and `include_mcs` cannot both be specified.",
+            " Representative solutions will not be filtered."
+        )
+        return(rep_solutions)
+    }
+    if (!is.null(exclude_mcs)) {
+        rep_solutions <- rep_solutions[!rep_solutions$"mc" %in% exclude_mcs, ]
+    }
+    if (!is.null(include_mcs)) {
+        rep_solutions <- rep_solutions[rep_solutions$"mc" %in% include_mcs, ]
     }
     return(rep_solutions)
 }
