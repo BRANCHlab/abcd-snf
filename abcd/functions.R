@@ -1471,6 +1471,7 @@ dist_plots <- function(data_list = NULL, df = NULL, size = 4) {
     return(all_plots)
 }
 
+# Scatter plots of any two variables in a data_list
 dl_scatter <- function(data_list, var1, var2) {
     dl_df <- data.frame(collapse_dl(data_list))
     plot <- dl_df |>
@@ -1480,4 +1481,23 @@ dl_scatter <- function(data_list, var1, var2) {
         labs(x = var1, y = var2) +
         theme_bw()
     return(plot)
+}
+
+dl_feature_restrict <- function(data_list, inclusion_features) {
+    inclusion_features <- c("subjectkey", inclusion_features)
+    filtered_dl <- lapply(
+        data_list,
+        function(x) {
+            keep_cols <- colnames(x$"data") %in% inclusion_features
+            x$"data" <- x$"data"[, keep_cols, drop = FALSE]
+            if (ncol(x$"data") > 1) {
+                return(x)
+            } else {
+                return(NULL)
+            }
+        }
+    )
+    # Remove totally NULL elements
+    filtered_dl <- Filter(Negate(is.null), filtered_dl)
+    return(filtered_dl)
 }

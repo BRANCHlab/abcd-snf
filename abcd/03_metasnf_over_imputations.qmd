@@ -401,17 +401,25 @@ Variables that seem to not be too discrete:
 
 ```{r}
 
+summarize_dl(data_list_m1)
+
+- try adjusting again on age, household income, sex, and race
+
+demo <- c("d_age", "d_sex", "d_income", "d_race")
+
+data_list_m1
+
 # demo_lists just contain the demographic variables
-demo_list_m1 <- data_list_m1[summarize_dl(data_list_m1)$"domain" == "D"]
-demo_list_m2 <- data_list_m2[summarize_dl(data_list_m2)$"domain" == "D"]
-demo_list_m3 <- data_list_m3[summarize_dl(data_list_m3)$"domain" == "D"]
-demo_list_m4 <- data_list_m4[summarize_dl(data_list_m4)$"domain" == "D"]
-demo_list_m5 <- data_list_m5[summarize_dl(data_list_m5)$"domain" == "D"]
-demo_list_pm1 <- data_list_pm1[summarize_dl(data_list_pm1)$"domain" == "D"]
-demo_list_pm2 <- data_list_pm2[summarize_dl(data_list_pm2)$"domain" == "D"]
-demo_list_pm3 <- data_list_pm3[summarize_dl(data_list_pm3)$"domain" == "D"]
-demo_list_pm4 <- data_list_pm4[summarize_dl(data_list_pm4)$"domain" == "D"]
-demo_list_pm5 <- data_list_pm5[summarize_dl(data_list_pm5)$"domain" == "D"]
+demo_list_m1 <- data_list_m1[summarize_dl(data_list_m1)$"name" %in% demo]
+demo_list_m2 <- data_list_m2[summarize_dl(data_list_m2)$"name" %in% demo]
+demo_list_m3 <- data_list_m3[summarize_dl(data_list_m3)$"name" %in% demo]
+demo_list_m4 <- data_list_m4[summarize_dl(data_list_m4)$"name" %in% demo]
+demo_list_m5 <- data_list_m5[summarize_dl(data_list_m5)$"name" %in% demo]
+demo_list_pm1 <- data_list_pm1[summarize_dl(data_list_pm1)$"name" %in% demo]
+demo_list_pm2 <- data_list_pm2[summarize_dl(data_list_pm2)$"name" %in% demo]
+demo_list_pm3 <- data_list_pm3[summarize_dl(data_list_pm3)$"name" %in% demo]
+demo_list_pm4 <- data_list_pm4[summarize_dl(data_list_pm4)$"name" %in% demo]
+demo_list_pm5 <- data_list_pm5[summarize_dl(data_list_pm5)$"name" %in% demo]
 
 # create copies of the data_lists
 data_list_nd_m1 <- data_list_m1
@@ -436,16 +444,18 @@ oom_list_nd_pm4 <- oom_list_pm4
 oom_list_nd_pm5 <- oom_list_pm5
 
 # Removing the demographic variables from the copies of the data lists
-data_list_nd_m1[summarize_dl(data_list_nd_m1)$"domain" == "D"] <- NULL
-data_list_nd_m2[summarize_dl(data_list_nd_m2)$"domain" == "D"] <- NULL
-data_list_nd_m3[summarize_dl(data_list_nd_m3)$"domain" == "D"] <- NULL
-data_list_nd_m4[summarize_dl(data_list_nd_m4)$"domain" == "D"] <- NULL
-data_list_nd_m5[summarize_dl(data_list_nd_m5)$"domain" == "D"] <- NULL
-data_list_nd_pm1[summarize_dl(data_list_nd_pm1)$"domain" == "D"] <- NULL
-data_list_nd_pm2[summarize_dl(data_list_nd_pm2)$"domain" == "D"] <- NULL
-data_list_nd_pm3[summarize_dl(data_list_nd_pm3)$"domain" == "D"] <- NULL
-data_list_nd_pm4[summarize_dl(data_list_nd_pm4)$"domain" == "D"] <- NULL
-data_list_nd_pm5[summarize_dl(data_list_nd_pm5)$"domain" == "D"] <- NULL
+data_list_nd_m1[summarize_dl(data_list_nd_m1)$"name" %in% demo] <- NULL
+data_list_nd_m2[summarize_dl(data_list_nd_m2)$"name" %in% demo] <- NULL
+data_list_nd_m3[summarize_dl(data_list_nd_m3)$"name" %in% demo] <- NULL
+data_list_nd_m4[summarize_dl(data_list_nd_m4)$"name" %in% demo] <- NULL
+data_list_nd_m5[summarize_dl(data_list_nd_m5)$"name" %in% demo] <- NULL
+data_list_nd_pm1[summarize_dl(data_list_nd_pm1)$"name" %in% demo] <- NULL
+data_list_nd_pm2[summarize_dl(data_list_nd_pm2)$"name" %in% demo] <- NULL
+data_list_nd_pm3[summarize_dl(data_list_nd_pm3)$"name" %in% demo] <- NULL
+data_list_nd_pm4[summarize_dl(data_list_nd_pm4)$"name" %in% demo] <- NULL
+data_list_nd_pm5[summarize_dl(data_list_nd_pm5)$"name" %in% demo] <- NULL
+
+demo_list_m1 |> summarize_dl()
 
 data_list_nd_m1 <- remove_signal(data_list_nd_m1, demo_list_m1, sig_digs = 3)
 data_list_nd_m2 <- remove_signal(data_list_nd_m2, demo_list_m2, sig_digs = 3)
@@ -706,7 +716,9 @@ Based on the resuling plots, here are the variables that seem best adjusted rela
 ```{r}
 
 age_compatible <- c(
-    "mtbi_mem_daze",
+    "mtbi_age",
+    "pubertal_status",
+    "headache_history",
     "brain_volume",
     "cortical_thickness",
     "cortical_sa",
@@ -724,9 +736,11 @@ age_compatible <- c(
     "private_instruction",
     "programs_this_year",
     "exercise_time",
+    "helpful",
     "family_fight",
-    "family_angry",
     "family_temper",
+    "family_criticize",
+    "family_hit",
     "family_yell",
     "parent_perstr",
     "parent_anxdep",
@@ -735,14 +749,17 @@ age_compatible <- c(
     "parent_thought",
     "parent_attention",
     "parent_aggressive",
+    "parent_intrusive",
     "parent_depress",
-    "parent_anxidord",
+    "parent_anxdisord",
     "parent_avoidant",
     "parent_antisocial",
     "parent_hyperactive"
 )
 income_compatible <- c(
     "mtbi_mem_daze",
+    "mtbi_age",
+    "pubertal_status",
     "brain_volume",
     "cortical_thickness",
     "cortical_sa",
@@ -750,43 +767,11 @@ income_compatible <- c(
     "pericortical_wm_ndi",
     "fmri_cort_cors",
     "fmri_cort_subcort_cors",
-    "exercise_time"
-)
-mtbi_age_compatible <- c(
-    "brain_volume",
-    "cortical_thickness",
-    "cortical_sa",
-    "major_wm_ndi",
-    "pericortical_wm_ndi",
-    "fmri_cort_cors",
-    "fmri_cort_subcort_cors",
-    "same_sex_friend",
-    "same_sex_close_friend",
-    "opp_sex_close_friend",
-    "weekend_screentime",
-    "weekday_screentime",
-    "school_programs",
-    "non_school_programs",
-    "programs_this_year",
     "exercise_time",
-    "family_fight",
-    "family_angry",
-    "family_throw"
-)
-pubertal_status_compatible <- c(
-    "mtbi_loc",
-    "brain_volume",
-    "cortical_thickness",
-    "cortical_sa",
-    "major_wm_ndi",
-    "pericortical_wm_ndi",
-    "fmri_cort_cors",
-    "fmri_cort_subcort_cors",
-    "same_sex_friend",
-    "same_sex_close_friend",
-    "exercise_time"
+    "family_yell"
 )
 race_compatible <- c(
+    "pubertal_status",
     "brain_volume",
     "cortical_thickness",
     "cortical_sa",
@@ -795,16 +780,14 @@ race_compatible <- c(
     "fmri_cort_cors",
     "fmri_cort_subcort_cors",
     "same_sex_friend",
-    "exercise_time",
-    "parent_perstr",
-    "parent_anxdep",
-    "parent_attention",
-    "parent_depress"
+    "same_sex_close_friend",
+    "exercise_time"
 )
 sex_compatible <- c(
     "mtbi_mem_daze",
     "mtbi_mechanism",
     "mtbi_loc",
+    "pubertal_status",
     "brain_volume",
     "cortical_thickness",
     "cortical_sa",
@@ -818,338 +801,316 @@ sex_compatible <- c(
     "non_school_programs",
     "programs_this_year",
     "exercise_time",
-    "parent_perstr"
+    "family_criticize",
+    "family_outdo",
+    "parent_perstr",
+    "parent_somatic",
+    "parent_attention",
+    "parent_aggressive",
+    "parent_avoidant",
+    "parent_hyperactive"
 )
 
 compat_vecs <- list(
     age_compatible,
     income_compatible,
-    mtbi_age_compatible,
-    pubertal_status_compatible,
     race_compatible,
     sex_compatible
 )
 
-Reduce(intersect, compat_vecs)
+# Features to include for the corrected clustering
+include <- Reduce(intersect, compat_vecs)
 
-
-```
-
-
-Showing that the demographic variables have been removed from the data list.
-
-Chunk below should be re-run outside of HPC
-
-```{r}
-
-fdl <- c(data_list_m1, oom_list_m1)
-
-race_pos <- which(summarize_dl(fdl)$"name" == "d_race")
-mech_pos <- which(summarize_dl(fdl)$"name" == "as_mechanism")
-
-fdl[[race_pos]]$"data" <- fdl[[race_pos]]$"data" |>
-    fastDummies::dummy_cols(
-        "race",
-        remove_first_dummy = TRUE,
-        remove_selected_columns = TRUE
-    )
-
-fdl[[mech_pos]]$"data" <- fdl[[mech_pos]]$"data" |>
-    fastDummies::dummy_cols(
-        "mtbi_mechanism",
-        remove_first_dummy = TRUE,
-        remove_selected_columns = TRUE
-    )
-
-m1_corr_data <- correlation_data(fdl)
-m1_corr_mat <- m1_corr_data$"correlation_matrix"
-corr_order <- colnames(m1_corr_mat)[m1_corr_data$"order"]
-write_csv(data.frame(corr_order), proc_path("mtbi_corr_order.csv", TRUE))
-
-corr_order <- read_csv(proc_path("2024_03_14_mtbi_corr_order.csv"))
-
-m_corr <- my_corr_plot(
-    data_list_m1,
-    oom_list_m1,
-    order = corr_order
-)
-
-save_png(
-    m_corr$"heatmap",
-    fig_path("m_corr_heatmap.png", TRUE),
-    width = 2000,
-    height = 2000
-)
-
-pm_corr <- my_corr_plot(
-    data_list_pm2,
-    oom_list_pm2,
-    order = corr_order
-)
-save_png(
-    pm_corr$"heatmap",
-    fig_path("pm_corr_heatmap.png", TRUE),
-    width = 2000,
-    height = 2000
-)
-
-# m vs. pm
-m_vs_pm_corr_hm <- diff_heatmap(
-    m_corr$"correlation_matrix",
-    pm_corr$"correlation_matrix"
-)
-save_png(
-    m_vs_pm_corr_hm,
-    fig_path("m_vs_pm_corr_heatmap.png", TRUE),
-    width = 2000,
-    height = 2000
-)
-
-abs_m_vs_pm_corr_hm <- diff_heatmap(
-    m_corr$"correlation_matrix",
-    pm_corr$"correlation_matrix",
-    abs = TRUE
-)
-
-save_png(
-    abs_m_vs_pm_corr_hm,
-    fig_path("abs_m_vs_pm_corr_heatmap.png", TRUE),
-    width = 2000,
-    height = 2000
-)
-nd_m_corr <- my_corr_plot(
-    data_list_rd_m1,
-    oom_list_no_demo_m1,
-    order = corr_order
-)
-save_png(
-    nd_m_corr$"heatmap",
-    fig_path("nd_m_corr_heatmap.png", TRUE),
-    width = 2000,
-    height = 2000
-)
+include
+# pubertal_status, brain_volume, cortical_thickness, cortical_sa, major_wm_ndi,
+# pericortical_wm_ndi, fmri_cort_cors, fmri_cort_subcort_cors, exercise_time
 
 ```
 
+
 ```{r}
 
-nd_settings_matrix <- generate_settings_matrix(
-    data_list_nd_m1,
+# No demographics / restricted
+data_list_ndr_m1 <- dl_feature_restrict(data_list_nd_m1, include)
+data_list_ndr_m2 <- dl_feature_restrict(data_list_nd_m2, include)
+data_list_ndr_m3 <- dl_feature_restrict(data_list_nd_m3, include)
+data_list_ndr_m4 <- dl_feature_restrict(data_list_nd_m4, include)
+data_list_ndr_m5 <- dl_feature_restrict(data_list_nd_m5, include)
+data_list_ndr_pm1 <- dl_feature_restrict(data_list_nd_pm1, include)
+data_list_ndr_pm2 <- dl_feature_restrict(data_list_nd_pm2, include)
+data_list_ndr_pm3 <- dl_feature_restrict(data_list_nd_pm3, include)
+data_list_ndr_pm4 <- dl_feature_restrict(data_list_nd_pm4, include)
+data_list_ndr_pm5 <- dl_feature_restrict(data_list_nd_pm5, include)
+
+list.save(data_list_ndr_m1, input_path("data_list_ndr_m1.rds", TRUE))
+list.save(data_list_ndr_m2, input_path("data_list_ndr_m2.rds", TRUE))
+list.save(data_list_ndr_m3, input_path("data_list_ndr_m3.rds", TRUE))
+list.save(data_list_ndr_m4, input_path("data_list_ndr_m4.rds", TRUE))
+list.save(data_list_ndr_m5, input_path("data_list_ndr_m5.rds", TRUE))
+list.save(data_list_ndr_pm1, input_path("data_list_ndr_pm1.rds", TRUE))
+list.save(data_list_ndr_pm2, input_path("data_list_ndr_pm2.rds", TRUE))
+list.save(data_list_ndr_pm3, input_path("data_list_ndr_pm3.rds", TRUE))
+list.save(data_list_ndr_pm4, input_path("data_list_ndr_pm4.rds", TRUE))
+list.save(data_list_ndr_pm5, input_path("data_list_ndr_pm5.rds", TRUE))
+
+data_list_ndr_m1 <- list.load(input_path("2024_03_14_data_list_ndr_m1.rds"))
+data_list_ndr_m2 <- list.load(input_path("2024_03_14_data_list_ndr_m2.rds"))
+data_list_ndr_m3 <- list.load(input_path("2024_03_14_data_list_ndr_m3.rds"))
+data_list_ndr_m4 <- list.load(input_path("2024_03_14_data_list_ndr_m4.rds"))
+data_list_ndr_m5 <- list.load(input_path("2024_03_14_data_list_ndr_m5.rds"))
+data_list_ndr_pm1 <- list.load(input_path("2024_03_14_data_list_ndr_pm1.rds"))
+data_list_ndr_pm2 <- list.load(input_path("2024_03_14_data_list_ndr_pm2.rds"))
+data_list_ndr_pm3 <- list.load(input_path("2024_03_14_data_list_ndr_pm3.rds"))
+data_list_ndr_pm4 <- list.load(input_path("2024_03_14_data_list_ndr_pm4.rds"))
+data_list_ndr_pm5 <- list.load(input_path("2024_03_14_data_list_ndr_pm5.rds"))
+```
+
+
+```{r}
+
+ndr_settings_matrix <- generate_settings_matrix(
+    data_list_ndr_m1,
     nrow = 200,
     seed = 42,
     distance_metrics_list = my_distance_metrics
 )
 
-write_csv(nd_settings_matrix, proc_path("nd_settings_matrix.csv", TRUE))
+write_csv(ndr_settings_matrix, proc_path("ndr_settings_matrix.csv", TRUE))
 
-nd_settings_matrix <- read_csv(proc_path("2024_03_14_nd_settings_matrix.csv"))
+ndr_settings_matrix <- read_csv(
+    proc_path("2024_03_14_ndr_settings_matrix.csv")
+)
+
 ```
 
 ```{r}
 # Imputation 1
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_m1 <- batch_snf(
-        data_list = data_list_nd_m1,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_m1 <- batch_snf(
+        data_list = data_list_ndr_m1,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_m1,
-    proc_path("solutions_matrix_nd_m1.csv", TRUE)
+    solutions_matrix_ndr_m1,
+    proc_path("solutions_matrix_ndr_m1.csv", TRUE)
 )
 # Imputation 2
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_m2 <- batch_snf(
-        data_list = data_list_nd_m2,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_m2 <- batch_snf(
+        data_list = data_list_ndr_m2,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_m2,
-    proc_path("solutions_matrix_nd_m2.csv", TRUE)
+    solutions_matrix_ndr_m2,
+    proc_path("solutions_matrix_ndr_m2.csv", TRUE)
 )
 # Imputation 3
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_m3 <- batch_snf(
-        data_list = data_list_nd_m3,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_m3 <- batch_snf(
+        data_list = data_list_ndr_m3,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_m3,
-    proc_path("solutions_matrix_nd_m3.csv", TRUE)
+    solutions_matrix_ndr_m3,
+    proc_path("solutions_matrix_ndr_m3.csv", TRUE)
 )
 # Imputation 4
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_m4 <- batch_snf(
-        data_list = data_list_nd_m4,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_m4 <- batch_snf(
+        data_list = data_list_ndr_m4,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_m4,
-    proc_path("solutions_matrix_nd_m4.csv", TRUE)
+    solutions_matrix_ndr_m4,
+    proc_path("solutions_matrix_ndr_m4.csv", TRUE)
 )
 # Imputation 5
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_m5 <- batch_snf(
-        data_list = data_list_nd_m5,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_m5 <- batch_snf(
+        data_list = data_list_ndr_m5,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_m5,
-    proc_path("solutions_matrix_nd_m5.csv", TRUE)
+    solutions_matrix_ndr_m5,
+    proc_path("solutions_matrix_ndr_m5.csv", TRUE)
 )
-# mTBI and uninjured pooled imputed
+# mTBI andr uninjured pooled imputed
 # Imputation 1
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_pm1 <- batch_snf(
-        data_list = data_list_nd_pm1,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_pm1 <- batch_snf(
+        data_list = data_list_ndr_pm1,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_pm1,
-    proc_path("solutions_matrix_nd_pm1.csv", TRUE)
+    solutions_matrix_ndr_pm1,
+    proc_path("solutions_matrix_ndr_pm1.csv", TRUE)
 )
 # Imputation 2
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_pm2 <- batch_snf(
-        data_list = data_list_nd_pm2,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_pm2 <- batch_snf(
+        data_list = data_list_ndr_pm2,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_pm2,
-    proc_path("solutions_matrix_nd_pm2.csv", TRUE)
+    solutions_matrix_ndr_pm2,
+    proc_path("solutions_matrix_ndr_pm2.csv", TRUE)
 )
 # Imputation 3
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_pm3 <- batch_snf(
-        data_list = data_list_nd_pm3,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_pm3 <- batch_snf(
+        data_list = data_list_ndr_pm3,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_pm3,
-    proc_path("solutions_matrix_nd_pm3.csv", TRUE)
+    solutions_matrix_ndr_pm3,
+    proc_path("solutions_matrix_ndr_pm3.csv", TRUE)
 )
 # Imputation 4
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_pm4 <- batch_snf(
-        data_list = data_list_nd_pm4,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_pm4 <- batch_snf(
+        data_list = data_list_ndr_pm4,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_pm4,
-    proc_path("solutions_matrix_nd_pm4.csv", TRUE)
+    solutions_matrix_ndr_pm4,
+    proc_path("solutions_matrix_ndr_pm4.csv", TRUE)
 )
 # Imputation 5
 start <- proc.time()
 progressr::with_progress({
-    solutions_matrix_nd_pm5 <- batch_snf(
-        data_list = data_list_nd_pm5,
-        settings_matrix = nd_settings_matrix,
+    solutions_matrix_ndr_pm5 <- batch_snf(
+        data_list = data_list_ndr_pm5,
+        settings_matrix = ndr_settings_matrix,
         distance_metrics_list = my_distance_metrics,
         processes = "max"
     )
 })
 proc.time() - start
 write_csv(
-    solutions_matrix_nd_pm5,
-    proc_path("solutions_matrix_nd_pm5.csv", TRUE)
+    solutions_matrix_ndr_pm5,
+    proc_path("solutions_matrix_ndr_pm5.csv", TRUE)
 )
 ```
 
 ```{r}
-solutions_matrix_nd_m1 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m1.csv"))
-solutions_matrix_nd_m2 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m2.csv"))
-solutions_matrix_nd_m3 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m3.csv"))
-solutions_matrix_nd_m4 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m4.csv"))
-solutions_matrix_nd_m5 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_m5.csv"))
-solutions_matrix_nd_pm1 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm1.csv"))
-solutions_matrix_nd_pm2 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm2.csv"))
-solutions_matrix_nd_pm3 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm3.csv"))
-solutions_matrix_nd_pm4 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm4.csv"))
-solutions_matrix_nd_pm5 <- read_csv(proc_path("2024_03_14_solutions_matrix_nd_pm5.csv"))
 
-mtbi_nd_sm <- do.call(
+solutions_matrix_ndr_m1 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_m1.csv")
+)
+solutions_matrix_ndr_m2 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_m2.csv")
+)
+solutions_matrix_ndr_m3 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_m3.csv")
+)
+solutions_matrix_ndr_m4 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_m4.csv")
+)
+solutions_matrix_ndr_m5 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_m5.csv")
+)
+solutions_matrix_ndr_pm1 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_pm1.csv")
+)
+solutions_matrix_ndr_pm2 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_pm2.csv")
+)
+solutions_matrix_ndr_pm3 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_pm3.csv")
+)
+solutions_matrix_ndr_pm4 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_pm4.csv")
+)
+solutions_matrix_ndr_pm5 <- read_csv(
+    proc_path("2024_03_14_solutions_matrix_ndr_pm5.csv")
+)
+
+mtbi_ndr_sm <- do.call(
     "rbind",
     list(
-        solutions_matrix_nd_m1,
-        solutions_matrix_nd_m2,
-        solutions_matrix_nd_m3,
-        solutions_matrix_nd_m4,
-        solutions_matrix_nd_m5,
-        solutions_matrix_nd_pm1,
-        solutions_matrix_nd_pm2,
-        solutions_matrix_nd_pm3,
-        solutions_matrix_nd_pm4,
-        solutions_matrix_nd_pm5
+        solutions_matrix_ndr_m1,
+        solutions_matrix_ndr_m2,
+        solutions_matrix_ndr_m3,
+        solutions_matrix_ndr_m4,
+        solutions_matrix_ndr_m5,
+        solutions_matrix_ndr_pm1,
+        solutions_matrix_ndr_pm2,
+        solutions_matrix_ndr_pm3,
+        solutions_matrix_ndr_pm4,
+        solutions_matrix_ndr_pm5
     )
 )
+
 ```
 
 ```{r}
-mtbi_nd_ari <- calc_om_aris(mtbi_nd_sm, processes = "max")
-write_csv(data.frame(mtbi_nd_ari), proc_path("mtbi_nd_ari.csv", TRUE))
+mtbi_ndr_ari <- calc_om_aris(mtbi_ndr_sm, processes = "max")
+write_csv(data.frame(mtbi_ndr_ari), proc_path("mtbi_ndr_ari.csv", TRUE))
 ```
 
 ```{r}
-mtbi_nd_ari <- read_csv(proc_path("2024_03_14_mtbi_nd_ari.csv")) |> as.matrix()
+mtbi_ndr_ari <- read_csv(proc_path("2024_03_14_mtbi_ndr_ari.csv")) |> as.matrix()
 ```
 
 ```{r}
-mtbi_nd_ari_order <- ari_order(mtbi_nd_ari)
-write_csv(data.frame(mtbi_nd_ari_order), proc_path("mtbi_nd_ari_order.csv", TRUE))
+mtbi_ndr_ari_order <- ari_order(mtbi_ndr_ari)
+write_csv(data.frame(mtbi_ndr_ari_order), proc_path("mtbi_ndr_ari_order.csv", TRUE))
 ```
 
 ```{r}
-mtbi_nd_ari_order <- unlist(read_csv(proc_path("2024_03_14_mtbi_nd_ari_order.csv")))
-names(mtbi_nd_ari_order) <- NULL
+mtbi_ndr_ari_order <- unlist(read_csv(proc_path("2024_03_14_mtbi_ndr_ari_order.csv")))
+names(mtbi_ndr_ari_order) <- NULL
 ```
 
 ## Full imputation meta clustering plot with impairment levels
 
 ```{r}
+
 imputation_labels <- data.frame(
     "imputation" = c(
         rep("m1", 200),
@@ -1169,46 +1130,39 @@ imputation_labels <- data.frame(
     )
 )
 
-mtbi_nd_sm <- cbind(mtbi_nd_sm, imputation_labels)
+mtbi_ndr_sm <- cbind(mtbi_ndr_sm, imputation_labels)
 ```
 
 ```{r}
 
-mtbi_nd_i_esm <- extend_solutions(
-    mtbi_nd_sm,
-    data_list_nd_m1,
+mtbi_ndr_i_esm <- extend_solutions(
+    mtbi_ndr_sm,
+    data_list_ndr_m1,
     min_pval = 1e-10,
     processes = "max"
 )
-write_csv(mtbi_nd_i_esm, proc_path("mtbi_nd_i_esm.csv", TRUE))
-
-mtbi_nd_o_esm <- extend_solutions(
-    mtbi_nd_sm,
-    oom_list_nd_m1,
+write_csv(mtbi_ndr_i_esm, proc_path("mtbi_ndr_i_esm.csv", TRUE))
+mtbi_ndr_o_esm <- extend_solutions(
+    mtbi_ndr_sm,
+    oom_list_ndr_m1,
     min_pval = 1e-10,
     processes = "max"
 )
-write_csv(mtbi_nd_o_esm, proc_path("mtbi_nd_o_esm.csv", TRUE))
-
-
-colnames(mtbi_nd_sm)
-
-summarize_dl(data_list_rd_m1)
-
-mtbi_nd_io_esm <- extend_solutions(
-    mtbi_nd_sm,
-    target_list = c(data_list_rd_m1, oom_list_nd_m1),
+write_csv(mtbi_ndr_o_esm, proc_path("mtbi_ndr_o_esm.csv", TRUE))
+mtbi_ndr_io_esm <- extend_solutions(
+    mtbi_ndr_sm,
+    target_list = c(data_list_rd_m1, oom_list_ndr_m1),
     min_pval = 1e-10,
     processes = "max"
 )
-write_csv(mtbi_nd_io_esm, proc_path("mtbi_nd_io_esm.csv", TRUE))
+write_csv(mtbi_ndr_io_esm, proc_path("mtbi_ndr_io_esm.csv", TRUE))
 
 ```
 
 ```{r}
-mtbi_nd_i_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_i_esm.csv"))
-mtbi_nd_o_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_o_esm.csv"))
-mtbi_nd_io_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_io_esm.csv"))
+mtbi_ndr_i_esm <- read_csv(proc_path("2024_03_14_mtbi_ndr_i_esm.csv"))
+mtbi_ndr_o_esm <- read_csv(proc_path("2024_03_14_mtbi_ndr_o_esm.csv"))
+mtbi_ndr_io_esm <- read_csv(proc_path("2024_03_14_mtbi_ndr_io_esm.csv"))
 ```
 
 p-values are wrong...
