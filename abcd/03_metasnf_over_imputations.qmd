@@ -1093,7 +1093,7 @@ var_order <- c(
     all_vars[!(all_vars %in% included_vars)]
 )
 
-manhattan_plot2(
+mtbi_ndr_manhattan <- manhattan_plot2(
     mtbi_ndr_iuo_rep,
     data_list = data_list_rd_m1,
     target_list = oom_list_nd_m1,
@@ -1102,133 +1102,13 @@ manhattan_plot2(
     threshold = 0.05
 )
 
-
-pval_select(mtbi_nd_io_esm) |> colnames()
-
-# Why are variables like age, household income, and mtbi_age showing up so strongly?
-manhattan_plot2(
-    rep_solutions,
-    data_list = data_list_rd_m1,
-    target_list = oom_list_nd_m1
-)
-
-debug_df <- c(data_list_rd_m1, oom_list_nd_m1) |> collapse_dl()
-cluster_df <- get_cluster_df(rep_solutions[2, ])
-
-debug_df <- dplyr::inner_join(debug_df, cluster_df, by = "subjectkey")
-
-debug_df
-
-rep_solutions$"label" <- rep_solutions$"mc"
-
-
-pval_select(rep_solutions[2, ])
-
-q <- collapse_dl(data_list_rd_m1)
-
-
-summarize_dl(data_list_rd_m1)
-
-# Non-linearities
-xy_plot(q, "previous_mtbis", "race")
-
-xy_plot(q, "previous_mtbis", "age")
-
-p1 <- xy_plot(q, "previous_mtbis", "sex")
-
-p2 <- xy_plot(q, "pubertal_status", "previous_mtbis")
-
-xy_plot(q, "household_income", "previous_mtbis")
-
-xy_plot(q, "mtbi_mechanism", "pubertal_status")
-
-p3 <- xy_plot(q, "pubertal_status", "headache_history")
-
-xy_plot(q, "pubertal_status", "parent_anxdisord")
-
-p4 <- xy_plot(q, "mtbi_age", "mtbi_mem_daze")
-
-xy_plot(q, "mtbi_age", "mtbi_mem_daze")
-
-# No non-linearities
-
-p5 <- xy_plot(q, "cortical_sa", "age")
-
-p6 <- xy_plot(q, "brain_volume", "pubertal_status")
-
-linearity_plot <- list(p1, p2, p3, p4, p5, p6) |>
-    wrap_plots(nrow = 3, ncol = 2)
-
 ggsave(
-    plot = linearity_plot,
-    filename = fig_path("linearity_plots.png", TRUE)
+    plot = mtbi_ndr_manhattan,
+    filename = fig_path("mtbi_ndr_manhattan.png", TRUE),
+    width = 20,
+    height = 6*3
 )
 
-
-q |>
-    ggplot(aes(x = pubertal_status, y = pericortical_wm_ndi)) +
-    geom_jitter() +
-    geom_smooth(method = "lm", se = FALSE, color = "red") +
-    theme_bw()
-
-ggplot(df, aes(x = x, y = y)) +
-  geom_point() +  # Scatter plot
-
-a_df <- get_cluster_df(rep_solutions[1, ])
-rd_dl <- collapse_dl(data_list_rd_m1)
-
-eval_df <- dplyr::inner_join(a_df, rd_dl, by = "subjectkey")
-eval_df$"cluster" <- factor(eval_df$"cluster")
-
-eval_df |>
-    ggplot(aes(x = cluster, y = age)) +
-    geom_boxplot()
-
-get_cluster_pval(
-    a_df,
-    rd_dl,
-    "discrete",
-    "age"
-)
-
-mtbi_nd_manhattan <- my_manhattan_plot(
-    solutions_matrix = mtbi_nd_io_esm,
-    aris_order = mtbi_nd_ari_order,
-    mcs = "A",
-    split_vector = mtbi_nd_split_vec,
-    data_list = data_list_rd_m1,
-    target_list = oom_list_nd_m1,
-    colours = c(
-        "I-AS" = "#1B9E77",
-        "I-D" = "#D95F02",
-        "I-N" = "#7570B3",
-        "I-MH" = "#E7298A",
-        "I-P" = "#66A61E",
-        "O-S" = "#E6AB02",
-        "O-B" = "#A6761D"
-    )
-)
-
-my_manhattan_bulk_save(
-    split_vector = mtbi_nd_split_vec,
-    solutions_matrix = mtbi_nd_io_esm,
-    ari_order = mtbi_nd_ari_order,
-    data_list = data_list_rd_m1,
-    target_list = oom_list_nd_m1,
-    "mtbi_nd"
-)
-
-
-
-data_list_rd_m1 |> summarize_dl()
-
-
-mtbi_nd_io_esm <- read_csv(proc_path("2024_03_14_mtbi_nd_io_esm.csv"))
-mtbi_nd_ari <- read_csv(proc_path("2024_03_14_mtbi_nd_ari.csv"))
-mtbi_nd_ari_order <- read_csv(proc_path("2024_03_14_mtbi_nd_ari_order.csv"))
-mtbi_nd_split_vec <- read_csv(proc_path("2024_03_14_mtbi_nd_split_vec.csv")) |>
-    unlist() |>
-    as.numeric()
 
 # MTBI-ND
 representative_mc(
