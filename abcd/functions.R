@@ -1019,7 +1019,7 @@ manhattan_plot2 <- function(esm,
             size = 5
         ) +
         ggplot2::labs(
-            x = "Variable",
+            x = NULL,
             y = expression("-log"[10] * "(p)"),
             colour = "Domain"
         ) +
