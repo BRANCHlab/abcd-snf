@@ -1555,3 +1555,239 @@ dl_feature_restrict <- function(data_list, inclusion_features) {
     filtered_dl <- Filter(Negate(is.null), filtered_dl)
     return(filtered_dl)
 }
+
+variable_plots <- function(solutions_matrix,
+                           #aris,
+                           #ari_order,
+                           #solutions_matrix,
+                           group_name,
+                           possible_data,
+                           individual_plots = TRUE,
+                           group_plots = TRUE) {
+    # Formatting
+    ari_order <- unlist(ari_order)
+    # Sorting
+    aris <- aris[ari_order, ari_order]
+    solutions_matrix <- solutions_matrix[ari_order, ]
+    # Assigning meta clusters to the solutions matrix and ARI matrix
+    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    aris$"mc" <- split_at(split_vector, nrow(solutions_matrix))
+    mcs <- split_at(split_vector, nrow(solutions_matrix)) |>
+        unique()
+    for (mc in mcs) {
+        mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
+        mc_ari <- aris[aris$"mc" == mc, ]
+        mc_ari$"mc" <- NULL
+        rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
+        rep_sol <- mc_sm[rep_mc, ]
+        sol_row_id <- rep_sol$"row_id"
+        sol_imp <- rep_sol$"imputation"
+        sol_name <- paste0("mc_", mc, "_row_id_", sol_row_id, "_", sol_imp)
+        sol_name <- paste0(group_name, "_", sol_name)
+        sol_name <- tolower(sol_name)
+        write_csv(rep_sol, proc_path(paste0(sol_name, ".csv"), TRUE))
+        characterize_solution(
+            solution = rep_sol,
+            data_list = possible_data[[sol_imp]],
+            plotname = fig_path(sol_name,  TRUE),
+            individual_plots = individual_plots,
+            group_plots = group_plots
+        )
+    }
+}
+
+extend_solutions_imp <- function(solutions_matrix,
+                                 imputed_targets,
+                                 cat_test = "chi_squared",
+                                 calculate_summaries = TRUE,
+                                 min_pval = NULL,
+                                 processes = 1) {
+    ###########################################################################
+    # Ensure imputations are formatted properly
+    ###########################################################################
+    esm_imps <- sort(unique(solutions_matrix$"imputation"))
+    target_imps <- sort(names(imputed_targets))
+    if(is.null(esm_imps) | !all(esm_imps %in% target_imps)) {
+        stop(
+            "solutions_matrix must contain a column named 'imputation' with",
+            "values present in the names of the imputed_targets parameter.",
+            "Imputed targets should be a named list of target_lists, where",
+            "each list corresponds to a distinc timputation label."
+        )
+    }
+    ###########################################################################
+    # Calculate vector of all feature names across all imputations
+    ###########################################################################
+    all_features <- imputed_targets |>
+        lapply(
+            function(x) {
+                x_df <- collapse_dl(x)
+                colnames(x_df)[-1]
+            }
+        ) |>
+        unlist() |>
+        as.character() |>
+        unique()
+    ###########################################################################
+    # Construct base of extended solutions matrix by adding columns for
+    # p-values of all features
+    ###########################################################################
+    # Specifying the dataframe structure avoids tibble-related errors
+    esm <- solutions_matrix |>
+        data.frame() |>
+        add_columns(
+            paste0(all_features, "_p"),
+            fill = NA
+        )
+    ###########################################################################
+    # Sequential extension
+    ###########################################################################
+    if (processes == 1) {
+        # Iterate across rows of the solutions matrix
+        for (i in seq_len(nrow(esm))) {
+            imp <- esm[i, "imputation"]
+            target_list <- imputed_targets[[imp]]
+            ###################################################################
+            ## Calculate vector of all feature types
+            ###################################################################
+            features <- target_list |>
+                lapply(
+                    function(x) {
+                        colnames(x[[1]])[-1]
+                    }
+                ) |>
+                unlist()
+            feature_types <- target_list |>
+                lapply(
+                    function(x) {
+                        n_features <- ncol(x$"data") - 1
+                        outcome_type <- rep(x$"type", n_features)
+                        return(outcome_type)
+                    }
+                ) |>
+                unlist()
+            ###################################################################
+            ## Single DF to contain all features to calculate p-values for
+            ###################################################################
+            merged_df <- target_list |>
+                lapply(
+                    function(x) {
+                        x[[1]]
+                    }
+                ) |>
+                merge_df_list()
+            print(paste0("Processing row ", i, " of ", nrow(esm)))
+            clustered_subs <- get_clustered_subs(esm[i, ])
+            for (j in seq_along(features)) {
+                current_outcome_component <- merged_df[, c(1, j + 1)]
+                current_outcome_name <- colnames(current_outcome_component)[2]
+                suppressWarnings(
+                    p_value <- get_cluster_pval(
+                        clustered_subs,
+                        current_outcome_component,
+                        feature_types[j],
+                        features[j],
+                        cat_test = cat_test
+                    )
+                )
+                target_col <- which(
+                    paste0(current_outcome_name, "_p") == colnames(esm)
+                )
+                esm[i, target_col] <- p_value
+            }
+        }
+    ###########################################################################
+    # Parallel extension
+    ###########################################################################
+    } else {
+        max_cores <- future::availableCores()
+        if (processes == "max") {
+            processes <- max_cores
+        } else if (processes > max_cores) {
+            print(
+                paste0(
+                    "Requested processes exceed available cores.",
+                    " Defaulting to the max avaiilable (", max_cores, ")."
+                )
+            )
+            processes <- max_cores
+        }
+        # Iterate across rows of the solutions matrix
+        future::plan(future::multisession, workers = processes)
+        esm_rows <- future.apply::future_lapply(
+            seq_len(nrow(esm)),
+            function(i) {
+                imp <- esm[i, "imputation"]
+                target_list <- imputed_targets[[imp]]
+                ###############################################################
+                ## Calculate vector of all feature types
+                ###############################################################
+                features <- target_list |>
+                    lapply(
+                        function(x) {
+                            colnames(x[[1]])[-1]
+                        }
+                    ) |>
+                    unlist()
+                feature_types <- target_list |>
+                    lapply(
+                        function(x) {
+                            n_features <- ncol(x$"data") - 1
+                            outcome_type <- rep(x$"type", n_features)
+                            return(outcome_type)
+                        }
+                    ) |>
+                    unlist()
+                ###############################################################
+                ## Single DF to contain all features to calculate p-values for
+                ###############################################################
+                merged_df <- target_list |>
+                    lapply(
+                        function(x) {
+                            x[[1]]
+                        }
+                    ) |>
+                    merge_df_list()
+                clustered_subs <- get_clustered_subs(esm[i, ])
+                for (j in seq_along(features)) {
+                    current_outcome_component <- merged_df[, c(1, j + 1)]
+                    current_outcome_name <-
+                        colnames(current_outcome_component)[2]
+                    suppressWarnings(
+                        p_value <- get_cluster_pval(
+                            clustered_subs,
+                            current_outcome_component,
+                            feature_types[j],
+                            features[j],
+                            cat_test = cat_test
+                        )
+                    )
+                    target_col <- which(
+                        paste0(current_outcome_name, "_p") == colnames(esm)
+                    )
+                    esm[i, target_col] <- p_value
+                }
+                return(esm[i, ])
+            }
+        )
+        future::plan(future::sequential)
+        esm <- do.call("rbind", esm_rows)
+    }
+    ###########################################################################
+    # If min_pval is assigned, replace any p-value less than this with min_pval
+    ###########################################################################
+    if (!is.null(min_pval)) {
+        esm <- esm |>
+            numcol_to_numeric() |>
+            dplyr::mutate(
+                dplyr::across(
+                    dplyr::ends_with("_p"),
+                    ~ ifelse(. < min_pval, min_pval, .)
+                )
+            )
+    }
+    if (calculate_summaries) {
+        esm <- pval_summaries(esm, na_rm = TRUE)
+    }
+    return(esm)
+}
