@@ -247,33 +247,18 @@ mtbi_sm <- do.call(
 )
 
 write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
-```
 
-```{r}
-mtbi_sm <- read_csv(proc_path("2024_03_17_mtbi_sm.csv"))
-```
-
-```{r}
 mtbi_ari <- calc_om_aris(mtbi_sm, processes = "max")
 write_csv(data.frame(mtbi_ari), proc_path("mtbi_ari.csv", TRUE))
-```
 
-## Re-importing the ARIs
-
-```{r}
-mtbi_ari <- as.matrix(read_csv(proc_path("2024_03_12_mtbi_ari.csv")))
-```
-
-## Plotting the ARIs
-
-### Initial plot across all ARIs to extract order
-
-```{r}
 mtbi_ari_order <- ari_order(mtbi_ari)
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
 
+
 ```{r}
+mtbi_sm <- read_csv(proc_path("2024_03_17_mtbi_sm.csv"))
+mtbi_ari <- as.matrix(read_csv(proc_path("2024_03_12_mtbi_ari.csv")))
 mtbi_ari_order <- unlist(read_csv(proc_path("2024_03_12_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
@@ -281,6 +266,7 @@ names(mtbi_ari_order) <- NULL
 ## Full imputation meta clustering plot with impairment levels
 
 ```{r}
+
 imputation_labels <- data.frame(
     "imputation" = c(
         rep("m1", 200),
@@ -300,9 +286,7 @@ imputation_labels <- data.frame(
     )
 )
 
-mtbi_sm_l <- cbind(mtbi_sm, imputation_labels)
-
-mtbi_imputed_dls <- list(
+imputed_data <- list(
     "m1" = c(data_list_m1, oom_list_m1),
     "m2" = c(data_list_m2, oom_list_m2),
     "m3" = c(data_list_m3, oom_list_m3),
@@ -316,37 +300,32 @@ mtbi_imputed_dls <- list(
     "pm5" = c(data_list_pm5, oom_list_pm5)
 )
 
-mtbi_io_esm <- extend_solutions_imp(
+mtbi_sm_l <- cbind(mtbi_sm, imputation_labels)
+
+mtbi_esm <- extend_solutions_imp(
     mtbi_sm_l,
-    imputed_targets = mtbi_imputed_dls,
-    min_pval = 1e-10,
+    imputed_targets = imputed_data,
+    min_p = 1e-10,
     calculate_summaries = FALSE,
     processes = "max"
 )
-write_csv(mtbi_io_esm, proc_path("mtbi_io_esm.csv", TRUE))
+write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 
 ```
 
 The "o" is for just extending on the output variables (CBCL/SDS), while the "io" is for both input and output variables.
 
 ```{r}
-#mtbi_o_esm <- read_csv(proc_path("2024_03_12_mtbi_io_esm.csv"))
-#mtbi_io_esm <- read_csv(proc_path("2024_03_12_mtbi_io_esm.csv"))
-
-mtbi_io_esm <- read_csv(proc_path("2024_03_17_mtbi_io_esm.csv"))
-
+mtbi_esm <- read_csv(proc_path("2024_03_17_mtbi_esm.csv"))
 ```
 
 ```{r}
-
-get_pvals(mtbi_io_esm, negative_log = TRUE) |> head()
-
 
 mtbi_split_vec <- c(282, 417, 575, 740, 853, 1110, 1783)
 mtbi_mc_heatmap <- my_similarity_matrix_heatmap(
     aris = mtbi_ari,
     aris_order = mtbi_ari_order,
-    extended_solutions = mtbi_io_esm,
+    extended_solutions = mtbi_esm,
     split_vector = mtbi_split_vec
 )
 mtbi_mc_heatmap
@@ -358,17 +337,38 @@ write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 mtbi_split_vec <- read_csv(proc_path("2024_03_17_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
+
 ```
 
 ```{r}
+
+# Function to try to lean on mTBI-including solutions when possible.
+restrict_fn <- function(x, threshold = 0.1) {
+    x_solo_ind <- x$"imputation" %in% c("m1", "m2", "m3", "m4", "m5")
+    x_pool_ind <- x$"imputation" %in% c("pm1", "pm2", "pm3", "pm4", "pm5")
+    x_solo <- x[x_solo_ind, ]
+    x_pool <- x[x_pool_ind, ]
+    frac_solo <- nrow(x_solo) / (nrow(x_solo) + nrow(x_pool))
+    if (frac_solo < threshold) {
+        return(x_pool_ind)
+    } else {
+        return(x_solo_ind)
+    }
+}
+
 # Representative solutions
 mtbi_rep <- get_rep_solutions(
     ari = mtbi_ari,
     split_vector = mtbi_split_vec,
     ari_order = mtbi_ari_order,
-    solutions_matrix = mtbi_io_esm,
-    exclude_mcs = "G"
+    solutions_matrix = mtbi_esm,
+    exclude_mcs = "G",
+    restriction_function = restrict_fn
 )
+
+write_csv(mtbi_rep, proc_path("mtbi_rep.csv", TRUE))
+
+mtbi_rep <- read_csv(proc_path("2024_03_17_mtbi_rep.csv"))
 
 mtbi_manhattan <- manhattan_plot2(
     mtbi_rep,
@@ -385,88 +385,108 @@ ggsave(
     height = 7*2,
     dpi = 120
 )
+
+plot_solutions_matrix(
+    mtbi_rep,
+    "mtbi",
+    possible_data = imputed_data,
+    individual_plots = FALSE,
+    group_plots = FALSE
+)
+
+###############################################################################
+# Here, 2024-03-17
+###############################################################################
+
 ```
 
+A tacked-on analysis to see if the clusters associate by CBCL change scores.
 
 ```{r}
 
-mtbi_rep
+mtbi_train <- read_csv(sub_path("2024_03_12_mtbi_train_subjects.csv"))
 
-mini <- mtbi_sm[c(1:3, 1990:1992), ]
+core_path <- path_maker(here(paste0("data/abcd/core")))
 
-z1 <- extend_solutions_imp(
-    mini,
-    imputed_targets = pd,
-    min_pval = 1e-10,
-    processes = 1
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+# Parent report of child behaviour (CBCL)
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+# Sleep disturbance scale
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+
+
+syndromes <- c(
+    "anxdep",
+    "withdep",
+    "somatic",
+    "social",
+    "thought",
+    "attention",
+    "rulebreak",
+    "aggressive"
 )
 
-z2 <- extend_solutions_imp(
-    mini,
-    imputed_targets = pd,
-    min_pval = 1e-10,
-    processes = 2
+long_outcomes <- NULL
+for (syndrome in syndromes) {
+    if (is.null(long_outcomes)) {
+        long_outcomes <- get_cbcl_syndrome_scale(
+            syndrome = syndrome,
+            mh_p_cbcl,
+            raw = FALSE,
+            subjects = mtbi_train,
+            t = 3
+        )
+    } else {
+        long_outcomes <- dplyr::inner_join(
+            long_outcomes,
+            get_cbcl_syndrome_scale(
+                syndrome = syndrome,
+                mh_p_cbcl,
+                raw = FALSE,
+                subjects = mtbi_train,
+                t = 3
+            ),
+            by = "subjectkey"
+        )
+    }
+}
+long_outcomes <- dplyr::inner_join(
+    long_outcomes,
+    get_sds_total_probs(
+        ph_p_sds,
+        mtbi_train,
+        t = 3
+    ),
+    by = "subjectkey"
 )
 
-pval_select(test)
+head(long_outcomes)
 
-write_csv(mtbi_o_esm, proc_path("mtbi_o_esm.csv", TRUE))
-
-
-names(pd)
-
-pd |>
-    lapply(
-        function(x) {
-            x_df <- collapse_dl(x)
-            colnames(x_df)
-        }
-    ) |>
-    unlist() |>
-    as.character() |>
-    unique()
-
-summarize_dl(oom_list_m1)
-
-oom_list_m1 |>
-    lapply(
-        function(x) {
-            n_features <- ncol(x$"data") - 1
-            outcome_type <- rep(x$"type", n_features)
-            return(outcome_type)
-        }
-    ) |>
-    unlist()
+oom_list_m1
 
 
-#mtbi_io_esm <- read_csv(proc_path("2024_02_28_mtbi_io_esm.csv"))
-#mtbi_ari <- read_csv(proc_path("2024_02_15_aris_all_mtbi_imputations.csv"))
-#mtbi_ari_order <- read_csv(proc_path("2024_02_28_mtbi_ari_order.csv"))
-#mtbi_split_vec <- c(233, 350, 500, 723, 830, 1404, 1685, 1900)
 
-representative_mc(
-    split_vector = mtbi_split_vec,
-    aris = mtbi_ari,
-    ari_order = mtbi_ari_order,
-    solutions_matrix = mtbi_io_esm,
-    group_name = "mtbi",
-    possible_data = list(
-        "m1" = c(data_list_m1, oom_list_m1),
-        "m2" = c(data_list_m2, oom_list_m2),
-        "m3" = c(data_list_m3, oom_list_m3),
-        "m4" = c(data_list_m4, oom_list_m4),
-        "m5" = c(data_list_m5, oom_list_m5),
-        "pm5" = c(data_list_pm5, oom_list_pm5),
-        "pm1" = c(data_list_pm1, oom_list_pm1),
-        "pm2" = c(data_list_pm2, oom_list_pm2),
-        "pm3" = c(data_list_pm3, oom_list_pm3),
-        "pm4" = c(data_list_pm4, oom_list_pm4),
-        "pm5" = c(data_list_pm5, oom_list_pm5)
-    )
-)
-
+na.omit(sds_total_probs_mtbi)
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

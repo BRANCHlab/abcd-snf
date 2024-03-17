@@ -435,8 +435,9 @@ all_plots <- function(plot_list, plotname) {
     ggsave(
         plot = pw,
         filename = paste0(plotname, "_all_plots.png"),
-        width = 40,
-        height = 33
+        width = 30,
+        height = 30,
+        dpi = 72
     )
 }
 
@@ -1080,8 +1081,14 @@ my_similarity_matrix_heatmap <- function(aris,
                                          extended_solutions,
                                          split_vector = NULL,
                                          show_clusters = TRUE) {
-    pvals <- pval_select(extended_solutions, negative_log = TRUE)
-    extended_solutions$"mean_neglog_p" <- pvals$"mean_neglog_p"
+    outcome_pvals <- extended_solutions |>
+        get_pvals(negative_log = TRUE) |>
+        dplyr::select(
+            "row_id",
+            dplyr::starts_with(c("cbcl", "sds"))
+        ) |>
+        summarize_pvals()
+    extended_solutions$"mean_p" <- outcome_pvals$"mean_p"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     if (!is.null(split_vector)) {
         splits <- split_at(vector = split_vector, nrow = 2000)
@@ -1098,7 +1105,7 @@ my_similarity_matrix_heatmap <- function(aris,
             data = extended_solutions,
             top_hm = list(
                 "Scheme" = "snf_scheme",
-                "Impairment Separation" = "mean_neglog_p"
+                "Impairment Separation" = "mean_p"
             ),
             left_hm = list(
                 "Pooled" = "pooled",
@@ -1124,7 +1131,7 @@ my_similarity_matrix_heatmap <- function(aris,
                     "3" = "#FDC086"
                 ),
                 "Impairment Separation" = hm_colours(
-                    extended_solutions$"mean_neglog_p"
+                    extended_solutions$"mean_p"
                 )
             ),
             col = circlize::colorRamp2(
@@ -1144,7 +1151,7 @@ my_similarity_matrix_heatmap <- function(aris,
             data = extended_solutions,
             top_hm = list(
                 "Scheme" = "snf_scheme",
-                "Impairment Separation" = "mean_neglog_p"
+                "Impairment Separation" = "mean_p"
             ),
             left_hm = list(
                 "Pooled" = "pooled",
@@ -1167,7 +1174,7 @@ my_similarity_matrix_heatmap <- function(aris,
                     "3" = "#FDC086"
                 ),
                 "Impairment Separation" = hm_colours(
-                    extended_solutions$"mean_neglog_p"
+                    extended_solutions$"mean_p"
                 )
             ),
             col = circlize::colorRamp2(
@@ -1327,7 +1334,8 @@ get_rep_solutions <- function(ari,
                               solutions_matrix,
                               labels = NULL,
                               exclude_mcs = NULL,
-                              include_mcs = NULL) {
+                              include_mcs = NULL,
+                              restriction_function = NULL) {
     ###########################################################################
     # Re-sort the solutions matrix based on the aris
     ###########################################################################
@@ -1345,11 +1353,15 @@ get_rep_solutions <- function(ari,
     ###########################################################################
     rep_solutions <- data.frame()
     for (mc in mcs) {
-        # Subset to just those solutions within the MC
+        # Subset to just those solutions and ARIs within the MC
         mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
-        # Subset the corresponding ARIs
         mc_ari <- ari[ari$"mc" == mc, ]
         mc_ari$"mc" <- NULL
+        if (!is.null(restriction_function)) {
+            mc_indices <- restriction_function(mc_sm)
+            mc_ari <- mc_ari[mc_indices, ]
+            mc_sm <- mc_sm[mc_indices, ]
+        }
         # The most representative solution
         rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
         rep_solution <- mc_sm[rep_mc, ]
@@ -1556,39 +1568,22 @@ dl_feature_restrict <- function(data_list, inclusion_features) {
     return(filtered_dl)
 }
 
-variable_plots <- function(solutions_matrix,
-                           #aris,
-                           #ari_order,
-                           #solutions_matrix,
+plot_solutions_matrix <- function(solutions_matrix,
                            group_name,
                            possible_data,
                            individual_plots = TRUE,
                            group_plots = TRUE) {
-    # Formatting
-    ari_order <- unlist(ari_order)
-    # Sorting
-    aris <- aris[ari_order, ari_order]
-    solutions_matrix <- solutions_matrix[ari_order, ]
-    # Assigning meta clusters to the solutions matrix and ARI matrix
-    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    aris$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    mcs <- split_at(split_vector, nrow(solutions_matrix)) |>
-        unique()
-    for (mc in mcs) {
-        mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
-        mc_ari <- aris[aris$"mc" == mc, ]
-        mc_ari$"mc" <- NULL
-        rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
-        rep_sol <- mc_sm[rep_mc, ]
-        sol_row_id <- rep_sol$"row_id"
-        sol_imp <- rep_sol$"imputation"
-        sol_name <- paste0("mc_", mc, "_row_id_", sol_row_id, "_", sol_imp)
+    for (row in seq_len(nrow(solutions_matrix))) {
+        solution <- solutions_matrix[row, ]
+        id <- solution$"row_id"
+        imp <- solution$"imputation"
+        mc <- solution$"mc"
+        sol_name <- paste0("mc_", mc, "_row_id_", id, "_", imp)
         sol_name <- paste0(group_name, "_", sol_name)
         sol_name <- tolower(sol_name)
-        write_csv(rep_sol, proc_path(paste0(sol_name, ".csv"), TRUE))
         characterize_solution(
-            solution = rep_sol,
-            data_list = possible_data[[sol_imp]],
+            solution = solution,
+            data_list = possible_data[[imp]],
             plotname = fig_path(sol_name,  TRUE),
             individual_plots = individual_plots,
             group_plots = group_plots
@@ -1600,14 +1595,14 @@ extend_solutions_imp <- function(solutions_matrix,
                                  imputed_targets,
                                  cat_test = "chi_squared",
                                  calculate_summaries = TRUE,
-                                 min_pval = NULL,
+                                 min_p = NULL,
                                  processes = 1) {
     ###########################################################################
     # Ensure imputations are formatted properly
     ###########################################################################
     esm_imps <- sort(unique(solutions_matrix$"imputation"))
     target_imps <- sort(names(imputed_targets))
-    if(is.null(esm_imps) | !all(esm_imps %in% target_imps)) {
+    if (is.null(esm_imps) || !all(esm_imps %in% target_imps)) {
         stop(
             "solutions_matrix must contain a column named 'imputation' with",
             "values present in the names of the imputed_targets parameter.",
@@ -1696,10 +1691,10 @@ extend_solutions_imp <- function(solutions_matrix,
                 esm[i, target_col] <- p_value
             }
         }
-    ###########################################################################
-    # Parallel extension
-    ###########################################################################
     } else {
+        #######################################################################
+        # Parallel extension
+        #######################################################################
         max_cores <- future::availableCores()
         if (processes == "max") {
             processes <- max_cores
@@ -1754,7 +1749,7 @@ extend_solutions_imp <- function(solutions_matrix,
                     current_outcome_name <-
                         colnames(current_outcome_component)[2]
                     suppressWarnings(
-                        p_value <- get_cluster_pval(
+                        pval <- get_cluster_pval(
                             clustered_subs,
                             current_outcome_component,
                             feature_types[j],
@@ -1765,7 +1760,7 @@ extend_solutions_imp <- function(solutions_matrix,
                     target_col <- which(
                         paste0(current_outcome_name, "_p") == colnames(esm)
                     )
-                    esm[i, target_col] <- p_value
+                    esm[i, target_col] <- pval
                 }
                 return(esm[i, ])
             }
@@ -1774,20 +1769,20 @@ extend_solutions_imp <- function(solutions_matrix,
         esm <- do.call("rbind", esm_rows)
     }
     ###########################################################################
-    # If min_pval is assigned, replace any p-value less than this with min_pval
+    # If min_p is assigned, replace any p-value less than this with min_p
     ###########################################################################
-    if (!is.null(min_pval)) {
+    if (!is.null(min_p)) {
         esm <- esm |>
             numcol_to_numeric() |>
             dplyr::mutate(
                 dplyr::across(
                     dplyr::ends_with("_p"),
-                    ~ ifelse(. < min_pval, min_pval, .)
+                    ~ ifelse(. < min_p, min_p, .)
                 )
             )
     }
     if (calculate_summaries) {
-        esm <- pval_summaries(esm, na_rm = TRUE)
+        esm <- summarize_pvals(esm)
     }
     return(esm)
 }
