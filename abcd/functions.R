@@ -241,16 +241,16 @@ jitter_plot <- function(df, feature) {
             alpha = 0.4
         ) +
         geom_jitter(
-            height = 0.1,
+            height = 0,
             width = 0.2,
-            alpha = 0.8,
-            size = 3
+            alpha = 0.5,
+            size = 2
         ) +
         stat_summary(
             fun = "mean",
             geom = "point",
             colour = "black",
-            size = 5
+            size = 2
         ) +
         labs(
             x = "Cluster",
