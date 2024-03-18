@@ -1498,9 +1498,9 @@ my_manhattan_bulk_save <- function(split_vector,
 mc_heatmap_save <- function(heatmap, path) {
     grDevices::png(
         filename = path,
-        width = 1000,
-        height = 900,
-        res = 100
+        width = 1100,
+        height = 1000,
+        res = 110
     )
     print(heatmap)
     grDevices::dev.off()
