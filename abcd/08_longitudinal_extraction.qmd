@@ -58,8 +58,6 @@ Here, I look for subjects who sustained an mTBI between baseline and 2-year foll
 
 # N = 239
 
-# mTBI subjects (latest mTBI at least 3 months prior to baseline collection
-
 mtbi_subjects_t0 <- get_mtbi_subjects(
     ph_p_otbi,
     abcd_y_lt,
@@ -90,19 +88,40 @@ mtbi_subjects_t2 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-unique(c(mtbi_subjects_t1$"subjectkey", mtbi_subjects_t2$"subjectkey")) |> length()
-
 mtbi_subjects_t1o <- mtbi_subjects_t1[!mtbi_subjects_t1 %in% mtbi_subjects_t0]
 mtbi_subjects_t2o <- mtbi_subjects_t2[!mtbi_subjects_t2 %in% mtbi_subjects_t0]
 
-unique(c(mtbi_subjects_t1o, mtbi_subjects_t2o)) |> length()
-
-
+mtbi_subjects_l <- unique(c(mtbi_subjects_t1o, mtbi_subjects_t2o))
 
 en_mtbi <- read_csv(sub_path("prepost_mTBI_allinjuries.csv"))
 
+en_subs <- en_mtbi$"subjectkey"
+
+only_en <- en_subs[!en_subs %in% mtbi_subjects_l]
+only_pv <- mtbi_subjects_l[!mtbi_subjects_l %in% en_subs]
+
+only_pv
+
+length(which(only_en %in% mtbi_subjects_t0))
+
+z <- ph_p_otbi[ph_p_otbi$"subjectkey" %in% only_en, ]
+rownames(z) <- NULL
+
+z
+
+tbi_df |> dplyr::filter(
+    subjectkey == "NDAR_INV04BFG4JM",
+    eventname == "baseline_year_1_arm_1"
+) |>
+    dplyr::inner_join(age_df, by = c("subjectkey", "eventname"))
+
+dplyr::inner_join()age_df
 
 
+```
+
+
+```{r}
 ###############################################################################
 
 
