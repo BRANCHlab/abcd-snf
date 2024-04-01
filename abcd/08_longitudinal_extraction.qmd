@@ -112,20 +112,22 @@ uninjured_subjects_t2 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 2) |>
     unlist() |>
     as.character()
 
-uninjured_subjects_0_to_2 <- c(
-    uninjured_subjects_t0,
-    uninjured_subjects_t1,
-    uninjured_subjects_t2
-) |>
-    unique()
+uninjured_subjects_0_to_2 <- Reduce(
+    intersect,
+    list(
+        uninjured_subjects_t0,
+        uninjured_subjects_t1,
+        uninjured_subjects_t2
+    )
+)
 
+# Exporting those subjects
 data.frame(subjectkey = uninjured_subjects_0_to_2) |>
     write_csv(sub_path("uninjured_subjects_0_to_2.csv", date = TRUE))
 ```
 
 
 ```{r}
-
 mtbi_subjects_0_to_2 <- read_csv(
     sub_path("2024_04_01_mtbi_subjects_0_to_2.csv")
 )
@@ -133,6 +135,100 @@ mtbi_subjects_0_to_2 <- read_csv(
 uninjured_subjects_0_to_2 <- read_csv(
     sub_path("2024_04_01_uninjured_subjects_0_to_2.csv")
 )
+```
+
+Comparison with Eman subject list
+
+```{r}
+
+mtbi_subjects_0_to_2 # N = 220
+
+injured_as_of_baseline <- data.frame(
+    subjectkey = mtbi_subjects_t0,
+    pv_mtbi_pre_baseline = TRUE
+)
+
+injured_between_0_and_1 <- data.frame(
+    subjectkey = mtbi_subjects_t1,
+    pv_mtbi_baseline_to_1 = TRUE
+)
+
+injured_between_1_and_2 <- data.frame(
+    subjectkey = mtbi_subjects_t2,
+    pv_mtbi_1_to_2 = TRUE
+)
+
+pv_included <- data.frame(
+    subjectkey = mtbi_subjects_0_to_2,
+    pv_sample = TRUE
+)
+
+always_uninj <- data.frame(
+    subjectkey = uninjured_subjects_0_to_2,
+    pv_never_injured = TRUE
+)
+
+pv_injured <- dplyr::full_join(injured_as_of_baseline, injured_between_0_and_1, by = "subjectkey")
+pv_injured <- dplyr::full_join(pv_injured, injured_between_1_and_2, by = "subjectkey")
+pv_injured <- dplyr::full_join(pv_injured, pv_included, by = "subjectkey")
+pv_subjects <- dplyr::full_join(pv_injured, always_uninj, by = "subjectkey")
+
+en_behav <- read_csv(sub_path("1_cbcl_subjectIDs.csv"))
+en_behav <- en_behav |>
+    dplyr::filter(group == "mTBI") |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character() |>
+    unique()
+en_behav <- data.frame(
+    subjectkey = en_behav,
+    en_b_sample = TRUE
+)
+
+en_neuro <- read_csv(sub_path("2_rsi_subjectIDs.csv"))
+en_neuro <- en_neuro |>
+    dplyr::filter(group == "mTBI") |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character() |>
+    unique()
+en_neuro <- data.frame(
+    subjectkey = en_neuro,
+    en_n_sample = TRUE
+)
+
+en_uninj <- read_csv(sub_path("1_cbcl_subjectIDs.csv"))
+en_uninj <- en_uninj |>
+    dplyr::filter(group == "CTRL") |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character() |>
+    unique()
+en_uninj <- data.frame(
+    subjectkey = en_uninj,
+    en_never_injured = TRUE
+)
+
+all(en_neuro$"subjectkey" %in% pv_subjects$"subjectkey") # TRUE
+all(en_behav$"subjectkey" %in% pv_subjects$"subjectkey") # TRUE
+
+en_subjects <- dplyr::full_join(en_neuro, en_behav, by = "subjectkey")
+en_subjects <- dplyr::full_join(en_subjects, en_uninj, by = "subjectkey")
+
+all_subjects <- dplyr::full_join(pv_subjects, en_subjects, by = "subjectkey")
+all_subjects <- replace(all_subjects, is.na(all_subjects), FALSE)
+
+en_sample_keys <- all_subjects[which(all_subjects$"en_b_sample" == TRUE), "subjectkey"]
+pv_sample_keys <- all_subjects[which(all_subjects$"pv_sample" == TRUE), "subjectkey"]
+
+pv_only <- pv_sample_keys[which(!(pv_sample_keys %in% en_sample_keys))]
+en_only <- en_sample_keys[which(!(en_sample_keys %in% pv_sample_keys))]
+
+all_subjects |>
+    dplyr::filter(subjectkey %in% pv_only)
+
+all_subjects |>
+    dplyr::filter(subjectkey %in% en_only)
 
 ```
 

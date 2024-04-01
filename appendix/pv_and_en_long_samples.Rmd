@@ -1,0 +1,604 @@
+---
+title: "Comparison of PV and EN Subject Lists"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+    comment = "#>",
+    fig.width = 6,
+    message = FALSE
+)
+```
+
+
+This report explores the subjects included in PV and EN ABCD longitudinal analyses.
+Both longitudinal analyses focus on children who have sustained an mTBI between baseline and 2-year follow-up.
+
+## Importing libraries
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(abcdutils)
+library(gt)
+```
+
+## Importing 5.0 release data
+
+```{r}
+core_path <- path_maker(here(paste0("data/abcd/core")))
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+```
+
+## PV subject selection
+
+The following extraction uses the `get_mtbi_subjects` function in `abcdutils`.
+This function uses another `abcdutils` function, `detail_mtbi`, to first define attributes such as whether or not an Ohio TBI entry should could as no injury, a mild injury, a moderate injury, or a severe injury; what the mechanism of that injury was; when the injury occurred; how many total mTBIs the child has had; and details related to LOC and memory loss / feeling dazed.
+After a call to `detail_mtbi`, `get_mtbi_subjects` itself selects those who have had an mTBI but who have not had any moderate or severe TBIs.
+The function also removes those who had their injury earlier than a timepoint specified by the `min_mpi` (minimum months post injury) argument.
+
+```{r}
+
+# Subjects who had an mTBI pre-baseline
+mtbi_subjects_t0 <- abcdutils::get_mtbi_subjects(
+    ph_p_otbi,
+    abcd_y_lt,
+    min_mpi = 0,
+    t = 0
+) |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character()
+
+# Subjects who had an mTBI between baseline and 1yfu
+mtbi_subjects_t1 <- abcdutils::get_mtbi_subjects(
+    ph_p_otbi,
+    abcd_y_lt,
+    min_mpi = 0,
+    t = 1
+) |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character()
+
+# Subjects who had an mTBI between 1yfu and 2yfu
+mtbi_subjects_t2 <- abcdutils::get_mtbi_subjects(
+    ph_p_otbi,
+    abcd_y_lt,
+    min_mpi = 0,
+    t = 2
+) |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character()
+
+# mTBI between baseline and 1yfu, but had 0 mTBIs pre-baseline
+mtbi_subjects_t1o <- mtbi_subjects_t1[!mtbi_subjects_t1 %in% mtbi_subjects_t0]
+
+# mTBI between 1yfu and 2yfu, but had 0 mTBIs pre-baseline
+mtbi_subjects_t2o <- mtbi_subjects_t2[!mtbi_subjects_t2 %in% mtbi_subjects_t0]
+
+# mTBI between baseline and 2yfu, but had 0 mTBIs pre-baseline
+mtbi_subjects_0_to_2 <- unique(c(mtbi_subjects_t1o, mtbi_subjects_t2o))
+
+# Exporting the subjects
+data.frame(subjectkey = mtbi_subjects_0_to_2) |>
+    write_csv(sub_path("mtbi_subjects_0_to_2.csv", date = TRUE))
+
+# Subjects who had 0 mTBIs pre-baseline
+uninjured_subjects_t0 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0) |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character()
+
+# Subjects who had 0 mTBIs between baseline and 1yfu
+uninjured_subjects_t1 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 1) |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character()
+
+# Subjects who had 0 mTBIs between 1yfu and 2yfu
+uninjured_subjects_t2 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 2) |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character()
+
+# Subjects who had 0 mTBIs at any timepoint prior to 2yfu
+uninjured_subjects_0_to_2 <- Reduce(
+    intersect,
+    list(
+        uninjured_subjects_t0,
+        uninjured_subjects_t1,
+        uninjured_subjects_t2
+    )
+)
+
+# Exporting those subjects
+data.frame(subjectkey = uninjured_subjects_0_to_2) |>
+    write_csv(sub_path("uninjured_subjects_0_to_2.csv", date = TRUE))
+```
+
+Re-importing the mTBI and control subjects:
+
+```{r}
+mtbi_subjects_0_to_2 <- read_csv(
+    sub_path("2024_04_01_mtbi_subjects_0_to_2.csv")
+)
+
+uninjured_subjects_0_to_2 <- read_csv(
+    sub_path("2024_04_01_uninjured_subjects_0_to_2.csv")
+)
+
+nrow(mtbi_subjects_0_to_2) # 220
+
+nrow(uninjured_subjects_0_to_2) #10018
+```
+
+## Organizing PV mTBI information into a single data.frame
+
+```{r}
+injured_as_of_baseline <- data.frame(
+    subjectkey = mtbi_subjects_t0,
+    pv_mtbi_pre_baseline = TRUE
+)
+
+injured_between_0_and_1 <- data.frame(
+    subjectkey = mtbi_subjects_t1,
+    pv_mtbi_baseline_to_1 = TRUE
+)
+
+injured_between_1_and_2 <- data.frame(
+    subjectkey = mtbi_subjects_t2,
+    pv_mtbi_1_to_2 = TRUE
+)
+
+# Dataframe of those who are in PV mTBI group
+pv_included <- data.frame(
+    subjectkey = mtbi_subjects_0_to_2,
+    pv_sample = TRUE
+)
+
+# Dataframe of those who are in PV control group
+pv_never_injured <- data.frame(
+    subjectkey = uninjured_subjects_0_to_2,
+    pv_never_injured = TRUE
+)
+
+# Combining the above dataframes
+pv_injured <- dplyr::full_join(
+    injured_as_of_baseline,
+    injured_between_0_and_1,
+    by = "subjectkey"
+)
+
+pv_injured <- dplyr::full_join(
+    pv_injured,
+    injured_between_1_and_2,
+    by = "subjectkey"
+)
+
+pv_injured <- dplyr::full_join(
+    pv_injured,
+    pv_included,
+    by = "subjectkey"
+)
+
+pv_subjects <- dplyr::full_join(
+    pv_injured,
+    pv_never_injured,
+    by = "subjectkey"
+)
+
+head(pv_subjects)
+```
+
+## Importing and merging EN subjects
+
+```{r}
+# EN mTBI group (used for behaviour)
+en_behav <- read_csv(sub_path("1_cbcl_subjectIDs.csv"))
+en_behav <- en_behav |>
+    dplyr::filter(group == "mTBI") |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character() |>
+    unique()
+en_behav <- data.frame(
+    subjectkey = en_behav,
+    en_b_sample = TRUE
+)
+
+nrow(en_behav) # 239
+
+# EN mTBI group - neuroimaging subset
+en_neuro <- read_csv(sub_path("2_rsi_subjectIDs.csv"))
+en_neuro <- en_neuro |>
+    dplyr::filter(group == "mTBI") |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character() |>
+    unique()
+en_neuro <- data.frame(
+    subjectkey = en_neuro,
+    en_n_sample = TRUE
+)
+
+nrow(en_neuro) # 134
+
+# EN control group
+en_uninj <- read_csv(sub_path("1_cbcl_subjectIDs.csv"))
+en_uninj <- en_uninj |>
+    dplyr::filter(group == "CTRL") |>
+    dplyr::select(subjectkey) |>
+    unlist() |>
+    as.character() |>
+    unique()
+en_uninj <- data.frame(
+    subjectkey = en_uninj,
+    en_never_injured = TRUE
+)
+
+# Combining EN data into a single dataframe
+en_subjects <- dplyr::full_join(en_neuro, en_behav, by = "subjectkey")
+en_subjects <- dplyr::full_join(en_subjects, en_uninj, by = "subjectkey")
+
+# Combining PV and EN data
+all_subjects <- dplyr::full_join(pv_subjects, en_subjects, by = "subjectkey")
+all_subjects <- replace(all_subjects, is.na(all_subjects), FALSE)
+
+head(all_subjects)
+```
+
+## Subjects that differ between PV and EN mTBI groups
+
+```{r}
+
+en_in_pv <- en_behav$"subjectkey" %in% mtbi_subjects_0_to_2$"subjectkey"
+en_only <- en_behav$"subjectkey"[!en_in_pv]
+
+# 35 subjects in EN sample that are not in PV sample
+length(en_only)
+
+pv_in_en <- mtbi_subjects_0_to_2$"subjectkey" %in% en_behav$"subjectkey"
+pv_only <- mtbi_subjects_0_to_2$"subjectkey"[!pv_in_en]
+
+# 16 subjects in PV sample that are not in EN sample
+length(pv_only)
+```
+
+The subsequent chunks seek to explain the 35 subjects that are unique to EN sample and the 16 subjects that are unique to PV sample.
+
+```{r}
+summary <- data.frame(
+    subjectkey = as.character(),
+    sample = as.character(),
+    reason = as.character()
+)
+
+summary2 <- rbind(
+    summary,
+    data.frame(
+        subjectkey = pv_only,
+        sample = "pv_only",
+        reason = NA
+    )
+)
+
+summary3 <- rbind(
+    summary2,
+    data.frame(
+        subjectkey = en_only,
+        sample = "en_only",
+        reason = NA
+    )
+)
+
+summary3
+```
+
+## Children only in PV sample
+
+```{r}
+all_subjects |>
+    dplyr::filter(subjectkey %in% pv_only)
+
+all_en_subjects <- read_csv(sub_path("1_cbcl_subjectIDs.csv"))
+
+pv_only %in% all_en_subjects$"subjectkey"
+```
+
+The children unique to PV sample are not present in EN mTBI/CTRL subject lists.
+
+### Checking for complete mTBI data in 4.0 release
+
+Checking to see if they are in the 4.0 release at all:
+
+```{r}
+abcd_4 <- "/home/prashanth/mnt/wheeler-lab/lab-data/abcd/4.0/trauma/"
+
+abcd_otbi01 <- read_delim(paste0(abcd_4, "abcd_otbi01.txt"))
+abcd_lpohstbi01 <- read_delim(paste0(abcd_4, "abcd_lpohstbi01.txt"))
+
+# Subjects are found in baseline data
+pv_only %in% abcd_otbi01$"subjectkey"
+
+abcd_lpohstbi01$"eventname" |> unique()
+
+abcd_4_1yfu <- abcd_lpohstbi01 |>
+    dplyr::filter(eventname == "1_year_follow_up_y_arm_1")
+
+# Subjects are found in 1yfu data
+pv_only %in% abcd_4_1yfu$"subjectkey"
+
+abcd_4_2yfu <- abcd_lpohstbi01 |>
+    dplyr::filter(eventname == "2_year_follow_up_y_arm_1")
+
+# Some subjects are missing from 2yfu data
+pv_only %in% abcd_4_2yfu$"subjectkey"
+
+pv_only[!pv_only %in% abcd_4_2yfu$"subjectkey"]
+```
+
+The following subjects are only in PV sample as they did not have mTBI data collection at 2yfu until the 5.0 release:
+
+1. NDAR_INV56J3P7WJ
+2. NDAR_INV619DWVEK
+3. NDAR_INVT0056CXX
+4. NDAR_INVYVRMB9TW
+5. NDAR_INV2358EMKW
+6. NDAR_INV6VB0DZ51
+7. NDAR_INVAFNHCVUJ
+8. NDAR_INVGWGVANWJ
+
+
+This explains 8/16 of the subjects unique to PV sample.
+
+There are still 8/16 subjects unique to PV that are unexplained and 35/35 subjects unique to EN that are unexplained.
+
+```{r}
+no_5 <- pv_only[!pv_only %in% abcd_4_2yfu$"subjectkey"]
+
+summary4 <- summary3
+
+summary4[summary4$"subjectkey" %in% no_5, "reason"] <-
+    "(A) 2yfu TBI data missing in 4.0, but present in 5.0."
+
+summary4
+```
+
+Here are the remaining 8:
+
+```{r}
+pv_only_all_in_4 <- pv_only[pv_only %in% abcd_4_2yfu$"subjectkey"]
+
+pv_only_all_in_4
+
+all_subjects |>
+    dplyr::filter(subjectkey %in% pv_only_all_in_4)
+```
+
+After checking with Eman, it seems these kids were excluded on the basis of reporting an injury during a longitudinal data collection period where the injury occured at an age prior to the child's age at baseline.
+This is an unfortunate source of ambiguity.
+It is possible that the parents are recalling an earlier injury that they forgot to mention at baseline data collection.
+However, the phrasings of these Ohio TBI questions are specifically worded to ask the parent "Since we last saw you", [has your child had an injury?].
+Because ABCD anonymizes ages, I assume that discrepancies where a reported mTBI at 1 or 2yfu that seem to occur pre-baseline are the result of age noising, and are indeed representative of injuries that took place post baseline.
+
+```{r}
+
+summary5 <- summary4
+
+summary5[summary5$"subjectkey" %in% pv_only_all_in_4, "reason"] <-
+    paste0(
+        "(B) Longitudinal injury report suggests a pre-baseline mTBI (EN),",
+        " but age noising and question phrasing suggest a post-baseline",
+        " mTBI (PV)."
+    )
+
+summary5
+```
+
+## Children only in EN sample
+
+### EN sample that were not a part of PV mTBI or uninjured group
+
+```{r}
+
+# 2 children present in EN sample that are not in PV sample
+en_only_sub <- en_behav[!en_behav$"subjectkey" %in% pv_subjects$"subjectkey", ]
+
+en_only_sub$"subjectkey"
+
+```
+
+These two subjects are in EN mTBI sample but not in PV mTBI or uninjured group.
+NDAR_INVV9LM0ZAG and NDAR_INVT7YJ84MG.
+
+Why were they excluded from PV sample?
+
+```{r}
+
+all_subjects |>
+    dplyr::filter(subjectkey %in% en_only_sub$"subjectkey")
+
+# If they show up in true here, it means they didn't count as having mTBI:
+en_only_sub$"subjectkey" %in% mtbi_subjects_t0
+en_only_sub$"subjectkey" %in% mtbi_subjects_t1
+en_only_sub$"subjectkey" %in% mtbi_subjects_t2
+
+# If they show up as true here, it means they had no injuries:
+en_only_sub$"subjectkey" %in% uninjured_subjects_t0
+en_only_sub$"subjectkey" %in% uninjured_subjects_t1
+en_only_sub$"subjectkey" %in% uninjured_subjects_t2
+```
+
+The first subject seems to have had some sort of injury at T1 that didn't count towards mTBI.
+Similar situation for the second subject and T2.
+
+```{r}
+
+t1_mtbi_df <- detail_mtbi(ph_p_otbi, abcd_y_lt, t = 1)
+
+t1_mtbi_df_en_only_sub <- t1_mtbi_df |>
+    dplyr::filter(subjectkey == "NDAR_INVV9LM0ZAG")
+
+t1_mtbi_df_en_only_sub$"moderate_or_severe_tbi"
+
+t1_mtbi_df_en_only_sub$"other_loc_max_loc_mins"
+```
+
+Subject NDAR_INVV9LM0ZAG had a moderate/severe TBI flagged at the 1 year follow up.
+This was on the basis that they had 45 minutes of LOC at their T1 injury.
+Is this information present in the 4.0 release?
+
+```{r}
+abcd_lpohstbi01 |>
+    dplyr::filter(subjectkey == "NDAR_INVV9LM0ZAG") |>
+    data.frame() |>
+    dplyr::select(tbi_6q_l)
+
+search_dd("tbi_6q_l")
+```
+
+Yes.
+
+```{r}
+summary6 <- summary5
+
+summary6[summary6$"subjectkey" == "NDAR_INVV9LM0ZAG", "reason"] <-
+    "(C) Moderate/severe TBI (>30 min LOC) at 1YFU."
+```
+
+Now for the other individual, NDAR_INVT7YJ84MG.
+
+```{r}
+
+t2_mtbi_df <- detail_mtbi(ph_p_otbi, abcd_y_lt, t = 2)
+
+t2_mtbi_df_en_only_sub <- t2_mtbi_df |>
+    dplyr::filter(subjectkey == "NDAR_INVT7YJ84MG")
+
+t2_mtbi_df_en_only_sub
+```
+
+This child also had a moderate severe TBI, this time at the 2yfu period.
+
+```{r}
+summary7 <- summary6
+
+summary7[summary7$"subjectkey" == "NDAR_INVT7YJ84MG", "reason"] <-
+    "(D) Moderate/severe TBI (>30 min LOC) at 2YFU."
+```
+
+### EN sample that were a part of PV mTBI or uninjured group
+
+```{r}
+
+# Subjects that are in both of our sample sets, but only EN's mTBI group.
+en_sub_pv_exclude <- en_only[!en_only %in% en_only_sub$"subjectkey"]
+
+all_subjects |>
+    dplyr::filter(subjectkey %in% en_sub_pv_exclude)
+
+en_sub_pv_exclude %in% mtbi_subjects_t0
+```
+
+These children all had pre-baseline mTBIs.
+
+Here they are based on the 4.0 release data:
+
+```{r}
+# Baseline ohio dataframe with superfluous columns removed
+baseline_4_tidy <- abcd_otbi01 |>
+    dplyr::filter(subjectkey %in% en_sub_pv_exclude) |>
+    data.frame() |>
+    dplyr::select(
+        -c(
+            collection_id,
+            dataset_id,
+            collection_title,
+            eventname,
+            tbi_select_language___1,
+            abcd_otbi01_id,
+            src_subject_id,
+            interview_date,
+            interview_age,
+            sex
+        )
+    )
+
+baseline_4_tidy <-
+    baseline_4_tidy[, colSums(is.na(baseline_4_tidy)) < nrow(baseline_4_tidy)]
+
+# The legend:
+for (i in seq_along(colnames(baseline_4_tidy))) {
+    if (i > 1) {
+        print(
+            paste0(
+                colnames(baseline_4_tidy)[i],
+                ": ",
+                gsub(
+                    " ¿.*",
+                    "",
+                    as.character(
+                        unlist(abcd_otbi01[1, colnames(baseline_4_tidy)[i]])
+                    )
+                )
+            )
+        )
+    }
+}
+
+baseline_4_tidy
+```
+
+I don't go into detail here on how each individual person in the above 4.0 data should be assigned an mTBI, but a clearer outline from the 5.0 data is given below:
+
+```{r}
+t0_mtbi_df <- detail_mtbi(ph_p_otbi, abcd_y_lt, t = 0)
+
+t0_mtbi_df |>
+    dplyr::filter(subjectkey %in% en_sub_pv_exclude)
+```
+
+```{r}
+
+summary8 <- summary7
+
+summary8[summary8$"subjectkey" %in% en_sub_pv_exclude, "reason"] <-
+    "(E) Had mTBI pre-baseline"
+
+final_summary <- cbind(data.frame(subject = seq_len(nrow(summary8))), summary8)
+```
+
+# Final Summary
+
+```{r}
+library(kableExtra)
+
+final_summary |> gt()
+
+final_summary$"reason" <- gsub(").*", "", final_summary$"reason")
+final_summary$"reason" <- gsub("\\(", "", final_summary$"reason")
+
+final_summary |>
+    dplyr::select(
+        -c(subject, subjectkey)
+    ) |>
+    table()
+
+```
