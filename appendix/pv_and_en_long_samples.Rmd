@@ -137,11 +137,11 @@ Re-importing the mTBI and control subjects:
 
 ```{r}
 mtbi_subjects_0_to_2 <- read_csv(
-    sub_path("2024_04_01_mtbi_subjects_0_to_2.csv")
+    sub_path("2024_04_02_mtbi_subjects_0_to_2.csv")
 )
 
 uninjured_subjects_0_to_2 <- read_csv(
-    sub_path("2024_04_01_uninjured_subjects_0_to_2.csv")
+    sub_path("2024_04_02_uninjured_subjects_0_to_2.csv")
 )
 
 nrow(mtbi_subjects_0_to_2) # 220
@@ -267,7 +267,6 @@ head(all_subjects)
 ## Subjects that differ between PV and EN mTBI groups
 
 ```{r}
-
 en_in_pv <- en_behav$"subjectkey" %in% mtbi_subjects_0_to_2$"subjectkey"
 en_only <- en_behav$"subjectkey"[!en_in_pv]
 
@@ -390,6 +389,7 @@ pv_only_all_in_4
 
 all_subjects |>
     dplyr::filter(subjectkey %in% pv_only_all_in_4)
+
 ```
 
 After checking with Eman, it seems these kids were excluded on the basis of reporting an injury during a longitudinal data collection period where the injury occured at an age prior to the child's age at baseline.
@@ -398,16 +398,80 @@ It is possible that the parents are recalling an earlier injury that they forgot
 However, the phrasings of these Ohio TBI questions are specifically worded to ask the parent "Since we last saw you", [has your child had an injury?].
 Because ABCD anonymizes ages, I assume that discrepancies where a reported mTBI at 1 or 2yfu that seem to occur pre-baseline are the result of age noising, and are indeed representative of injuries that took place post baseline.
 
+When did those children have their mTBIs?
+
 ```{r}
+t0_mtbi_df <- detail_mtbi(ph_p_otbi, abcd_y_lt, t = 0)
+t1_mtbi_df <- detail_mtbi(ph_p_otbi, abcd_y_lt, t = 1)
+t2_mtbi_df <- detail_mtbi(ph_p_otbi, abcd_y_lt, t = 2)
+
+# These kids had no baseline injuries
+t0_mtbi_df |>
+    dplyr::filter(subjectkey %in% pv_only_all_in_4) |>
+    dplyr::select(subjectkey, mtbi_count)
+
+# All of them had injuries between 1yfu and 2yfu
+t1_mtbi_df |>
+    dplyr::filter(subjectkey %in% pv_only_all_in_4) |>
+    dplyr::select(subjectkey, mtbi_count)
+
+# One of them had an mTBI between 1yfu and 2yfu
+t2_mtbi_df |>
+    dplyr::filter(subjectkey %in% pv_only_all_in_4) |>
+    dplyr::select(subjectkey, mtbi_count)
+```
+
+Most of them had their injury between baseline and 1 year follow up.
+
+```{r}
+long_pre_baseline <- data.frame(
+    subjectkey = pv_only_all_in_4
+)
+
+baseline_age <- get_interview_age(
+    abcd_y_lt,
+    t = 0,
+    as_years = FALSE
+)
+colnames(baseline_age) <- c("subjectkey", "baseline_age")
+
+y1_mtbi_age <- get_mtbi_age(
+    ph_p_otbi,
+    abcd_y_lt,
+    t = 1,
+    as_years = TRUE
+)
+colnames(y1_mtbi_age) <- c("subjectkey", "y1fu_age")
+
+age_explain_df <- dplyr::inner_join(long_pre_baseline, baseline_age, by = "subjectkey")
+age_explain_df <- dplyr::inner_join(age_explain_df, y1_mtbi_age, by = "subjectkey")
+age_explain_df <- age_explain_df |>
+    dplyr::mutate(
+        upper_1yfu_age_bound = y1fu_age * 12 + 11,
+        possible_post_baseline = upper_1yfu_age_bound >= baseline_age
+    )
+
+age_explain_df |> gt()
+
+possible_post_baseline <-
+    age_explain_df$"subjectkey"[age_explain_df$"possible_post_baseline" == TRUE]
+
+not_possible_post_baseline <-
+    age_explain_df$"subjectkey"[age_explain_df$"possible_post_baseline" == FALSE]
+
+not_possible_post_baseline
 
 summary5 <- summary4
 
-summary5[summary5$"subjectkey" %in% pv_only_all_in_4, "reason"] <-
+summary5[summary5$"subjectkey" %in% possible_post_baseline, "reason"] <-
     paste0(
-        "(B) Longitudinal injury report suggests a pre-baseline mTBI (EN),",
-        " but age noising and question phrasing suggest a post-baseline",
-        " mTBI (PV)."
+        "(B) Injury age reported at longitudinal is extremely close to",
+        " baseline interview age."
     )
+
+summary5[summary5$"subjectkey" %in% not_possible_post_baseline, "reason"] <-
+    paste0(
+        "(B2) Injury age reported at longitudinal is pre-baseline.")
 
 summary5
 ```
