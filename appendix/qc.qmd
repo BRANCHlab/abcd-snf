@@ -23,6 +23,12 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 mtbi_subjects <- read_csv(sub_path("2024_03_12_mtbi_subjects.csv")) # 440
 uninjured_subjects <- read_csv(sub_path("2024_03_12_uninjured_subjects.csv")) #11,408
 
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+```
+
+```{r}
 source("abcd/functions.R")
 ```
 
@@ -72,56 +78,44 @@ sm_cort_sa_mtbi <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi.csv"))
 
 ## Neuroimaging QC
 
+Should both T1 and T2 be QC'd?
+
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8543704/
+    - cortical thickness
+    - QC for t1 and t2
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6981278/
+    - hagler paper
+    - "For most ABCD participants, a single scan of each type (T1w or T2w) is collected. If multiple scans of a given type are obtained, only one is used for processing and analysis. Results of manual quality control (QC) performed prior to the full image processing are used to exclude poor-quality structural scans (refer to the Protocol Compliance and Initial Quality Control section). If there is more than one acceptable scan of a given type, the scan with the fewest issues noted is used. In case of a tie, the final acceptable scan of the session is used."
+    - Include protocol compliance? CTRL+F Protocol Compliance and Initial Quality Control
+https://jamanetwork.com/journals/jamapediatrics/article-abstract/2756132
+    - T1w & T2w
+
 ```{r}
 
 mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
-# Desikan cortical thicknesses
 mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
-# Desikan cortical surface areas
 mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
-# Neurite density (AtlasTrack, all fibers)
 mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
-# Neurite density (Desikan, peri-cortical WM)
 mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
-# Neurite density (Destriux, peri-cortical WM)
 mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
-# rs-fMRI cortical-cortical correlations
 mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
-# rs-fMRI cortical-subcortical correlations
 mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
-
-
-mri_y_smr_thk_dsk |> colnames()
-
-mri_y_smr_area_dsk |> colnames()
-
-
-
-search_dd("smri_thick_cdk_mean")
-
-mri_y_smr_vol_aseg |> colnames()
-mri_y_smr_thk_dsk |> colnames()
-mri_y_smr_area_dsk |> colnames()
-mri_y_rsi_rnd_at |> colnames()
-mri_y_rsi_rnd_wm_dsk |> colnames()
-mri_y_rsi_rnd_wm_dst |> colnames()
-mri_y_rsfmr_cor_gp_gp |> colnames()
-mri_y_rsfmr_cor_gp_aseg |> colnames()
-
-search_dd("seriestime")
-
-
-rm_gord_cor_mtbi
-
 
 mri_y_qc_raw_smr_t1 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t1.csv"))
 mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
 mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
 mri_y_qc_raw_dmr <- abcd_load(core_path("imaging/mri_y_qc_raw_dmr.csv"))
 
-na.omit(sm_cort_t_mtbi)
 
-sm_cort_t_mtbi
+mri_y_qc_raw_smr_t1
+
+j <- smri_t1_qc(
+    mri_y_qc_raw_smr_t1,
+    subject_list = 
+)
+
+j
+
 
 z <- qc_smri(
     sm_cort_t_mtbi,
