@@ -34,209 +34,93 @@ source("abcd/functions.R")
 ```
 
 ```{r}
-rm_gord_cor_qc_mtbi <- read_csv(input_path("2024_03_12_rm_gord_cor_qc_mtbi.csv"))
-rm_subc_cor_qc_mtbi <- read_csv(input_path("2024_03_12_rm_subc_cor_qc_mtbi.csv"))
-dm_all_wmnd_qc_mtbi <- read_csv(input_path("2024_03_12_dm_all_wmnd_qc_mtbi.csv"))
-sm_cort_sa_qc_mtbi <- read_csv(input_path("2024_03_12_sm_cort_sa_qc_mtbi.csv"))
+#rm_gord_cor_qc_mtbi <- read_csv(input_path("2024_03_12_rm_gord_cor_qc_mtbi.csv"))
+#rm_subc_cor_qc_mtbi <- read_csv(input_path("2024_03_12_rm_subc_cor_qc_mtbi.csv"))
+#dm_all_wmnd_qc_mtbi <- read_csv(input_path("2024_03_12_dm_all_wmnd_qc_mtbi.csv"))
+#sm_cort_sa_qc_mtbi <- read_csv(input_path("2024_03_12_sm_cort_sa_qc_mtbi.csv"))
 sm_cort_t_qc_mtbi <- read_csv(input_path("2024_03_12_sm_cort_t_qc_mtbi.csv"))
-sm_subc_v_qc_mtbi <- read_csv(input_path("2024_03_12_sm_subc_v_qc_mtbi.csv"))
+#sm_subc_v_qc_mtbi <- read_csv(input_path("2024_03_12_sm_subc_v_qc_mtbi.csv"))
 
-rm_gord_cor_mtbi <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi.csv"))
-rm_subc_cor_mtbi <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi.csv"))
-dm_all_wmnd_mtbi <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi.csv"))
-sm_subc_v_mtbi <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi.csv"))
+#rm_gord_cor_mtbi <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi.csv"))
+#rm_subc_cor_mtbi <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi.csv"))
+#dm_all_wmnd_mtbi <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi.csv"))
+#sm_subc_v_mtbi <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi.csv"))
 sm_cort_t_mtbi <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi.csv"))
-sm_cort_sa_mtbi <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi.csv"))
+#sm_cort_sa_mtbi <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi.csv"))
 ```
 
 ## Neuroimaging QC
 
 ```{r}
-mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
-mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
-mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
-mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
-mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
-mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
-mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
-mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
+#mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
+#mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
+#mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
+#mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
+#mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
+#mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
+#mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
+#mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
 
 mri_y_qc_raw_smr_t1 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t1.csv"))
-#mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
-#mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
-#mri_y_qc_raw_dmr <- abcd_load(core_path("imaging/mri_y_qc_raw_dmr.csv"))
+mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
+mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
+mri_y_qc_raw_dmr <- abcd_load(core_path("imaging/mri_y_qc_raw_dmr.csv"))
 
-mtbi_subjects
-
-z <- smri_qc(
+qc_smri(
     mri_y_qc_raw_smr_t1,
     t = 0,
-    subjects = mtbi_subjects
+    subjects = mtbi_subjects,
+    metric = "qc"
 )
-z
 
-rowSums(is.na(z[, -1]))
-
-z <- qc_smri(
-    sm_cort_t_mtbi,
+qc_smri(
     mri_y_qc_raw_smr_t1,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
+
+qc_smri(
     mri_y_qc_raw_smr_t2,
     t = 0,
-    no_na = FALSE
+    subjects = mtbi_subjects,
+    metric = "qc"
 )
 
-vis_miss(z)
+qc_smri(
+    mri_y_qc_raw_smr_t2,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
 
-na.omit(mri_y_qc_raw_smr_t1$"iqc_t1_1_seriestime") |> length()
+qc_dmri(
+    mri_y_qc_raw_dmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "qc"
+)
 
+qc_dmri(
+    mri_y_qc_raw_dmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
 
-search_dd("iqc_t1_1_seriestime")
+qc_rsfmri(
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "qc"
+)
 
-z
-
-t1_qc <- z |>
-    dplyr::select(
-        subjectkey,
-        matches("t1_._qc")
-    )
-t1_qc |> head()
-t1_qc_pass <- t1_qc |>
-    apply(
-        1,
-        function(x) {
-            qc_scores <- as.numeric(x[2:4])
-            if (sum(is.na(qc_scores)) == 3) {
-                return(NA)
-            } else {
-                return(min(qc_scores, na.rm = TRUE))
-            }
-        }
-    )
-t1_qc$"t1_qc_pass" <- t1_qc_pass
-
-t1_pc <- z |>
-    dplyr::select(
-        subjectkey,
-        matches("t1_._pc")
-    )
-t1_pc |> head()
-t1_pc_pass <- t1_pc |>
-    apply(
-        1,
-        function(x) {
-            pc_scores <- as.numeric(x[2:4])
-            if (sum(is.na(pc_scores)) == 3) {
-                return(NA)
-            } else {
-                return(min(pc_scores, na.rm = TRUE))
-            }
-        }
-    )
-t1_pc$"t1_pc_pass" <- t1_pc_pass
-
-
-
-t2_qc <- z |>
-    dplyr::select(
-        subjectkey,
-        matches("t2_._qc")
-    )
-t2_qc |> head()
-t2_qc_pass <- t2_qc |>
-    apply(
-        1,
-        function(x) {
-            qc_scores <- as.numeric(x[2:3])
-            if (sum(is.na(qc_scores)) == 2) {
-                return(NA)
-            } else {
-                return(min(qc_scores, na.rm = TRUE))
-            }
-        }
-    )
-t2_qc$"t2_qc_pass" <- t2_qc_pass
-
-t2_pc <- z |>
-    dplyr::select(
-        subjectkey,
-        matches("t2_._pc")
-    )
-t2_pc |> head()
-t2_pc_pass <- t2_pc |>
-    apply(
-        1,
-        function(x) {
-            pc_scores <- as.numeric(x[2:3])
-            if (sum(is.na(pc_scores)) == 2) {
-                return(NA)
-            } else {
-                return(min(pc_scores, na.rm = TRUE))
-            }
-        }
-    )
-t2_pc$"t2_pc_pass" <- t2_pc_pass
-
-t1_qc_summary <- t1_qc |>
-    dplyr::select(subjectkey, t1_qc_pass)
-
-t1_pc_summary <- t1_pc |>
-    dplyr::select(subjectkey, t1_pc_pass)
-
-t2_qc_summary <- t2_qc |>
-    dplyr::select(subjectkey, t2_qc_pass)
-
-t2_pc_summary <- t2_pc |>
-    dplyr::select(subjectkey, t2_pc_pass)
-
-smri_qc <- list(t1_qc_summary, t1_pc_summary, t2_qc_summary, t2_pc_summary) |>
-    merge_df_list(join = "full")
-
-any_fails <- smri_qc |>
-    apply(
-        1,
-        function(x) {
-            vals <- as.numeric(x[2:5])
-            print(vals)
-            if (any(is.na(vals))) {
-                return(TRUE)
-            }
-            if (sum(vals) != 4) {
-                return(TRUE)
-            } else {
-                return(FALSE)
-            }
-        }
-    )
-
-
-smri_qc[any_fails, ] |>
-    dplyr::select(-subjectkey) |>
-    Heatmap(cluster_columns = FALSE)
-
-any_smri_fails <- smri_qc[any_fails, ]
-
-any_smri_fails[is.na(any_smri_fails)]  <- -1
-
-# Kids who fail T2 QC, but not T1
-t2_problems <- any_smri_fails |>
-    dplyr::filter(t1_qc_pass == 1) |>
-    dplyr::filter(t2_qc_pass != 1) |>
-    dplyr::select(subjectkey) |>
-    unlist() |>
-    as.character()
-
-sm_cort_hl <- sm_cort_t_mtbi |>
-    dplyr::mutate(
-        t2_fail = dplyr::case_when(
-            subjectkey %in% t2_problems ~ TRUE,
-            TRUE ~ FALSE
-        )
-    )
-
-sm_cort_hl |>
-    ggplot(aes(x = t2_fail, y = smri_thick_cdk_mean)) +
-    geom_point()
-
+qc_rsfmri(
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
 ```
 
 
