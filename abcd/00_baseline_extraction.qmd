@@ -115,6 +115,9 @@ For my analyses, I assume these edge cases are not common enough to meaningfully
 # mTBI subjects (latest mTBI at least 3 months prior to baseline collection
 mtbi_subjects <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 0)
 
+# Later analyses show some unusual data for subject: NDAR_INVBU31791C.
+# They are removed from the uninjured subjects list.
+
 # Uninjured subjects (those with no injuries as of baseline collection)
 uninjured_subjects <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0)
 
@@ -126,8 +129,13 @@ write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
 uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
 
-mtbi_subjects <- read_subjects(sub_path("2024_04_17_mtbi_subjects.csv"))
-uninjured_subjects <- read_subjects(sub_path("2024_04_17_uninjured_subjects.csv"))
+mtbi_subjects <- read_subjects(
+    sub_path("2024_04_17_mtbi_subjects.csv")
+)
+uninjured_subjects <- read_subjects(
+    sub_path("2024_04_17_uninjured_subjects.csv")
+)
+
 ```
 
 A few types of injuries were handled differently from the rest in the above code.
@@ -245,8 +253,6 @@ d_mtbi_age_mtbi <- get_mtbi_age(
     t = 0,
     as_years = FALSE
 )
-
-d_mtbi_age_mtbi$"latest_mtbi_age"
 
 write_csv(
     d_mtbi_age_mtbi,
