@@ -24,6 +24,7 @@ Import raw data.
 ```{r}
 ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
 abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+
 ph_y_pds <- import("physical-health/ph_y_pds.csv")
 ph_p_pds <- import("physical-health/ph_p_pds.csv")
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
@@ -89,6 +90,10 @@ mtbi_subjects_t1o <- mtbi_subjects_t1[!mtbi_subjects_t1 %in% mtbi_subjects_t0]
 mtbi_subjects_t2o <- mtbi_subjects_t2[!mtbi_subjects_t2 %in% mtbi_subjects_t0]
 
 mtbi_subjects_0_to_2 <- unique(c(mtbi_subjects_t1o, mtbi_subjects_t2o))
+
+mtbi_subjects_0_to_2
+
+mtbi_subjects_0_to_2 %in% uninjured_subjects_0_to_2
 
 data.frame(subjectkey = mtbi_subjects_0_to_2) |>
     write_csv(sub_path("mtbi_subjects_0_to_2.csv", date = TRUE))
@@ -251,6 +256,48 @@ write_csv(
 #### Injury age
 
 ```{r}
+
+rename_tbi(ph_p_otbi)$"hosp_er_age" == 0
+
+original_tbi_names()
+
+
+z <- detail_mtbi(
+    ph_p_otbi,
+    abcd_y_lt,
+    subjects = mtbi_subjects_0_to_2,
+    t = 1
+)
+
+nrow(z)
+
+z |>
+    dplyr::mutate(
+        plausible_age = dplyr::case_when(
+            current_age >= mtbi_lower_bound &
+                last_years_age <= mtbi_upper_bound ~ TRUE,
+            current_age < mtbi_lower_bound |
+                last_years_age > mtbi_upper_bound ~ FALSE
+        )
+    )
+
+z <- na.omit(z)
+z$"latest_mtbi_age" <- z$"latest_mtbi_age" / 12
+z$"mtbi_age_lower_bound" <- z$"latest_mtbi_age" * 12
+z$"mtbi_age_upper_bound" <- (z$"latest_mtbi_age" + 1) * 12 - 1
+
+z
+
+d_mtbi_age_mtbi_l1 <- get_mtbi_age(
+    ph_p_otbi,
+    abcd_y_lt,
+    mtbi_subjects_0_to_2,
+    t = 2,
+    as_years = FALSE
+)
+
+d_mtbi_age_mtbi_l1
+
 d_mtbi_age_mtbi_l2 <- get_mtbi_age(
     ph_p_otbi,
     abcd_y_lt,
@@ -258,6 +305,9 @@ d_mtbi_age_mtbi_l2 <- get_mtbi_age(
     t = 2,
     as_years = FALSE
 )
+
+d_mtbi_age_mtbi_l2 |>
+    dplyr::filter(subjectkey == "NDAR_INVBU31791C")
 
 write_csv(
     d_mtbi_age_mtbi_l2,
