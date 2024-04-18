@@ -628,25 +628,8 @@ medical_history_plots <- function(plot_list, plotname) {
     )
 }
 
-pull_imputed_vars <- function(original_df, imputed_df, partition = NULL) {
-    if (!is.null(partition)) {
-        original_rows <- nrow(original_df)
-        start <- original_rows * partition + 1
-        end <- original_rows * (partition + 1)
-        partitioned_df <- imputed_df[start:end, colnames(original_df)]
-        return(partitioned_df)
-    } else {
-        df <- imputed_df[, colnames(original_df)]
-        return(df)
-    }
-}
-
-pick_imputation <- function(df, n_sets, set) {
-    rows <- nrow(df)
-    rows_per_set <- rows / n_sets
-    end <- rows_per_set * set
-    start <- end - rows_per_set + 1
-    return(df[start:end, ])
+extract_imputed <- function(original_df, imputed_df, partition) {
+    return(imputed_df[imputed_df$".imp" == partition, colnames(original_df)])
 }
 
 rename_data_list <- function(data_list, name_mapping) {
