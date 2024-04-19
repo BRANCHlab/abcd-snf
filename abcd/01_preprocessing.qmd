@@ -403,7 +403,6 @@ Generating three different sets of 5:
 - Imputing mTBI and uninjured together (5 datasets)
 
 ```{r eval = FALSE}
-
 missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_train_df)) > 0))
 missing_colnames_mtbi
 
@@ -537,6 +536,42 @@ five_imputed_mtbi_train <- read_csv(
 )
 
 ###############################################################################
+# Imputation - mTBI test
+###############################################################################
+mtbi_test_pred_mat <- build_pred_mat(mtbi_test_df_no_subs, 9)
+write.table(mtbi_test_pred_mat, proc_path("mtbi_test_pred_mat.txt", TRUE))
+mtbi_test_pred_mat <- as.matrix(
+    read.table(proc_path("2024_04_19_mtbi_test_pred_mat.txt"))
+)
+storage.mode(mtbi_test_pred_mat) <- "double"
+imputed_mtbi_test <- futuremice(
+    mtbi_test_df_no_subs,
+    m = 5,
+    n.core = 5,
+    maxit = 10,
+    parallelseed = 42,
+    predictorMatrix = mtbi_test_pred_mat
+)
+
+# mTBI solo imputed data
+five_imputed_mtbi_test <- complete(
+    imputed_mtbi_test,
+    action = "long",
+    include = TRUE
+)
+
+# Write and recover
+write_csv(
+    five_imputed_mtbi_test,
+    input_path("five_imputed_mtbi_test.csv", TRUE)
+)
+
+five_imputed_mtbi_test <- read_csv(
+    input_path("2024_04_19_five_imputed_mtbi_test.csv")
+)
+
+
+###############################################################################
 # Imputation - only uninjured
 ###############################################################################
 uninj_pred_mat <- build_pred_mat(uninj_df_no_subs, 1)
@@ -621,6 +656,8 @@ Formatting the imputed data:
 ```{r}
 five_imputed_mtbi_train$"subjectkey" <- rep(mtbi_train, 6)
 
+five_imputed_mtbi_test$"subjectkey" <- rep(mtbi_test, 6)
+
 five_imputed_uninj$"subjectkey" <- rep(uninj_subjects, 6)
 
 pooled_subjects <- c(mtbi_train, uninj_subjects)
@@ -629,6 +666,10 @@ five_imputed_pooled$"subjectkey" <- rep(pooled_subjects, 6)
 write_csv(
     five_imputed_mtbi_train,
     input_path("five_imputed_mtbi_train_named.csv", TRUE)
+)
+write_csv(
+    five_imputed_mtbi_test,
+    input_path("five_imputed_mtbi_test_named.csv", TRUE)
 )
 write_csv(
     five_imputed_uninj,
@@ -646,7 +687,10 @@ five_imputed_mtbi_train <- read_csv(
     input_path("2024_04_18_five_imputed_mtbi_train_named.csv")
 )
 
-# Write and recover
+five_imputed_mtbi_test <- read_csv(
+    input_path("2024_04_19_five_imputed_mtbi_test_named.csv")
+)
+
 five_imputed_uninj <- read_csv(
     input_path("2024_04_18_five_imputed_uninj_named.csv")
 )
@@ -654,6 +698,7 @@ five_imputed_uninj <- read_csv(
 five_imputed_pooled <- read_csv(
     input_path("2024_04_18_five_imputed_pooled_named.csv")
 )
+
 ```
 
 # mTBI subsetting
@@ -680,12 +725,22 @@ parse_imputations <- function(original_df_list, complete_imputed_df, imps) {
                 return(imputations)
             }
         )
+    names(parsed_imputations) <- gsub("_mtbi$", "", names(parsed_imputations))
+    names(parsed_imputations) <- gsub("_uninj$", "", names(parsed_imputations))
     return(parsed_imputations)
 }
 
-mtbi_parsed_imputations <- parse_imputations(
+pooled_parsed_imputations |> names()
+
+mtbi_train_parsed_imputations <- parse_imputations(
     mtbi_train_dfs,
     five_imputed_mtbi_train,
+    6
+)
+
+mtbi_test_parsed_imputations <- parse_imputations(
+    mtbi_test_dfs,
+    five_imputed_mtbi_test,
     6
 )
 
@@ -696,10 +751,12 @@ uninj_parsed_imputations <- parse_imputations(
 )
 
 pooled_parsed_imputations <- parse_imputations(
-    uninj_dfs, # This argument just provides column names.
+    uninj_dfs,
     five_imputed_pooled,
     6
 )
+
+pooled_parsed_imputations |> names()
 
 mtbi_pooled_parsed_imputations <- pooled_parsed_imputations |>
     lapply(
@@ -730,16 +787,20 @@ uninj_pooled_parsed_imputations <- pooled_parsed_imputations |>
     )
 
 list.save(
-    mtbi_parsed_imputations,
-    input_path("mtbi_parsed_imputations.rds", TRUE)
+    mtbi_train_parsed_imputations,
+    input_path("mtbi_train_parsed_imputations.rds", TRUE)
 )
 list.save(
-    uninj_parsed_imputations,
-    input_path("uninj_parsed_imputations.rds", TRUE)
+    mtbi_test_parsed_imputations,
+    input_path("mtbi_test_parsed_imputations.rds", TRUE)
 )
 list.save(
     mtbi_pooled_parsed_imputations,
     input_path("mtbi_pooled_parsed_imputations.rds", TRUE)
+)
+list.save(
+    uninj_parsed_imputations,
+    input_path("uninj_parsed_imputations.rds", TRUE)
 )
 list.save(
     uninj_pooled_parsed_imputations,
@@ -750,14 +811,23 @@ list.save(
 Re-reading:
 
 ```{r}
-
+mtbi_train_parsed_imputations <- list.load(
+    input_path("2024_04_19_mtbi_train_parsed_imputations.rds")
+)
+mtbi_test_parsed_imputations <- list.load(
+    input_path("2024_04_19_mtbi_test_parsed_imputations.rds")
+)
+mtbi_pooled_parsed_imputations <- list.load(
+    input_path("2024_04_19_mtbi_pooled_parsed_imputations.rds")
+)
+uninj_parsed_imputations <- list.load(
+    input_path("2024_04_19_uninj_parsed_imputations.rds")
+)
+uninj_pooled_parsed_imputations <- list.load(
+    input_path("2024_04_19_uninj_pooled_parsed_imputations.rds")
+)
 ```
 
-## Importing imputed data
-
-```{r}
-
-```
 
 ## Constructing data_lists
 
@@ -778,742 +848,260 @@ For the sake of brevity, these will be referred to with the following notation:
 * 1-5 = imputed dataset number
 
 ```{r}
-###############################################################################
-# mTBI-alone data lists
-###############################################################################
-data_list_m1 <- generate_data_list(
-    list(as_mem_daze_mtbi_train_imp_1, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_train_imp_1, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_train_imp_1, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_train_imp_1, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_train_imp_1, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_train_imp_1, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_train_imp_1, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_train_imp_1, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_train_imp_1, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_train_imp_1, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_train_imp_1, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_train_imp_1, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_train_imp_1, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_train_imp_1, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_train_imp_1, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_train_imp_1, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_train_imp_1, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_train_imp_1, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_train_imp_1, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_train_imp_1, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_train_imp_1, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_train_imp_1, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_train_imp_1, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_train_imp_1, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
+
+build_dls <- function(parsed_imputations) {
+    data_lists <- lapply(
+        seq_len(5),
+        function(x) {
+            data_list <- generate_data_list(
+                list(
+                    parsed_imputations$"as_mem_daze"[[x + 1]],
+                    "as_mem_daze",
+                    "AS",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"as_mechanism"[[x + 1]],
+                    "as_mechanism",
+                    "AS",
+                    "categorical"
+                ),
+                list(
+                    parsed_imputations$"as_loc"[[x + 1]],
+                    "as_loc",
+                    "AS",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"d_interview_age"[[x + 1]],
+                    "d_age",
+                    "D",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"d_mtbi_age"[[x + 1]],
+                    "d_mtbi_age",
+                    "D",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"d_sex"[[x + 1]],
+                    "d_sex",
+                    "D",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"d_income"[[x + 1]],
+                    "d_income",
+                    "D",
+                    "ordinal"
+                ),
+                list(
+                    parsed_imputations$"d_race"[[x + 1]],
+                    "d_race",
+                    "D",
+                    "categorical"
+                ),
+                list(
+                    parsed_imputations$"d_pubertal_status"[[x + 1]],
+                    "d_pubertal",
+                    "D",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"mh_headaches"[[x + 1]],
+                    "mh_headaches",
+                    "MH",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"mh_mtbi_count"[[x + 1]],
+                    "mh_mtbi_count",
+                    "MH",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"sm_subc_v"[[x + 1]],
+                    "sm_subc_v",
+                    "N",
+                    "continuous"
+                ),
+                list(
+                    parsed_imputations$"sm_cort_t"[[x + 1]],
+                    "sm_cort_t",
+                    "N",
+                    "continuous"
+                ),
+                list(
+                    parsed_imputations$"sm_cort_sa"[[x + 1]],
+                    "sm_cort_sa",
+                    "N",
+                    "continuous"
+                ),
+                list(
+                    parsed_imputations$"dm_all_wmnd"[[x + 1]],
+                    "dm_all_wmnd",
+                    "N",
+                    "continuous"
+                ),
+                list(
+                    parsed_imputations$"rm_gord_cor"[[x + 1]],
+                    "rm_gord_cor",
+                    "N",
+                    "continuous"
+                ),
+                list(
+                    parsed_imputations$"rm_subc_cor"[[x + 1]],
+                    "rm_subc_cor",
+                    "N",
+                    "continuous"
+                ),
+                list(
+                    parsed_imputations$"p_loneliness"[[x + 1]],
+                    "p_loneliness",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_screen_time"[[x + 1]],
+                    "p_screen_time",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_sports"[[x + 1]],
+                    "p_sports",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_exercise"[[x + 1]],
+                    "p_exercise",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_prosocial"[[x + 1]],
+                    "p_prosocial",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_fam_fn"[[x + 1]],
+                    "p_fam_fn",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_parent_psych"[[x + 1]],
+                    "p_parent_psych",
+                    "P",
+                    "discrete"
+                ),
+                uid = "subjectkey"
+            )
+        }
+    )
+    names(data_lists) <- paste0("imp_", seq_len(5))
+    return(data_lists)
+}
+
+build_ols <- function(parsed_imputations, s) {
+    if (isTRUE(grep("uninj", names(parsed_imputations)[2]))) {
+        s <- "_uninj"
+    } else {
+        s <- "_mtbi"
+    }
+    oom_lists <- lapply(
+        seq_len(5),
+        function(x) {
+            oom_list <- generate_data_list(
+                list(
+                    parsed_imputations[[paste0("cbcl_anxdep")]][[x + 1]],
+                    "cbcl_anxdep",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_withdep")]][[x + 1]],
+                    "cbcl_withdep",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_somatic")]][[x + 1]],
+                    "cbcl_somatic",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_social")]][[x + 1]],
+                    "cbcl_social",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_thought")]][[x + 1]],
+                    "cbcl_thought",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_attention")]][[x + 1]],
+                    "cbcl_attention",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_rulebreak")]][[x + 1]],
+                    "cbcl_rulebreak",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("cbcl_aggressive")]][[x + 1]],
+                    "cbcl_aggressive",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations[[paste0("sds_total_probs")]][[x + 1]],
+                    "sds_total_probs",
+                    "S",
+                    "discrete"
+                ),
+                uid = "subjectkey"
+            )
+        }
+    )
+    names(oom_lists) <- paste0("imp_", seq_len(5))
+    return(oom_lists)
+}
+
+m_train_data_lists <- build_dls(mtbi_train_parsed_imputations)
+m_train_oom_lists <- build_ols(mtbi_train_parsed_imputations)
+m_test_data_lists <- build_dls(mtbi_test_parsed_imputations)
+m_test_oom_lists <- build_ols(mtbi_test_parsed_imputations)
+m_pooled_data_lists <- build_dls(mtbi_pooled_parsed_imputations)
+m_pooled_oom_lists <- build_ols(mtbi_pooled_parsed_imputations)
+u_data_lists <- build_dls(uninj_parsed_imputations)
+u_oom_lists <- build_ols(uninj_parsed_imputations)
+u_pooled_data_lists <- build_dls(uninj_pooled_parsed_imputations)
+u_pooled_oom_lists <- build_ols(uninj_pooled_parsed_imputations)
+
+all_dls <- list(
+    "m_train_data_lists" = m_train_data_lists,
+    "m_train_oom_lists" = m_train_oom_lists,
+    "m_test_data_lists" = m_test_data_lists,
+    "m_test_oom_lists" = m_test_oom_lists,
+    "m_pooled_data_lists" = m_pooled_data_lists,
+    "m_pooled_oom_lists" = m_pooled_oom_lists,
+    "u_data_lists" = u_data_lists,
+    "u_oom_lists" = u_oom_lists,
+    "u_pooled_data_lists" = u_pooled_data_lists,
+    "u_pooled_oom_lists" = u_pooled_oom_lists
 )
 
-data_list_m2 <- generate_data_list(
-    list(as_mem_daze_mtbi_train_imp_2, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_train_imp_2, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_train_imp_2, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_train_imp_2, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_train_imp_2, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_train_imp_2, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_train_imp_2, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_train_imp_2, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_train_imp_2, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_train_imp_2, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_train_imp_2, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_train_imp_2, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_train_imp_2, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_train_imp_2, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_train_imp_2, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_train_imp_2, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_train_imp_2, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_train_imp_2, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_train_imp_2, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_train_imp_2, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_train_imp_2, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_train_imp_2, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_train_imp_2, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_train_imp_2, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_m3 <- generate_data_list(
-    list(as_mem_daze_mtbi_train_imp_3, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_train_imp_3, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_train_imp_3, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_train_imp_3, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_train_imp_3, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_train_imp_3, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_train_imp_3, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_train_imp_3, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_train_imp_3, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_train_imp_3, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_train_imp_3, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_train_imp_3, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_train_imp_3, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_train_imp_3, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_train_imp_3, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_train_imp_3, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_train_imp_3, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_train_imp_3, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_train_imp_3, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_train_imp_3, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_train_imp_3, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_train_imp_3, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_train_imp_3, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_train_imp_3, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_m4 <- generate_data_list(
-    list(as_mem_daze_mtbi_train_imp_4, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_train_imp_4, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_train_imp_4, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_train_imp_4, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_train_imp_4, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_train_imp_4, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_train_imp_4, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_train_imp_4, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_train_imp_4, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_train_imp_4, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_train_imp_4, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_train_imp_4, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_train_imp_4, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_train_imp_4, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_train_imp_4, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_train_imp_4, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_train_imp_4, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_train_imp_4, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_train_imp_4, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_train_imp_4, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_train_imp_4, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_train_imp_4, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_train_imp_4, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_train_imp_4, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_m5 <- generate_data_list(
-    list(as_mem_daze_mtbi_train_imp_5, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_train_imp_5, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_train_imp_5, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_train_imp_5, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_train_imp_5, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_train_imp_5, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_train_imp_5, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_train_imp_5, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_train_imp_5, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_train_imp_5, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_train_imp_5, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_train_imp_5, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_train_imp_5, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_train_imp_5, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_train_imp_5, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_train_imp_5, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_train_imp_5, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_train_imp_5, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_train_imp_5, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_train_imp_5, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_train_imp_5, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_train_imp_5, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_train_imp_5, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_train_imp_5, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-oom_list_m1 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_train_imp_1, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_train_imp_1, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_train_imp_1, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_train_imp_1, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_train_imp_1, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_train_imp_1, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_train_imp_1, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_train_imp_1, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_train_imp_1, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_m2 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_train_imp_2, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_train_imp_2, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_train_imp_2, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_train_imp_2, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_train_imp_2, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_train_imp_2, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_train_imp_2, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_train_imp_2, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_train_imp_2, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_m3 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_train_imp_3, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_train_imp_3, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_train_imp_3, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_train_imp_3, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_train_imp_3, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_train_imp_3, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_train_imp_3, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_train_imp_3, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_train_imp_3, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_m4 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_train_imp_4, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_train_imp_4, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_train_imp_4, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_train_imp_4, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_train_imp_4, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_train_imp_4, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_train_imp_4, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_train_imp_4, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_train_imp_4, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_m5 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_train_imp_5, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_train_imp_5, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_train_imp_5, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_train_imp_5, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_train_imp_5, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_train_imp_5, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_train_imp_5, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_train_imp_5, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_train_imp_5, "sds_total_probs", "S", "discrete")
-)
-
-###############################################################################
-# Pooled mTBI data lists
-###############################################################################
-data_list_pm1 <- generate_data_list(
-    list(d_interview_age_pooled_mtbi_imp_1, "d_age", "D", "discrete"),
-    list(d_sex_pooled_mtbi_imp_1, "d_sex", "D", "discrete"),
-    list(d_income_pooled_mtbi_imp_1, "d_income", "D", "ordinal"),
-    list(d_race_pooled_mtbi_imp_1, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_mtbi_imp_1, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_mtbi_imp_1, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_mtbi_imp_1, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_mtbi_imp_1, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_mtbi_imp_1, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_mtbi_imp_1, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_mtbi_imp_1, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_mtbi_imp_1, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_mtbi_imp_1, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_mtbi_imp_1, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_mtbi_imp_1, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_mtbi_imp_1, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_mtbi_imp_1, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_mtbi_imp_1, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_mtbi_imp_1, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pm2 <- generate_data_list(
-    list(d_interview_age_pooled_mtbi_imp_2, "d_age", "D", "discrete"),
-    list(d_sex_pooled_mtbi_imp_2, "d_sex", "D", "discrete"),
-    list(d_income_pooled_mtbi_imp_2, "d_income", "D", "ordinal"),
-    list(d_race_pooled_mtbi_imp_2, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_mtbi_imp_2, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_mtbi_imp_2, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_mtbi_imp_2, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_mtbi_imp_2, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_mtbi_imp_2, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_mtbi_imp_2, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_mtbi_imp_2, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_mtbi_imp_2, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_mtbi_imp_2, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_mtbi_imp_2, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_mtbi_imp_2, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_mtbi_imp_2, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_mtbi_imp_2, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_mtbi_imp_2, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_mtbi_imp_2, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pm3 <- generate_data_list(
-    list(d_interview_age_pooled_mtbi_imp_3, "d_age", "D", "discrete"),
-    list(d_sex_pooled_mtbi_imp_3, "d_sex", "D", "discrete"),
-    list(d_income_pooled_mtbi_imp_3, "d_income", "D", "ordinal"),
-    list(d_race_pooled_mtbi_imp_3, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_mtbi_imp_3, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_mtbi_imp_3, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_mtbi_imp_3, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_mtbi_imp_3, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_mtbi_imp_3, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_mtbi_imp_3, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_mtbi_imp_3, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_mtbi_imp_3, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_mtbi_imp_3, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_mtbi_imp_3, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_mtbi_imp_3, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_mtbi_imp_3, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_mtbi_imp_3, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_mtbi_imp_3, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_mtbi_imp_3, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pm4 <- generate_data_list(
-    list(d_interview_age_pooled_mtbi_imp_4, "d_age", "D", "discrete"),
-    list(d_sex_pooled_mtbi_imp_4, "d_sex", "D", "discrete"),
-    list(d_income_pooled_mtbi_imp_4, "d_income", "D", "ordinal"),
-    list(d_race_pooled_mtbi_imp_4, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_mtbi_imp_4, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_mtbi_imp_4, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_mtbi_imp_4, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_mtbi_imp_4, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_mtbi_imp_4, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_mtbi_imp_4, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_mtbi_imp_4, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_mtbi_imp_4, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_mtbi_imp_4, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_mtbi_imp_4, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_mtbi_imp_4, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_mtbi_imp_4, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_mtbi_imp_4, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_mtbi_imp_4, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_mtbi_imp_4, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pm5 <- generate_data_list(
-    list(d_interview_age_pooled_mtbi_imp_5, "d_age", "D", "discrete"),
-    list(d_sex_pooled_mtbi_imp_5, "d_sex", "D", "discrete"),
-    list(d_income_pooled_mtbi_imp_5, "d_income", "D", "ordinal"),
-    list(d_race_pooled_mtbi_imp_5, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_mtbi_imp_5, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_mtbi_imp_5, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_mtbi_imp_5, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_mtbi_imp_5, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_mtbi_imp_5, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_mtbi_imp_5, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_mtbi_imp_5, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_mtbi_imp_5, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_mtbi_imp_5, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_mtbi_imp_5, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_mtbi_imp_5, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_mtbi_imp_5, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_mtbi_imp_5, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_mtbi_imp_5, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_mtbi_imp_5, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-oom_list_pm1 <- generate_data_list(
-    list(cbcl_anxdep_pooled_mtbi_imp_1, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_mtbi_imp_1, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_mtbi_imp_1, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_mtbi_imp_1, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_mtbi_imp_1, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_mtbi_imp_1, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_mtbi_imp_1, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_mtbi_imp_1, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_mtbi_imp_1, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pm2 <- generate_data_list(
-    list(cbcl_anxdep_pooled_mtbi_imp_2, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_mtbi_imp_2, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_mtbi_imp_2, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_mtbi_imp_2, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_mtbi_imp_2, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_mtbi_imp_2, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_mtbi_imp_2, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_mtbi_imp_2, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_mtbi_imp_2, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pm3 <- generate_data_list(
-    list(cbcl_anxdep_pooled_mtbi_imp_3, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_mtbi_imp_3, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_mtbi_imp_3, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_mtbi_imp_3, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_mtbi_imp_3, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_mtbi_imp_3, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_mtbi_imp_3, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_mtbi_imp_3, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_mtbi_imp_3, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pm4 <- generate_data_list(
-    list(cbcl_anxdep_pooled_mtbi_imp_4, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_mtbi_imp_4, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_mtbi_imp_4, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_mtbi_imp_4, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_mtbi_imp_4, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_mtbi_imp_4, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_mtbi_imp_4, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_mtbi_imp_4, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_mtbi_imp_4, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pm5 <- generate_data_list(
-    list(cbcl_anxdep_pooled_mtbi_imp_5, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_mtbi_imp_5, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_mtbi_imp_5, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_mtbi_imp_5, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_mtbi_imp_5, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_mtbi_imp_5, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_mtbi_imp_5, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_mtbi_imp_5, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_mtbi_imp_5, "sds_total_probs", "S", "discrete")
-)
-
-###############################################################################
-# Uninjured data lists
-###############################################################################
-data_list_u1 <- generate_data_list(
-    list(d_interview_age_uninj_imp_1, "d_age", "D", "discrete"),
-    list(d_sex_uninj_imp_1, "d_sex", "D", "discrete"),
-    list(d_income_uninj_imp_1, "d_income", "D", "ordinal"),
-    list(d_race_uninj_imp_1, "d_race", "D", "categorical"),
-    list(d_pubertal_status_uninj_imp_1, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_uninj_imp_1, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_uninj_imp_1, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_uninj_imp_1, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_uninj_imp_1, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_uninj_imp_1, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_uninj_imp_1, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_uninj_imp_1, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_uninj_imp_1, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_uninj_imp_1, "p_screen_time", "P", "discrete"),
-    list(p_sports_uninj_imp_1, "p_sports", "P", "discrete"),
-    list(p_exercise_uninj_imp_1, "p_exercise", "P", "discrete"),
-    list(p_prosocial_uninj_imp_1, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_uninj_imp_1, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_uninj_imp_1, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_u2 <- generate_data_list(
-    list(d_interview_age_uninj_imp_2, "d_age", "D", "discrete"),
-    list(d_sex_uninj_imp_2, "d_sex", "D", "discrete"),
-    list(d_income_uninj_imp_2, "d_income", "D", "ordinal"),
-    list(d_race_uninj_imp_2, "d_race", "D", "categorical"),
-    list(d_pubertal_status_uninj_imp_2, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_uninj_imp_2, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_uninj_imp_2, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_uninj_imp_2, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_uninj_imp_2, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_uninj_imp_2, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_uninj_imp_2, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_uninj_imp_2, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_uninj_imp_2, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_uninj_imp_2, "p_screen_time", "P", "discrete"),
-    list(p_sports_uninj_imp_2, "p_sports", "P", "discrete"),
-    list(p_exercise_uninj_imp_2, "p_exercise", "P", "discrete"),
-    list(p_prosocial_uninj_imp_2, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_uninj_imp_2, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_uninj_imp_2, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_u3 <- generate_data_list(
-    list(d_interview_age_uninj_imp_3, "d_age", "D", "discrete"),
-    list(d_sex_uninj_imp_3, "d_sex", "D", "discrete"),
-    list(d_income_uninj_imp_3, "d_income", "D", "ordinal"),
-    list(d_race_uninj_imp_3, "d_race", "D", "categorical"),
-    list(d_pubertal_status_uninj_imp_3, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_uninj_imp_3, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_uninj_imp_3, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_uninj_imp_3, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_uninj_imp_3, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_uninj_imp_3, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_uninj_imp_3, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_uninj_imp_3, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_uninj_imp_3, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_uninj_imp_3, "p_screen_time", "P", "discrete"),
-    list(p_sports_uninj_imp_3, "p_sports", "P", "discrete"),
-    list(p_exercise_uninj_imp_3, "p_exercise", "P", "discrete"),
-    list(p_prosocial_uninj_imp_3, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_uninj_imp_3, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_uninj_imp_3, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_u4 <- generate_data_list(
-    list(d_interview_age_uninj_imp_4, "d_age", "D", "discrete"),
-    list(d_sex_uninj_imp_4, "d_sex", "D", "discrete"),
-    list(d_income_uninj_imp_4, "d_income", "D", "ordinal"),
-    list(d_race_uninj_imp_4, "d_race", "D", "categorical"),
-    list(d_pubertal_status_uninj_imp_4, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_uninj_imp_4, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_uninj_imp_4, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_uninj_imp_4, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_uninj_imp_4, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_uninj_imp_4, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_uninj_imp_4, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_uninj_imp_4, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_uninj_imp_4, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_uninj_imp_4, "p_screen_time", "P", "discrete"),
-    list(p_sports_uninj_imp_4, "p_sports", "P", "discrete"),
-    list(p_exercise_uninj_imp_4, "p_exercise", "P", "discrete"),
-    list(p_prosocial_uninj_imp_4, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_uninj_imp_4, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_uninj_imp_4, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_u5 <- generate_data_list(
-    list(d_interview_age_uninj_imp_5, "d_age", "D", "discrete"),
-    list(d_sex_uninj_imp_5, "d_sex", "D", "discrete"),
-    list(d_income_uninj_imp_5, "d_income", "D", "ordinal"),
-    list(d_race_uninj_imp_5, "d_race", "D", "categorical"),
-    list(d_pubertal_status_uninj_imp_5, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_uninj_imp_5, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_uninj_imp_5, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_uninj_imp_5, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_uninj_imp_5, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_uninj_imp_5, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_uninj_imp_5, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_uninj_imp_5, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_uninj_imp_5, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_uninj_imp_5, "p_screen_time", "P", "discrete"),
-    list(p_sports_uninj_imp_5, "p_sports", "P", "discrete"),
-    list(p_exercise_uninj_imp_5, "p_exercise", "P", "discrete"),
-    list(p_prosocial_uninj_imp_5, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_uninj_imp_5, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_uninj_imp_5, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-oom_list_u1 <- generate_data_list(
-    list(cbcl_anxdep_uninj_imp_1, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_uninj_imp_1, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_uninj_imp_1, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_uninj_imp_1, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_uninj_imp_1, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_uninj_imp_1, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_uninj_imp_1, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_uninj_imp_1, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_uninj_imp_1, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_u2 <- generate_data_list(
-    list(cbcl_anxdep_uninj_imp_2, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_uninj_imp_2, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_uninj_imp_2, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_uninj_imp_2, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_uninj_imp_2, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_uninj_imp_2, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_uninj_imp_2, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_uninj_imp_2, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_uninj_imp_2, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_u3 <- generate_data_list(
-    list(cbcl_anxdep_uninj_imp_3, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_uninj_imp_3, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_uninj_imp_3, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_uninj_imp_3, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_uninj_imp_3, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_uninj_imp_3, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_uninj_imp_3, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_uninj_imp_3, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_uninj_imp_3, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_u4 <- generate_data_list(
-    list(cbcl_anxdep_uninj_imp_4, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_uninj_imp_4, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_uninj_imp_4, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_uninj_imp_4, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_uninj_imp_4, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_uninj_imp_4, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_uninj_imp_4, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_uninj_imp_4, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_uninj_imp_4, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_u5 <- generate_data_list(
-    list(cbcl_anxdep_uninj_imp_5, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_uninj_imp_5, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_uninj_imp_5, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_uninj_imp_5, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_uninj_imp_5, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_uninj_imp_5, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_uninj_imp_5, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_uninj_imp_5, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_uninj_imp_5, "sds_total_probs", "S", "discrete")
-)
-
-###############################################################################
-# Pooled uninjured data lists
-###############################################################################
-data_list_pu1 <- generate_data_list(
-    list(d_interview_age_pooled_uninj_imp_1, "d_age", "D", "discrete"),
-    list(d_sex_pooled_uninj_imp_1, "d_sex", "D", "discrete"),
-    list(d_income_pooled_uninj_imp_1, "d_income", "D", "ordinal"),
-    list(d_race_pooled_uninj_imp_1, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_uninj_imp_1, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_uninj_imp_1, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_uninj_imp_1, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_uninj_imp_1, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_uninj_imp_1, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_uninj_imp_1, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_uninj_imp_1, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_uninj_imp_1, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_uninj_imp_1, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_uninj_imp_1, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_uninj_imp_1, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_uninj_imp_1, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_uninj_imp_1, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_uninj_imp_1, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_uninj_imp_1, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pu2 <- generate_data_list(
-    list(d_interview_age_pooled_uninj_imp_2, "d_age", "D", "discrete"),
-    list(d_sex_pooled_uninj_imp_2, "d_sex", "D", "discrete"),
-    list(d_income_pooled_uninj_imp_2, "d_income", "D", "ordinal"),
-    list(d_race_pooled_uninj_imp_2, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_uninj_imp_2, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_uninj_imp_2, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_uninj_imp_2, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_uninj_imp_2, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_uninj_imp_2, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_uninj_imp_2, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_uninj_imp_2, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_uninj_imp_2, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_uninj_imp_2, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_uninj_imp_2, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_uninj_imp_2, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_uninj_imp_2, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_uninj_imp_2, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_uninj_imp_2, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_uninj_imp_2, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pu3 <- generate_data_list(
-    list(d_interview_age_pooled_uninj_imp_3, "d_age", "D", "discrete"),
-    list(d_sex_pooled_uninj_imp_3, "d_sex", "D", "discrete"),
-    list(d_income_pooled_uninj_imp_3, "d_income", "D", "ordinal"),
-    list(d_race_pooled_uninj_imp_3, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_uninj_imp_3, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_uninj_imp_3, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_uninj_imp_3, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_uninj_imp_3, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_uninj_imp_3, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_uninj_imp_3, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_uninj_imp_3, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_uninj_imp_3, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_uninj_imp_3, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_uninj_imp_3, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_uninj_imp_3, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_uninj_imp_3, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_uninj_imp_3, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_uninj_imp_3, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_uninj_imp_3, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pu4 <- generate_data_list(
-    list(d_interview_age_pooled_uninj_imp_4, "d_age", "D", "discrete"),
-    list(d_sex_pooled_uninj_imp_4, "d_sex", "D", "discrete"),
-    list(d_income_pooled_uninj_imp_4, "d_income", "D", "ordinal"),
-    list(d_race_pooled_uninj_imp_4, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_uninj_imp_4, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_uninj_imp_4, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_uninj_imp_4, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_uninj_imp_4, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_uninj_imp_4, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_uninj_imp_4, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_uninj_imp_4, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_uninj_imp_4, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_uninj_imp_4, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_uninj_imp_4, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_uninj_imp_4, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_uninj_imp_4, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_uninj_imp_4, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_uninj_imp_4, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_uninj_imp_4, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-data_list_pu5 <- generate_data_list(
-    list(d_interview_age_pooled_uninj_imp_5, "d_age", "D", "discrete"),
-    list(d_sex_pooled_uninj_imp_5, "d_sex", "D", "discrete"),
-    list(d_income_pooled_uninj_imp_5, "d_income", "D", "ordinal"),
-    list(d_race_pooled_uninj_imp_5, "d_race", "D", "categorical"),
-    list(d_pubertal_status_pooled_uninj_imp_5, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_pooled_uninj_imp_5, "mh_headaches", "MH", "discrete"),
-    list(sm_subc_v_pooled_uninj_imp_5, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_pooled_uninj_imp_5, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_pooled_uninj_imp_5, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_pooled_uninj_imp_5, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_pooled_uninj_imp_5, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_pooled_uninj_imp_5, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_pooled_uninj_imp_5, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_pooled_uninj_imp_5, "p_screen_time", "P", "discrete"),
-    list(p_sports_pooled_uninj_imp_5, "p_sports", "P", "discrete"),
-    list(p_exercise_pooled_uninj_imp_5, "p_exercise", "P", "discrete"),
-    list(p_prosocial_pooled_uninj_imp_5, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_pooled_uninj_imp_5, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_pooled_uninj_imp_5, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-oom_list_pu1 <- generate_data_list(
-    list(cbcl_anxdep_pooled_uninj_imp_1, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_uninj_imp_1, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_uninj_imp_1, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_uninj_imp_1, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_uninj_imp_1, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_uninj_imp_1, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_uninj_imp_1, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_uninj_imp_1, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_uninj_imp_1, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pu2 <- generate_data_list(
-    list(cbcl_anxdep_pooled_uninj_imp_2, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_uninj_imp_2, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_uninj_imp_2, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_uninj_imp_2, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_uninj_imp_2, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_uninj_imp_2, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_uninj_imp_2, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_uninj_imp_2, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_uninj_imp_2, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pu3 <- generate_data_list(
-    list(cbcl_anxdep_pooled_uninj_imp_3, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_uninj_imp_3, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_uninj_imp_3, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_uninj_imp_3, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_uninj_imp_3, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_uninj_imp_3, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_uninj_imp_3, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_uninj_imp_3, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_uninj_imp_3, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pu4 <- generate_data_list(
-    list(cbcl_anxdep_pooled_uninj_imp_4, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_uninj_imp_4, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_uninj_imp_4, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_uninj_imp_4, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_uninj_imp_4, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_uninj_imp_4, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_uninj_imp_4, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_uninj_imp_4, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_uninj_imp_4, "sds_total_probs", "S", "discrete")
-)
-
-oom_list_pu5 <- generate_data_list(
-    list(cbcl_anxdep_pooled_uninj_imp_5, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_pooled_uninj_imp_5, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_pooled_uninj_imp_5, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_pooled_uninj_imp_5, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_pooled_uninj_imp_5, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_pooled_uninj_imp_5, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_pooled_uninj_imp_5, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_pooled_uninj_imp_5, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_pooled_uninj_imp_5, "sds_total_probs", "S", "discrete")
-)
 ```
 
 ## Renaming the initial data
@@ -1581,1537 +1169,62 @@ name_changes <- c(
     "exercise_time" = "physical_activity"
 )
 
-data_list_m1 <- rename_data_list(data_list_m1, name_changes)
-data_list_m2 <- rename_data_list(data_list_m2, name_changes)
-data_list_m3 <- rename_data_list(data_list_m3, name_changes)
-data_list_m4 <- rename_data_list(data_list_m4, name_changes)
-data_list_m5 <- rename_data_list(data_list_m5, name_changes)
-data_list_pm1 <- rename_data_list(data_list_pm1, name_changes)
-data_list_pm2 <- rename_data_list(data_list_pm2, name_changes)
-data_list_pm3 <- rename_data_list(data_list_pm3, name_changes)
-data_list_pm4 <- rename_data_list(data_list_pm4, name_changes)
-data_list_pm5 <- rename_data_list(data_list_pm5, name_changes)
-oom_list_m1 <- rename_data_list(oom_list_m1, name_changes)
-oom_list_m2 <- rename_data_list(oom_list_m2, name_changes)
-oom_list_m3 <- rename_data_list(oom_list_m3, name_changes)
-oom_list_m4 <- rename_data_list(oom_list_m4, name_changes)
-oom_list_m5 <- rename_data_list(oom_list_m5, name_changes)
-oom_list_pm1 <- rename_data_list(oom_list_pm1, name_changes)
-oom_list_pm2 <- rename_data_list(oom_list_pm2, name_changes)
-oom_list_pm3 <- rename_data_list(oom_list_pm3, name_changes)
-oom_list_pm4 <- rename_data_list(oom_list_pm4, name_changes)
-oom_list_pm5 <- rename_data_list(oom_list_pm5, name_changes)
-
-data_list_u1 <- rename_data_list(data_list_u1, name_changes)
-data_list_u2 <- rename_data_list(data_list_u2, name_changes)
-data_list_u3 <- rename_data_list(data_list_u3, name_changes)
-data_list_u4 <- rename_data_list(data_list_u4, name_changes)
-data_list_u5 <- rename_data_list(data_list_u5, name_changes)
-data_list_pu1 <- rename_data_list(data_list_pu1, name_changes)
-data_list_pu2 <- rename_data_list(data_list_pu2, name_changes)
-data_list_pu3 <- rename_data_list(data_list_pu3, name_changes)
-data_list_pu4 <- rename_data_list(data_list_pu4, name_changes)
-data_list_pu5 <- rename_data_list(data_list_pu5, name_changes)
-oom_list_u1 <- rename_data_list(oom_list_u1, name_changes)
-oom_list_u2 <- rename_data_list(oom_list_u2, name_changes)
-oom_list_u3 <- rename_data_list(oom_list_u3, name_changes)
-oom_list_u4 <- rename_data_list(oom_list_u4, name_changes)
-oom_list_u5 <- rename_data_list(oom_list_u5, name_changes)
-oom_list_pu1 <- rename_data_list(oom_list_pu1, name_changes)
-oom_list_pu2 <- rename_data_list(oom_list_pu2, name_changes)
-oom_list_pu3 <- rename_data_list(oom_list_pu3, name_changes)
-oom_list_pu4 <- rename_data_list(oom_list_pu4, name_changes)
-oom_list_pu5 <- rename_data_list(oom_list_pu5, name_changes)
-
-library(rlist)
-
-list.save(data_list_m1, input_path("data_list_m1.rds", TRUE))
-list.save(data_list_m2, input_path("data_list_m2.rds", TRUE))
-list.save(data_list_m3, input_path("data_list_m3.rds", TRUE))
-list.save(data_list_m4, input_path("data_list_m4.rds", TRUE))
-list.save(data_list_m5, input_path("data_list_m5.rds", TRUE))
-list.save(data_list_pm1, input_path("data_list_pm1.rds", TRUE))
-list.save(data_list_pm2, input_path("data_list_pm2.rds", TRUE))
-list.save(data_list_pm3, input_path("data_list_pm3.rds", TRUE))
-list.save(data_list_pm4, input_path("data_list_pm4.rds", TRUE))
-list.save(data_list_pm5, input_path("data_list_pm5.rds", TRUE))
-list.save(oom_list_m1, input_path("oom_list_m1.rds", TRUE))
-list.save(oom_list_m2, input_path("oom_list_m2.rds", TRUE))
-list.save(oom_list_m3, input_path("oom_list_m3.rds", TRUE))
-list.save(oom_list_m4, input_path("oom_list_m4.rds", TRUE))
-list.save(oom_list_m5, input_path("oom_list_m5.rds", TRUE))
-list.save(oom_list_pm1, input_path("oom_list_pm1.rds", TRUE))
-list.save(oom_list_pm2, input_path("oom_list_pm2.rds", TRUE))
-list.save(oom_list_pm3, input_path("oom_list_pm3.rds", TRUE))
-list.save(oom_list_pm4, input_path("oom_list_pm4.rds", TRUE))
-list.save(oom_list_pm5, input_path("oom_list_pm5.rds", TRUE))
-
-list.save(data_list_u1, input_path("data_list_u1.rds", TRUE))
-list.save(data_list_u2, input_path("data_list_u2.rds", TRUE))
-list.save(data_list_u3, input_path("data_list_u3.rds", TRUE))
-list.save(data_list_u4, input_path("data_list_u4.rds", TRUE))
-list.save(data_list_u5, input_path("data_list_u5.rds", TRUE))
-list.save(data_list_pu1, input_path("data_list_pu1.rds", TRUE))
-list.save(data_list_pu2, input_path("data_list_pu2.rds", TRUE))
-list.save(data_list_pu3, input_path("data_list_pu3.rds", TRUE))
-list.save(data_list_pu4, input_path("data_list_pu4.rds", TRUE))
-list.save(data_list_pu5, input_path("data_list_pu5.rds", TRUE))
-list.save(oom_list_u1, input_path("oom_list_u1.rds", TRUE))
-list.save(oom_list_u2, input_path("oom_list_u2.rds", TRUE))
-list.save(oom_list_u3, input_path("oom_list_u3.rds", TRUE))
-list.save(oom_list_u4, input_path("oom_list_u4.rds", TRUE))
-list.save(oom_list_u5, input_path("oom_list_u5.rds", TRUE))
-list.save(oom_list_pu1, input_path("oom_list_pu1.rds", TRUE))
-list.save(oom_list_pu2, input_path("oom_list_pu2.rds", TRUE))
-list.save(oom_list_pu3, input_path("oom_list_pu3.rds", TRUE))
-list.save(oom_list_pu4, input_path("oom_list_pu4.rds", TRUE))
-list.save(oom_list_pu5, input_path("oom_list_pu5.rds", TRUE))
-```
-
-## Test set processing test data
-
-```{r}
-
-mtbi_test_df <- list(
-    "as_mem_daze_mtbi" = as_mem_daze_mtbi_test,
-    "as_mechanism_mtbi" = as_mechanism_mtbi_test,
-    "as_loc_mtbi" = as_loc_mtbi_test,
-    "d_interview_age_mtbi" = d_interview_age_mtbi_test,
-    "d_mtbi_age_mtbi" = d_mtbi_age_mtbi_test,
-    "d_sex_mtbi" = d_sex_mtbi_test,
-    "d_income_mtbi" = d_income_mtbi_test,
-    "d_race_mtbi" = d_race_mtbi_test,
-    "d_pubertal_status_mtbi" = d_pubertal_status_mtbi_test,
-    "mh_headaches_mtbi" = mh_headaches_mtbi_test,
-    "mh_mtbi_count_mtbi" = mh_mtbi_count_mtbi_test,
-    "sm_subc_v_qc_mtbi" = sm_subc_v_qc_mtbi_test,
-    "sm_cort_t_qc_mtbi" = sm_cort_t_qc_mtbi_test,
-    "sm_cort_sa_qc_mtbi" = sm_cort_sa_qc_mtbi_test,
-    "dm_all_wmnd_qc_mtbi" = dm_all_wmnd_qc_mtbi_test,
-    "rm_gord_cor_qc_mtbi" = rm_gord_cor_qc_mtbi_test,
-    "rm_subc_cor_qc_mtbi" = rm_subc_cor_qc_mtbi_test,
-    "p_loneliness_mtbi" = p_loneliness_mtbi_test,
-    "p_screen_time_mtbi" = p_screen_time_mtbi_test,
-    "p_sports_mtbi" = p_sports_mtbi_test,
-    "p_exercise_mtbi" = p_exercise_mtbi_test,
-    "p_prosocial_mtbi" = p_prosocial_mtbi_test,
-    "p_fam_fn_mtbi" = p_fam_fn_mtbi_test,
-    "p_parent_psych_mtbi" = p_parent_psych_mtbi_test,
-    "cbcl_anxdep_mtbi" = cbcl_anxdep_mtbi_test,
-    "cbcl_withdep_mtbi" = cbcl_withdep_mtbi_test,
-    "cbcl_somatic_mtbi" = cbcl_somatic_mtbi_test,
-    "cbcl_social_mtbi" = cbcl_social_mtbi_test,
-    "cbcl_thought_mtbi" = cbcl_thought_mtbi_test,
-    "cbcl_attention_mtbi" = cbcl_attention_mtbi_test,
-    "cbcl_rulebreak_mtbi" = cbcl_rulebreak_mtbi_test,
-    "cbcl_aggressive_mtbi" = cbcl_aggressive_mtbi_test,
-    "sds_total_probs_mtbi" = sds_total_probs_mtbi_test
-) |>
-    abcdutils::merge_df_list(join = "full")
-
-nrow(mtbi_test_df)
-
-missing_colnames_mtbi_test <- names(which(colSums(is.na(mtbi_test_df)) > 0))
-missing_colnames_mtbi_test
-
-# Remove the subjectkey variable
-mtbi_test_df_no_subs <- mtbi_test_df |>
-    dplyr::select(-"subjectkey") |>
-    data.frame()
-
-# Doesn't run
-mtbi_test_df_no_subs <- char_to_fac(mtbi_test_df_no_subs)
-imputed_mtbi_test <- mice(
-    mtbi_test_df_no_subs,
-    m = 5,
-    maxit = 10,
-    seed = 42
-)
-
-# Prediction matrix construction
-mtbi_test_predmat <- matrix(nrow = ncol(mtbi_test_df_no_subs), ncol = ncol(mtbi_test_df_no_subs), 1)
-colnames(mtbi_test_predmat) <- colnames(mtbi_test_df_no_subs)
-rownames(mtbi_test_predmat) <- colnames(mtbi_test_df_no_subs)
-diag(mtbi_test_predmat) <- 0
-pred_mat_vars <- predictor_candidates(mtbi_test_df_no_subs[, -2])
-mtbi_test_predmat[, pred_mat_vars$"variable"[1:14]] <- 0
-ComplexHeatmap::Heatmap(
-    mtbi_test_predmat,
-    cluster_rows = FALSE,
-    cluster_columns = FALSE
-)
-
-# Write and recover
-write.table(mtbi_test_predmat, proc_path("mtbi_test_predmat.txt", TRUE))
-mtbi_test_predmat <- as.matrix(read.table(proc_path("2024_03_12_mtbi_test_predmat.txt")))
-storage.mode(mtbi_test_predmat) <- "double"
-
-# Runs
-imputed_mtbi <- futuremice(
-    mtbi_test_df_no_subs,
-    m = 5,
-    n.core = 5,
-    maxit = 10,
-    parallelseed = 42,
-    predictorMatrix = mtbi_test_predmat
-)
-
-# mTBI solo imputed data
-five_imputed_mtbi_test <- complete(
-    imputed_mtbi,
-    action = "long",
-    include = TRUE
-)
-
-five_imputed_mtbi_test$"subjectkey" <- rep(mtbi_test_df$"subjectkey", 6)
-
-# Write and recover
-write_csv(
-    five_imputed_mtbi_test,
-    input_path("five_imputed_mtbi_test.csv", TRUE)
-)
-
-five_imputed_mtbi_test <- read_csv(
-    input_path("2024_03_12_five_imputed_mtbi_test.csv")
-)
-
-as_mem_daze_mtbi_test_imp_0 <- pull_imputed_vars(as_mem_daze_mtbi_test, five_imputed_mtbi_test, 0)
-as_mem_daze_mtbi_test_imp_1 <- pull_imputed_vars(as_mem_daze_mtbi_test, five_imputed_mtbi_test, 1)
-as_mem_daze_mtbi_test_imp_2 <- pull_imputed_vars(as_mem_daze_mtbi_test, five_imputed_mtbi_test, 2)
-as_mem_daze_mtbi_test_imp_3 <- pull_imputed_vars(as_mem_daze_mtbi_test, five_imputed_mtbi_test, 3)
-as_mem_daze_mtbi_test_imp_4 <- pull_imputed_vars(as_mem_daze_mtbi_test, five_imputed_mtbi_test, 4)
-as_mem_daze_mtbi_test_imp_5 <- pull_imputed_vars(as_mem_daze_mtbi_test, five_imputed_mtbi_test, 5)
-
-# as_mechanism_mtbi
-as_mechanism_mtbi_test_imp_0 <- pull_imputed_vars(as_mechanism_mtbi_test, five_imputed_mtbi_test, 0)
-as_mechanism_mtbi_test_imp_1 <- pull_imputed_vars(as_mechanism_mtbi_test, five_imputed_mtbi_test, 1)
-as_mechanism_mtbi_test_imp_2 <- pull_imputed_vars(as_mechanism_mtbi_test, five_imputed_mtbi_test, 2)
-as_mechanism_mtbi_test_imp_3 <- pull_imputed_vars(as_mechanism_mtbi_test, five_imputed_mtbi_test, 3)
-as_mechanism_mtbi_test_imp_4 <- pull_imputed_vars(as_mechanism_mtbi_test, five_imputed_mtbi_test, 4)
-as_mechanism_mtbi_test_imp_5 <- pull_imputed_vars(as_mechanism_mtbi_test, five_imputed_mtbi_test, 5)
-
-# as_loc_mtbi
-as_loc_mtbi_test_imp_0 <- pull_imputed_vars(as_loc_mtbi_test, five_imputed_mtbi_test, 0)
-as_loc_mtbi_test_imp_1 <- pull_imputed_vars(as_loc_mtbi_test, five_imputed_mtbi_test, 1)
-as_loc_mtbi_test_imp_2 <- pull_imputed_vars(as_loc_mtbi_test, five_imputed_mtbi_test, 2)
-as_loc_mtbi_test_imp_3 <- pull_imputed_vars(as_loc_mtbi_test, five_imputed_mtbi_test, 3)
-as_loc_mtbi_test_imp_4 <- pull_imputed_vars(as_loc_mtbi_test, five_imputed_mtbi_test, 4)
-as_loc_mtbi_test_imp_5 <- pull_imputed_vars(as_loc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# d_interview_age_mtbi
-d_interview_age_mtbi_test_imp_0 <- pull_imputed_vars(d_interview_age_mtbi_test, five_imputed_mtbi_test, 0)
-d_interview_age_mtbi_test_imp_1 <- pull_imputed_vars(d_interview_age_mtbi_test, five_imputed_mtbi_test, 1)
-d_interview_age_mtbi_test_imp_2 <- pull_imputed_vars(d_interview_age_mtbi_test, five_imputed_mtbi_test, 2)
-d_interview_age_mtbi_test_imp_3 <- pull_imputed_vars(d_interview_age_mtbi_test, five_imputed_mtbi_test, 3)
-d_interview_age_mtbi_test_imp_4 <- pull_imputed_vars(d_interview_age_mtbi_test, five_imputed_mtbi_test, 4)
-d_interview_age_mtbi_test_imp_5 <- pull_imputed_vars(d_interview_age_mtbi_test, five_imputed_mtbi_test, 5)
-
-# d_mtbi_age_mtbi
-d_mtbi_age_mtbi_test_imp_0 <- pull_imputed_vars(d_mtbi_age_mtbi_test, five_imputed_mtbi_test, 0)
-d_mtbi_age_mtbi_test_imp_1 <- pull_imputed_vars(d_mtbi_age_mtbi_test, five_imputed_mtbi_test, 1)
-d_mtbi_age_mtbi_test_imp_2 <- pull_imputed_vars(d_mtbi_age_mtbi_test, five_imputed_mtbi_test, 2)
-d_mtbi_age_mtbi_test_imp_3 <- pull_imputed_vars(d_mtbi_age_mtbi_test, five_imputed_mtbi_test, 3)
-d_mtbi_age_mtbi_test_imp_4 <- pull_imputed_vars(d_mtbi_age_mtbi_test, five_imputed_mtbi_test, 4)
-d_mtbi_age_mtbi_test_imp_5 <- pull_imputed_vars(d_mtbi_age_mtbi_test, five_imputed_mtbi_test, 5)
-
-# d_sex_mtbi
-d_sex_mtbi_test_imp_0 <- pull_imputed_vars(d_sex_mtbi_test, five_imputed_mtbi_test, 0)
-d_sex_mtbi_test_imp_1 <- pull_imputed_vars(d_sex_mtbi_test, five_imputed_mtbi_test, 1)
-d_sex_mtbi_test_imp_2 <- pull_imputed_vars(d_sex_mtbi_test, five_imputed_mtbi_test, 2)
-d_sex_mtbi_test_imp_3 <- pull_imputed_vars(d_sex_mtbi_test, five_imputed_mtbi_test, 3)
-d_sex_mtbi_test_imp_4 <- pull_imputed_vars(d_sex_mtbi_test, five_imputed_mtbi_test, 4)
-d_sex_mtbi_test_imp_5 <- pull_imputed_vars(d_sex_mtbi_test, five_imputed_mtbi_test, 5)
-
-# d_income_mtbi
-d_income_mtbi_test_imp_0 <- pull_imputed_vars(d_income_mtbi_test, five_imputed_mtbi_test, 0)
-d_income_mtbi_test_imp_1 <- pull_imputed_vars(d_income_mtbi_test, five_imputed_mtbi_test, 1)
-d_income_mtbi_test_imp_2 <- pull_imputed_vars(d_income_mtbi_test, five_imputed_mtbi_test, 2)
-d_income_mtbi_test_imp_3 <- pull_imputed_vars(d_income_mtbi_test, five_imputed_mtbi_test, 3)
-d_income_mtbi_test_imp_4 <- pull_imputed_vars(d_income_mtbi_test, five_imputed_mtbi_test, 4)
-d_income_mtbi_test_imp_5 <- pull_imputed_vars(d_income_mtbi_test, five_imputed_mtbi_test, 5)
-
-# d_race_mtbi
-d_race_mtbi_test_imp_0 <- pull_imputed_vars(d_race_mtbi_test, five_imputed_mtbi_test, 0)
-d_race_mtbi_test_imp_1 <- pull_imputed_vars(d_race_mtbi_test, five_imputed_mtbi_test, 1)
-d_race_mtbi_test_imp_2 <- pull_imputed_vars(d_race_mtbi_test, five_imputed_mtbi_test, 2)
-d_race_mtbi_test_imp_3 <- pull_imputed_vars(d_race_mtbi_test, five_imputed_mtbi_test, 3)
-d_race_mtbi_test_imp_4 <- pull_imputed_vars(d_race_mtbi_test, five_imputed_mtbi_test, 4)
-d_race_mtbi_test_imp_5 <- pull_imputed_vars(d_race_mtbi_test, five_imputed_mtbi_test, 5)
-
-# d_pubertal_status_mtbi
-d_pubertal_status_mtbi_test_imp_0 <- pull_imputed_vars(d_pubertal_status_mtbi_test, five_imputed_mtbi_test, 0)
-d_pubertal_status_mtbi_test_imp_1 <- pull_imputed_vars(d_pubertal_status_mtbi_test, five_imputed_mtbi_test, 1)
-d_pubertal_status_mtbi_test_imp_2 <- pull_imputed_vars(d_pubertal_status_mtbi_test, five_imputed_mtbi_test, 2)
-d_pubertal_status_mtbi_test_imp_3 <- pull_imputed_vars(d_pubertal_status_mtbi_test, five_imputed_mtbi_test, 3)
-d_pubertal_status_mtbi_test_imp_4 <- pull_imputed_vars(d_pubertal_status_mtbi_test, five_imputed_mtbi_test, 4)
-d_pubertal_status_mtbi_test_imp_5 <- pull_imputed_vars(d_pubertal_status_mtbi_test, five_imputed_mtbi_test, 5)
-
-# mh_headaches_mtbi
-mh_headaches_mtbi_test_imp_0 <- pull_imputed_vars(mh_headaches_mtbi_test, five_imputed_mtbi_test, 0)
-mh_headaches_mtbi_test_imp_1 <- pull_imputed_vars(mh_headaches_mtbi_test, five_imputed_mtbi_test, 1)
-mh_headaches_mtbi_test_imp_2 <- pull_imputed_vars(mh_headaches_mtbi_test, five_imputed_mtbi_test, 2)
-mh_headaches_mtbi_test_imp_3 <- pull_imputed_vars(mh_headaches_mtbi_test, five_imputed_mtbi_test, 3)
-mh_headaches_mtbi_test_imp_4 <- pull_imputed_vars(mh_headaches_mtbi_test, five_imputed_mtbi_test, 4)
-mh_headaches_mtbi_test_imp_5 <- pull_imputed_vars(mh_headaches_mtbi_test, five_imputed_mtbi_test, 5)
-
-# mh_mtbi_count_mtbi
-mh_mtbi_count_mtbi_test_imp_0 <- pull_imputed_vars(mh_mtbi_count_mtbi_test, five_imputed_mtbi_test, 0)
-mh_mtbi_count_mtbi_test_imp_1 <- pull_imputed_vars(mh_mtbi_count_mtbi_test, five_imputed_mtbi_test, 1)
-mh_mtbi_count_mtbi_test_imp_2 <- pull_imputed_vars(mh_mtbi_count_mtbi_test, five_imputed_mtbi_test, 2)
-mh_mtbi_count_mtbi_test_imp_3 <- pull_imputed_vars(mh_mtbi_count_mtbi_test, five_imputed_mtbi_test, 3)
-mh_mtbi_count_mtbi_test_imp_4 <- pull_imputed_vars(mh_mtbi_count_mtbi_test, five_imputed_mtbi_test, 4)
-mh_mtbi_count_mtbi_test_imp_5 <- pull_imputed_vars(mh_mtbi_count_mtbi_test, five_imputed_mtbi_test, 5)
-
-# sm_subc_v_mtbi
-sm_subc_v_mtbi_test_imp_0 <- pull_imputed_vars(sm_subc_v_qc_mtbi_test, five_imputed_mtbi_test, 0)
-sm_subc_v_mtbi_test_imp_1 <- pull_imputed_vars(sm_subc_v_qc_mtbi_test, five_imputed_mtbi_test, 1)
-sm_subc_v_mtbi_test_imp_2 <- pull_imputed_vars(sm_subc_v_qc_mtbi_test, five_imputed_mtbi_test, 2)
-sm_subc_v_mtbi_test_imp_3 <- pull_imputed_vars(sm_subc_v_qc_mtbi_test, five_imputed_mtbi_test, 3)
-sm_subc_v_mtbi_test_imp_4 <- pull_imputed_vars(sm_subc_v_qc_mtbi_test, five_imputed_mtbi_test, 4)
-sm_subc_v_mtbi_test_imp_5 <- pull_imputed_vars(sm_subc_v_qc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# sm_cort_t_mtbi
-sm_cort_t_mtbi_test_imp_0 <- pull_imputed_vars(sm_cort_t_qc_mtbi_test, five_imputed_mtbi_test, 0)
-sm_cort_t_mtbi_test_imp_1 <- pull_imputed_vars(sm_cort_t_qc_mtbi_test, five_imputed_mtbi_test, 1)
-sm_cort_t_mtbi_test_imp_2 <- pull_imputed_vars(sm_cort_t_qc_mtbi_test, five_imputed_mtbi_test, 2)
-sm_cort_t_mtbi_test_imp_3 <- pull_imputed_vars(sm_cort_t_qc_mtbi_test, five_imputed_mtbi_test, 3)
-sm_cort_t_mtbi_test_imp_4 <- pull_imputed_vars(sm_cort_t_qc_mtbi_test, five_imputed_mtbi_test, 4)
-sm_cort_t_mtbi_test_imp_5 <- pull_imputed_vars(sm_cort_t_qc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# sm_cort_sa_mtbi
-sm_cort_sa_mtbi_test_imp_0 <- pull_imputed_vars(sm_cort_sa_qc_mtbi_test, five_imputed_mtbi_test, 0)
-sm_cort_sa_mtbi_test_imp_1 <- pull_imputed_vars(sm_cort_sa_qc_mtbi_test, five_imputed_mtbi_test, 1)
-sm_cort_sa_mtbi_test_imp_2 <- pull_imputed_vars(sm_cort_sa_qc_mtbi_test, five_imputed_mtbi_test, 2)
-sm_cort_sa_mtbi_test_imp_3 <- pull_imputed_vars(sm_cort_sa_qc_mtbi_test, five_imputed_mtbi_test, 3)
-sm_cort_sa_mtbi_test_imp_4 <- pull_imputed_vars(sm_cort_sa_qc_mtbi_test, five_imputed_mtbi_test, 4)
-sm_cort_sa_mtbi_test_imp_5 <- pull_imputed_vars(sm_cort_sa_qc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# dm_all_wmnd_mtbi
-dm_all_wmnd_mtbi_test_imp_0 <- pull_imputed_vars(dm_all_wmnd_qc_mtbi_test, five_imputed_mtbi_test, 0)
-dm_all_wmnd_mtbi_test_imp_1 <- pull_imputed_vars(dm_all_wmnd_qc_mtbi_test, five_imputed_mtbi_test, 1)
-dm_all_wmnd_mtbi_test_imp_2 <- pull_imputed_vars(dm_all_wmnd_qc_mtbi_test, five_imputed_mtbi_test, 2)
-dm_all_wmnd_mtbi_test_imp_3 <- pull_imputed_vars(dm_all_wmnd_qc_mtbi_test, five_imputed_mtbi_test, 3)
-dm_all_wmnd_mtbi_test_imp_4 <- pull_imputed_vars(dm_all_wmnd_qc_mtbi_test, five_imputed_mtbi_test, 4)
-dm_all_wmnd_mtbi_test_imp_5 <- pull_imputed_vars(dm_all_wmnd_qc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# rm_gord_cor_mtbi
-rm_gord_cor_mtbi_test_imp_0 <- pull_imputed_vars(rm_gord_cor_qc_mtbi_test, five_imputed_mtbi_test, 0)
-rm_gord_cor_mtbi_test_imp_1 <- pull_imputed_vars(rm_gord_cor_qc_mtbi_test, five_imputed_mtbi_test, 1)
-rm_gord_cor_mtbi_test_imp_2 <- pull_imputed_vars(rm_gord_cor_qc_mtbi_test, five_imputed_mtbi_test, 2)
-rm_gord_cor_mtbi_test_imp_3 <- pull_imputed_vars(rm_gord_cor_qc_mtbi_test, five_imputed_mtbi_test, 3)
-rm_gord_cor_mtbi_test_imp_4 <- pull_imputed_vars(rm_gord_cor_qc_mtbi_test, five_imputed_mtbi_test, 4)
-rm_gord_cor_mtbi_test_imp_5 <- pull_imputed_vars(rm_gord_cor_qc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# rm_subc_cor_mtbi
-rm_subc_cor_mtbi_test_imp_0 <- pull_imputed_vars(rm_subc_cor_qc_mtbi_test, five_imputed_mtbi_test, 0)
-rm_subc_cor_mtbi_test_imp_1 <- pull_imputed_vars(rm_subc_cor_qc_mtbi_test, five_imputed_mtbi_test, 1)
-rm_subc_cor_mtbi_test_imp_2 <- pull_imputed_vars(rm_subc_cor_qc_mtbi_test, five_imputed_mtbi_test, 2)
-rm_subc_cor_mtbi_test_imp_3 <- pull_imputed_vars(rm_subc_cor_qc_mtbi_test, five_imputed_mtbi_test, 3)
-rm_subc_cor_mtbi_test_imp_4 <- pull_imputed_vars(rm_subc_cor_qc_mtbi_test, five_imputed_mtbi_test, 4)
-rm_subc_cor_mtbi_test_imp_5 <- pull_imputed_vars(rm_subc_cor_qc_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_loneliness_mtbi
-p_loneliness_mtbi_test_imp_0 <- pull_imputed_vars(p_loneliness_mtbi_test, five_imputed_mtbi_test, 0)
-p_loneliness_mtbi_test_imp_1 <- pull_imputed_vars(p_loneliness_mtbi_test, five_imputed_mtbi_test, 1)
-p_loneliness_mtbi_test_imp_2 <- pull_imputed_vars(p_loneliness_mtbi_test, five_imputed_mtbi_test, 2)
-p_loneliness_mtbi_test_imp_3 <- pull_imputed_vars(p_loneliness_mtbi_test, five_imputed_mtbi_test, 3)
-p_loneliness_mtbi_test_imp_4 <- pull_imputed_vars(p_loneliness_mtbi_test, five_imputed_mtbi_test, 4)
-p_loneliness_mtbi_test_imp_5 <- pull_imputed_vars(p_loneliness_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_screen_time_mtbi
-p_screen_time_mtbi_test_imp_0 <- pull_imputed_vars(p_screen_time_mtbi_test, five_imputed_mtbi_test, 0)
-p_screen_time_mtbi_test_imp_1 <- pull_imputed_vars(p_screen_time_mtbi_test, five_imputed_mtbi_test, 1)
-p_screen_time_mtbi_test_imp_2 <- pull_imputed_vars(p_screen_time_mtbi_test, five_imputed_mtbi_test, 2)
-p_screen_time_mtbi_test_imp_3 <- pull_imputed_vars(p_screen_time_mtbi_test, five_imputed_mtbi_test, 3)
-p_screen_time_mtbi_test_imp_4 <- pull_imputed_vars(p_screen_time_mtbi_test, five_imputed_mtbi_test, 4)
-p_screen_time_mtbi_test_imp_5 <- pull_imputed_vars(p_screen_time_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_sports_mtbi
-p_sports_mtbi_test_imp_0 <- pull_imputed_vars(p_sports_mtbi_test, five_imputed_mtbi_test, 0)
-p_sports_mtbi_test_imp_1 <- pull_imputed_vars(p_sports_mtbi_test, five_imputed_mtbi_test, 1)
-p_sports_mtbi_test_imp_2 <- pull_imputed_vars(p_sports_mtbi_test, five_imputed_mtbi_test, 2)
-p_sports_mtbi_test_imp_3 <- pull_imputed_vars(p_sports_mtbi_test, five_imputed_mtbi_test, 3)
-p_sports_mtbi_test_imp_4 <- pull_imputed_vars(p_sports_mtbi_test, five_imputed_mtbi_test, 4)
-p_sports_mtbi_test_imp_5 <- pull_imputed_vars(p_sports_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_exercise_mtbi
-p_exercise_mtbi_test_imp_0 <- pull_imputed_vars(p_exercise_mtbi_test, five_imputed_mtbi_test, 0)
-p_exercise_mtbi_test_imp_1 <- pull_imputed_vars(p_exercise_mtbi_test, five_imputed_mtbi_test, 1)
-p_exercise_mtbi_test_imp_2 <- pull_imputed_vars(p_exercise_mtbi_test, five_imputed_mtbi_test, 2)
-p_exercise_mtbi_test_imp_3 <- pull_imputed_vars(p_exercise_mtbi_test, five_imputed_mtbi_test, 3)
-p_exercise_mtbi_test_imp_4 <- pull_imputed_vars(p_exercise_mtbi_test, five_imputed_mtbi_test, 4)
-p_exercise_mtbi_test_imp_5 <- pull_imputed_vars(p_exercise_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_prosocial_mtbi
-p_prosocial_mtbi_test_imp_0 <- pull_imputed_vars(p_prosocial_mtbi_test, five_imputed_mtbi_test, 0)
-p_prosocial_mtbi_test_imp_1 <- pull_imputed_vars(p_prosocial_mtbi_test, five_imputed_mtbi_test, 1)
-p_prosocial_mtbi_test_imp_2 <- pull_imputed_vars(p_prosocial_mtbi_test, five_imputed_mtbi_test, 2)
-p_prosocial_mtbi_test_imp_3 <- pull_imputed_vars(p_prosocial_mtbi_test, five_imputed_mtbi_test, 3)
-p_prosocial_mtbi_test_imp_4 <- pull_imputed_vars(p_prosocial_mtbi_test, five_imputed_mtbi_test, 4)
-p_prosocial_mtbi_test_imp_5 <- pull_imputed_vars(p_prosocial_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_fam_fn_mtbi
-p_fam_fn_mtbi_test_imp_0 <- pull_imputed_vars(p_fam_fn_mtbi_test, five_imputed_mtbi_test, 0)
-p_fam_fn_mtbi_test_imp_1 <- pull_imputed_vars(p_fam_fn_mtbi_test, five_imputed_mtbi_test, 1)
-p_fam_fn_mtbi_test_imp_2 <- pull_imputed_vars(p_fam_fn_mtbi_test, five_imputed_mtbi_test, 2)
-p_fam_fn_mtbi_test_imp_3 <- pull_imputed_vars(p_fam_fn_mtbi_test, five_imputed_mtbi_test, 3)
-p_fam_fn_mtbi_test_imp_4 <- pull_imputed_vars(p_fam_fn_mtbi_test, five_imputed_mtbi_test, 4)
-p_fam_fn_mtbi_test_imp_5 <- pull_imputed_vars(p_fam_fn_mtbi_test, five_imputed_mtbi_test, 5)
-
-# p_parent_psych_mtbi
-p_parent_psych_mtbi_test_imp_0 <- pull_imputed_vars(p_parent_psych_mtbi_test, five_imputed_mtbi_test, 0)
-p_parent_psych_mtbi_test_imp_1 <- pull_imputed_vars(p_parent_psych_mtbi_test, five_imputed_mtbi_test, 1)
-p_parent_psych_mtbi_test_imp_2 <- pull_imputed_vars(p_parent_psych_mtbi_test, five_imputed_mtbi_test, 2)
-p_parent_psych_mtbi_test_imp_3 <- pull_imputed_vars(p_parent_psych_mtbi_test, five_imputed_mtbi_test, 3)
-p_parent_psych_mtbi_test_imp_4 <- pull_imputed_vars(p_parent_psych_mtbi_test, five_imputed_mtbi_test, 4)
-p_parent_psych_mtbi_test_imp_5 <- pull_imputed_vars(p_parent_psych_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_anxdep_mtbi
-cbcl_anxdep_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_anxdep_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_anxdep_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_anxdep_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_anxdep_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_anxdep_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_anxdep_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_anxdep_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_anxdep_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_anxdep_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_anxdep_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_anxdep_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_withdep_mtbi
-cbcl_withdep_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_withdep_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_withdep_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_withdep_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_withdep_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_withdep_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_withdep_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_withdep_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_withdep_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_withdep_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_withdep_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_withdep_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_somatic_mtbi
-cbcl_somatic_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_somatic_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_somatic_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_somatic_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_somatic_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_somatic_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_somatic_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_somatic_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_somatic_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_somatic_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_somatic_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_somatic_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_social_mtbi
-cbcl_social_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_social_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_social_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_social_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_social_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_social_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_social_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_social_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_social_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_social_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_social_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_social_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_thought_mtbi
-cbcl_thought_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_thought_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_thought_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_thought_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_thought_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_thought_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_thought_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_thought_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_thought_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_thought_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_thought_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_thought_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_attention_mtbi
-cbcl_attention_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_attention_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_attention_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_attention_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_attention_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_attention_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_attention_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_attention_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_attention_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_attention_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_attention_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_attention_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_rulebreak_mtbi
-cbcl_rulebreak_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_rulebreak_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_rulebreak_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_rulebreak_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_rulebreak_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_rulebreak_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_rulebreak_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_rulebreak_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_rulebreak_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_rulebreak_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_rulebreak_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_rulebreak_mtbi_test, five_imputed_mtbi_test, 5)
-
-# cbcl_aggressive_mtbi
-cbcl_aggressive_mtbi_test_imp_0 <- pull_imputed_vars(cbcl_aggressive_mtbi_test, five_imputed_mtbi_test, 0)
-cbcl_aggressive_mtbi_test_imp_1 <- pull_imputed_vars(cbcl_aggressive_mtbi_test, five_imputed_mtbi_test, 1)
-cbcl_aggressive_mtbi_test_imp_2 <- pull_imputed_vars(cbcl_aggressive_mtbi_test, five_imputed_mtbi_test, 2)
-cbcl_aggressive_mtbi_test_imp_3 <- pull_imputed_vars(cbcl_aggressive_mtbi_test, five_imputed_mtbi_test, 3)
-cbcl_aggressive_mtbi_test_imp_4 <- pull_imputed_vars(cbcl_aggressive_mtbi_test, five_imputed_mtbi_test, 4)
-cbcl_aggressive_mtbi_test_imp_5 <- pull_imputed_vars(cbcl_aggressive_mtbi_test, five_imputed_mtbi_test, 5)
-
-# sds_total_probs_mtbi
-sds_total_probs_mtbi_test_imp_0 <- pull_imputed_vars(sds_total_probs_mtbi_test, five_imputed_mtbi_test, 0)
-sds_total_probs_mtbi_test_imp_1 <- pull_imputed_vars(sds_total_probs_mtbi_test, five_imputed_mtbi_test, 1)
-sds_total_probs_mtbi_test_imp_2 <- pull_imputed_vars(sds_total_probs_mtbi_test, five_imputed_mtbi_test, 2)
-sds_total_probs_mtbi_test_imp_3 <- pull_imputed_vars(sds_total_probs_mtbi_test, five_imputed_mtbi_test, 3)
-sds_total_probs_mtbi_test_imp_4 <- pull_imputed_vars(sds_total_probs_mtbi_test, five_imputed_mtbi_test, 4)
-sds_total_probs_mtbi_test_imp_5 <- pull_imputed_vars(sds_total_probs_mtbi_test, five_imputed_mtbi_test, 5)
-
-###############################################################################
-
-list(as_mem_daze_mtbi_test_imp_0,
-as_mem_daze_mtbi_test_imp_1,
-as_mem_daze_mtbi_test_imp_2,
-as_mem_daze_mtbi_test_imp_3,
-as_mem_daze_mtbi_test_imp_4,
-as_mem_daze_mtbi_test_imp_5,
-as_mechanism_mtbi_test_imp_0,
-as_mechanism_mtbi_test_imp_1,
-as_mechanism_mtbi_test_imp_2,
-as_mechanism_mtbi_test_imp_3,
-as_mechanism_mtbi_test_imp_4,
-as_mechanism_mtbi_test_imp_5,
-as_loc_mtbi_test_imp_0,
-as_loc_mtbi_test_imp_1,
-as_loc_mtbi_test_imp_2,
-as_loc_mtbi_test_imp_3,
-as_loc_mtbi_test_imp_4,
-as_loc_mtbi_test_imp_5,
-d_interview_age_mtbi_test_imp_0,
-d_interview_age_mtbi_test_imp_1,
-d_interview_age_mtbi_test_imp_2,
-d_interview_age_mtbi_test_imp_3,
-d_interview_age_mtbi_test_imp_4,
-d_interview_age_mtbi_test_imp_5,
-d_mtbi_age_mtbi_test_imp_0,
-d_mtbi_age_mtbi_test_imp_1,
-d_mtbi_age_mtbi_test_imp_2,
-d_mtbi_age_mtbi_test_imp_3,
-d_mtbi_age_mtbi_test_imp_4,
-d_mtbi_age_mtbi_test_imp_5,
-d_sex_mtbi_test_imp_0,
-d_sex_mtbi_test_imp_1,
-d_sex_mtbi_test_imp_2,
-d_sex_mtbi_test_imp_3,
-d_sex_mtbi_test_imp_4,
-d_sex_mtbi_test_imp_5,
-d_income_mtbi_test_imp_0,
-d_income_mtbi_test_imp_1,
-d_income_mtbi_test_imp_2,
-d_income_mtbi_test_imp_3,
-d_income_mtbi_test_imp_4,
-d_income_mtbi_test_imp_5,
-d_race_mtbi_test_imp_0,
-d_race_mtbi_test_imp_1,
-d_race_mtbi_test_imp_2,
-d_race_mtbi_test_imp_3,
-d_race_mtbi_test_imp_4,
-d_race_mtbi_test_imp_5,
-d_pubertal_status_mtbi_test_imp_0,
-d_pubertal_status_mtbi_test_imp_1,
-d_pubertal_status_mtbi_test_imp_2,
-d_pubertal_status_mtbi_test_imp_3,
-d_pubertal_status_mtbi_test_imp_4,
-d_pubertal_status_mtbi_test_imp_5,
-mh_headaches_mtbi_test_imp_0,
-mh_headaches_mtbi_test_imp_1,
-mh_headaches_mtbi_test_imp_2,
-mh_headaches_mtbi_test_imp_3,
-mh_headaches_mtbi_test_imp_4,
-mh_headaches_mtbi_test_imp_5,
-mh_mtbi_count_mtbi_test_imp_0,
-mh_mtbi_count_mtbi_test_imp_1,
-mh_mtbi_count_mtbi_test_imp_2,
-mh_mtbi_count_mtbi_test_imp_3,
-mh_mtbi_count_mtbi_test_imp_4,
-mh_mtbi_count_mtbi_test_imp_5,
-sm_subc_v_mtbi_test_imp_0,
-sm_subc_v_mtbi_test_imp_1,
-sm_subc_v_mtbi_test_imp_2,
-sm_subc_v_mtbi_test_imp_3,
-sm_subc_v_mtbi_test_imp_4,
-sm_subc_v_mtbi_test_imp_5,
-sm_cort_t_mtbi_test_imp_0,
-sm_cort_t_mtbi_test_imp_1,
-sm_cort_t_mtbi_test_imp_2,
-sm_cort_t_mtbi_test_imp_3,
-sm_cort_t_mtbi_test_imp_4,
-sm_cort_t_mtbi_test_imp_5,
-sm_cort_sa_mtbi_test_imp_0,
-sm_cort_sa_mtbi_test_imp_1,
-sm_cort_sa_mtbi_test_imp_2,
-sm_cort_sa_mtbi_test_imp_3,
-sm_cort_sa_mtbi_test_imp_4,
-sm_cort_sa_mtbi_test_imp_5,
-dm_all_wmnd_mtbi_test_imp_0,
-dm_all_wmnd_mtbi_test_imp_1,
-dm_all_wmnd_mtbi_test_imp_2,
-dm_all_wmnd_mtbi_test_imp_3,
-dm_all_wmnd_mtbi_test_imp_4,
-dm_all_wmnd_mtbi_test_imp_5,
-rm_gord_cor_mtbi_test_imp_0,
-rm_gord_cor_mtbi_test_imp_1,
-rm_gord_cor_mtbi_test_imp_2,
-rm_gord_cor_mtbi_test_imp_3,
-rm_gord_cor_mtbi_test_imp_4,
-rm_gord_cor_mtbi_test_imp_5,
-rm_subc_cor_mtbi_test_imp_0,
-rm_subc_cor_mtbi_test_imp_1,
-rm_subc_cor_mtbi_test_imp_2,
-rm_subc_cor_mtbi_test_imp_3,
-rm_subc_cor_mtbi_test_imp_4,
-rm_subc_cor_mtbi_test_imp_5,
-p_loneliness_mtbi_test_imp_0,
-p_loneliness_mtbi_test_imp_1,
-p_loneliness_mtbi_test_imp_2,
-p_loneliness_mtbi_test_imp_3,
-p_loneliness_mtbi_test_imp_4,
-p_loneliness_mtbi_test_imp_5,
-p_screen_time_mtbi_test_imp_0,
-p_screen_time_mtbi_test_imp_1,
-p_screen_time_mtbi_test_imp_2,
-p_screen_time_mtbi_test_imp_3,
-p_screen_time_mtbi_test_imp_4,
-p_screen_time_mtbi_test_imp_5,
-p_sports_mtbi_test_imp_0,
-p_sports_mtbi_test_imp_1,
-p_sports_mtbi_test_imp_2,
-p_sports_mtbi_test_imp_3,
-p_sports_mtbi_test_imp_4,
-p_sports_mtbi_test_imp_5,
-p_exercise_mtbi_test_imp_0,
-p_exercise_mtbi_test_imp_1,
-p_exercise_mtbi_test_imp_2,
-p_exercise_mtbi_test_imp_3,
-p_exercise_mtbi_test_imp_4,
-p_exercise_mtbi_test_imp_5,
-p_prosocial_mtbi_test_imp_0,
-p_prosocial_mtbi_test_imp_1,
-p_prosocial_mtbi_test_imp_2,
-p_prosocial_mtbi_test_imp_3,
-p_prosocial_mtbi_test_imp_4,
-p_prosocial_mtbi_test_imp_5,
-p_fam_fn_mtbi_test_imp_0,
-p_fam_fn_mtbi_test_imp_1,
-p_fam_fn_mtbi_test_imp_2,
-p_fam_fn_mtbi_test_imp_3,
-p_fam_fn_mtbi_test_imp_4,
-p_fam_fn_mtbi_test_imp_5,
-p_parent_psych_mtbi_test_imp_0,
-p_parent_psych_mtbi_test_imp_1,
-p_parent_psych_mtbi_test_imp_2,
-p_parent_psych_mtbi_test_imp_3,
-p_parent_psych_mtbi_test_imp_4,
-p_parent_psych_mtbi_test_imp_5,
-cbcl_anxdep_mtbi_test_imp_0,
-cbcl_anxdep_mtbi_test_imp_1,
-cbcl_anxdep_mtbi_test_imp_2,
-cbcl_anxdep_mtbi_test_imp_3,
-cbcl_anxdep_mtbi_test_imp_4,
-cbcl_anxdep_mtbi_test_imp_5,
-cbcl_withdep_mtbi_test_imp_0,
-cbcl_withdep_mtbi_test_imp_1,
-cbcl_withdep_mtbi_test_imp_2,
-cbcl_withdep_mtbi_test_imp_3,
-cbcl_withdep_mtbi_test_imp_4,
-cbcl_withdep_mtbi_test_imp_5,
-cbcl_somatic_mtbi_test_imp_0,
-cbcl_somatic_mtbi_test_imp_1,
-cbcl_somatic_mtbi_test_imp_2,
-cbcl_somatic_mtbi_test_imp_3,
-cbcl_somatic_mtbi_test_imp_4,
-cbcl_somatic_mtbi_test_imp_5,
-cbcl_social_mtbi_test_imp_0,
-cbcl_social_mtbi_test_imp_1,
-cbcl_social_mtbi_test_imp_2,
-cbcl_social_mtbi_test_imp_3,
-cbcl_social_mtbi_test_imp_4,
-cbcl_social_mtbi_test_imp_5,
-cbcl_thought_mtbi_test_imp_0,
-cbcl_thought_mtbi_test_imp_1,
-cbcl_thought_mtbi_test_imp_2,
-cbcl_thought_mtbi_test_imp_3,
-cbcl_thought_mtbi_test_imp_4,
-cbcl_thought_mtbi_test_imp_5,
-cbcl_attention_mtbi_test_imp_0,
-cbcl_attention_mtbi_test_imp_1,
-cbcl_attention_mtbi_test_imp_2,
-cbcl_attention_mtbi_test_imp_3,
-cbcl_attention_mtbi_test_imp_4,
-cbcl_attention_mtbi_test_imp_5,
-cbcl_rulebreak_mtbi_test_imp_0,
-cbcl_rulebreak_mtbi_test_imp_1,
-cbcl_rulebreak_mtbi_test_imp_2,
-cbcl_rulebreak_mtbi_test_imp_3,
-cbcl_rulebreak_mtbi_test_imp_4,
-cbcl_rulebreak_mtbi_test_imp_5,
-cbcl_aggressive_mtbi_test_imp_0,
-cbcl_aggressive_mtbi_test_imp_1,
-cbcl_aggressive_mtbi_test_imp_2,
-cbcl_aggressive_mtbi_test_imp_3,
-cbcl_aggressive_mtbi_test_imp_4,
-cbcl_aggressive_mtbi_test_imp_5,
-sds_total_probs_mtbi_test_imp_0,
-sds_total_probs_mtbi_test_imp_1,
-sds_total_probs_mtbi_test_imp_2,
-sds_total_probs_mtbi_test_imp_3,
-sds_total_probs_mtbi_test_imp_4,
-sds_total_probs_mtbi_test_imp_5) |> lapply(
-        function(x) {
-            all(x$"subjectkey" %in% rsubs)
+all_dls <- all_dls |>
+    lapply(
+        function(data_lists_of_group) {
+            lapply(
+                data_lists_of_group,
+                function(data_list) {
+                    data_list <- rename_data_list(data_list, name_changes)
+                }
+            )
         }
-    ) |> unlist()
+    )
 
-###############################################################################
-
-write_csv(as_mem_daze_mtbi_test_imp_0, input_path("as_mem_daze_mtbi_test_imp_0.csv", TRUE))
-write_csv(as_mem_daze_mtbi_test_imp_1, input_path("as_mem_daze_mtbi_test_imp_1.csv", TRUE))
-write_csv(as_mem_daze_mtbi_test_imp_2, input_path("as_mem_daze_mtbi_test_imp_2.csv", TRUE))
-write_csv(as_mem_daze_mtbi_test_imp_3, input_path("as_mem_daze_mtbi_test_imp_3.csv", TRUE))
-write_csv(as_mem_daze_mtbi_test_imp_4, input_path("as_mem_daze_mtbi_test_imp_4.csv", TRUE))
-write_csv(as_mem_daze_mtbi_test_imp_5, input_path("as_mem_daze_mtbi_test_imp_5.csv", TRUE))
-write_csv(as_mechanism_mtbi_test_imp_0, input_path("as_mechanism_mtbi_test_imp_0.csv", TRUE))
-write_csv(as_mechanism_mtbi_test_imp_1, input_path("as_mechanism_mtbi_test_imp_1.csv", TRUE))
-write_csv(as_mechanism_mtbi_test_imp_2, input_path("as_mechanism_mtbi_test_imp_2.csv", TRUE))
-write_csv(as_mechanism_mtbi_test_imp_3, input_path("as_mechanism_mtbi_test_imp_3.csv", TRUE))
-write_csv(as_mechanism_mtbi_test_imp_4, input_path("as_mechanism_mtbi_test_imp_4.csv", TRUE))
-write_csv(as_mechanism_mtbi_test_imp_5, input_path("as_mechanism_mtbi_test_imp_5.csv", TRUE))
-write_csv(as_loc_mtbi_test_imp_0, input_path("as_loc_mtbi_test_imp_0.csv", TRUE))
-write_csv(as_loc_mtbi_test_imp_1, input_path("as_loc_mtbi_test_imp_1.csv", TRUE))
-write_csv(as_loc_mtbi_test_imp_2, input_path("as_loc_mtbi_test_imp_2.csv", TRUE))
-write_csv(as_loc_mtbi_test_imp_3, input_path("as_loc_mtbi_test_imp_3.csv", TRUE))
-write_csv(as_loc_mtbi_test_imp_4, input_path("as_loc_mtbi_test_imp_4.csv", TRUE))
-write_csv(as_loc_mtbi_test_imp_5, input_path("as_loc_mtbi_test_imp_5.csv", TRUE))
-write_csv(d_interview_age_mtbi_test_imp_0, input_path("d_interview_age_mtbi_test_imp_0.csv", TRUE))
-write_csv(d_interview_age_mtbi_test_imp_1, input_path("d_interview_age_mtbi_test_imp_1.csv", TRUE))
-write_csv(d_interview_age_mtbi_test_imp_2, input_path("d_interview_age_mtbi_test_imp_2.csv", TRUE))
-write_csv(d_interview_age_mtbi_test_imp_3, input_path("d_interview_age_mtbi_test_imp_3.csv", TRUE))
-write_csv(d_interview_age_mtbi_test_imp_4, input_path("d_interview_age_mtbi_test_imp_4.csv", TRUE))
-write_csv(d_interview_age_mtbi_test_imp_5, input_path("d_interview_age_mtbi_test_imp_5.csv", TRUE))
-write_csv(d_mtbi_age_mtbi_test_imp_0, input_path("d_mtbi_age_mtbi_test_imp_0.csv", TRUE))
-write_csv(d_mtbi_age_mtbi_test_imp_1, input_path("d_mtbi_age_mtbi_test_imp_1.csv", TRUE))
-
-write_csv(d_mtbi_age_mtbi_test_imp_2, input_path("d_mtbi_age_mtbi_test_imp_2.csv", TRUE))
-write_csv(d_mtbi_age_mtbi_test_imp_3, input_path("d_mtbi_age_mtbi_test_imp_3.csv", TRUE))
-write_csv(d_mtbi_age_mtbi_test_imp_4, input_path("d_mtbi_age_mtbi_test_imp_4.csv", TRUE))
-write_csv(d_mtbi_age_mtbi_test_imp_5, input_path("d_mtbi_age_mtbi_test_imp_5.csv", TRUE))
-write_csv(d_sex_mtbi_test_imp_0, input_path("d_sex_mtbi_test_imp_0.csv", TRUE))
-write_csv(d_sex_mtbi_test_imp_1, input_path("d_sex_mtbi_test_imp_1.csv", TRUE))
-write_csv(d_sex_mtbi_test_imp_2, input_path("d_sex_mtbi_test_imp_2.csv", TRUE))
-write_csv(d_sex_mtbi_test_imp_3, input_path("d_sex_mtbi_test_imp_3.csv", TRUE))
-write_csv(d_sex_mtbi_test_imp_4, input_path("d_sex_mtbi_test_imp_4.csv", TRUE))
-write_csv(d_sex_mtbi_test_imp_5, input_path("d_sex_mtbi_test_imp_5.csv", TRUE))
-write_csv(d_income_mtbi_test_imp_0, input_path("d_income_mtbi_test_imp_0.csv", TRUE))
-write_csv(d_income_mtbi_test_imp_1, input_path("d_income_mtbi_test_imp_1.csv", TRUE))
-write_csv(d_income_mtbi_test_imp_2, input_path("d_income_mtbi_test_imp_2.csv", TRUE))
-write_csv(d_income_mtbi_test_imp_3, input_path("d_income_mtbi_test_imp_3.csv", TRUE))
-write_csv(d_income_mtbi_test_imp_4, input_path("d_income_mtbi_test_imp_4.csv", TRUE))
-write_csv(d_income_mtbi_test_imp_5, input_path("d_income_mtbi_test_imp_5.csv", TRUE))
-write_csv(d_race_mtbi_test_imp_0, input_path("d_race_mtbi_test_imp_0.csv", TRUE))
-write_csv(d_race_mtbi_test_imp_1, input_path("d_race_mtbi_test_imp_1.csv", TRUE))
-write_csv(d_race_mtbi_test_imp_2, input_path("d_race_mtbi_test_imp_2.csv", TRUE))
-write_csv(d_race_mtbi_test_imp_3, input_path("d_race_mtbi_test_imp_3.csv", TRUE))
-write_csv(d_race_mtbi_test_imp_4, input_path("d_race_mtbi_test_imp_4.csv", TRUE))
-write_csv(d_race_mtbi_test_imp_5, input_path("d_race_mtbi_test_imp_5.csv", TRUE))
-write_csv(d_pubertal_status_mtbi_test_imp_0, input_path("d_pubertal_status_mtbi_test_imp_0.csv", TRUE))
-write_csv(d_pubertal_status_mtbi_test_imp_1, input_path("d_pubertal_status_mtbi_test_imp_1.csv", TRUE))
-write_csv(d_pubertal_status_mtbi_test_imp_2, input_path("d_pubertal_status_mtbi_test_imp_2.csv", TRUE))
-
-write_csv(d_pubertal_status_mtbi_test_imp_3, input_path("d_pubertal_status_mtbi_test_imp_3.csv", TRUE))
-write_csv(d_pubertal_status_mtbi_test_imp_4, input_path("d_pubertal_status_mtbi_test_imp_4.csv", TRUE))
-write_csv(d_pubertal_status_mtbi_test_imp_5, input_path("d_pubertal_status_mtbi_test_imp_5.csv", TRUE))
-write_csv(mh_headaches_mtbi_test_imp_0, input_path("mh_headaches_mtbi_test_imp_0.csv", TRUE))
-write_csv(mh_headaches_mtbi_test_imp_1, input_path("mh_headaches_mtbi_test_imp_1.csv", TRUE))
-write_csv(mh_headaches_mtbi_test_imp_2, input_path("mh_headaches_mtbi_test_imp_2.csv", TRUE))
-write_csv(mh_headaches_mtbi_test_imp_3, input_path("mh_headaches_mtbi_test_imp_3.csv", TRUE))
-write_csv(mh_headaches_mtbi_test_imp_4, input_path("mh_headaches_mtbi_test_imp_4.csv", TRUE))
-write_csv(mh_headaches_mtbi_test_imp_5, input_path("mh_headaches_mtbi_test_imp_5.csv", TRUE))
-write_csv(mh_mtbi_count_mtbi_test_imp_0, input_path("mh_mtbi_count_mtbi_test_imp_0.csv", TRUE))
-write_csv(mh_mtbi_count_mtbi_test_imp_1, input_path("mh_mtbi_count_mtbi_test_imp_1.csv", TRUE))
-write_csv(mh_mtbi_count_mtbi_test_imp_2, input_path("mh_mtbi_count_mtbi_test_imp_2.csv", TRUE))
-write_csv(mh_mtbi_count_mtbi_test_imp_3, input_path("mh_mtbi_count_mtbi_test_imp_3.csv", TRUE))
-write_csv(mh_mtbi_count_mtbi_test_imp_4, input_path("mh_mtbi_count_mtbi_test_imp_4.csv", TRUE))
-write_csv(mh_mtbi_count_mtbi_test_imp_5, input_path("mh_mtbi_count_mtbi_test_imp_5.csv", TRUE))
-write_csv(sm_subc_v_mtbi_test_imp_0, input_path("sm_subc_v_mtbi_test_imp_0.csv", TRUE))
-write_csv(sm_subc_v_mtbi_test_imp_1, input_path("sm_subc_v_mtbi_test_imp_1.csv", TRUE))
-write_csv(sm_subc_v_mtbi_test_imp_2, input_path("sm_subc_v_mtbi_test_imp_2.csv", TRUE))
-write_csv(sm_subc_v_mtbi_test_imp_3, input_path("sm_subc_v_mtbi_test_imp_3.csv", TRUE))
-write_csv(sm_subc_v_mtbi_test_imp_4, input_path("sm_subc_v_mtbi_test_imp_4.csv", TRUE))
-write_csv(sm_subc_v_mtbi_test_imp_5, input_path("sm_subc_v_mtbi_test_imp_5.csv", TRUE))
-write_csv(sm_cort_t_mtbi_test_imp_0, input_path("sm_cort_t_mtbi_test_imp_0.csv", TRUE))
-write_csv(sm_cort_t_mtbi_test_imp_1, input_path("sm_cort_t_mtbi_test_imp_1.csv", TRUE))
-write_csv(sm_cort_t_mtbi_test_imp_2, input_path("sm_cort_t_mtbi_test_imp_2.csv", TRUE))
-write_csv(sm_cort_t_mtbi_test_imp_3, input_path("sm_cort_t_mtbi_test_imp_3.csv", TRUE))
-
-write_csv(sm_cort_t_mtbi_test_imp_4, input_path("sm_cort_t_mtbi_test_imp_4.csv", TRUE))
-write_csv(sm_cort_t_mtbi_test_imp_5, input_path("sm_cort_t_mtbi_test_imp_5.csv", TRUE))
-write_csv(sm_cort_sa_mtbi_test_imp_0, input_path("sm_cort_sa_mtbi_test_imp_0.csv", TRUE))
-write_csv(sm_cort_sa_mtbi_test_imp_1, input_path("sm_cort_sa_mtbi_test_imp_1.csv", TRUE))
-write_csv(sm_cort_sa_mtbi_test_imp_2, input_path("sm_cort_sa_mtbi_test_imp_2.csv", TRUE))
-write_csv(sm_cort_sa_mtbi_test_imp_3, input_path("sm_cort_sa_mtbi_test_imp_3.csv", TRUE))
-write_csv(sm_cort_sa_mtbi_test_imp_4, input_path("sm_cort_sa_mtbi_test_imp_4.csv", TRUE))
-write_csv(sm_cort_sa_mtbi_test_imp_5, input_path("sm_cort_sa_mtbi_test_imp_5.csv", TRUE))
-write_csv(dm_all_wmnd_mtbi_test_imp_0, input_path("dm_all_wmnd_mtbi_test_imp_0.csv", TRUE))
-write_csv(dm_all_wmnd_mtbi_test_imp_1, input_path("dm_all_wmnd_mtbi_test_imp_1.csv", TRUE))
-write_csv(dm_all_wmnd_mtbi_test_imp_2, input_path("dm_all_wmnd_mtbi_test_imp_2.csv", TRUE))
-write_csv(dm_all_wmnd_mtbi_test_imp_3, input_path("dm_all_wmnd_mtbi_test_imp_3.csv", TRUE))
-write_csv(dm_all_wmnd_mtbi_test_imp_4, input_path("dm_all_wmnd_mtbi_test_imp_4.csv", TRUE))
-write_csv(dm_all_wmnd_mtbi_test_imp_5, input_path("dm_all_wmnd_mtbi_test_imp_5.csv", TRUE))
-write_csv(rm_gord_cor_mtbi_test_imp_0, input_path("rm_gord_cor_mtbi_test_imp_0.csv", TRUE))
-write_csv(rm_gord_cor_mtbi_test_imp_1, input_path("rm_gord_cor_mtbi_test_imp_1.csv", TRUE))
-write_csv(rm_gord_cor_mtbi_test_imp_2, input_path("rm_gord_cor_mtbi_test_imp_2.csv", TRUE))
-write_csv(rm_gord_cor_mtbi_test_imp_3, input_path("rm_gord_cor_mtbi_test_imp_3.csv", TRUE))
-write_csv(rm_gord_cor_mtbi_test_imp_4, input_path("rm_gord_cor_mtbi_test_imp_4.csv", TRUE))
-write_csv(rm_gord_cor_mtbi_test_imp_5, input_path("rm_gord_cor_mtbi_test_imp_5.csv", TRUE))
-write_csv(rm_subc_cor_mtbi_test_imp_0, input_path("rm_subc_cor_mtbi_test_imp_0.csv", TRUE))
-write_csv(rm_subc_cor_mtbi_test_imp_1, input_path("rm_subc_cor_mtbi_test_imp_1.csv", TRUE))
-write_csv(rm_subc_cor_mtbi_test_imp_2, input_path("rm_subc_cor_mtbi_test_imp_2.csv", TRUE))
-write_csv(rm_subc_cor_mtbi_test_imp_3, input_path("rm_subc_cor_mtbi_test_imp_3.csv", TRUE))
-write_csv(rm_subc_cor_mtbi_test_imp_4, input_path("rm_subc_cor_mtbi_test_imp_4.csv", TRUE))
-
-write_csv(rm_subc_cor_mtbi_test_imp_5, input_path("rm_subc_cor_mtbi_test_imp_5.csv", TRUE))
-write_csv(p_loneliness_mtbi_test_imp_0, input_path("p_loneliness_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_loneliness_mtbi_test_imp_1, input_path("p_loneliness_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_loneliness_mtbi_test_imp_2, input_path("p_loneliness_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_loneliness_mtbi_test_imp_3, input_path("p_loneliness_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_loneliness_mtbi_test_imp_4, input_path("p_loneliness_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_loneliness_mtbi_test_imp_5, input_path("p_loneliness_mtbi_test_imp_5.csv", TRUE))
-write_csv(p_screen_time_mtbi_test_imp_0, input_path("p_screen_time_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_screen_time_mtbi_test_imp_1, input_path("p_screen_time_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_screen_time_mtbi_test_imp_2, input_path("p_screen_time_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_screen_time_mtbi_test_imp_3, input_path("p_screen_time_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_screen_time_mtbi_test_imp_4, input_path("p_screen_time_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_screen_time_mtbi_test_imp_5, input_path("p_screen_time_mtbi_test_imp_5.csv", TRUE))
-write_csv(p_sports_mtbi_test_imp_0, input_path("p_sports_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_sports_mtbi_test_imp_1, input_path("p_sports_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_sports_mtbi_test_imp_2, input_path("p_sports_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_sports_mtbi_test_imp_3, input_path("p_sports_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_sports_mtbi_test_imp_4, input_path("p_sports_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_sports_mtbi_test_imp_5, input_path("p_sports_mtbi_test_imp_5.csv", TRUE))
-write_csv(p_exercise_mtbi_test_imp_0, input_path("p_exercise_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_exercise_mtbi_test_imp_1, input_path("p_exercise_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_exercise_mtbi_test_imp_2, input_path("p_exercise_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_exercise_mtbi_test_imp_3, input_path("p_exercise_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_exercise_mtbi_test_imp_4, input_path("p_exercise_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_exercise_mtbi_test_imp_5, input_path("p_exercise_mtbi_test_imp_5.csv", TRUE))
-
-write_csv(p_prosocial_mtbi_test_imp_0, input_path("p_prosocial_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_prosocial_mtbi_test_imp_1, input_path("p_prosocial_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_prosocial_mtbi_test_imp_2, input_path("p_prosocial_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_prosocial_mtbi_test_imp_3, input_path("p_prosocial_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_prosocial_mtbi_test_imp_4, input_path("p_prosocial_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_prosocial_mtbi_test_imp_5, input_path("p_prosocial_mtbi_test_imp_5.csv", TRUE))
-write_csv(p_fam_fn_mtbi_test_imp_0, input_path("p_fam_fn_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_fam_fn_mtbi_test_imp_1, input_path("p_fam_fn_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_fam_fn_mtbi_test_imp_2, input_path("p_fam_fn_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_fam_fn_mtbi_test_imp_3, input_path("p_fam_fn_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_fam_fn_mtbi_test_imp_4, input_path("p_fam_fn_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_fam_fn_mtbi_test_imp_5, input_path("p_fam_fn_mtbi_test_imp_5.csv", TRUE))
-write_csv(p_parent_psych_mtbi_test_imp_0, input_path("p_parent_psych_mtbi_test_imp_0.csv", TRUE))
-write_csv(p_parent_psych_mtbi_test_imp_1, input_path("p_parent_psych_mtbi_test_imp_1.csv", TRUE))
-write_csv(p_parent_psych_mtbi_test_imp_2, input_path("p_parent_psych_mtbi_test_imp_2.csv", TRUE))
-write_csv(p_parent_psych_mtbi_test_imp_3, input_path("p_parent_psych_mtbi_test_imp_3.csv", TRUE))
-write_csv(p_parent_psych_mtbi_test_imp_4, input_path("p_parent_psych_mtbi_test_imp_4.csv", TRUE))
-write_csv(p_parent_psych_mtbi_test_imp_5, input_path("p_parent_psych_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_anxdep_mtbi_test_imp_0, input_path("cbcl_anxdep_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_anxdep_mtbi_test_imp_1, input_path("cbcl_anxdep_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_anxdep_mtbi_test_imp_2, input_path("cbcl_anxdep_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_anxdep_mtbi_test_imp_3, input_path("cbcl_anxdep_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_anxdep_mtbi_test_imp_4, input_path("cbcl_anxdep_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_anxdep_mtbi_test_imp_5, input_path("cbcl_anxdep_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_withdep_mtbi_test_imp_0, input_path("cbcl_withdep_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_withdep_mtbi_test_imp_1, input_path("cbcl_withdep_mtbi_test_imp_1.csv", TRUE))
-
-write_csv(cbcl_withdep_mtbi_test_imp_2, input_path("cbcl_withdep_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_withdep_mtbi_test_imp_3, input_path("cbcl_withdep_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_withdep_mtbi_test_imp_4, input_path("cbcl_withdep_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_withdep_mtbi_test_imp_5, input_path("cbcl_withdep_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_somatic_mtbi_test_imp_0, input_path("cbcl_somatic_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_somatic_mtbi_test_imp_1, input_path("cbcl_somatic_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_somatic_mtbi_test_imp_2, input_path("cbcl_somatic_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_somatic_mtbi_test_imp_3, input_path("cbcl_somatic_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_somatic_mtbi_test_imp_4, input_path("cbcl_somatic_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_somatic_mtbi_test_imp_5, input_path("cbcl_somatic_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_social_mtbi_test_imp_0, input_path("cbcl_social_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_social_mtbi_test_imp_1, input_path("cbcl_social_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_social_mtbi_test_imp_2, input_path("cbcl_social_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_social_mtbi_test_imp_3, input_path("cbcl_social_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_social_mtbi_test_imp_4, input_path("cbcl_social_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_social_mtbi_test_imp_5, input_path("cbcl_social_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_thought_mtbi_test_imp_0, input_path("cbcl_thought_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_thought_mtbi_test_imp_1, input_path("cbcl_thought_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_thought_mtbi_test_imp_2, input_path("cbcl_thought_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_thought_mtbi_test_imp_3, input_path("cbcl_thought_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_thought_mtbi_test_imp_4, input_path("cbcl_thought_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_thought_mtbi_test_imp_5, input_path("cbcl_thought_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_attention_mtbi_test_imp_0, input_path("cbcl_attention_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_attention_mtbi_test_imp_1, input_path("cbcl_attention_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_attention_mtbi_test_imp_2, input_path("cbcl_attention_mtbi_test_imp_2.csv", TRUE))
-
-write_csv(cbcl_attention_mtbi_test_imp_3, input_path("cbcl_attention_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_attention_mtbi_test_imp_4, input_path("cbcl_attention_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_attention_mtbi_test_imp_5, input_path("cbcl_attention_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_rulebreak_mtbi_test_imp_0, input_path("cbcl_rulebreak_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_rulebreak_mtbi_test_imp_1, input_path("cbcl_rulebreak_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_rulebreak_mtbi_test_imp_2, input_path("cbcl_rulebreak_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_rulebreak_mtbi_test_imp_3, input_path("cbcl_rulebreak_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_rulebreak_mtbi_test_imp_4, input_path("cbcl_rulebreak_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_rulebreak_mtbi_test_imp_5, input_path("cbcl_rulebreak_mtbi_test_imp_5.csv", TRUE))
-write_csv(cbcl_aggressive_mtbi_test_imp_0, input_path("cbcl_aggressive_mtbi_test_imp_0.csv", TRUE))
-write_csv(cbcl_aggressive_mtbi_test_imp_1, input_path("cbcl_aggressive_mtbi_test_imp_1.csv", TRUE))
-write_csv(cbcl_aggressive_mtbi_test_imp_2, input_path("cbcl_aggressive_mtbi_test_imp_2.csv", TRUE))
-write_csv(cbcl_aggressive_mtbi_test_imp_3, input_path("cbcl_aggressive_mtbi_test_imp_3.csv", TRUE))
-write_csv(cbcl_aggressive_mtbi_test_imp_4, input_path("cbcl_aggressive_mtbi_test_imp_4.csv", TRUE))
-write_csv(cbcl_aggressive_mtbi_test_imp_5, input_path("cbcl_aggressive_mtbi_test_imp_5.csv", TRUE))
-write_csv(sds_total_probs_mtbi_test_imp_0, input_path("sds_total_probs_mtbi_test_imp_0.csv", TRUE))
-write_csv(sds_total_probs_mtbi_test_imp_1, input_path("sds_total_probs_mtbi_test_imp_1.csv", TRUE))
-write_csv(sds_total_probs_mtbi_test_imp_2, input_path("sds_total_probs_mtbi_test_imp_2.csv", TRUE))
-write_csv(sds_total_probs_mtbi_test_imp_3, input_path("sds_total_probs_mtbi_test_imp_3.csv", TRUE))
-write_csv(sds_total_probs_mtbi_test_imp_4, input_path("sds_total_probs_mtbi_test_imp_4.csv", TRUE))
-write_csv(sds_total_probs_mtbi_test_imp_5, input_path("sds_total_probs_mtbi_test_imp_5.csv", TRUE))
+list.save(all_dls, input_path("all_dls.rds", TRUE))
 ```
 
+# R Session Information
 
-```{r}
+This script was last run on April 19th, 2024, in the following environment:
 
-as_mem_daze_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_as_mem_daze_mtbi_test_imp_0.csv"))
-as_mem_daze_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_as_mem_daze_mtbi_test_imp_1.csv"))
-as_mem_daze_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_as_mem_daze_mtbi_test_imp_2.csv"))
-as_mem_daze_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_as_mem_daze_mtbi_test_imp_3.csv"))
-as_mem_daze_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_as_mem_daze_mtbi_test_imp_4.csv"))
-as_mem_daze_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_as_mem_daze_mtbi_test_imp_5.csv"))
-as_mechanism_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_as_mechanism_mtbi_test_imp_0.csv"))
-as_mechanism_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_as_mechanism_mtbi_test_imp_1.csv"))
-as_mechanism_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_as_mechanism_mtbi_test_imp_2.csv"))
-as_mechanism_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_as_mechanism_mtbi_test_imp_3.csv"))
-as_mechanism_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_as_mechanism_mtbi_test_imp_4.csv"))
-as_mechanism_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_as_mechanism_mtbi_test_imp_5.csv"))
-as_loc_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_as_loc_mtbi_test_imp_0.csv"))
-as_loc_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_as_loc_mtbi_test_imp_1.csv"))
-as_loc_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_as_loc_mtbi_test_imp_2.csv"))
-as_loc_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_as_loc_mtbi_test_imp_3.csv"))
-as_loc_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_as_loc_mtbi_test_imp_4.csv"))
-as_loc_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_as_loc_mtbi_test_imp_5.csv"))
-d_interview_age_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_test_imp_0.csv"))
-d_interview_age_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_test_imp_1.csv"))
-d_interview_age_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_test_imp_2.csv"))
-d_interview_age_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_test_imp_3.csv"))
-d_interview_age_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_test_imp_4.csv"))
-d_interview_age_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_d_interview_age_mtbi_test_imp_5.csv"))
+R version 4.3.2 (2023-10-31)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Ubuntu 22.04.4 LTS
 
-d_mtbi_age_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_d_mtbi_age_mtbi_test_imp_0.csv"))
-d_mtbi_age_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_d_mtbi_age_mtbi_test_imp_1.csv"))
-d_mtbi_age_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_d_mtbi_age_mtbi_test_imp_2.csv"))
-d_mtbi_age_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_d_mtbi_age_mtbi_test_imp_3.csv"))
-d_mtbi_age_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_d_mtbi_age_mtbi_test_imp_4.csv"))
-d_mtbi_age_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_d_mtbi_age_mtbi_test_imp_5.csv"))
-d_sex_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_d_sex_mtbi_test_imp_0.csv"))
-d_sex_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_d_sex_mtbi_test_imp_1.csv"))
-d_sex_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_d_sex_mtbi_test_imp_2.csv"))
-d_sex_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_d_sex_mtbi_test_imp_3.csv"))
-d_sex_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_d_sex_mtbi_test_imp_4.csv"))
-d_sex_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_d_sex_mtbi_test_imp_5.csv"))
-d_income_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_d_income_mtbi_test_imp_0.csv"))
-d_income_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_d_income_mtbi_test_imp_1.csv"))
-d_income_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_d_income_mtbi_test_imp_2.csv"))
-d_income_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_d_income_mtbi_test_imp_3.csv"))
-d_income_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_d_income_mtbi_test_imp_4.csv"))
-d_income_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_d_income_mtbi_test_imp_5.csv"))
-d_race_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_d_race_mtbi_test_imp_0.csv"))
-d_race_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_d_race_mtbi_test_imp_1.csv"))
-d_race_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_d_race_mtbi_test_imp_2.csv"))
-d_race_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_d_race_mtbi_test_imp_3.csv"))
-d_race_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_d_race_mtbi_test_imp_4.csv"))
-d_race_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_d_race_mtbi_test_imp_5.csv"))
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.20.so;  LAPACK version 3.10.0
 
-d_pubertal_status_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_d_pubertal_status_mtbi_test_imp_0.csv"))
-d_pubertal_status_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_d_pubertal_status_mtbi_test_imp_1.csv"))
-d_pubertal_status_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_d_pubertal_status_mtbi_test_imp_2.csv"))
-d_pubertal_status_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_d_pubertal_status_mtbi_test_imp_3.csv"))
-d_pubertal_status_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_d_pubertal_status_mtbi_test_imp_4.csv"))
-d_pubertal_status_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_d_pubertal_status_mtbi_test_imp_5.csv"))
-mh_headaches_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_mh_headaches_mtbi_test_imp_0.csv"))
-mh_headaches_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_mh_headaches_mtbi_test_imp_1.csv"))
-mh_headaches_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_mh_headaches_mtbi_test_imp_2.csv"))
-mh_headaches_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_mh_headaches_mtbi_test_imp_3.csv"))
-mh_headaches_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_mh_headaches_mtbi_test_imp_4.csv"))
-mh_headaches_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_mh_headaches_mtbi_test_imp_5.csv"))
-mh_mtbi_count_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_mh_mtbi_count_mtbi_test_imp_0.csv"))
-mh_mtbi_count_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_mh_mtbi_count_mtbi_test_imp_1.csv"))
-mh_mtbi_count_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_mh_mtbi_count_mtbi_test_imp_2.csv"))
-mh_mtbi_count_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_mh_mtbi_count_mtbi_test_imp_3.csv"))
-mh_mtbi_count_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_mh_mtbi_count_mtbi_test_imp_4.csv"))
-mh_mtbi_count_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_mh_mtbi_count_mtbi_test_imp_5.csv"))
-sm_subc_v_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi_test_imp_0.csv"))
-sm_subc_v_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi_test_imp_1.csv"))
-sm_subc_v_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi_test_imp_2.csv"))
-sm_subc_v_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi_test_imp_3.csv"))
-sm_subc_v_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi_test_imp_4.csv"))
-sm_subc_v_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_sm_subc_v_mtbi_test_imp_5.csv"))
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C
 
-sm_cort_t_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi_test_imp_0.csv"))
-sm_cort_t_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi_test_imp_1.csv"))
-sm_cort_t_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi_test_imp_2.csv"))
-sm_cort_t_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi_test_imp_3.csv"))
-sm_cort_t_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi_test_imp_4.csv"))
-sm_cort_t_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_sm_cort_t_mtbi_test_imp_5.csv"))
-sm_cort_sa_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi_test_imp_0.csv"))
-sm_cort_sa_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi_test_imp_1.csv"))
-sm_cort_sa_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi_test_imp_2.csv"))
-sm_cort_sa_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi_test_imp_3.csv"))
-sm_cort_sa_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi_test_imp_4.csv"))
-sm_cort_sa_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_sm_cort_sa_mtbi_test_imp_5.csv"))
-dm_all_wmnd_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi_test_imp_0.csv"))
-dm_all_wmnd_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi_test_imp_1.csv"))
-dm_all_wmnd_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi_test_imp_2.csv"))
-dm_all_wmnd_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi_test_imp_3.csv"))
-dm_all_wmnd_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi_test_imp_4.csv"))
-dm_all_wmnd_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_dm_all_wmnd_mtbi_test_imp_5.csv"))
-rm_gord_cor_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi_test_imp_0.csv"))
-rm_gord_cor_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi_test_imp_1.csv"))
-rm_gord_cor_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi_test_imp_2.csv"))
-rm_gord_cor_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi_test_imp_3.csv"))
-rm_gord_cor_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi_test_imp_4.csv"))
-rm_gord_cor_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_rm_gord_cor_mtbi_test_imp_5.csv"))
+time zone: America/New_York
+tzcode source: system (glibc)
 
-rm_subc_cor_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi_test_imp_0.csv"))
-rm_subc_cor_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi_test_imp_1.csv"))
-rm_subc_cor_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi_test_imp_2.csv"))
-rm_subc_cor_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi_test_imp_3.csv"))
-rm_subc_cor_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi_test_imp_4.csv"))
-rm_subc_cor_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_rm_subc_cor_mtbi_test_imp_5.csv"))
-p_loneliness_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_loneliness_mtbi_test_imp_0.csv"))
-p_loneliness_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_loneliness_mtbi_test_imp_1.csv"))
-p_loneliness_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_loneliness_mtbi_test_imp_2.csv"))
-p_loneliness_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_loneliness_mtbi_test_imp_3.csv"))
-p_loneliness_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_loneliness_mtbi_test_imp_4.csv"))
-p_loneliness_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_loneliness_mtbi_test_imp_5.csv"))
-p_screen_time_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_screen_time_mtbi_test_imp_0.csv"))
-p_screen_time_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_screen_time_mtbi_test_imp_1.csv"))
-p_screen_time_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_screen_time_mtbi_test_imp_2.csv"))
-p_screen_time_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_screen_time_mtbi_test_imp_3.csv"))
-p_screen_time_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_screen_time_mtbi_test_imp_4.csv"))
-p_screen_time_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_screen_time_mtbi_test_imp_5.csv"))
-p_sports_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_sports_mtbi_test_imp_0.csv"))
-p_sports_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_sports_mtbi_test_imp_1.csv"))
-p_sports_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_sports_mtbi_test_imp_2.csv"))
-p_sports_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_sports_mtbi_test_imp_3.csv"))
-p_sports_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_sports_mtbi_test_imp_4.csv"))
-p_sports_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_sports_mtbi_test_imp_5.csv"))
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
 
-p_exercise_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_exercise_mtbi_test_imp_0.csv"))
-p_exercise_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_exercise_mtbi_test_imp_1.csv"))
-p_exercise_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_exercise_mtbi_test_imp_2.csv"))
-p_exercise_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_exercise_mtbi_test_imp_3.csv"))
-p_exercise_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_exercise_mtbi_test_imp_4.csv"))
-p_exercise_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_exercise_mtbi_test_imp_5.csv"))
-p_prosocial_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_prosocial_mtbi_test_imp_0.csv"))
-p_prosocial_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_prosocial_mtbi_test_imp_1.csv"))
-p_prosocial_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_prosocial_mtbi_test_imp_2.csv"))
-p_prosocial_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_prosocial_mtbi_test_imp_3.csv"))
-p_prosocial_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_prosocial_mtbi_test_imp_4.csv"))
-p_prosocial_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_prosocial_mtbi_test_imp_5.csv"))
-p_fam_fn_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_fam_fn_mtbi_test_imp_0.csv"))
-p_fam_fn_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_fam_fn_mtbi_test_imp_1.csv"))
-p_fam_fn_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_fam_fn_mtbi_test_imp_2.csv"))
-p_fam_fn_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_fam_fn_mtbi_test_imp_3.csv"))
-p_fam_fn_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_fam_fn_mtbi_test_imp_4.csv"))
-p_fam_fn_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_fam_fn_mtbi_test_imp_5.csv"))
-p_parent_psych_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_p_parent_psych_mtbi_test_imp_0.csv"))
-p_parent_psych_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_p_parent_psych_mtbi_test_imp_1.csv"))
-p_parent_psych_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_p_parent_psych_mtbi_test_imp_2.csv"))
-p_parent_psych_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_p_parent_psych_mtbi_test_imp_3.csv"))
-p_parent_psych_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_p_parent_psych_mtbi_test_imp_4.csv"))
-p_parent_psych_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_p_parent_psych_mtbi_test_imp_5.csv"))
+other attached packages:
+[1] gt_0.9.0        abcdutils_0.1.1 here_1.0.1      dplyr_1.1.4
+[5] readr_2.1.5     ggplot2_3.5.0
 
-cbcl_anxdep_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_anxdep_mtbi_test_imp_0.csv"))
-cbcl_anxdep_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_anxdep_mtbi_test_imp_1.csv"))
-cbcl_anxdep_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_anxdep_mtbi_test_imp_2.csv"))
-cbcl_anxdep_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_anxdep_mtbi_test_imp_3.csv"))
-cbcl_anxdep_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_anxdep_mtbi_test_imp_4.csv"))
-cbcl_anxdep_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_anxdep_mtbi_test_imp_5.csv"))
-cbcl_withdep_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_withdep_mtbi_test_imp_0.csv"))
-cbcl_withdep_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_withdep_mtbi_test_imp_1.csv"))
-cbcl_withdep_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_withdep_mtbi_test_imp_2.csv"))
-cbcl_withdep_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_withdep_mtbi_test_imp_3.csv"))
-cbcl_withdep_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_withdep_mtbi_test_imp_4.csv"))
-cbcl_withdep_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_withdep_mtbi_test_imp_5.csv"))
-cbcl_somatic_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_somatic_mtbi_test_imp_0.csv"))
-cbcl_somatic_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_somatic_mtbi_test_imp_1.csv"))
-cbcl_somatic_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_somatic_mtbi_test_imp_2.csv"))
-cbcl_somatic_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_somatic_mtbi_test_imp_3.csv"))
-cbcl_somatic_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_somatic_mtbi_test_imp_4.csv"))
-cbcl_somatic_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_somatic_mtbi_test_imp_5.csv"))
-cbcl_social_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_social_mtbi_test_imp_0.csv"))
-cbcl_social_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_social_mtbi_test_imp_1.csv"))
-cbcl_social_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_social_mtbi_test_imp_2.csv"))
-cbcl_social_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_social_mtbi_test_imp_3.csv"))
-cbcl_social_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_social_mtbi_test_imp_4.csv"))
-cbcl_social_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_social_mtbi_test_imp_5.csv"))
+loaded via a namespace (and not attached):
+ [1] bit_4.0.5         gtable_0.3.4      compiler_4.3.2    crayon_1.5.2
+ [5] tidyselect_1.2.1  xml2_1.3.4        parallel_4.3.2    scales_1.3.0
+ [9] fastmap_1.1.1     R6_2.5.1          generics_0.1.3    tibble_3.2.1
+[13] munsell_0.5.1     rprojroot_2.0.3   pillar_1.9.0      tzdb_0.4.0
+[17] rlang_1.1.3       utf8_1.2.4        bit64_4.0.5       cli_3.6.2
+[21] withr_3.0.0       magrittr_2.0.3    digest_0.6.35     grid_4.3.2
+[25] vroom_1.6.5       hms_1.1.3         lifecycle_1.0.4   vctrs_0.6.5
+[29] glue_1.7.0        data.table_1.15.4 fansi_1.0.6       colorspace_2.1-0
+[33] purrr_1.0.2       tools_4.3.2       pkgconfig_2.0.3   htmltools_0.5.5
 
-cbcl_thought_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_thought_mtbi_test_imp_0.csv"))
-cbcl_thought_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_thought_mtbi_test_imp_1.csv"))
-cbcl_thought_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_thought_mtbi_test_imp_2.csv"))
-cbcl_thought_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_thought_mtbi_test_imp_3.csv"))
-cbcl_thought_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_thought_mtbi_test_imp_4.csv"))
-cbcl_thought_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_thought_mtbi_test_imp_5.csv"))
-cbcl_attention_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_attention_mtbi_test_imp_0.csv"))
-cbcl_attention_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_attention_mtbi_test_imp_1.csv"))
-cbcl_attention_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_attention_mtbi_test_imp_2.csv"))
-cbcl_attention_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_attention_mtbi_test_imp_3.csv"))
-cbcl_attention_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_attention_mtbi_test_imp_4.csv"))
-cbcl_attention_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_attention_mtbi_test_imp_5.csv"))
-cbcl_rulebreak_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_rulebreak_mtbi_test_imp_0.csv"))
-cbcl_rulebreak_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_rulebreak_mtbi_test_imp_1.csv"))
-cbcl_rulebreak_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_rulebreak_mtbi_test_imp_2.csv"))
-cbcl_rulebreak_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_rulebreak_mtbi_test_imp_3.csv"))
-cbcl_rulebreak_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_rulebreak_mtbi_test_imp_4.csv"))
-cbcl_rulebreak_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_rulebreak_mtbi_test_imp_5.csv"))
-cbcl_aggressive_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_cbcl_aggressive_mtbi_test_imp_0.csv"))
-cbcl_aggressive_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_cbcl_aggressive_mtbi_test_imp_1.csv"))
-cbcl_aggressive_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_cbcl_aggressive_mtbi_test_imp_2.csv"))
-cbcl_aggressive_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_cbcl_aggressive_mtbi_test_imp_3.csv"))
-cbcl_aggressive_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_cbcl_aggressive_mtbi_test_imp_4.csv"))
-cbcl_aggressive_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_cbcl_aggressive_mtbi_test_imp_5.csv"))
-
-sds_total_probs_mtbi_test_imp_0 <- read_csv(input_path("2024_03_12_sds_total_probs_mtbi_test_imp_0.csv"))
-sds_total_probs_mtbi_test_imp_1 <- read_csv(input_path("2024_03_12_sds_total_probs_mtbi_test_imp_1.csv"))
-sds_total_probs_mtbi_test_imp_2 <- read_csv(input_path("2024_03_12_sds_total_probs_mtbi_test_imp_2.csv"))
-sds_total_probs_mtbi_test_imp_3 <- read_csv(input_path("2024_03_12_sds_total_probs_mtbi_test_imp_3.csv"))
-sds_total_probs_mtbi_test_imp_4 <- read_csv(input_path("2024_03_12_sds_total_probs_mtbi_test_imp_4.csv"))
-sds_total_probs_mtbi_test_imp_5 <- read_csv(input_path("2024_03_12_sds_total_probs_mtbi_test_imp_5.csv"))
-
-```
-
-```{r}
-
-# Test data lists
-test_data_list_m1 <- generate_data_list(
-    list(as_mem_daze_mtbi_test_imp_1, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_test_imp_1, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_test_imp_1, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_test_imp_1, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_test_imp_1, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_test_imp_1, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_test_imp_1, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_test_imp_1, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_test_imp_1, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_test_imp_1, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_test_imp_1, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_test_imp_1, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_test_imp_1, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_test_imp_1, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_test_imp_1, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_test_imp_1, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_test_imp_1, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_test_imp_1, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_test_imp_1, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_test_imp_1, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_test_imp_1, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_test_imp_1, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_test_imp_1, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_test_imp_1, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-test_data_list_m2 <- generate_data_list(
-    list(as_mem_daze_mtbi_test_imp_2, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_test_imp_2, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_test_imp_2, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_test_imp_2, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_test_imp_2, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_test_imp_2, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_test_imp_2, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_test_imp_2, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_test_imp_2, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_test_imp_2, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_test_imp_2, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_test_imp_2, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_test_imp_2, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_test_imp_2, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_test_imp_2, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_test_imp_2, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_test_imp_2, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_test_imp_2, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_test_imp_2, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_test_imp_2, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_test_imp_2, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_test_imp_2, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_test_imp_2, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_test_imp_2, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-test_data_list_m3 <- generate_data_list(
-    list(as_mem_daze_mtbi_test_imp_3, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_test_imp_3, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_test_imp_3, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_test_imp_3, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_test_imp_3, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_test_imp_3, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_test_imp_3, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_test_imp_3, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_test_imp_3, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_test_imp_3, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_test_imp_3, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_test_imp_3, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_test_imp_3, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_test_imp_3, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_test_imp_3, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_test_imp_3, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_test_imp_3, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_test_imp_3, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_test_imp_3, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_test_imp_3, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_test_imp_3, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_test_imp_3, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_test_imp_3, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_test_imp_3, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-test_data_list_m4 <- generate_data_list(
-    list(as_mem_daze_mtbi_test_imp_4, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_test_imp_4, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_test_imp_4, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_test_imp_4, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_test_imp_4, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_test_imp_4, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_test_imp_4, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_test_imp_4, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_test_imp_4, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_test_imp_4, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_test_imp_4, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_test_imp_4, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_test_imp_4, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_test_imp_4, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_test_imp_4, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_test_imp_4, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_test_imp_4, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_test_imp_4, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_test_imp_4, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_test_imp_4, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_test_imp_4, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_test_imp_4, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_test_imp_4, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_test_imp_4, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-test_data_list_m5 <- generate_data_list(
-    list(as_mem_daze_mtbi_test_imp_5, "as_mem_daze", "AS", "discrete"),
-    list(as_mechanism_mtbi_test_imp_5, "as_mechanism", "AS", "categorical"),
-    list(as_loc_mtbi_test_imp_5, "as_loc", "AS", "discrete"),
-    list(d_interview_age_mtbi_test_imp_5, "d_age", "D", "discrete"),
-    list(d_mtbi_age_mtbi_test_imp_5, "d_mtbi_age", "D", "discrete"),
-    list(d_sex_mtbi_test_imp_5, "d_sex", "D", "discrete"),
-    list(d_income_mtbi_test_imp_5, "d_income", "D", "ordinal"),
-    list(d_race_mtbi_test_imp_5, "d_race", "D", "categorical"),
-    list(d_pubertal_status_mtbi_test_imp_5, "d_pubertal", "D", "discrete"),
-    list(mh_headaches_mtbi_test_imp_5, "mh_headaches", "MH", "discrete"),
-    list(mh_mtbi_count_mtbi_test_imp_5, "mh_mtbi_count", "MH", "discrete"),
-    list(sm_subc_v_mtbi_test_imp_5, "sm_subc_v", "N", "continuous"),
-    list(sm_cort_t_mtbi_test_imp_5, "sm_cort_t", "N", "continuous"),
-    list(sm_cort_sa_mtbi_test_imp_5, "sm_cort_sa", "N", "continuous"),
-    list(dm_all_wmnd_mtbi_test_imp_5, "dm_all_wmnd", "N", "continuous"),
-    list(rm_gord_cor_mtbi_test_imp_5, "rm_gord_cor", "N", "continuous"),
-    list(rm_subc_cor_mtbi_test_imp_5, "rm_subc_cor", "N", "continuous"),
-    list(p_loneliness_mtbi_test_imp_5, "p_loneliness", "P", "discrete"),
-    list(p_screen_time_mtbi_test_imp_5, "p_screen_time", "P", "discrete"),
-    list(p_sports_mtbi_test_imp_5, "p_sports", "P", "discrete"),
-    list(p_exercise_mtbi_test_imp_5, "p_exercise", "P", "discrete"),
-    list(p_prosocial_mtbi_test_imp_5, "p_prosocial", "P", "discrete"),
-    list(p_fam_fn_mtbi_test_imp_5, "p_fam_fn", "P", "discrete"),
-    list(p_parent_psych_mtbi_test_imp_5, "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-test_oom_list_m1 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_test_imp_1, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_test_imp_1, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_test_imp_1, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_test_imp_1, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_test_imp_1, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_test_imp_1, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_test_imp_1, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_test_imp_1, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_test_imp_1, "sds_total_probs", "S", "discrete")
-)
-
-test_oom_list_m2 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_test_imp_2, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_test_imp_2, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_test_imp_2, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_test_imp_2, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_test_imp_2, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_test_imp_2, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_test_imp_2, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_test_imp_2, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_test_imp_2, "sds_total_probs", "S", "discrete")
-)
-
-test_oom_list_m3 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_test_imp_3, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_test_imp_3, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_test_imp_3, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_test_imp_3, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_test_imp_3, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_test_imp_3, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_test_imp_3, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_test_imp_3, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_test_imp_3, "sds_total_probs", "S", "discrete")
-)
-
-test_oom_list_m4 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_test_imp_4, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_test_imp_4, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_test_imp_4, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_test_imp_4, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_test_imp_4, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_test_imp_4, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_test_imp_4, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_test_imp_4, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_test_imp_4, "sds_total_probs", "S", "discrete")
-)
-
-test_oom_list_m5 <- generate_data_list(
-    list(cbcl_anxdep_mtbi_test_imp_5, "cbcl_anxdep", "B", "discrete"),
-    list(cbcl_withdep_mtbi_test_imp_5, "cbcl_withdep", "B", "discrete"),
-    list(cbcl_somatic_mtbi_test_imp_5, "cbcl_somatic", "B", "discrete"),
-    list(cbcl_social_mtbi_test_imp_5, "cbcl_social", "B", "discrete"),
-    list(cbcl_thought_mtbi_test_imp_5, "cbcl_thought", "B", "discrete"),
-    list(cbcl_attention_mtbi_test_imp_5, "cbcl_attention", "B", "discrete"),
-    list(cbcl_rulebreak_mtbi_test_imp_5, "cbcl_rulebreak", "B", "discrete"),
-    list(cbcl_aggressive_mtbi_test_imp_5, "cbcl_aggressive", "B", "discrete"),
-    list(sds_total_probs_mtbi_test_imp_5, "sds_total_probs", "S", "discrete")
-)
-
-###############################################################################
-# Full data lists
-full_data_list_m1 <- generate_data_list(
-    list(rbind(as_mem_daze_mtbi_train_imp_1, as_mem_daze_mtbi_test_imp_1), "as_mem_daze", "AS", "discrete"),
-    list(rbind(as_mechanism_mtbi_train_imp_1, as_mechanism_mtbi_test_imp_1), "as_mechanism", "AS", "categorical"),
-    list(rbind(as_loc_mtbi_train_imp_1, as_loc_mtbi_test_imp_1), "as_loc", "AS", "discrete"),
-    list(rbind(d_interview_age_mtbi_train_imp_1, d_interview_age_mtbi_test_imp_1), "d_age", "D", "discrete"),
-    list(rbind(d_mtbi_age_mtbi_train_imp_1, d_mtbi_age_mtbi_test_imp_1), "d_mtbi_age", "D", "discrete"),
-    list(rbind(d_sex_mtbi_train_imp_1, d_sex_mtbi_test_imp_1), "d_sex", "D", "discrete"),
-    list(rbind(d_income_mtbi_train_imp_1, d_income_mtbi_test_imp_1), "d_income", "D", "ordinal"),
-    list(rbind(d_race_mtbi_train_imp_1, d_race_mtbi_test_imp_1), "d_race", "D", "categorical"),
-    list(rbind(d_pubertal_status_mtbi_train_imp_1, d_pubertal_status_mtbi_test_imp_1), "d_pubertal", "D", "discrete"),
-    list(rbind(mh_headaches_mtbi_train_imp_1, mh_headaches_mtbi_test_imp_1), "mh_headaches", "MH", "discrete"),
-    list(rbind(mh_mtbi_count_mtbi_train_imp_1, mh_mtbi_count_mtbi_test_imp_1), "mh_mtbi_count", "MH", "discrete"),
-    list(rbind(sm_subc_v_mtbi_train_imp_1, sm_subc_v_mtbi_test_imp_1), "sm_subc_v", "N", "continuous"),
-    list(rbind(sm_cort_t_mtbi_train_imp_1, sm_cort_t_mtbi_test_imp_1), "sm_cort_t", "N", "continuous"),
-    list(rbind(sm_cort_sa_mtbi_train_imp_1, sm_cort_sa_mtbi_test_imp_1), "sm_cort_sa", "N", "continuous"),
-    list(rbind(dm_all_wmnd_mtbi_train_imp_1, dm_all_wmnd_mtbi_test_imp_1), "dm_all_wmnd", "N", "continuous"),
-    list(rbind(rm_gord_cor_mtbi_train_imp_1, rm_gord_cor_mtbi_test_imp_1), "rm_gord_cor", "N", "continuous"),
-    list(rbind(rm_subc_cor_mtbi_train_imp_1, rm_subc_cor_mtbi_test_imp_1), "rm_subc_cor", "N", "continuous"),
-    list(rbind(p_loneliness_mtbi_train_imp_1, p_loneliness_mtbi_test_imp_1), "p_loneliness", "P", "discrete"),
-    list(rbind(p_screen_time_mtbi_train_imp_1, p_screen_time_mtbi_test_imp_1), "p_screen_time", "P", "discrete"),
-    list(rbind(p_sports_mtbi_train_imp_1, p_sports_mtbi_test_imp_1), "p_sports", "P", "discrete"),
-    list(rbind(p_exercise_mtbi_train_imp_1, p_exercise_mtbi_test_imp_1), "p_exercise", "P", "discrete"),
-    list(rbind(p_prosocial_mtbi_train_imp_1, p_prosocial_mtbi_test_imp_1), "p_prosocial", "P", "discrete"),
-    list(rbind(p_fam_fn_mtbi_train_imp_1, p_fam_fn_mtbi_test_imp_1), "p_fam_fn", "P", "discrete"),
-    list(rbind(p_parent_psych_mtbi_train_imp_1, p_parent_psych_mtbi_test_imp_1), "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-full_data_list_m2 <- generate_data_list(
-    list(rbind(as_mem_daze_mtbi_train_imp_2, as_mem_daze_mtbi_test_imp_2), "as_mem_daze", "AS", "discrete"),
-    list(rbind(as_mechanism_mtbi_train_imp_2, as_mechanism_mtbi_test_imp_2), "as_mechanism", "AS", "categorical"),
-    list(rbind(as_loc_mtbi_train_imp_2, as_loc_mtbi_test_imp_2), "as_loc", "AS", "discrete"),
-    list(rbind(d_interview_age_mtbi_train_imp_2, d_interview_age_mtbi_test_imp_2), "d_age", "D", "discrete"),
-    list(rbind(d_mtbi_age_mtbi_train_imp_2, d_mtbi_age_mtbi_test_imp_2), "d_mtbi_age", "D", "discrete"),
-    list(rbind(d_sex_mtbi_train_imp_2, d_sex_mtbi_test_imp_2), "d_sex", "D", "discrete"),
-    list(rbind(d_income_mtbi_train_imp_2, d_income_mtbi_test_imp_2), "d_income", "D", "ordinal"),
-    list(rbind(d_race_mtbi_train_imp_2, d_race_mtbi_test_imp_2), "d_race", "D", "categorical"),
-    list(rbind(d_pubertal_status_mtbi_train_imp_2, d_pubertal_status_mtbi_test_imp_2), "d_pubertal", "D", "discrete"),
-    list(rbind(mh_headaches_mtbi_train_imp_2, mh_headaches_mtbi_test_imp_2), "mh_headaches", "MH", "discrete"),
-    list(rbind(mh_mtbi_count_mtbi_train_imp_2, mh_mtbi_count_mtbi_test_imp_2), "mh_mtbi_count", "MH", "discrete"),
-    list(rbind(sm_subc_v_mtbi_train_imp_2, sm_subc_v_mtbi_test_imp_2), "sm_subc_v", "N", "continuous"),
-    list(rbind(sm_cort_t_mtbi_train_imp_2, sm_cort_t_mtbi_test_imp_2), "sm_cort_t", "N", "continuous"),
-    list(rbind(sm_cort_sa_mtbi_train_imp_2, sm_cort_sa_mtbi_test_imp_2), "sm_cort_sa", "N", "continuous"),
-    list(rbind(dm_all_wmnd_mtbi_train_imp_2, dm_all_wmnd_mtbi_test_imp_2), "dm_all_wmnd", "N", "continuous"),
-    list(rbind(rm_gord_cor_mtbi_train_imp_2, rm_gord_cor_mtbi_test_imp_2), "rm_gord_cor", "N", "continuous"),
-    list(rbind(rm_subc_cor_mtbi_train_imp_2, rm_subc_cor_mtbi_test_imp_2), "rm_subc_cor", "N", "continuous"),
-    list(rbind(p_loneliness_mtbi_train_imp_2, p_loneliness_mtbi_test_imp_2), "p_loneliness", "P", "discrete"),
-    list(rbind(p_screen_time_mtbi_train_imp_2, p_screen_time_mtbi_test_imp_2), "p_screen_time", "P", "discrete"),
-    list(rbind(p_sports_mtbi_train_imp_2, p_sports_mtbi_test_imp_2), "p_sports", "P", "discrete"),
-    list(rbind(p_exercise_mtbi_train_imp_2, p_exercise_mtbi_test_imp_2), "p_exercise", "P", "discrete"),
-    list(rbind(p_prosocial_mtbi_train_imp_2, p_prosocial_mtbi_test_imp_2), "p_prosocial", "P", "discrete"),
-    list(rbind(p_fam_fn_mtbi_train_imp_2, p_fam_fn_mtbi_test_imp_2), "p_fam_fn", "P", "discrete"),
-    list(rbind(p_parent_psych_mtbi_train_imp_2, p_parent_psych_mtbi_test_imp_2), "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-full_data_list_m3 <- generate_data_list(
-    list(rbind(as_mem_daze_mtbi_train_imp_3, as_mem_daze_mtbi_test_imp_3), "as_mem_daze", "AS", "discrete"),
-    list(rbind(as_mechanism_mtbi_train_imp_3, as_mechanism_mtbi_test_imp_3), "as_mechanism", "AS", "categorical"),
-    list(rbind(as_loc_mtbi_train_imp_3, as_loc_mtbi_test_imp_3), "as_loc", "AS", "discrete"),
-    list(rbind(d_interview_age_mtbi_train_imp_3, d_interview_age_mtbi_test_imp_3), "d_age", "D", "discrete"),
-    list(rbind(d_mtbi_age_mtbi_train_imp_3, d_mtbi_age_mtbi_test_imp_3), "d_mtbi_age", "D", "discrete"),
-    list(rbind(d_sex_mtbi_train_imp_3, d_sex_mtbi_test_imp_3), "d_sex", "D", "discrete"),
-    list(rbind(d_income_mtbi_train_imp_3, d_income_mtbi_test_imp_3), "d_income", "D", "ordinal"),
-    list(rbind(d_race_mtbi_train_imp_3, d_race_mtbi_test_imp_3), "d_race", "D", "categorical"),
-    list(rbind(d_pubertal_status_mtbi_train_imp_3, d_pubertal_status_mtbi_test_imp_3), "d_pubertal", "D", "discrete"),
-    list(rbind(mh_headaches_mtbi_train_imp_3, mh_headaches_mtbi_test_imp_3), "mh_headaches", "MH", "discrete"),
-    list(rbind(mh_mtbi_count_mtbi_train_imp_3, mh_mtbi_count_mtbi_test_imp_3), "mh_mtbi_count", "MH", "discrete"),
-    list(rbind(sm_subc_v_mtbi_train_imp_3, sm_subc_v_mtbi_test_imp_3), "sm_subc_v", "N", "continuous"),
-    list(rbind(sm_cort_t_mtbi_train_imp_3, sm_cort_t_mtbi_test_imp_3), "sm_cort_t", "N", "continuous"),
-    list(rbind(sm_cort_sa_mtbi_train_imp_3, sm_cort_sa_mtbi_test_imp_3), "sm_cort_sa", "N", "continuous"),
-    list(rbind(dm_all_wmnd_mtbi_train_imp_3, dm_all_wmnd_mtbi_test_imp_3), "dm_all_wmnd", "N", "continuous"),
-    list(rbind(rm_gord_cor_mtbi_train_imp_3, rm_gord_cor_mtbi_test_imp_3), "rm_gord_cor", "N", "continuous"),
-    list(rbind(rm_subc_cor_mtbi_train_imp_3, rm_subc_cor_mtbi_test_imp_3), "rm_subc_cor", "N", "continuous"),
-    list(rbind(p_loneliness_mtbi_train_imp_3, p_loneliness_mtbi_test_imp_3), "p_loneliness", "P", "discrete"),
-    list(rbind(p_screen_time_mtbi_train_imp_3, p_screen_time_mtbi_test_imp_3), "p_screen_time", "P", "discrete"),
-    list(rbind(p_sports_mtbi_train_imp_3, p_sports_mtbi_test_imp_3), "p_sports", "P", "discrete"),
-    list(rbind(p_exercise_mtbi_train_imp_3, p_exercise_mtbi_test_imp_3), "p_exercise", "P", "discrete"),
-    list(rbind(p_prosocial_mtbi_train_imp_3, p_prosocial_mtbi_test_imp_3), "p_prosocial", "P", "discrete"),
-    list(rbind(p_fam_fn_mtbi_train_imp_3, p_fam_fn_mtbi_test_imp_3), "p_fam_fn", "P", "discrete"),
-    list(rbind(p_parent_psych_mtbi_train_imp_3, p_parent_psych_mtbi_test_imp_3), "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-full_data_list_m4 <- generate_data_list(
-    list(rbind(as_mem_daze_mtbi_train_imp_4, as_mem_daze_mtbi_test_imp_4), "as_mem_daze", "AS", "discrete"),
-    list(rbind(as_mechanism_mtbi_train_imp_4, as_mechanism_mtbi_test_imp_4), "as_mechanism", "AS", "categorical"),
-    list(rbind(as_loc_mtbi_train_imp_4, as_loc_mtbi_test_imp_4), "as_loc", "AS", "discrete"),
-    list(rbind(d_interview_age_mtbi_train_imp_4, d_interview_age_mtbi_test_imp_4), "d_age", "D", "discrete"),
-    list(rbind(d_mtbi_age_mtbi_train_imp_4, d_mtbi_age_mtbi_test_imp_4), "d_mtbi_age", "D", "discrete"),
-    list(rbind(d_sex_mtbi_train_imp_4, d_sex_mtbi_test_imp_4), "d_sex", "D", "discrete"),
-    list(rbind(d_income_mtbi_train_imp_4, d_income_mtbi_test_imp_4), "d_income", "D", "ordinal"),
-    list(rbind(d_race_mtbi_train_imp_4, d_race_mtbi_test_imp_4), "d_race", "D", "categorical"),
-    list(rbind(d_pubertal_status_mtbi_train_imp_4, d_pubertal_status_mtbi_test_imp_4), "d_pubertal", "D", "discrete"),
-    list(rbind(mh_headaches_mtbi_train_imp_4, mh_headaches_mtbi_test_imp_4), "mh_headaches", "MH", "discrete"),
-    list(rbind(mh_mtbi_count_mtbi_train_imp_4, mh_mtbi_count_mtbi_test_imp_4), "mh_mtbi_count", "MH", "discrete"),
-    list(rbind(sm_subc_v_mtbi_train_imp_4, sm_subc_v_mtbi_test_imp_4), "sm_subc_v", "N", "continuous"),
-    list(rbind(sm_cort_t_mtbi_train_imp_4, sm_cort_t_mtbi_test_imp_4), "sm_cort_t", "N", "continuous"),
-    list(rbind(sm_cort_sa_mtbi_train_imp_4, sm_cort_sa_mtbi_test_imp_4), "sm_cort_sa", "N", "continuous"),
-    list(rbind(dm_all_wmnd_mtbi_train_imp_4, dm_all_wmnd_mtbi_test_imp_4), "dm_all_wmnd", "N", "continuous"),
-    list(rbind(rm_gord_cor_mtbi_train_imp_4, rm_gord_cor_mtbi_test_imp_4), "rm_gord_cor", "N", "continuous"),
-    list(rbind(rm_subc_cor_mtbi_train_imp_4, rm_subc_cor_mtbi_test_imp_4), "rm_subc_cor", "N", "continuous"),
-    list(rbind(p_loneliness_mtbi_train_imp_4, p_loneliness_mtbi_test_imp_4), "p_loneliness", "P", "discrete"),
-    list(rbind(p_screen_time_mtbi_train_imp_4, p_screen_time_mtbi_test_imp_4), "p_screen_time", "P", "discrete"),
-    list(rbind(p_sports_mtbi_train_imp_4, p_sports_mtbi_test_imp_4), "p_sports", "P", "discrete"),
-    list(rbind(p_exercise_mtbi_train_imp_4, p_exercise_mtbi_test_imp_4), "p_exercise", "P", "discrete"),
-    list(rbind(p_prosocial_mtbi_train_imp_4, p_prosocial_mtbi_test_imp_4), "p_prosocial", "P", "discrete"),
-    list(rbind(p_fam_fn_mtbi_train_imp_4, p_fam_fn_mtbi_test_imp_4), "p_fam_fn", "P", "discrete"),
-    list(rbind(p_parent_psych_mtbi_train_imp_4, p_parent_psych_mtbi_test_imp_4), "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-full_data_list_m5 <- generate_data_list(
-    list(rbind(as_mem_daze_mtbi_train_imp_5, as_mem_daze_mtbi_test_imp_5), "as_mem_daze", "AS", "discrete"),
-    list(rbind(as_mechanism_mtbi_train_imp_5, as_mechanism_mtbi_test_imp_5), "as_mechanism", "AS", "categorical"),
-    list(rbind(as_loc_mtbi_train_imp_5, as_loc_mtbi_test_imp_5), "as_loc", "AS", "discrete"),
-    list(rbind(d_interview_age_mtbi_train_imp_5, d_interview_age_mtbi_test_imp_5), "d_age", "D", "discrete"),
-    list(rbind(d_mtbi_age_mtbi_train_imp_5, d_mtbi_age_mtbi_test_imp_5), "d_mtbi_age", "D", "discrete"),
-    list(rbind(d_sex_mtbi_train_imp_5, d_sex_mtbi_test_imp_5), "d_sex", "D", "discrete"),
-    list(rbind(d_income_mtbi_train_imp_5, d_income_mtbi_test_imp_5), "d_income", "D", "ordinal"),
-    list(rbind(d_race_mtbi_train_imp_5, d_race_mtbi_test_imp_5), "d_race", "D", "categorical"),
-    list(rbind(d_pubertal_status_mtbi_train_imp_5, d_pubertal_status_mtbi_test_imp_5), "d_pubertal", "D", "discrete"),
-    list(rbind(mh_headaches_mtbi_train_imp_5, mh_headaches_mtbi_test_imp_5), "mh_headaches", "MH", "discrete"),
-    list(rbind(mh_mtbi_count_mtbi_train_imp_5, mh_mtbi_count_mtbi_test_imp_5), "mh_mtbi_count", "MH", "discrete"),
-    list(rbind(sm_subc_v_mtbi_train_imp_5, sm_subc_v_mtbi_test_imp_5), "sm_subc_v", "N", "continuous"),
-    list(rbind(sm_cort_t_mtbi_train_imp_5, sm_cort_t_mtbi_test_imp_5), "sm_cort_t", "N", "continuous"),
-    list(rbind(sm_cort_sa_mtbi_train_imp_5, sm_cort_sa_mtbi_test_imp_5), "sm_cort_sa", "N", "continuous"),
-    list(rbind(dm_all_wmnd_mtbi_train_imp_5, dm_all_wmnd_mtbi_test_imp_5), "dm_all_wmnd", "N", "continuous"),
-    list(rbind(rm_gord_cor_mtbi_train_imp_5, rm_gord_cor_mtbi_test_imp_5), "rm_gord_cor", "N", "continuous"),
-    list(rbind(rm_subc_cor_mtbi_train_imp_5, rm_subc_cor_mtbi_test_imp_5), "rm_subc_cor", "N", "continuous"),
-    list(rbind(p_loneliness_mtbi_train_imp_5, p_loneliness_mtbi_test_imp_5), "p_loneliness", "P", "discrete"),
-    list(rbind(p_screen_time_mtbi_train_imp_5, p_screen_time_mtbi_test_imp_5), "p_screen_time", "P", "discrete"),
-    list(rbind(p_sports_mtbi_train_imp_5, p_sports_mtbi_test_imp_5), "p_sports", "P", "discrete"),
-    list(rbind(p_exercise_mtbi_train_imp_5, p_exercise_mtbi_test_imp_5), "p_exercise", "P", "discrete"),
-    list(rbind(p_prosocial_mtbi_train_imp_5, p_prosocial_mtbi_test_imp_5), "p_prosocial", "P", "discrete"),
-    list(rbind(p_fam_fn_mtbi_train_imp_5, p_fam_fn_mtbi_test_imp_5), "p_fam_fn", "P", "discrete"),
-    list(rbind(p_parent_psych_mtbi_train_imp_5, p_parent_psych_mtbi_test_imp_5), "p_parent_psych", "P", "discrete"),
-    uid = "subjectkey"
-)
-
-full_oom_list_m1 <- generate_data_list(
-    list(rbind(cbcl_anxdep_mtbi_train_imp_1, cbcl_anxdep_mtbi_test_imp_1), "cbcl_anxdep", "B", "discrete"),
-    list(rbind(cbcl_withdep_mtbi_train_imp_1, cbcl_withdep_mtbi_test_imp_1), "cbcl_withdep", "B", "discrete"),
-    list(rbind(cbcl_somatic_mtbi_train_imp_1, cbcl_somatic_mtbi_test_imp_1), "cbcl_somatic", "B", "discrete"),
-    list(rbind(cbcl_social_mtbi_train_imp_1, cbcl_social_mtbi_test_imp_1), "cbcl_social", "B", "discrete"),
-    list(rbind(cbcl_thought_mtbi_train_imp_1, cbcl_thought_mtbi_test_imp_1), "cbcl_thought", "B", "discrete"),
-    list(rbind(cbcl_attention_mtbi_train_imp_1, cbcl_attention_mtbi_test_imp_1), "cbcl_attention", "B", "discrete"),
-    list(rbind(cbcl_rulebreak_mtbi_train_imp_1, cbcl_rulebreak_mtbi_test_imp_1), "cbcl_rulebreak", "B", "discrete"),
-    list(rbind(cbcl_aggressive_mtbi_train_imp_1, cbcl_aggressive_mtbi_test_imp_1), "cbcl_aggressive", "B", "discrete"),
-    list(rbind(sds_total_probs_mtbi_train_imp_1, sds_total_probs_mtbi_test_imp_1), "sds_total_probs", "S", "discrete")
-)
-
-full_oom_list_m2 <- generate_data_list(
-    list(rbind(cbcl_anxdep_mtbi_train_imp_2, cbcl_anxdep_mtbi_test_imp_2), "cbcl_anxdep", "B", "discrete"),
-    list(rbind(cbcl_withdep_mtbi_train_imp_2, cbcl_withdep_mtbi_test_imp_2), "cbcl_withdep", "B", "discrete"),
-    list(rbind(cbcl_somatic_mtbi_train_imp_2, cbcl_somatic_mtbi_test_imp_2), "cbcl_somatic", "B", "discrete"),
-    list(rbind(cbcl_social_mtbi_train_imp_2, cbcl_social_mtbi_test_imp_2), "cbcl_social", "B", "discrete"),
-    list(rbind(cbcl_thought_mtbi_train_imp_2, cbcl_thought_mtbi_test_imp_2), "cbcl_thought", "B", "discrete"),
-    list(rbind(cbcl_attention_mtbi_train_imp_2, cbcl_attention_mtbi_test_imp_2), "cbcl_attention", "B", "discrete"),
-    list(rbind(cbcl_rulebreak_mtbi_train_imp_2, cbcl_rulebreak_mtbi_test_imp_2), "cbcl_rulebreak", "B", "discrete"),
-    list(rbind(cbcl_aggressive_mtbi_train_imp_2, cbcl_aggressive_mtbi_test_imp_2), "cbcl_aggressive", "B", "discrete"),
-    list(rbind(sds_total_probs_mtbi_train_imp_2, sds_total_probs_mtbi_test_imp_2), "sds_total_probs", "S", "discrete")
-)
-
-full_oom_list_m3 <- generate_data_list(
-    list(rbind(cbcl_anxdep_mtbi_train_imp_3, cbcl_anxdep_mtbi_test_imp_3), "cbcl_anxdep", "B", "discrete"),
-    list(rbind(cbcl_withdep_mtbi_train_imp_3, cbcl_withdep_mtbi_test_imp_3), "cbcl_withdep", "B", "discrete"),
-    list(rbind(cbcl_somatic_mtbi_train_imp_3, cbcl_somatic_mtbi_test_imp_3), "cbcl_somatic", "B", "discrete"),
-    list(rbind(cbcl_social_mtbi_train_imp_3, cbcl_social_mtbi_test_imp_3), "cbcl_social", "B", "discrete"),
-    list(rbind(cbcl_thought_mtbi_train_imp_3, cbcl_thought_mtbi_test_imp_3), "cbcl_thought", "B", "discrete"),
-    list(rbind(cbcl_attention_mtbi_train_imp_3, cbcl_attention_mtbi_test_imp_3), "cbcl_attention", "B", "discrete"),
-    list(rbind(cbcl_rulebreak_mtbi_train_imp_3, cbcl_rulebreak_mtbi_test_imp_3), "cbcl_rulebreak", "B", "discrete"),
-    list(rbind(cbcl_aggressive_mtbi_train_imp_3, cbcl_aggressive_mtbi_test_imp_3), "cbcl_aggressive", "B", "discrete"),
-    list(rbind(sds_total_probs_mtbi_train_imp_3, sds_total_probs_mtbi_test_imp_3), "sds_total_probs", "S", "discrete")
-)
-
-full_oom_list_m4 <- generate_data_list(
-    list(rbind(cbcl_anxdep_mtbi_train_imp_4, cbcl_anxdep_mtbi_test_imp_4), "cbcl_anxdep", "B", "discrete"),
-    list(rbind(cbcl_withdep_mtbi_train_imp_4, cbcl_withdep_mtbi_test_imp_4), "cbcl_withdep", "B", "discrete"),
-    list(rbind(cbcl_somatic_mtbi_train_imp_4, cbcl_somatic_mtbi_test_imp_4), "cbcl_somatic", "B", "discrete"),
-    list(rbind(cbcl_social_mtbi_train_imp_4, cbcl_social_mtbi_test_imp_4), "cbcl_social", "B", "discrete"),
-    list(rbind(cbcl_thought_mtbi_train_imp_4, cbcl_thought_mtbi_test_imp_4), "cbcl_thought", "B", "discrete"),
-    list(rbind(cbcl_attention_mtbi_train_imp_4, cbcl_attention_mtbi_test_imp_4), "cbcl_attention", "B", "discrete"),
-    list(rbind(cbcl_rulebreak_mtbi_train_imp_4, cbcl_rulebreak_mtbi_test_imp_4), "cbcl_rulebreak", "B", "discrete"),
-    list(rbind(cbcl_aggressive_mtbi_train_imp_4, cbcl_aggressive_mtbi_test_imp_4), "cbcl_aggressive", "B", "discrete"),
-    list(rbind(sds_total_probs_mtbi_train_imp_4, sds_total_probs_mtbi_test_imp_4), "sds_total_probs", "S", "discrete")
-)
-
-full_oom_list_m5 <- generate_data_list(
-    list(rbind(cbcl_anxdep_mtbi_train_imp_5, cbcl_anxdep_mtbi_test_imp_5), "cbcl_anxdep", "B", "discrete"),
-    list(rbind(cbcl_withdep_mtbi_train_imp_5, cbcl_withdep_mtbi_test_imp_5), "cbcl_withdep", "B", "discrete"),
-    list(rbind(cbcl_somatic_mtbi_train_imp_5, cbcl_somatic_mtbi_test_imp_5), "cbcl_somatic", "B", "discrete"),
-    list(rbind(cbcl_social_mtbi_train_imp_5, cbcl_social_mtbi_test_imp_5), "cbcl_social", "B", "discrete"),
-    list(rbind(cbcl_thought_mtbi_train_imp_5, cbcl_thought_mtbi_test_imp_5), "cbcl_thought", "B", "discrete"),
-    list(rbind(cbcl_attention_mtbi_train_imp_5, cbcl_attention_mtbi_test_imp_5), "cbcl_attention", "B", "discrete"),
-    list(rbind(cbcl_rulebreak_mtbi_train_imp_5, cbcl_rulebreak_mtbi_test_imp_5), "cbcl_rulebreak", "B", "discrete"),
-    list(rbind(cbcl_aggressive_mtbi_train_imp_5, cbcl_aggressive_mtbi_test_imp_5), "cbcl_aggressive", "B", "discrete"),
-    list(rbind(sds_total_probs_mtbi_train_imp_5, sds_total_probs_mtbi_test_imp_5), "sds_total_probs", "S", "discrete")
-)
-
-
-test_data_list_m1 <- rename_data_list(test_data_list_m1, name_changes)
-test_data_list_m2 <- rename_data_list(test_data_list_m2, name_changes)
-test_data_list_m3 <- rename_data_list(test_data_list_m3, name_changes)
-test_data_list_m4 <- rename_data_list(test_data_list_m4, name_changes)
-test_data_list_m5 <- rename_data_list(test_data_list_m5, name_changes)
-test_oom_list_m1 <- rename_data_list(test_oom_list_m1, name_changes)
-test_oom_list_m2 <- rename_data_list(test_oom_list_m2, name_changes)
-test_oom_list_m3 <- rename_data_list(test_oom_list_m3, name_changes)
-test_oom_list_m4 <- rename_data_list(test_oom_list_m4, name_changes)
-test_oom_list_m5 <- rename_data_list(test_oom_list_m5, name_changes)
-
-full_data_list_m1 <- rename_data_list(full_data_list_m1, name_changes)
-full_data_list_m2 <- rename_data_list(full_data_list_m2, name_changes)
-full_data_list_m3 <- rename_data_list(full_data_list_m3, name_changes)
-full_data_list_m4 <- rename_data_list(full_data_list_m4, name_changes)
-full_data_list_m5 <- rename_data_list(full_data_list_m5, name_changes)
-full_oom_list_m1 <- rename_data_list(full_oom_list_m1, name_changes)
-full_oom_list_m2 <- rename_data_list(full_oom_list_m2, name_changes)
-full_oom_list_m3 <- rename_data_list(full_oom_list_m3, name_changes)
-full_oom_list_m4 <- rename_data_list(full_oom_list_m4, name_changes)
-full_oom_list_m5 <- rename_data_list(full_oom_list_m5, name_changes)
-
-
-list.save(test_data_list_m1, input_path("test_data_list_m1.rds", TRUE))
-list.save(test_data_list_m2, input_path("test_data_list_m2.rds", TRUE))
-list.save(test_data_list_m3, input_path("test_data_list_m3.rds", TRUE))
-list.save(test_data_list_m4, input_path("test_data_list_m4.rds", TRUE))
-list.save(test_data_list_m5, input_path("test_data_list_m5.rds", TRUE))
-list.save(test_oom_list_m1, input_path("test_oom_list_m1.rds", TRUE))
-list.save(test_oom_list_m2, input_path("test_oom_list_m2.rds", TRUE))
-list.save(test_oom_list_m3, input_path("test_oom_list_m3.rds", TRUE))
-list.save(test_oom_list_m4, input_path("test_oom_list_m4.rds", TRUE))
-list.save(test_oom_list_m5, input_path("test_oom_list_m5.rds", TRUE))
-
-list.save(full_data_list_m1, input_path("full_data_list_m1.rds", TRUE))
-list.save(full_data_list_m2, input_path("full_data_list_m2.rds", TRUE))
-list.save(full_data_list_m3, input_path("full_data_list_m3.rds", TRUE))
-list.save(full_data_list_m4, input_path("full_data_list_m4.rds", TRUE))
-list.save(full_data_list_m5, input_path("full_data_list_m5.rds", TRUE))
-list.save(full_oom_list_m1, input_path("full_oom_list_m1.rds", TRUE))
-list.save(full_oom_list_m2, input_path("full_oom_list_m2.rds", TRUE))
-list.save(full_oom_list_m3, input_path("full_oom_list_m3.rds", TRUE))
-list.save(full_oom_list_m4, input_path("full_oom_list_m4.rds", TRUE))
-list.save(full_oom_list_m5, input_path("full_oom_list_m5.rds", TRUE))
+```{r eval = FALSE}
+writeLines(capture.output(sessionInfo()), "01_preprocessing_session_info.txt")
 ```
