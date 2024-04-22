@@ -29,6 +29,32 @@ source("abcd/functions.R")
 all_dls <- list.load(input_path("2024_04_19_all_dls.rds"))
 ```
 
+# Old things:
+
+```{r}
+data_list_m1 <- list.load(input_path("2024_03_17_data_list_m1.rds"))
+data_list_m2 <- list.load(input_path("2024_03_17_data_list_m2.rds"))
+data_list_m3 <- list.load(input_path("2024_03_17_data_list_m3.rds"))
+data_list_m4 <- list.load(input_path("2024_03_17_data_list_m4.rds"))
+data_list_m5 <- list.load(input_path("2024_03_17_data_list_m5.rds"))
+data_list_pm1 <- list.load(input_path("2024_03_17_data_list_pm1.rds"))
+data_list_pm2 <- list.load(input_path("2024_03_17_data_list_pm2.rds"))
+data_list_pm3 <- list.load(input_path("2024_03_17_data_list_pm3.rds"))
+data_list_pm4 <- list.load(input_path("2024_03_17_data_list_pm4.rds"))
+data_list_pm5 <- list.load(input_path("2024_03_17_data_list_pm5.rds"))
+oom_list_m1 <- list.load(input_path("2024_03_17_oom_list_m1.rds"))
+oom_list_m2 <- list.load(input_path("2024_03_17_oom_list_m2.rds"))
+oom_list_m3 <- list.load(input_path("2024_03_17_oom_list_m3.rds"))
+oom_list_m4 <- list.load(input_path("2024_03_17_oom_list_m4.rds"))
+oom_list_m5 <- list.load(input_path("2024_03_17_oom_list_m5.rds"))
+oom_list_pm1 <- list.load(input_path("2024_03_17_oom_list_pm1.rds"))
+oom_list_pm2 <- list.load(input_path("2024_03_17_oom_list_pm2.rds"))
+oom_list_pm3 <- list.load(input_path("2024_03_17_oom_list_pm3.rds"))
+oom_list_pm4 <- list.load(input_path("2024_03_17_oom_list_pm4.rds"))
+oom_list_pm5 <- list.load(input_path("2024_03_17_oom_list_pm5.rds"))
+```
+
+
 ## Generating custom distance measures
 
 ```{r}
@@ -75,131 +101,34 @@ mtbi_settings_matrix <- read_csv(
 
 ```{r}
 
-solutions_matrices <- lapply(
+names(all_dls)
+
+mtbi_train_dls <- c(
+    all_dls$"mtbi_train_data_lists",
+    all_dls$"mtbi_pooled_data_lists"
 )
 
-# mTBI only imputed
-# Imputation 1
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_m1 <- batch_snf(
-        data_list = data_list_m1,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_m1, proc_path("solutions_matrix_m1.csv", TRUE))
-# Imputation 2
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_m2 <- batch_snf(
-        data_list = data_list_m2,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_m2, proc_path("solutions_matrix_m2.csv", TRUE))
-# Imputation 3
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_m3 <- batch_snf(
-        data_list = data_list_m3,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_m3, proc_path("solutions_matrix_m3.csv", TRUE))
-# Imputation 4
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_m4 <- batch_snf(
-        data_list = data_list_m4,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_m4, proc_path("solutions_matrix_m4.csv", TRUE))
-# Imputation 5
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_m5 <- batch_snf(
-        data_list = data_list_m5,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_m5, proc_path("solutions_matrix_m5.csv", TRUE))
-#
-# mTBI and uninjured pooled imputed
-# Imputation 1
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_pm1 <- batch_snf(
-        data_list = data_list_pm1,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_pm1, proc_path("solutions_matrix_pm1.csv", TRUE))
-# Imputation 2
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_pm2 <- batch_snf(
-        data_list = data_list_pm2,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_pm2, proc_path("solutions_matrix_pm2.csv", TRUE))
-# Imputation 3
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_pm3 <- batch_snf(
-        data_list = data_list_pm3,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_pm3, proc_path("solutions_matrix_pm3.csv", TRUE))
-# Imputation 4
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_pm4 <- batch_snf(
-        data_list = data_list_pm4,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
+names(mtbi_train_dls) <- c(paste0("imp_", 1:5), paste0("pooled_imp_", 1:5))
+
+mtbi_train_solutions_matrices <- lapply(
+    mtbi_train_dls,
+    function(imputed_dl) {
+        summarize_dl(imputed_dl)
+        solutions_matrix <- batch_snf(
+            data_list = imputed_dl,
+            settings_matrix = mtbi_settings_matrix,
+            distance_metrics_list = my_distance_metrics,
+            processes = "max"
+        )
+    }
+)
+
+list.save(
+    mtbi_train_solutions_matrices,
+    input_path("mtbi_train_solutions_matrices.rds", TRUE)
+)
+###############################################################################
 write_csv(solutions_matrix_pm4, proc_path("solutions_matrix_pm4.csv", TRUE))
-# Imputation 5
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_pm5 <- batch_snf(
-        data_list = data_list_pm5,
-        settings_matrix = mtbi_settings_matrix,
-        distance_metrics_list = my_distance_metrics,
-        processes = "max"
-    )
-})
-proc.time() - start
 write_csv(solutions_matrix_pm5, proc_path("solutions_matrix_pm5.csv", TRUE))
 ```
 
@@ -315,7 +244,20 @@ mtbi_mc_heatmap <- my_similarity_matrix_heatmap(
 )
 mtbi_mc_heatmap
 
+mtbi_mc_heatmap_lite <- lite_similarity_matrix_heatmap(
+    aris = mtbi_ari,
+    aris_order = mtbi_ari_order,
+    extended_solutions = mtbi_esm,
+    split_vector = mtbi_split_vec
+)
+mtbi_mc_heatmap_lite
+
 mc_heatmap_save(mtbi_mc_heatmap, fig_path("mtbi_mc_heatmap.png", TRUE))
+
+mc_heatmap_save(
+    mtbi_mc_heatmap_lite,
+    fig_path("mtbi_mc_heatmap_lite.png", TRUE)
+)
 
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 
@@ -371,6 +313,8 @@ ggsave(
     dpi = 120
 )
 
+mtbi_rep
+
 mtbi_mc_a_manhattan <- mtbi_rep |>
     dplyr::filter(mc == "A") |>
     manhattan_plot2(
@@ -388,13 +332,20 @@ ggsave(
     dpi = 100
 )
 
-plot_solutions_matrix(
-    mtbi_rep,
-    "mtbi",
-    possible_data = imputed_data,
-    individual_plots = FALSE,
-    group_plots = FALSE
-)
+mtbi_rep |>
+    dplyr::filter(mc == "A") |>
+    plot_solutions_matrix(
+        "mtbi",
+        possible_data = imputed_data,
+        individual_plots = TRUE,
+        group_plots = TRUE
+    )
+
+plot_solutions_matrix
+
+characterize_solution
+
+jitter_plot
 
 ```
 

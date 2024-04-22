@@ -241,16 +241,16 @@ jitter_plot <- function(df, feature) {
             alpha = 0.4
         ) +
         geom_jitter(
-            height = 0,
+            height = 0.1,
             width = 0.2,
             alpha = 0.5,
-            size = 2
+            size = 3
         ) +
         stat_summary(
             fun = "mean",
             geom = "point",
             colour = "black",
-            size = 2
+            size = 3
         ) +
         labs(
             x = "Cluster",
@@ -278,6 +278,9 @@ bar_plot <- function(df, feature) {
         dplyr::count(keycol) |>
         dplyr::mutate(percent = n / sum(n) * 100)
     df$"keycol" <- factor(df$"keycol")
+    if (all(df$"keycol" %in% c(0, 1))) {
+        levels(df$"keycol") <- c("1", "0")
+    }
     plot <- df |>
         ggplot(
             aes(
@@ -318,6 +321,14 @@ divergent_colours <- function(column)  {
     values <- unique(column)
     colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
     names(colours) <- values
+    return(colours)
+}
+
+colour_scale <- function(data, min_colour = "black", max_colour = "red") {
+    colours <- circlize::colorRamp2(
+        c(min(data), max(data)),
+        c(min_colour, max_colour)
+    )
     return(colours)
 }
 
@@ -380,7 +391,7 @@ characterize_solution <- function(solution = NULL,
     for (i in seq_along(features)) {
         feature <- features[[i]]
         feature_col <- full_data[, feature]
-        if (is.numeric(feature_col)) {
+        if (is.numeric(feature_col) && length(unique(feature_col)) > 2) {
             plot <- jitter_plot(full_data, feature)
         } else {
             plot <- bar_plot(full_data, feature)
@@ -1168,6 +1179,59 @@ my_similarity_matrix_heatmap <- function(aris,
             column_split = splits
         )
     }
+    return(mc_heatmap)
+}
+
+lite_similarity_matrix_heatmap <- function(aris,
+                                           aris_order,
+                                           extended_solutions,
+                                           split_vector = NULL,
+                                           show_clusters = TRUE) {
+    outcome_pvals <- extended_solutions |>
+        get_pvals(negative_log = TRUE) |>
+        dplyr::select(
+            "row_id",
+            dplyr::starts_with(c("cbcl", "sds"))
+        ) |>
+        summarize_pvals()
+    extended_solutions$"mean_p" <- outcome_pvals$"mean_p"
+    extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
+    if (!is.null(split_vector)) {
+        splits <- split_at(vector = split_vector, nrow = 2000)
+    } else {
+        splits <- NULL
+    }
+    mc_heatmap <- similarity_matrix_heatmap(
+        aris,
+        order = aris_order,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        log_graph = FALSE,
+        data = extended_solutions,
+        top_hm = list(
+            "Outcome Separation" = "mean_p"
+        ),
+        top_bar = list(
+            # "Number of Clusters - 2" = "nclust2"
+            "Number of Clusters" = "nclust"
+        ),
+        scale_diag = "none",
+        heatmap_height = grid::unit(19, "cm"),
+        heatmap_width = grid::unit(19, "cm"),
+        annotation_colours = list(
+            "Outcome Separation" = colour_scale(
+                extended_solutions$"mean_p",
+                "white",
+                "darkgreen"
+            )
+        ),
+        col = circlize::colorRamp2(
+            c(min(aris), max(aris)),
+            c("navy", "red")
+        ),
+        row_split = splits,
+        column_split = splits
+    )
     return(mc_heatmap)
 }
 
