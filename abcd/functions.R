@@ -1723,6 +1723,7 @@ extend_solutions_imp <- function(solutions_matrix,
             print(paste0("Processing row ", i, " of ", nrow(esm)))
             clustered_subs <- get_clustered_subs(esm[i, ])
             for (j in seq_along(features)) {
+                print(paste0("Processing feature ", features[j]))
                 current_outcome_component <- merged_df[, c(1, j + 1)]
                 current_outcome_name <- colnames(current_outcome_component)[2]
                 suppressWarnings(
