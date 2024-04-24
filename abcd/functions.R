@@ -250,7 +250,7 @@ jitter_plot <- function(df, feature) {
             fun = "mean",
             geom = "point",
             colour = "black",
-            size = 3
+            size = 5
         ) +
         labs(
             x = "Cluster",
@@ -766,19 +766,19 @@ manhattan_plot <- function(data,
     variable <- ""
     pval <- ""
     domain <- ""
-    mean_p <- ""
+    mean_pval <- ""
     mc_label <- ""
-    sd_p <- ""
-    var_cols <- colnames(data)[endsWith(colnames(data), "_p")]
+    sd_pval <- ""
+    var_cols <- colnames(data)[endsWith(colnames(data), "_pval")]
     data[, var_cols] <- data[, var_cols] |>
         apply(
             MARGIN = 2,
             FUN = function(x) {
                 -log10(x)
-                raw_p <- -log10(x)
+                raw_pval <- -log10(x)
                 new_x <- dplyr::case_when(
-                    raw_p > 5 ~ 5,
-                    TRUE ~ raw_p
+                    raw_pval > 5 ~ 5,
+                    TRUE ~ raw_pval
                 )
                 new_x
             }
@@ -798,10 +798,10 @@ manhattan_plot <- function(data,
             variable
         ) |>
         dplyr::summarize(
-            mean_p = mean(pval),
+            mean_pval = mean(pval),
             .groups = "drop"
         )
-    summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
+    summary_data$"variable" <- sub("_pval$", "", summary_data$"variable")
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
     ###########################################################################
@@ -826,12 +826,12 @@ manhattan_plot <- function(data,
         )
     }
     plot <- summary_data |>
-        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
+        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_pval)) +
         ggplot2::geom_jitter(
             mapping = ggplot2::aes(
                 group = domain,
                 x = variable,
-                y = mean_p,
+                y = mean_pval,
                 colour = domain
             ),
             height = 0,
@@ -895,9 +895,9 @@ manhattan_plot2 <- function(esm,
     variable <- ""
     pval <- ""
     domain <- ""
-    mean_p <- ""
+    mean_pval <- ""
     mc_label <- ""
-    sd_p <- ""
+    sd_pval <- ""
     ###########################################################################
     # Formatting esm as dataframe
     ###########################################################################
@@ -912,7 +912,7 @@ manhattan_plot2 <- function(esm,
         dplyr::select(
             "row_id",
             "label",
-            dplyr::ends_with("_p")
+            dplyr::ends_with("_pval")
         )
     ###########################################################################
     # Convert row_id and label to factors
@@ -940,7 +940,7 @@ manhattan_plot2 <- function(esm,
     ###########################################################################
     # Columns that end with _p are truncated by the threshold of p = 1e-5
     ###########################################################################
-    var_cols <- colnames(esm)[endsWith(colnames(esm), "_p")]
+    var_cols <- colnames(esm)[endsWith(colnames(esm), "_pval")]
     cutoff_var_cols <- esm[, var_cols] |>
         apply(
             MARGIN = 2,
@@ -968,7 +968,7 @@ manhattan_plot2 <- function(esm,
             values_to = "neg_log_pval"
         ) |>
         data.frame()
-    summary_data$"variable" <- sub("_p$", "", summary_data$"variable")
+    summary_data$"variable" <- sub("_pval$", "", summary_data$"variable")
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
     ###########################################################################
@@ -1001,7 +1001,7 @@ manhattan_plot2 <- function(esm,
     }
     labels <- unique(esm$"label")
     plot <- summary_data |>
-        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_p)) +
+        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_pval)) +
         ggplot2::geom_jitter(
             mapping = ggplot2::aes(
                 group = domain,
@@ -1082,7 +1082,7 @@ my_similarity_matrix_heatmap <- function(aris,
             dplyr::starts_with(c("cbcl", "sds"))
         ) |>
         summarize_pvals()
-    extended_solutions$"mean_p" <- outcome_pvals$"mean_p"
+    extended_solutions$"mean_pval" <- outcome_pvals$"mean_pval"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     if (!is.null(split_vector)) {
         splits <- split_at(vector = split_vector, nrow = 2000)
@@ -1099,7 +1099,7 @@ my_similarity_matrix_heatmap <- function(aris,
             data = extended_solutions,
             top_hm = list(
                 "Scheme" = "snf_scheme",
-                "Impairment Separation" = "mean_p"
+                "Impairment Separation" = "mean_pval"
             ),
             left_hm = list(
                 "Pooled" = "pooled",
@@ -1125,7 +1125,7 @@ my_similarity_matrix_heatmap <- function(aris,
                     "3" = "#FDC086"
                 ),
                 "Impairment Separation" = hm_colours(
-                    extended_solutions$"mean_p"
+                    extended_solutions$"mean_pval"
                 )
             ),
             col = circlize::colorRamp2(
@@ -1145,7 +1145,7 @@ my_similarity_matrix_heatmap <- function(aris,
             data = extended_solutions,
             top_hm = list(
                 "Scheme" = "snf_scheme",
-                "Impairment Separation" = "mean_p"
+                "Impairment Separation" = "mean_pval"
             ),
             left_hm = list(
                 "Pooled" = "pooled",
@@ -1168,7 +1168,7 @@ my_similarity_matrix_heatmap <- function(aris,
                     "3" = "#FDC086"
                 ),
                 "Impairment Separation" = hm_colours(
-                    extended_solutions$"mean_p"
+                    extended_solutions$"mean_pval"
                 )
             ),
             col = circlize::colorRamp2(
@@ -1194,7 +1194,7 @@ lite_similarity_matrix_heatmap <- function(aris,
             dplyr::starts_with(c("cbcl", "sds"))
         ) |>
         summarize_pvals()
-    extended_solutions$"mean_p" <- outcome_pvals$"mean_p"
+    extended_solutions$"mean_pval" <- outcome_pvals$"mean_pval"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     if (!is.null(split_vector)) {
         splits <- split_at(vector = split_vector, nrow = 2000)
@@ -1209,7 +1209,7 @@ lite_similarity_matrix_heatmap <- function(aris,
         log_graph = FALSE,
         data = extended_solutions,
         top_hm = list(
-            "Outcome Separation" = "mean_p"
+            "Outcome Separation" = "mean_pval"
         ),
         top_bar = list(
             # "Number of Clusters - 2" = "nclust2"
@@ -1220,7 +1220,7 @@ lite_similarity_matrix_heatmap <- function(aris,
         heatmap_width = grid::unit(19, "cm"),
         annotation_colours = list(
             "Outcome Separation" = colour_scale(
-                extended_solutions$"mean_p",
+                extended_solutions$"mean_pval",
                 "white",
                 "darkgreen"
             )
@@ -1230,7 +1230,9 @@ lite_similarity_matrix_heatmap <- function(aris,
             c("navy", "red")
         ),
         row_split = splits,
-        column_split = splits
+        column_split = splits,
+        column_title_gp = grid::gpar(fontsize = 20),
+        row_title_gp = grid::gpar(fontsize = 20)
     )
     return(mc_heatmap)
 }
@@ -1642,7 +1644,7 @@ extend_solutions_imp <- function(solutions_matrix,
                                  imputed_targets,
                                  cat_test = "chi_squared",
                                  calculate_summaries = TRUE,
-                                 min_p = NULL,
+                                 min_pval = NULL,
                                  processes = 1) {
     ###########################################################################
     # Ensure imputations are formatted properly
@@ -1678,7 +1680,7 @@ extend_solutions_imp <- function(solutions_matrix,
     esm <- solutions_matrix |>
         data.frame() |>
         add_columns(
-            paste0(all_features, "_p"),
+            paste0(all_features, "_pval"),
             fill = NA
         )
     ###########################################################################
@@ -1733,7 +1735,7 @@ extend_solutions_imp <- function(solutions_matrix,
                     )
                 )
                 target_col <- which(
-                    paste0(current_outcome_name, "_p") == colnames(esm)
+                    paste0(current_outcome_name, "_pval") == colnames(esm)
                 )
                 esm[i, target_col] <- p_value
             }
@@ -1805,7 +1807,7 @@ extend_solutions_imp <- function(solutions_matrix,
                         )
                     )
                     target_col <- which(
-                        paste0(current_outcome_name, "_p") == colnames(esm)
+                        paste0(current_outcome_name, "_pval") == colnames(esm)
                     )
                     esm[i, target_col] <- pval
                 }
@@ -1816,15 +1818,15 @@ extend_solutions_imp <- function(solutions_matrix,
         esm <- do.call("rbind", esm_rows)
     }
     ###########################################################################
-    # If min_p is assigned, replace any p-value less than this with min_p
+    # If min_pval is assigned, replace any p-value less than this with min_pval
     ###########################################################################
-    if (!is.null(min_p)) {
+    if (!is.null(min_pval)) {
         esm <- esm |>
             numcol_to_numeric() |>
             dplyr::mutate(
                 dplyr::across(
-                    dplyr::ends_with("_p"),
-                    ~ ifelse(. < min_p, min_p, .)
+                    dplyr::ends_with("_pval"),
+                    ~ ifelse(. < min_pval, min_pval, .)
                 )
             )
     }

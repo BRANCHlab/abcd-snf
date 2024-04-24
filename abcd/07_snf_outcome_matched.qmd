@@ -1,4 +1,4 @@
-# SNF in CBCL Matched Uninjured Controls
+# SNF in Matched Uninjured Groups
 
 ## Importing packages and establishing file paths
 
@@ -9,16 +9,19 @@ library(here)
 library(metasnf)
 library(progressr)
 library(rlist)
-library(MatchIt)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subjects <- read_csv(sub_path("2024_03_12_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_03_12_uninjured_subjects.csv"))
-cbcl_matched_uninjured <- read_csv(sub_path("2024_03_18_cbcl_matched_uninjured.csv"))
+mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
+
+dfp_uninj_subs <- read_subjects(sub_path("2024_04_23_dfp_matched_subjects.csv"))
+d_uninj_subs <- read_subjects(sub_path("2024_04_23_d_matched_subjects.csv"))
+f_uninj_subs <- read_subjects(sub_path("2024_04_23_f_matched_subjects.csv"))
+p_uninj_subs <- read_subjects(sub_path("2024_04_23_p_matched_subjects.csv"))
 
 source("abcd/functions.R")
 ```
@@ -26,27 +29,12 @@ source("abcd/functions.R")
 ## Loading data and out of model lists
 
 ```{r}
+all_dls <- list.load(input_path("2024_04_19_all_dls.rds"))
 
-data_list_cmu1 <- list.load(input_path("2024_03_18_data_list_cmu1.rds"))
-data_list_cmu2 <- list.load(input_path("2024_03_18_data_list_cmu2.rds"))
-data_list_cmu3 <- list.load(input_path("2024_03_18_data_list_cmu3.rds"))
-data_list_cmu4 <- list.load(input_path("2024_03_18_data_list_cmu4.rds"))
-data_list_cmu5 <- list.load(input_path("2024_03_18_data_list_cmu5.rds"))
-data_list_cmpu1 <- list.load(input_path("2024_03_18_data_list_cmpu1.rds"))
-data_list_cmpu2 <- list.load(input_path("2024_03_18_data_list_cmpu2.rds"))
-data_list_cmpu3 <- list.load(input_path("2024_03_18_data_list_cmpu3.rds"))
-data_list_cmpu4 <- list.load(input_path("2024_03_18_data_list_cmpu4.rds"))
-data_list_cmpu5 <- list.load(input_path("2024_03_18_data_list_cmpu5.rds"))
-oom_list_cmu1 <- list.load(input_path("2024_03_18_oom_list_cmu1.rds"))
-oom_list_cmu2 <- list.load(input_path("2024_03_18_oom_list_cmu2.rds"))
-oom_list_cmu3 <- list.load(input_path("2024_03_18_oom_list_cmu3.rds"))
-oom_list_cmu4 <- list.load(input_path("2024_03_18_oom_list_cmu4.rds"))
-oom_list_cmu5 <- list.load(input_path("2024_03_18_oom_list_cmu5.rds"))
-oom_list_cmpu1 <- list.load(input_path("2024_03_18_oom_list_cmpu1.rds"))
-oom_list_cmpu2 <- list.load(input_path("2024_03_18_oom_list_cmpu2.rds"))
-oom_list_cmpu3 <- list.load(input_path("2024_03_18_oom_list_cmpu3.rds"))
-oom_list_cmpu4 <- list.load(input_path("2024_03_18_oom_list_cmpu4.rds"))
-oom_list_cmpu5 <- list.load(input_path("2024_03_18_oom_list_cmpu5.rds"))
+dfp_dls_ols <- list.load(input_path("2024_04_23_dfp_dls_ols.rds"))
+d_dls_ols <- list.load(input_path("2024_04_23_d_dls_ols.rds"))
+f_dls_ols <- list.load(input_path("2024_04_23_f_dls_ols.rds"))
+p_dls_ols <- list.load(input_path("2024_04_23_p_dls_ols.rds"))
 ```
 
 ## Generating custom distance measures
@@ -69,13 +57,116 @@ clust_algs_list <- generate_clust_algs_list(
     disable_base = TRUE
 )
 
-settings_matrix_mu <- read_csv(proc_path("2024_03_18_settings_matrix_mu.csv"))
+settings_matrix_uninj <- generate_settings_matrix(
+    dfp_dls_ols$"uninj_data_lists"$"imp_1",
+    nrow = 200,
+    seed = 42,
+    clustering_algorithms = clust_algs_list,
+    distance_metrics_list = my_distance_metrics
+)
 
+write_csv(settings_matrix_uninj, proc_path("settings_matrix_uninj.csv", TRUE))
+
+settings_matrix_uninj <- read_csv(
+    proc_path("2024_04_23_settings_matrix_uninj.csv")
+)
 ```
 
 ## SNF for each of the imputations
 
 ```{r}
+
+dfp_dls <- c(
+    dfp_dls_ols$"uninj_data_lists",
+    dfp_dls_ols$"uninj_pooled_data_lists"
+)
+
+d_dls <- c(
+    d_dls_ols$"uninj_data_lists",
+    d_dls_ols$"uninj_pooled_data_lists"
+)
+
+f_dls <- c(
+    f_dls_ols$"uninj_data_lists",
+    f_dls_ols$"uninj_pooled_data_lists"
+)
+
+p_dls <- c(
+    p_dls_ols$"uninj_data_lists",
+    p_dls_ols$"uninj_pooled_data_lists"
+)
+
+dfp_solutions
+
+dfp_solutions_matrices <- lapply(
+    dfp_dls,
+    function(imputed_dl) {
+        summarize_dl(imputed_dl)
+        solutions_matrix <- batch_snf(
+            data_list = imputed_dl,
+            settings_matrix = settings_matrix_uninj,
+            distance_metrics_list = my_distance_metrics,
+            processes = "max"
+        )
+    }
+)
+list.save(
+    dfp_solutions_matrices,
+    input_path("dfp_solutions_matrices.rds", TRUE)
+)
+print("DONE")
+d_solutions_matrices <- lapply(
+    d_dls,
+    function(imputed_dl) {
+        summarize_dl(imputed_dl)
+        solutions_matrix <- batch_snf(
+            data_list = imputed_dl,
+            settings_matrix = settings_matrix_uninj,
+            distance_metrics_list = my_distance_metrics,
+            processes = "max"
+        )
+    }
+)
+list.save(
+    d_solutions_matrices,
+    input_path("d_solutions_matrices.rds", TRUE)
+)
+print("DONE")
+f_solutions_matrices <- lapply(
+    f_dls,
+    function(imputed_dl) {
+        summarize_dl(imputed_dl)
+        solutions_matrix <- batch_snf(
+            data_list = imputed_dl,
+            settings_matrix = settings_matrix_uninj,
+            distance_metrics_list = my_distance_metrics,
+            processes = "max"
+        )
+    }
+)
+list.save(
+    f_solutions_matrices,
+    input_path("f_solutions_matrices.rds", TRUE)
+)
+print("DONE")
+p_solutions_matrices <- lapply(
+    p_dls,
+    function(imputed_dl) {
+        summarize_dl(imputed_dl)
+        solutions_matrix <- batch_snf(
+            data_list = imputed_dl,
+            settings_matrix = settings_matrix_uninj,
+            distance_metrics_list = my_distance_metrics,
+            processes = "max"
+        )
+    }
+)
+list.save(
+    p_solutions_matrices,
+    input_path("p_solutions_matrices.rds", TRUE)
+)
+
+
 # Uninjured only imputed
 # Imputation 1
 start <- proc.time()

@@ -29,32 +29,6 @@ source("abcd/functions.R")
 all_dls <- list.load(input_path("2024_04_19_all_dls.rds"))
 ```
 
-# Old things:
-
-```{r}
-data_list_m1 <- list.load(input_path("2024_03_17_data_list_m1.rds"))
-data_list_m2 <- list.load(input_path("2024_03_17_data_list_m2.rds"))
-data_list_m3 <- list.load(input_path("2024_03_17_data_list_m3.rds"))
-data_list_m4 <- list.load(input_path("2024_03_17_data_list_m4.rds"))
-data_list_m5 <- list.load(input_path("2024_03_17_data_list_m5.rds"))
-data_list_pm1 <- list.load(input_path("2024_03_17_data_list_pm1.rds"))
-data_list_pm2 <- list.load(input_path("2024_03_17_data_list_pm2.rds"))
-data_list_pm3 <- list.load(input_path("2024_03_17_data_list_pm3.rds"))
-data_list_pm4 <- list.load(input_path("2024_03_17_data_list_pm4.rds"))
-data_list_pm5 <- list.load(input_path("2024_03_17_data_list_pm5.rds"))
-oom_list_m1 <- list.load(input_path("2024_03_17_oom_list_m1.rds"))
-oom_list_m2 <- list.load(input_path("2024_03_17_oom_list_m2.rds"))
-oom_list_m3 <- list.load(input_path("2024_03_17_oom_list_m3.rds"))
-oom_list_m4 <- list.load(input_path("2024_03_17_oom_list_m4.rds"))
-oom_list_m5 <- list.load(input_path("2024_03_17_oom_list_m5.rds"))
-oom_list_pm1 <- list.load(input_path("2024_03_17_oom_list_pm1.rds"))
-oom_list_pm2 <- list.load(input_path("2024_03_17_oom_list_pm2.rds"))
-oom_list_pm3 <- list.load(input_path("2024_03_17_oom_list_pm3.rds"))
-oom_list_pm4 <- list.load(input_path("2024_03_17_oom_list_pm4.rds"))
-oom_list_pm5 <- list.load(input_path("2024_03_17_oom_list_pm5.rds"))
-```
-
-
 ## Generating custom distance measures
 
 ```{r}
@@ -81,7 +55,6 @@ summarize_distance_metrics_list(my_distance_metrics)
 ## Generating the settings matrix
 
 ```{r}
-
 mtbi_settings_matrix <- generate_settings_matrix(
     all_dls$"mtbi_train_data_lists"$"imp_1",
     nrow = 200,
@@ -94,15 +67,11 @@ write_csv(mtbi_settings_matrix, proc_path("mtbi_settings_matrix.csv", TRUE))
 mtbi_settings_matrix <- read_csv(
     proc_path("2024_04_19_mtbi_settings_matrix.csv")
 )
-
 ```
 
 ## SNF for each of the imputations
 
 ```{r}
-
-names(all_dls)
-
 mtbi_train_dls <- c(
     all_dls$"mtbi_train_data_lists",
     all_dls$"mtbi_pooled_data_lists"
@@ -127,41 +96,21 @@ list.save(
     mtbi_train_solutions_matrices,
     input_path("mtbi_train_solutions_matrices.rds", TRUE)
 )
-###############################################################################
-write_csv(solutions_matrix_pm4, proc_path("solutions_matrix_pm4.csv", TRUE))
-write_csv(solutions_matrix_pm5, proc_path("solutions_matrix_pm5.csv", TRUE))
+
+mtbi_train_solutions_matrices <- list.load(
+    input_path("2024_04_22_mtbi_train_solutions_matrices.rds")
+)
+
+mtbi_sm <- do.call(
+    "rbind",
+    mtbi_train_solutions_matrices
+)
+
 ```
 
 ## Re-importing the generated solutions
 
 ```{r}
-solutions_matrix_m1 <- read_csv(proc_path("2024_03_17_solutions_matrix_m1.csv"))
-solutions_matrix_m2 <- read_csv(proc_path("2024_03_17_solutions_matrix_m2.csv"))
-solutions_matrix_m3 <- read_csv(proc_path("2024_03_17_solutions_matrix_m3.csv"))
-solutions_matrix_m4 <- read_csv(proc_path("2024_03_17_solutions_matrix_m4.csv"))
-solutions_matrix_m5 <- read_csv(proc_path("2024_03_17_solutions_matrix_m5.csv"))
-solutions_matrix_pm1 <- read_csv(proc_path("2024_03_17_solutions_matrix_pm1.csv"))
-solutions_matrix_pm2 <- read_csv(proc_path("2024_03_17_solutions_matrix_pm2.csv"))
-solutions_matrix_pm3 <- read_csv(proc_path("2024_03_17_solutions_matrix_pm3.csv"))
-solutions_matrix_pm4 <- read_csv(proc_path("2024_03_17_solutions_matrix_pm4.csv"))
-solutions_matrix_pm5 <- read_csv(proc_path("2024_03_17_solutions_matrix_pm5.csv"))
-
-mtbi_sm <- do.call(
-    "rbind",
-    list(
-        solutions_matrix_m1,
-        solutions_matrix_m2,
-        solutions_matrix_m3,
-        solutions_matrix_m4,
-        solutions_matrix_m5,
-        solutions_matrix_pm1,
-        solutions_matrix_pm2,
-        solutions_matrix_pm3,
-        solutions_matrix_pm4,
-        solutions_matrix_pm5
-    )
-)
-
 write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
 
 mtbi_ari <- calc_om_aris(mtbi_sm, processes = "max")
@@ -171,18 +120,16 @@ mtbi_ari_order <- ari_order(mtbi_ari)
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
 
-
 ```{r}
-mtbi_sm <- read_csv(proc_path("2024_03_17_mtbi_sm.csv"))
-mtbi_ari <- as.matrix(read_csv(proc_path("2024_03_17_mtbi_ari.csv")))
-mtbi_ari_order <- unlist(read_csv(proc_path("2024_03_17_mtbi_ari_order.csv")))
+mtbi_sm <- read_csv(proc_path("2024_04_23_mtbi_sm.csv"))
+mtbi_ari <- as.matrix(read_csv(proc_path("2024_04_23_mtbi_ari.csv")))
+mtbi_ari_order <- unlist(read_csv(proc_path("2024_04_23_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
 ## Full imputation meta clustering plot with impairment levels
 
 ```{r}
-
 imputation_labels <- data.frame(
     "imputation" = c(
         rep("m1", 200),
@@ -202,26 +149,38 @@ imputation_labels <- data.frame(
     )
 )
 
-imputed_data <- list(
-    "m1" = c(data_list_m1, oom_list_m1),
-    "m2" = c(data_list_m2, oom_list_m2),
-    "m3" = c(data_list_m3, oom_list_m3),
-    "m4" = c(data_list_m4, oom_list_m4),
-    "m5" = c(data_list_m5, oom_list_m5),
-    "pm5" = c(data_list_pm5, oom_list_pm5),
-    "pm1" = c(data_list_pm1, oom_list_pm1),
-    "pm2" = c(data_list_pm2, oom_list_pm2),
-    "pm3" = c(data_list_pm3, oom_list_pm3),
-    "pm4" = c(data_list_pm4, oom_list_pm4),
-    "pm5" = c(data_list_pm5, oom_list_pm5)
+###############################################################################
+# Setting up merged data lists and outcome lists for visualizing p-values over
+# inputs and outputs.
+###############################################################################
+mtbi_train_dls <- c(
+    all_dls$"mtbi_train_data_lists",
+    all_dls$"mtbi_pooled_data_lists"
+)
+
+mtbi_train_ols <- c(
+    all_dls$"mtbi_train_oom_lists",
+    all_dls$"mtbi_pooled_oom_lists"
+)
+
+mtbi_train_dls_ols <- lapply(
+    1:10,
+    function(x) {
+        c(mtbi_train_dls[[x]], mtbi_train_ols[[x]])
+    }
+)
+
+names(mtbi_train_dls_ols) <- c(
+    paste0("m", 1:5),
+    paste0("pm", 1:5)
 )
 
 mtbi_sm_l <- cbind(mtbi_sm, imputation_labels)
 
 mtbi_esm <- extend_solutions_imp(
     mtbi_sm_l,
-    imputed_targets = imputed_data,
-    min_p = 1e-10,
+    imputed_targets = mtbi_train_dls_ols,
+    min_pval = 1e-10,
     calculate_summaries = FALSE,
     processes = "max"
 )
@@ -230,19 +189,48 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 
 
 ```{r}
-mtbi_esm <- read_csv(proc_path("2024_03_17_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_04_23_mtbi_esm.csv"))
 ```
 
 ```{r}
 
-mtbi_split_vec <- c(282, 417, 575, 740, 853, 1110, 1783)
-mtbi_mc_heatmap <- my_similarity_matrix_heatmap(
+library(plotly)
+library(ComplexHeatmap)
+library(InteractiveComplexHeatmap)
+
+mtbi_mc_heatmap <- lite_similarity_matrix_heatmap(
     aris = mtbi_ari,
     aris_order = mtbi_ari_order,
-    extended_solutions = mtbi_esm,
-    split_vector = mtbi_split_vec
+    extended_solutions = mtbi_esm
 )
-mtbi_mc_heatmap
+
+# Plot the heatmap
+ht_plot <- draw(mtbi_mc_heatmap)
+
+htShiny(
+    ht_plot,
+    response = "click",
+    title = "Meta Cluster Identification",
+    description = paste0(
+        "Click on the heatmap to identify the indices of the meta cluster",
+        " boundaries. You can recreate the similarity matrix heatmap",
+        " passing these values as the `split_vector` argument to have the",
+        " meta clusters visually separated and labeled. For example,",
+        " if the boundaries of the meta clusters were at row/column indices",
+        " 150, 300, and 313, use the argument",
+        " `split_vector = c(150, 300, 313) when recreating the heatmap."
+    )
+)
+
+mtbi_split_vec <- c(
+    233,
+    380,
+    672,
+    830,
+    978,
+    1240,
+    1465
+)
 
 mtbi_mc_heatmap_lite <- lite_similarity_matrix_heatmap(
     aris = mtbi_ari,
@@ -252,8 +240,6 @@ mtbi_mc_heatmap_lite <- lite_similarity_matrix_heatmap(
 )
 mtbi_mc_heatmap_lite
 
-mc_heatmap_save(mtbi_mc_heatmap, fig_path("mtbi_mc_heatmap.png", TRUE))
-
 mc_heatmap_save(
     mtbi_mc_heatmap_lite,
     fig_path("mtbi_mc_heatmap_lite.png", TRUE)
@@ -261,7 +247,7 @@ mc_heatmap_save(
 
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 
-mtbi_split_vec <- read_csv(proc_path("2024_03_17_mtbi_split_vec.csv")) |>
+mtbi_split_vec <- read_csv(proc_path("2024_04_23_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 
@@ -295,12 +281,16 @@ mtbi_rep <- get_rep_solutions(
 
 write_csv(mtbi_rep, proc_path("mtbi_rep.csv", TRUE))
 
-mtbi_rep <- read_csv(proc_path("2024_03_17_mtbi_rep.csv"))
+mtbi_rep <- read_csv(proc_path("2024_04_23_mtbi_rep.csv"))
+
+
+
+mtbi_train_ols[[1]]
 
 mtbi_manhattan <- manhattan_plot2(
     mtbi_rep,
-    data_list = data_list_m1,
-    target_list = oom_list_m1,
+    data_list = mtbi_train_dls[[1]],
+    target_list = mtbi_train_ols[[1]],
     threshold = 0.05
 )
 mtbi_manhattan
@@ -309,17 +299,15 @@ ggsave(
     plot = mtbi_manhattan,
     filename = fig_path("mtbi_manhattan.png", TRUE),
     width = 18,
-    height = 7*2,
+    height = 7 * 2,
     dpi = 120
 )
-
-mtbi_rep
 
 mtbi_mc_a_manhattan <- mtbi_rep |>
     dplyr::filter(mc == "A") |>
     manhattan_plot2(
-        data_list = data_list_m1,
-        target_list = oom_list_m1,
+        data_list = mtbi_train_dls[[1]],
+        target_list = mtbi_train_ols[[1]],
         threshold = 0.05
     )
 mtbi_mc_a_manhattan
@@ -332,20 +320,31 @@ ggsave(
     dpi = 100
 )
 
+plot_solutions_matrix
+
+mc_a_cluster_df <- mtbi_rep |>
+    dplyr::filter(mc == "A") |>
+    get_cluster_df()
+
+mtbi_mc_a_plots <- characterize_solution(
+    cluster_df = mc_a_cluster_df,
+    data_list = c(
+        all_dls$"mtbi_train_data_lists"$"imp_3",
+        all_dls$"mtbi_train_oom_lists"$"imp_3"
+    ),
+    plotname = fig_path("mtbi_mc_a", TRUE),
+    individual_plots = TRUE,
+    group_plots = TRUE
+)
+
 mtbi_rep |>
     dplyr::filter(mc == "A") |>
     plot_solutions_matrix(
         "mtbi",
-        possible_data = imputed_data,
+        possible_data = mtbi_train_dls_ols,
         individual_plots = TRUE,
         group_plots = TRUE
     )
-
-plot_solutions_matrix
-
-characterize_solution
-
-jitter_plot
 
 ```
 
@@ -355,9 +354,17 @@ This top solution specifically came from the third imputed dataset, so that's wh
 
 ```{r}
 
-full_data_list_m3 <- list.load(input_path("2024_03_17_full_data_list_m3.rds"))
-test_data_list_m3 <- list.load(input_path("2024_03_17_test_data_list_m3.rds"))
-test_oom_list_m3 <- list.load(input_path("2024_03_17_test_oom_list_m3.rds"))
+all_dls |> names()
+
+train_data_list_m3 <- all_dls$"mtbi_train_data_lists"$"imp_3"
+
+test_data_list_m1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
+
+full_data_list <- merge_data_lists(train_data_list_m3, test_data_list_m1)
+
+#full_data_list_m3 <- list.load(input_path("2024_03_17_full_data_list_m3.rds"))
+#test_data_list_m3 <- list.load(input_path("2024_03_17_test_data_list_m3.rds"))
+#test_oom_list_m3 <- list.load(input_path("2024_03_17_test_oom_list_m3.rds"))
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -376,7 +383,7 @@ mtbi_mc_a <- mtbi_rep[1, ]
 set.seed(42)
 mtbi_mc_a_lp <- lp_solutions_matrix(
     mtbi_mc_a,
-    full_data_list_m3,
+    full_data_list,
     distance_metrics_list = my_distance_metrics
 )
 colnames(mtbi_mc_a_lp) <- c("subjectkey", "group", "cluster")
@@ -387,18 +394,22 @@ mtbi_mc_a_lp <- mtbi_mc_a_lp |>
 
 write_csv(mtbi_mc_a_lp, proc_path("mtbi_mc_a_lp.csv", TRUE))
 
-mtbi_mc_a_lp <- read_csv(proc_path("2024_03_17_mtbi_mc_a_lp.csv"))
+mtbi_mc_a_lp <- read_csv(proc_path("2024_04_23_mtbi_mc_a_lp.csv"))
 
-characterize_solution(
-    cluster_df = mtbi_mc_a_lp_test,
-    data_list = c(test_data_list_m3, test_oom_list_m3),
+mtbi_mc_a_lp_plots <- characterize_solution(
+    cluster_df = mtbi_mc_a_lp,
+    data_list = c(
+        all_dls$"mtbi_test_data_lists"$"imp_1",
+        all_dls$"mtbi_test_oom_lists"$"imp_1"
+    ),
     plotname = fig_path("mtbi_mc_a_lp", TRUE),
-    individual_plots = FALSE,
-    group_plots = FALSE
+    individual_plots = TRUE,
+    group_plots = TRUE
 )
 
 ```
 
+(Leave below for later)
 
 # Longitudinal analyses
 
