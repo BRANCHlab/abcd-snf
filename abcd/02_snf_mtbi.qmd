@@ -261,6 +261,8 @@ restrict_fn <- function(x, threshold = 0.1) {
     x_solo <- x[x_solo_ind, ]
     x_pool <- x[x_pool_ind, ]
     frac_solo <- nrow(x_solo) / (nrow(x_solo) + nrow(x_pool))
+    print(frac_solo)
+    print(threshold)
     if (frac_solo < threshold) {
         return(x_pool_ind)
     } else {
@@ -281,10 +283,6 @@ mtbi_rep <- get_rep_solutions(
 write_csv(mtbi_rep, proc_path("mtbi_rep.csv", TRUE))
 
 mtbi_rep <- read_csv(proc_path("2024_04_23_mtbi_rep.csv"))
-
-
-
-mtbi_train_ols[[1]]
 
 mtbi_manhattan <- manhattan_plot2(
     mtbi_rep,
@@ -336,14 +334,50 @@ mtbi_mc_a_plots <- characterize_solution(
     group_plots = TRUE
 )
 
-mtbi_rep |>
-    dplyr::filter(mc == "A") |>
-    plot_solutions_matrix(
-        "mtbi",
-        possible_data = mtbi_train_dls_ols,
-        individual_plots = TRUE,
-        group_plots = TRUE
-    )
+#mtbi_rep |>
+#    dplyr::filter(mc == "A") |>
+#    plot_solutions_matrix(
+#        "mtbi",
+#        possible_data = mtbi_train_dls_ols,
+#        individual_plots = TRUE,
+#        group_plots = TRUE
+#    )
+
+mtbi_rep_a <- mtbi_rep |> dplyr::filter(mc == "A")
+
+pvals <- unlist(get_pvals(mtbi_rep_a))
+
+options(scipen = 999)
+
+p.adjust(pvals, method = "holm")
+
+mtbi_train_dls_ols
+
+pval_df <- c(
+    all_dls$"mtbi_train_data_lists"$"imp_3",
+    all_dls$"mtbi_train_oom_lists"$"imp_3"
+)
+
+pval_df <- collapse_dl(pval_df)
+
+pval_df$
+
+a_clusters <- get_cluster_df(mtbi_rep_a)
+
+pval_df <- dplyr::inner_join(a_clusters, pval_df, by = "subjectkey") |>
+    tibble::tibble()
+
+pval_df |> colnames()
+
+t.test(
+    pval_df$"sds_sleep"[pval_df$cluster == 1],
+    pval_df$"sds_sleep"[pval_df$cluster == 2]
+)
+
+pval_df$"sds_sleep"[pval_df$cluster == 1]
+
+pval_df$"sds_sleep"[pval_df$cluster == 2]
+
 
 ```
 

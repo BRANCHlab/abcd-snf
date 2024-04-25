@@ -261,7 +261,8 @@ jitter_plot <- function(df, feature) {
         theme(
             text = element_text(size = 20),
             legend.position = "none",
-            panel.grid.major.x = element_blank()
+            panel.grid.major.x = element_blank(),
+            legend.text = element_text(size = 20)
         )
     return(plot)
 }
@@ -309,9 +310,9 @@ bar_plot <- function(df, feature) {
         theme_bw() +
         theme(
             text = element_text(size = 20),
-            legend.text = element_text(size = 10),
-            legend.title = element_text(size = 10),
-            legend.position = "top",
+            legend.text = element_text(size = 20),
+            legend.title = element_text(size = 20),
+            legend.position = "right",
             panel.grid.major.x = element_blank()
         )
     return(plot)
@@ -391,10 +392,13 @@ characterize_solution <- function(solution = NULL,
     for (i in seq_along(features)) {
         feature <- features[[i]]
         feature_col <- full_data[, feature]
+        is_bar <- NULL
         if (is.numeric(feature_col) && length(unique(feature_col)) > 2) {
             plot <- jitter_plot(full_data, feature)
+            plot_width <- 4
         } else {
             plot <- bar_plot(full_data, feature)
+            plot_width <- 5.5
         }
         if (individual_plots) {
             print(
@@ -407,8 +411,8 @@ characterize_solution <- function(solution = NULL,
             ggsave(
                 plot = plot,
                 filename = paste0(plotname, "_", feature, ".png"),
-                width = 7,
-                height = 7
+                width = plot_width,
+                height = 4
             )
         }
         plot_list[[i]] <- plot
@@ -1185,8 +1189,7 @@ my_similarity_matrix_heatmap <- function(aris,
 lite_similarity_matrix_heatmap <- function(aris,
                                            aris_order,
                                            extended_solutions,
-                                           split_vector = NULL,
-                                           show_clusters = TRUE) {
+                                           split_vector = NULL) {
     outcome_pvals <- extended_solutions |>
         get_pvals(negative_log = TRUE) |>
         dplyr::select(
@@ -1195,7 +1198,6 @@ lite_similarity_matrix_heatmap <- function(aris,
         ) |>
         summarize_pvals()
     extended_solutions$"mean_pval" <- outcome_pvals$"mean_pval"
-    extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     if (!is.null(split_vector)) {
         splits <- split_at(vector = split_vector, nrow = 2000)
     } else {
@@ -1210,10 +1212,6 @@ lite_similarity_matrix_heatmap <- function(aris,
         data = extended_solutions,
         top_hm = list(
             "Outcome Separation" = "mean_pval"
-        ),
-        top_bar = list(
-            # "Number of Clusters - 2" = "nclust2"
-            "Number of Clusters" = "nclust"
         ),
         scale_diag = "none",
         heatmap_height = grid::unit(19, "cm"),
@@ -1547,9 +1545,9 @@ my_manhattan_bulk_save <- function(split_vector,
 mc_heatmap_save <- function(heatmap, path) {
     grDevices::png(
         filename = path,
-        width = 1100,
+        width = 1250,
         height = 1000,
-        res = 110
+        res = 125
     )
     print(heatmap)
     grDevices::dev.off()
@@ -1835,4 +1833,21 @@ extend_solutions_imp <- function(solutions_matrix,
         esm <- summarize_pvals(esm)
     }
     return(esm)
+}
+
+mc_shiny <- function(plot) {
+    htShiny(
+        plot,
+        response = "click",
+        title = "Meta Cluster Identification",
+        description = paste0(
+            "Click on the heatmap to identify the indices of the meta cluster",
+            " boundaries. You can recreate the similarity matrix heatmap",
+            " passing these values as the `split_vector` argument to have the",
+            " meta clusters visually separated and labeled. For example,",
+            " if the boundaries of the meta clusters were at row/column indices",
+            " 150, 300, and 313, use the argument",
+            " `split_vector = c(150, 300, 313) when recreating the heatmap."
+        )
+    )
 }
