@@ -265,6 +265,121 @@ To avoid having training and testing data inform each other during imputation, w
 
 ```{r}
 
+library(splitstackshape)
+
+splitting_df <- list(
+    d_sex_mtbi,
+    d_race_mtbi,
+    d_income_mtbi,
+    cbcl_anxdep_mtbi,
+    cbcl_withdep_mtbi,
+    cbcl_somatic_mtbi,
+    cbcl_social_mtbi,
+    cbcl_thought_mtbi,
+    cbcl_attention_mtbi,
+    cbcl_rulebreak_mtbi,
+    cbcl_aggressive_mtbi,
+    sds_total_probs_mtbi
+) |> merge_df_list()
+
+splitting_df$"total_cbcl" <- splitting_df |>
+    dplyr::select(dplyr::starts_with("cbcl")) |>
+    rowSums()
+
+splitting_df <- splitting_df |>
+    dplyr::select(-dplyr::starts_with("cbcl"))
+
+splitting_df
+
+
+independent_stratify <- function(df, vars, train_frac, n_shuffles) {
+    start <- Sys.time()
+    n_subs <- nrow(df)
+    n_train <- round(n_subs * train_frac)
+    n_test <- n_subs - n_train
+    ###########################################################################
+    # Building matrix that will store all differences between partitions
+    ###########################################################################
+    error_matrix <- matrix(NA, n_shuffles, length(vars))
+    colnames(error_matrix) <- vars
+    ###########################################################################
+    # Iterating through all variables
+    ###########################################################################
+    for (var in vars) {
+        numeric_var <- is.numeric(df[, var, drop = TRUE])
+        long_var <- length(unique(df[, var, drop = TRUE])) > 4
+        if (numeric_var && long_var) {
+            print(paste0("Cutting ", var))
+            df[, var] <- cut(
+                df[, var, drop = TRUE],
+                breaks = 4,
+                labels = FALSE
+            )
+        }
+    }
+    order_list <- list()
+    for (shuffle in 1:n_shuffles) {
+        order <- sample(n_subs)
+        order_list[[length(order_list) + 1]] <- order
+        shuffled_df <- df[order, ]
+        shuffled_df$"group" <- c(
+            rep("train", n_train),
+            rep("test", n_test)
+        )
+        for (var in vars) {
+            var_props <- prop.table(
+                table(
+                    shuffled_df$"group",
+                    shuffled_df[, var, drop = TRUE]
+                ),
+                margin = 1
+            )
+            sse <- sum((var_props[1, ] - var_props[2, ])^2)
+            error_matrix[shuffle, var] <- sse
+        }
+    }
+    # Scaling each variable to have a max error of 1
+    error_matrix <- error_matrix |>
+        apply(
+            2,
+            function(x) {
+                x / max(x)
+            }
+        )
+    error_matrix <- cbind(error_matrix, unlist(rowSums(error_matrix)))
+    colnames(error_matrix)[ncol(error_matrix)] <- "total_error"
+    best_row <- which(
+        error_matrix[, "total_error"] == min(error_matrix[, "total_error"])
+    )
+    return(
+        list(
+            errors = error_matrix,
+            best_order = order_list[[best_row]]
+        )
+    )
+}
+z <- independent_stratify(
+    splitting_df,
+    vars = colnames(splitting_df)[-1],
+    0.8,
+    n_shuffles = 100
+)
+
+z
+
+apply(
+    z,
+    2,
+    function(x) {
+        x / max(x)
+    }
+)
+
+which(rowSums(scaled_matrix) == min(rowSums(scaled_matrix)))
+
+# Apply scaling to each column
+scaled_matrix <- appl
+
 mtbi_split <- train_test_assign(
     train_frac = 0.8,
     subjects = mtbi_subjects
@@ -272,6 +387,28 @@ mtbi_split <- train_test_assign(
 
 mtbi_train <- mtbi_split$"train"
 mtbi_test <- mtbi_split$"test"
+
+group <- data.frame(
+    subjectkey = c(mtbi_train, mtbi_test),
+    group = c("train", "test")
+)
+
+splitting_df <- tibble::tibble(dplyr::inner_join(group, splitting_df))
+
+new_df <- splitting_df |>
+    dplyr::group_by(group) |>
+    dplyr::select(-subjectkey)
+
+prop.table(table(new_df$"sex", new_df$"group"), margin = 2)
+
+prop.table(table(new_df$"race", new_df$"group"), margin = 2)
+
+prop.table(table(new_df$"household_income", new_df$"group"), margin = 2)
+
+prop.table(table(new_df$"total_cbcl", new_df$"group"), margin = 2)
+
+new_df
+
 
 write_subjects(mtbi_train, sub_path("mtbi_train_subjects.csv", TRUE))
 write_subjects(mtbi_test, sub_path("mtbi_test_subjects.csv", TRUE))
