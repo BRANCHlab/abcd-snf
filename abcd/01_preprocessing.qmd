@@ -262,79 +262,7 @@ rm_subc_cor_qc_uninj <- read("2024_04_17_rm_subc_cor_qc_uninj.csv")
 
 To avoid having training and testing data inform each other during imputation, we assign the splits prior to the imputation.
 
-In this section, I also contrast my original train/test split with an updated stratified train/test split based on individual variable matching.
-
 ```{r}
-
-mtbi_df <- list(
-    as_mem_daze_mtbi,
-    as_mechanism_mtbi,
-    as_loc_mtbi,
-    d_interview_age_mtbi,
-    d_mtbi_age_mtbi,
-    d_sex_mtbi,
-    d_income_mtbi,
-    d_race_mtbi,
-    d_pubertal_status_mtbi,
-    mh_headaches_mtbi,
-    mh_mtbi_count_mtbi,
-    sm_subc_v_qc_mtbi,
-    sm_cort_t_qc_mtbi,
-    sm_cort_sa_qc_mtbi,
-    dm_all_wmnd_qc_mtbi,
-    rm_gord_cor_qc_mtbi,
-    rm_subc_cor_qc_mtbi,
-    p_loneliness_mtbi,
-    p_screen_time_mtbi,
-    p_sports_mtbi,
-    p_exercise_mtbi,
-    p_prosocial_mtbi,
-    p_fam_fn_mtbi,
-    p_parent_psych_mtbi,
-    cbcl_anxdep_mtbi,
-    cbcl_withdep_mtbi,
-    cbcl_somatic_mtbi,
-    cbcl_social_mtbi,
-    cbcl_thought_mtbi,
-    cbcl_attention_mtbi,
-    cbcl_rulebreak_mtbi,
-    cbcl_aggressive_mtbi,
-    sds_total_probs_mtbi
-) |> merge_df_list()
-
-
-start <- Sys.time()
-z <- shallow_match(
-    mtbi_df,
-    vars = colnames(mtbi_df)[-1],
-    0.8,
-    n_shuffles = 3,
-    processes = 1
-)
-print(Sys.time() - start)
-
-z
-
-z <- shallow_match(
-    splitting_df,
-    vars = colnames(splitting_df)[-1],
-    0.8,
-    n_shuffles = 1000
-)
-
-z$"best_order"
-
-splitting_df2 <- splitting_df
-
-splitting_df2 <- splitting_df2[z$"best_order", ]
-
-splitting_df2$"group" <- c(
-    rep("train", 352),
-    rep("test", 88)
-)
-
-z[[1]][, "group"]
-
 mtbi_split <- train_test_assign(
     train_frac = 0.8,
     subjects = mtbi_subjects
@@ -342,29 +270,6 @@ mtbi_split <- train_test_assign(
 
 mtbi_train <- mtbi_split$"train"
 mtbi_test <- mtbi_split$"test"
-
-group <- data.frame(
-    subjectkey = c(mtbi_train, mtbi_test),
-    group = c("train", "test")
-)
-
-splitting_df <- tibble::tibble(dplyr::inner_join(group, splitting_df))
-
-splitting_df
-
-new_df <- splitting_df |>
-    dplyr::group_by(group) |>
-    dplyr::select(-subjectkey)
-
-prop.table(table(splitting_df$"sex", splitting_df$"group"), margin = 2)
-prop.table(table(splitting_df2$"sex", splitting_df2$"group"), margin = 2)
-
-prop.table(table(splitting_df$"race", splitting_df$"group"), margin = 2)
-prop.table(table(splitting_df2$"race", splitting_df2$"group"), margin = 2)
-
-prop.table(table(splitting_df$"household_income", splitting_df$"group"), margin = 2)
-prop.table(table(splitting_df2$"household_income", splitting_df2$"group"), margin = 2)
-
 
 write_subjects(mtbi_train, sub_path("mtbi_train_subjects.csv", TRUE))
 write_subjects(mtbi_test, sub_path("mtbi_test_subjects.csv", TRUE))
