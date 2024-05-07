@@ -24,7 +24,6 @@ Import raw data.
 ```{r}
 ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
 abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
-
 ph_y_pds <- import("physical-health/ph_y_pds.csv")
 ph_p_pds <- import("physical-health/ph_p_pds.csv")
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
@@ -53,7 +52,33 @@ ph_p_sds <- import("physical-health/ph_p_sds.csv")
 
 ## Subjects
 
-Here, I look for subjects who sustained an mTBI between baseline and 2-year follow-up.
+We will now look at:
+
+1. (A: "mtbi_subjects.csv") baseline mTBI subjects, long
+    - What happened to them after 2 years?
+    - How predictive was the baseline clustering?
+
+2. (B: "uninjured_subjects.csv" that are NOT in C) baseline uninj subjects, long. It's okay if they had injuries.
+    - used as context for #3
+3. (C: ) baseline outcome matched uninj subjects, long. It's okay if they had injuries.
+    - did they experience more mTBIs than #2?
+
+4. (D: "mtbi_subjects_0_to_2.csv") Long mTBI subjects, baseline
+    - Does the baseline clustering predict their long term outcomes?
+    - Did they have bad outcomes right out of the gates compared to baseline matched uninjured controls?
+5. (D: "mtbi_subjects_0_to_2.csv") Long mTBI subjects, long
+    - used as context for #1
+6. (E: "uninjured_subjects_0_to_2.csv") Long uninj subjects, baseline
+    - with #4, used as context for #1 and #2?
+7. (E: "uninjured_subjects_0_to_2.csv") Long uninj subjects, long
+    - with #3, used as context for #1 and #2?
+
+The relevant times already collected for these longitudinal analyses are:
+1. baseline mTBI subjects, baseline (already collected)
+2. baseline uninj subjects, baseline (already collected)
+3. baseline outcome matched uninj subjects, baseline (already collected)
+
+And in later chapters, if clustering results are good, I'll make a classifier to predict cluster from raw data.
 
 ```{r}
 mtbi_subjects_t0 <- get_mtbi_subjects(
@@ -91,12 +116,22 @@ mtbi_subjects_t2o <- mtbi_subjects_t2[!mtbi_subjects_t2 %in% mtbi_subjects_t0]
 
 mtbi_subjects_0_to_2 <- unique(c(mtbi_subjects_t1o, mtbi_subjects_t2o))
 
-mtbi_subjects_0_to_2
+length(mtbi_subjects_0_to_2) #219
 
-mtbi_subjects_0_to_2 %in% uninjured_subjects_0_to_2
+write_subjects(
+    mtbi_subjects_t1,
+    sub_path("mtbi_subjects_t1.csv", TRUE)
+)
 
-data.frame(subjectkey = mtbi_subjects_0_to_2) |>
-    write_csv(sub_path("mtbi_subjects_0_to_2.csv", date = TRUE))
+write_subjects(
+    mtbi_subjects_t2,
+    sub_path("mtbi_subjects_t2.csv", TRUE)
+)
+
+write_subjects(
+    mtbi_subjects_0_to_2,
+    sub_path("mtbi_subjects_0_to_2.csv", TRUE)
+)
 
 uninjured_subjects_t0 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0) |>
     dplyr::select(subjectkey) |>
@@ -123,19 +158,38 @@ uninjured_subjects_0_to_2 <- Reduce(
 )
 
 # Exporting those subjects
-data.frame(subjectkey = uninjured_subjects_0_to_2) |>
-    write_csv(sub_path("uninjured_subjects_0_to_2.csv", date = TRUE))
+write_subjects(
+    uninjured_subjects_0_to_2,
+    sub_path("uninjured_subjects_0_to_2.csv", TRUE)
+)
 ```
 
-
 ```{r}
-mtbi_subjects_0_to_2 <- read_csv(
-    sub_path("2024_04_02_mtbi_subjects_0_to_2.csv")
+mtbi_subjects_t1 <- read_subjects(
+    sub_path("2024_05_06_mtbi_subjects_t1.csv")
 )
 
-uninjured_subjects_0_to_2 <- read_csv(
-    sub_path("2024_04_02_uninjured_subjects_0_to_2.csv")
+mtbi_subjects_t2 <- read_subjects(
+    sub_path("2024_05_06_mtbi_subjects_t2.csv")
 )
+
+mtbi_subjects_0_to_2 <- read_subjects(
+    sub_path("2024_05_06_mtbi_subjects_0_to_2.csv")
+)
+
+uninjured_subjects_0_to_2 <- read_subjects(
+    sub_path("2024_05_06_uninjured_subjects_0_to_2.csv")
+)
+
+# Baseline
+mtbi_subjects_0 <- read_subjects(
+    sub_path("2024_04_17_mtbi_subjects.csv")
+)
+
+uninjured_subjects_0 <- read_subjects(
+    sub_path("2024_04_17_uninjured_subjects.csv")
+)
+
 ```
 
 ## Input variables
@@ -145,48 +199,90 @@ uninjured_subjects_0_to_2 <- read_csv(
 #### Feeling dazed
 
 ```{r}
-as_mtbi_mem_daze_mtbi_l2 <- get_mtbi_mem_daze(
+# Subjects who should have their injury information collected from t1
+t1_latest <- mtbi_subjects_0_to_2[!mtbi_subjects_0_to_2 %in% mtbi_subjects_t2]
+t2_latest <- mtbi_subjects_0_to_2[!mtbi_subjects_0_to_2 %in% t1_latest]
+
+as_mem_daze_mtbi_l1 <- get_mtbi_mem_daze(
     ph_p_otbi,
     abcd_y_lt,
-    mtbi_subjects_0_to_2,
+    t1_latest,
+    t = 1
+)
+
+as_mem_daze_mtbi_l2 <- get_mtbi_mem_daze(
+    ph_p_otbi,
+    abcd_y_lt,
+    t2_latest,
     t = 2
 )
 
+as_mem_daze_mtbi_l <- rbind(
+    as_mtbi_mem_daze_mtbi_l1,
+    as_mtbi_mem_daze_mtbi_l2
+)
+
 write_csv(
-    as_mtbi_mem_daze_mtbi_l2,
-    input_path("as_mem_daze_mtbi_l2.csv", date = TRUE)
+    as_mem_daze_mtbi_l,
+    input_path("as_mem_daze_mtbi_l.csv", date = TRUE)
 )
 ```
 
 #### Mechanism of injury
 
 ```{r}
+as_mechanism_mtbi_l1 <- get_mtbi_mechanism(
+    ph_p_otbi,
+    abcd_y_lt,
+    t1_latest,
+    t = 1
+)
+
 as_mechanism_mtbi_l2 <- get_mtbi_mechanism(
     ph_p_otbi,
     abcd_y_lt,
-    mtbi_subjects_0_to_2,
+    t2_latest,
     t = 2
 )
 
+as_mechanism_mtbi_l <- rbind(
+    as_mechanism_mtbi_l1,
+    as_mechanism_mtbi_l2
+)
+
+nrow(as_mechanism_mtbi_l)
+
 write_csv(
-    as_mechanism_mtbi_l2,
-    input_path("as_mechanism_mtbi_l2.csv", date = TRUE)
+    as_mechanism_mtbi_l,
+    input_path("as_mechanism_mtbi_l.csv", date = TRUE)
 )
 ```
 
 #### Loss of consciousness
 
 ```{r}
+as_loc_mtbi_l1 <- get_mtbi_loc(
+    ph_p_otbi,
+    abcd_y_lt,
+    t1_latest,
+    t = 1
+)
+
 as_loc_mtbi_l2 <- get_mtbi_loc(
     ph_p_otbi,
     abcd_y_lt,
-    mtbi_subjects_0_to_2,
+    t2_latest,
     t = 2
 )
 
+as_loc_mtbi_l <- rbind(
+    as_loc_mtbi_l1,
+    as_loc_mtbi_l2
+)
+
 write_csv(
-    as_loc_mtbi_l2,
-    input_path("as_loc_mtbi_l2.csv", date = TRUE)
+    as_loc_mtbi_l,
+    input_path("as_loc_mtbi_l.csv", date = TRUE)
 )
 ```
 
@@ -256,47 +352,13 @@ write_csv(
 #### Injury age
 
 ```{r}
-
-rename_tbi(ph_p_otbi)$"hosp_er_age" == 0
-
-original_tbi_names()
-
-
-z <- detail_mtbi(
-    ph_p_otbi,
-    abcd_y_lt,
-    subjects = mtbi_subjects_0_to_2,
-    t = 1
-)
-
-nrow(z)
-
-z |>
-    dplyr::mutate(
-        plausible_age = dplyr::case_when(
-            current_age >= mtbi_lower_bound &
-                last_years_age <= mtbi_upper_bound ~ TRUE,
-            current_age < mtbi_lower_bound |
-                last_years_age > mtbi_upper_bound ~ FALSE
-        )
-    )
-
-z <- na.omit(z)
-z$"latest_mtbi_age" <- z$"latest_mtbi_age" / 12
-z$"mtbi_age_lower_bound" <- z$"latest_mtbi_age" * 12
-z$"mtbi_age_upper_bound" <- (z$"latest_mtbi_age" + 1) * 12 - 1
-
-z
-
 d_mtbi_age_mtbi_l1 <- get_mtbi_age(
     ph_p_otbi,
     abcd_y_lt,
-    mtbi_subjects_0_to_2,
-    t = 2,
+    t1_latest,
+    t = 1,
     as_years = FALSE
 )
-
-d_mtbi_age_mtbi_l1
 
 d_mtbi_age_mtbi_l2 <- get_mtbi_age(
     ph_p_otbi,
@@ -306,12 +368,14 @@ d_mtbi_age_mtbi_l2 <- get_mtbi_age(
     as_years = FALSE
 )
 
-d_mtbi_age_mtbi_l2 |>
-    dplyr::filter(subjectkey == "NDAR_INVBU31791C")
+d_mtbi_age_mtbi_l <- rbind(
+    d_mtbi_age_mtbi_l1,
+    d_mtbi_age_mtbi_l2
+)
 
 write_csv(
-    d_mtbi_age_mtbi_l2,
-    input_path("d_mtbi_age_mtbi_l2.csv", TRUE)
+    d_mtbi_age_mtbi_l,
+    input_path("d_mtbi_age_mtbi_l.csv", TRUE)
 )
 ```
 
