@@ -2,57 +2,6 @@ library(metasnf)
 library(patchwork)
 library(ggplot2)
 
-data_list_metadata <- function(data_list) {
-    merged_df <- metasnf::collapse_dl(data_list)
-    merged_df <- merged_df[, colnames(merged_df) != "subjectkey"]
-    ###########################################################################
-    # Build data.frame containing the types of variables in merged_df
-    ###########################################################################
-    types <- data_list |>
-        lapply(
-            function(x) {
-                rep(x$"type", ncol(x$"data") - 1)
-            }
-        ) |>
-        unlist()
-    domains <- data_list |>
-        lapply(
-            function(x) {
-                rep(x$"domain", ncol(x$"data") - 1)
-            }
-        ) |>
-        unlist()
-    var_names <- colnames(merged_df[, colnames(merged_df) != "subjectkey"])
-    metadata <- data.frame(
-        name = var_names,
-        type = types,
-        domain = domains
-    )
-    return(metadata)
-}
-
-rename_data_list <- function(data_list, name_mapping) {
-    data_list <- data_list |> lapply(
-        function(x) {
-            old_colnames <- colnames(x$"data")
-            new_colnames <- old_colnames |> lapply(
-                function(old_name) {
-                    if (old_name %in% name_mapping) {
-                        name_match <- which(name_mapping == old_name)
-                        new_name <- names(name_mapping)[name_match]
-                    } else {
-                        new_name <- old_name
-                    }
-                    return(new_name)
-                }
-            )
-            colnames(x$"data") <- new_colnames
-            return(x)
-        }
-    )
-    return(data_list)
-}
-
 keep_numeric <- function(df) {
     df <- metasnf::numcol_to_numeric(df)
     classes <- as.vector(sapply(df, class))
@@ -117,29 +66,6 @@ diff_heatmap <- function(corr1, corr2, abs = FALSE) {
     return(heatmap)
 }
 
-pval_heatmap <- function(pval_df, order, max_red = FALSE) {
-    pval_df <- pval_df |> dplyr::select(-"row_id")
-    pval_matrix <- as.matrix(pval_df[order, ])
-    hm <- ComplexHeatmap::Heatmap(
-        pval_matrix,
-        cluster_rows = FALSE,
-        cluster_columns = FALSE,
-        show_row_names = FALSE,
-        col = hm_colours(pval_matrix, max_red)
-    )
-    return(hm)
-}
-
-save_pdf <- function(heatmap, path, width, height) {
-    grDevices::pdf(
-        path,
-        width,
-        height
-    )
-    heatmap
-    grDevices::dev.off()
-}
-
 save_png <- function(heatmap, path, width, height, res = 150) {
     tryCatch(
         {
@@ -156,28 +82,6 @@ save_png <- function(heatmap, path, width, height, res = 150) {
             grDevices::dev.off()
         }
     )
-}
-
-title_case <- function(string) {
-    words <- strsplit(string, "_")[[1]]
-    words <- sapply(
-        words,
-        function(x) {
-            paste0(toupper(substr(x, 1, 1)), substr(x, 2, nchar(x)))
-        }
-    )
-    result <- paste(words, collapse = " ")
-    result <- gsub("Mtbi", "mTBI", result)
-    result <- gsub("Loc", "LOC", result)
-    result <- gsub("Cbcl", "CBCL", result)
-    result <- gsub("Sds", "SDS", result)
-    result <- gsub("Wm", "WM", result)
-    result <- gsub("Ndi", "NDI", result)
-    result <- gsub("Fmri", "fMRI", result)
-    result <- gsub("Cortical Sa", "Cortical SA (mm2)", result)
-    result <- gsub("Thickness", "Thickness (mm3)", result)
-    result <- gsub("Volume", "Volume (mm3)", result)
-    return(result)
 }
 
 scatter_plot <- function(df, feature) {
@@ -325,7 +229,7 @@ divergent_colours <- function(column)  {
     return(colours)
 }
 
-colour_scale <- function(data, min_colour = "black", max_colour = "red") {
+colour_scale <- function(data, min_colour, max_colour) {
     colours <- circlize::colorRamp2(
         c(min(data), max(data)),
         c(min_colour, max_colour)
@@ -346,19 +250,6 @@ hm_colours <- function(data, max_red = TRUE) {
         )
     }
     return(colours)
-}
-
-split_at <- function(vector, nrow) {
-    split_vec <- rep("A", nrow)
-    if (vector[length(vector)] != nrow) {
-        vector <- c(vector, nrow)
-    }
-    for (i in 1:(length(vector) - 1)) {
-        start <- vector[i]
-        end <- vector[i + 1]
-        split_vec[start:end] <- LETTERS[i + 1]
-    }
-    return(split_vec)
 }
 
 characterize_solution <- function(solution = NULL,
@@ -392,7 +283,6 @@ characterize_solution <- function(solution = NULL,
     for (i in seq_along(features)) {
         feature <- features[[i]]
         feature_col <- full_data[, feature]
-        is_bar <- NULL
         if (is.numeric(feature_col) && length(unique(feature_col)) > 2) {
             plot <- jitter_plot(full_data, feature)
             plot_width <- 4
@@ -445,203 +335,6 @@ characterize_solution <- function(solution = NULL,
     return(plot_list)
 }
 
-all_plots <- function(plot_list, plotname) {
-    pw <- wrap_plots(plot_list)
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_all_plots.png"),
-        width = 30,
-        height = 30,
-        dpi = 72
-    )
-}
-
-outcome_plots <- function(plot_list, plotname) {
-    pw <- list(
-        plot_list$"cbcl_anxdep",
-        plot_list$"cbcl_withdep",
-        plot_list$"cbcl_somatic",
-        plot_list$"cbcl_social",
-        plot_list$"cbcl_thought",
-        plot_list$"cbcl_attention",
-        plot_list$"cbcl_rulebreak",
-        plot_list$"cbcl_aggressive",
-        plot_list$"sds_sleep"
-    ) |> wrap_plots()
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_outcome_plots.png"),
-        width = 15,
-        height = 15
-    )
-}
-
-demographic_plots <- function(plot_list, plotname) {
-    plot_list <- list(
-        plot_list$"age",
-        plot_list$"mtbi_age",
-        plot_list$"household_income",
-        plot_list$"sex",
-        plot_list$"pubertal_status",
-        plot_list$"race"
-    )
-    plot_list <- Filter(Negate(is.null), plot_list)
-    pw <- wrap_plots(plot_list)
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_demographic_plots.png"),
-        width = 15,
-        height = 10
-    )
-}
-
-neuroimaging_plots <- function(plot_list, plotname) {
-    layout <- c(
-        area(t = 1, l = 1, b = 2, r = 2),
-        area(t = 1, l = 3, b = 2, r = 4),
-        area(t = 1, l = 5, b = 2, r = 6),
-        area(t = 3, l = 2, b = 4, r = 3),
-        area(t = 3, l = 4, b = 4, r = 5),
-        area(t = 5, l = 2, b = 6, r = 3),
-        area(t = 5, l = 4, b = 6, r = 5)
-    )
-    pw <- plot_list$"brain_volume" +
-        plot_list$"cortical_sa" +
-        plot_list$"cortical_thickness" +
-        plot_list$"major_wm_ndi" +
-        plot_list$"pericortical_wm_ndi" +
-        plot_list$"fmri_cort_cors" +
-        plot_list$"fmri_cort_subcort_cors" +
-        plot_layout(design = layout)
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_neuroimaging_plots.png"),
-        width = 15,
-        height = 15
-    )
-}
-
-acute_symptom_plots <- function(plot_list, plotname) {
-    pw <- list(
-        plot_list$"mtbi_mem_daze",
-        plot_list$"mtbi_loc",
-        plot_list$"mtbi_mechanism"
-    )
-    filtered_list <- Filter(Negate(is.null), pw)
-    if (length(filtered_list) >= 1) {
-        as_plots <- wrap_plots(filtered_list)
-        ggsave(
-            plot = as_plots,
-            filename = paste0(plotname, "_as_plots.png"),
-            width = 20,
-            height = 7
-        )
-    } else {
-        print("No acute symptom plots in list.")
-    }
-}
-
-parent_psych_plots <- function(plot_list, plotname) {
-    pw <- list(
-        plot_list$"parent_perstr",
-        plot_list$"parent_anxdep",
-        plot_list$"parent_withdrawn",
-        plot_list$"parent_somatic",
-        plot_list$"parent_thought",
-        plot_list$"parent_attention",
-        plot_list$"parent_aggressive",
-        plot_list$"parent_intrusive",
-        plot_list$"parent_depress",
-        plot_list$"parent_anxdisord",
-        plot_list$"parent_avoidant",
-        plot_list$"parent_antisocial",
-        plot_list$"parent_hyperactive"
-    ) |> wrap_plots()
-    ggplot2::ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_parent_psych_plots.png"),
-        width = 20,
-        height = 13
-    )
-}
-
-family_env_plots <- function(plot_list, plotname) {
-    pw <- list(
-        plot_list$"family_fight",
-        plot_list$"family_angry",
-        plot_list$"family_throw",
-        plot_list$"family_temper",
-        plot_list$"family_criticize",
-        plot_list$"family_hit",
-        plot_list$"family_peaceful",
-        plot_list$"family_outdo",
-        plot_list$"family_yell"
-    ) |> wrap_plots()
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_family_env_plots.png"),
-        width = 15,
-        height = 15
-    )
-}
-
-prosocial_plots <- function(plot_list, plotname) {
-    layout <- c(
-        area(t = 1, l = 1, b = 2, r = 2),
-        area(t = 1, l = 3, b = 2, r = 4),
-        area(t = 1, l = 5, b = 2, r = 6),
-        area(t = 1, l = 7, b = 2, r = 8),
-        area(t = 3, l = 2, b = 4, r = 3),
-        area(t = 3, l = 4, b = 4, r = 5),
-        area(t = 3, l = 6, b = 4, r = 7)
-    )
-    pw <-
-        plot_list$"same_sex_friend" +
-        plot_list$"opp_sex_friend" +
-        plot_list$"same_sex_close_friend" +
-        plot_list$"opp_sex_close_friend" +
-        plot_list$"prosocial_considerate" +
-        plot_list$"prosocial_helps_hurt" +
-        plot_list$"prosocial_helpful" +
-        plot_layout(design = layout)
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_prosocial_plots.png"),
-        width = 15,
-        height = 8
-    )
-}
-
-healthy_habits_plots <- function(plot_list, plotname) {
-    pw <-
-        plot_list$"weekday_screentime" +
-        plot_list$"school_programs" +
-        plot_list$"non_school_programs" +
-        plot_list$"programs_this_year" +
-        plot_list$"private_instruction" +
-        plot_list$"exercise_time"
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_healthy_habits_plots.png"),
-        width = 14,
-        height = 8
-    )
-}
-
-medical_history_plots <- function(plot_list, plotname) {
-    plot_list <- list(
-        plot_list$"headache_history",
-        plot_list$"previous_mtbis"
-    )
-    plot_list <- Filter(Negate(is.null), plot_list)
-    pw <- wrap_plots(plot_list)
-    ggsave(
-        plot = pw,
-        filename = paste0(plotname, "_medical_history_plots.png"),
-        width = 6 * length(plot_list),
-        height = 6
-    )
-}
 
 extract_imputed <- function(original_df, imputed_df, partition) {
     return(imputed_df[imputed_df$".imp" == partition, colnames(original_df)])
@@ -712,23 +405,6 @@ es_bound <- function(d, n1, n2) {
             "upper" = es_data$"u.d"
         )
     )
-}
-
-cluster_t_test <- function(data, main_group, ref_group, var) {
-    x1 <- data[data$"cluster" %in% main_group, var] |>
-        unlist() |>
-        as.numeric()
-    x2 <- data[data$"cluster" %in% ref_group, var] |>
-        unlist() |>
-        as.numeric()
-    p_val <- t.test(
-        x1,
-        x2,
-        alternative = "two.sided",
-        var.equal = FALSE,
-        conf.level = 0.95
-    )$"p.value"
-    return(p_val)
 }
 
 cluster_d <- function(data, main_group, ref_group, var) {
@@ -809,7 +485,7 @@ manhattan_plot <- function(data,
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
     ###########################################################################
-    dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    dl_metadata <- summarize_dl(data_list, "feature") |> dplyr::select(-"type")
     summary_data <- merge(
         summary_data,
         dl_metadata,
@@ -976,7 +652,7 @@ manhattan_plot2 <- function(esm,
     ###########################################################################
     # Merge the summmary plot with domain information from the data_list
     ###########################################################################
-    dl_metadata <- data_list_metadata(data_list) |> dplyr::select(-"type")
+    dl_metadata <- summarize_dl(data_list, "feature") |> dplyr::select(-"type")
     n_outcomes <- length(which(startsWith(dl_metadata$"domain", "O")))
     n_vars <- nrow(dl_metadata)
     summary_data <- merge(
@@ -1453,18 +1129,6 @@ subject_filter_dl <- function(data_list, subject_vector) {
     return(data_list)
 }
 
-ari_order <- function(ari_matrix) {
-    heatmap <- similarity_matrix_heatmap(
-        ari_matrix,
-        log_graph = FALSE,
-        cluster_rows = TRUE,
-        cluster_columns = TRUE
-    )
-    heatmap <- ComplexHeatmap::draw(heatmap)
-    order <- ComplexHeatmap::row_order(heatmap)
-    return(order)
-}
-
 my_manhattan_save <- function(manhattan_plot, name) {
     mcs <- length(levels(manhattan_plot[[1]]$"mc_label"))
     ggsave(
@@ -1588,11 +1252,11 @@ dist_plots <- function(data_list = NULL, df = NULL, size = 4) {
 dl_scatter <- function(data_list, var1, var2) {
     dl_df <- data.frame(collapse_dl(data_list))
     plot <- dl_df |>
-        ggplot(aes(x = dl_df[, var1], y = dl_df[, var2])) +
-        geom_jitter(width = 0.1, height = 0.1, alpha = 0.7) +
-        geom_smooth(method = "lm", se = FALSE, color = "red") +
-        labs(x = var1, y = var2) +
-        theme_bw()
+        ggplot2::ggplot(ggplot2::aes(x = dl_df[, var1], y = dl_df[, var2])) +
+        ggplot2::geom_jitter(width = 0.1, height = 0.1, alpha = 0.7) +
+        ggplot2::geom_smooth(method = "lm", se = FALSE, color = "red") +
+        ggplot2::labs(x = var1, y = var2) +
+        ggplot2::theme_bw()
     return(plot)
 }
 
@@ -1616,10 +1280,10 @@ dl_feature_restrict <- function(data_list, inclusion_features) {
 }
 
 plot_solutions_matrix <- function(solutions_matrix,
-                           group_name,
-                           possible_data,
-                           individual_plots = TRUE,
-                           group_plots = TRUE) {
+                                  group_name,
+                                  possible_data,
+                                  individual_plots = TRUE,
+                                  group_plots = TRUE) {
     for (row in seq_len(nrow(solutions_matrix))) {
         solution <- solutions_matrix[row, ]
         id <- solution$"row_id"
@@ -1791,7 +1455,7 @@ extend_solutions_imp <- function(solutions_matrix,
                         }
                     ) |>
                     merge_df_list()
-                clustered_subs <- get_clustered_subs(esm[i, ])
+                clustered_subs <- get_cluster_df(esm[i, ])
                 for (j in seq_along(features)) {
                     current_outcome_component <- merged_df[, c(1, j + 1)]
                     current_outcome_name <-
@@ -1833,21 +1497,4 @@ extend_solutions_imp <- function(solutions_matrix,
         esm <- summarize_pvals(esm)
     }
     return(esm)
-}
-
-mc_shiny <- function(plot) {
-    htShiny(
-        plot,
-        response = "click",
-        title = "Meta Cluster Identification",
-        description = paste0(
-            "Click on the heatmap to identify the indices of the meta cluster",
-            " boundaries. You can recreate the similarity matrix heatmap",
-            " passing these values as the `split_vector` argument to have the",
-            " meta clusters visually separated and labeled. For example,",
-            " if the boundaries of the meta clusters were at row/column indices",
-            " 150, 300, and 313, use the argument",
-            " `split_vector = c(150, 300, 313) when recreating the heatmap."
-        )
-    )
 }
