@@ -2,6 +2,16 @@ library(metasnf)
 library(patchwork)
 library(ggplot2)
 
+summarize_dl(data_list)
+
+summarize_dl(target_list)
+
+
+
+
+
+
+
 keep_numeric <- function(df) {
     df <- metasnf::numcol_to_numeric(df)
     classes <- as.vector(sapply(df, class))
@@ -226,14 +236,6 @@ divergent_colours <- function(column)  {
     values <- unique(column)
     colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
     names(colours) <- values
-    return(colours)
-}
-
-colour_scale <- function(data, min_colour, max_colour) {
-    colours <- circlize::colorRamp2(
-        c(min(data), max(data)),
-        c(min_colour, max_colour)
-    )
     return(colours)
 }
 
@@ -561,195 +563,6 @@ manhattan_plot <- function(data,
     return(plot)
 }
 
-manhattan_plot2 <- function(esm,
-                            threshold = NULL,
-                            data_list,
-                            target_list,
-                            variable_order = NULL,
-                            xints = "outcomes",
-                            colours = NULL) {
-    ###########################################################################
-    # Suppress warnings related to non-standard evaluation
-    ###########################################################################
-    row_id <- ""
-    variable <- ""
-    pval <- ""
-    domain <- ""
-    mean_pval <- ""
-    mc_label <- ""
-    sd_pval <- ""
-    ###########################################################################
-    # Formatting esm as dataframe
-    ###########################################################################
-    esm <- data.frame(esm)
-    ###########################################################################
-    # Select row_id, label, and p-value related columns only
-    ###########################################################################
-    if (!"label" %in% colnames(esm)) {
-        esm$"label" <- esm$"row_id"
-    }
-    esm <- esm |>
-        dplyr::select(
-            "row_id",
-            "label",
-            dplyr::ends_with("_pval")
-        )
-    ###########################################################################
-    # Convert row_id and label to factors
-    ###########################################################################
-    esm$"row_id" <- factor(esm$"row_id")
-    esm$"label" <- factor(esm$"label")
-    ###########################################################################
-    # Re-assign names to the data list and target list
-    ###########################################################################
-    if (!is.null(target_list)) {
-        data_list_renamed <- data_list |> lapply(
-            function(x) {
-                x$"domain" <- paste0("I-", x$"domain")
-                return(x)
-            }
-        )
-        target_list_renamed <- target_list |> lapply(
-            function(x) {
-                x$"domain" <- paste0("O-", x$"domain")
-                return(x)
-            }
-        )
-        data_list <- c(data_list_renamed, target_list_renamed)
-    }
-    ###########################################################################
-    # Columns that end with _p are truncated by the threshold of p = 1e-5
-    ###########################################################################
-    var_cols <- colnames(esm)[endsWith(colnames(esm), "_pval")]
-    cutoff_var_cols <- esm[, var_cols] |>
-        apply(
-            MARGIN = 2,
-            FUN = function(x) {
-                p <- -log10(x)
-                if (length(p) == 1) {
-                    if (p > 5) {
-                        p <- 5
-                    }
-                } else {
-                    p[p > 5] <- 5
-                }
-                return(p)
-            }
-        ) |>
-            as.matrix()
-    if (dim(cutoff_var_cols)[2] == 1) {
-        cutoff_var_cols <- t(cutoff_var_cols)
-    }
-    esm[, var_cols] <- cutoff_var_cols
-    summary_data <- esm |>
-        tidyr::pivot_longer(
-            !(c(row_id, label)),
-            names_to = "variable",
-            values_to = "neg_log_pval"
-        ) |>
-        data.frame()
-    summary_data$"variable" <- sub("_pval$", "", summary_data$"variable")
-    ###########################################################################
-    # Merge the summmary plot with domain information from the data_list
-    ###########################################################################
-    dl_metadata <- summarize_dl(data_list, "feature") |> dplyr::select(-"type")
-    n_outcomes <- length(which(startsWith(dl_metadata$"domain", "O")))
-    n_vars <- nrow(dl_metadata)
-    summary_data <- merge(
-        summary_data,
-        dl_metadata,
-        by.x = "variable",
-        by.y = "name",
-        all.x = TRUE
-    )
-    summary_data <- summary_data |> dplyr::arrange(domain)
-    ###########################################################################
-    # Proper ordering of variables through factor level assignment
-    ###########################################################################
-    if (is.null(variable_order)) {
-        summary_data$"variable" <- factor(
-            summary_data$"variable",
-            levels = unique(summary_data$"variable")
-        )
-    } else {
-        involved_vars <- unique(summary_data$"variable")
-        variable_order <- variable_order[variable_order %in% involved_vars]
-        summary_data$"variable" <- factor(
-            summary_data$"variable",
-            levels = variable_order
-        )
-    }
-    labels <- unique(esm$"label")
-    plot <- summary_data |>
-        ggplot2::ggplot(ggplot2::aes(x = domain, y = mean_pval)) +
-        ggplot2::geom_jitter(
-            mapping = ggplot2::aes(
-                group = domain,
-                x = variable,
-                y = neg_log_pval,
-                colour = domain
-            ),
-            height = 0,
-            width = 0,
-            size = 5
-        ) +
-        ggplot2::labs(
-            x = NULL,
-            y = expression("-log"[10] * "(p)"),
-            colour = "Domain"
-        ) +
-        ggplot2::ylim(0, 5) +
-        ggplot2::theme_bw() +
-        ggplot2::labs(y = "-log10(p)") +
-        ggplot2::theme(
-            axis.text.x = ggplot2::element_text(
-                angle = 90,
-                vjust = 0.5,
-                hjust = 1
-            ),
-            plot.title = ggplot2::element_text(hjust = 0.5),
-            text = element_text(size = 20)
-        ) +
-        ggplot2::scale_colour_manual(
-            values = c(
-                "I-AS" = "#85929e",
-                "I-D" = "#bb8fce",
-                "I-N" = "#e59866",
-                "I-MH" = "#7fb3d5",
-                "I-P" = "#52be80",
-                "O-S" = "#d98880",
-                "O-B" = "#ff3131"
-            )
-        ) +
-        ggplot2::facet_grid(label ~ .)
-    ###########################################################################
-    # Prepping x-intercept positions
-    ###########################################################################
-    if (!is.null(xints)) {
-        if (identical(xints, "outcomes")) {
-            plot <- plot + ggplot2::geom_vline(
-                xintercept = n_vars - n_outcomes + 0.5
-            )
-        } else {
-            xints <- xints + 0.5
-            plot <- plot + ggplot2::geom_vline(
-                xintercept = xints
-            )
-        }
-    }
-    ###########################################################################
-    # Add p-value threshold if requested
-    ###########################################################################
-    if (!is.null(threshold)) {
-        plot <- plot + ggplot2::geom_hline(
-            yintercept = -log10(threshold),
-            linetype = "dashed",
-            colour = "red"
-        )
-    }
-    return(plot)
-}
-
 my_similarity_matrix_heatmap <- function(aris,
                                          aris_order,
                                          extended_solutions,
@@ -765,7 +578,7 @@ my_similarity_matrix_heatmap <- function(aris,
     extended_solutions$"mean_pval" <- outcome_pvals$"mean_pval"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     if (!is.null(split_vector)) {
-        splits <- split_at(vector = split_vector, nrow = 2000)
+        splits <- label_splits(vector = split_vector, nrow = 2000)
     } else {
         splits <- NULL
     }
@@ -875,7 +688,7 @@ lite_similarity_matrix_heatmap <- function(aris,
         summarize_pvals()
     extended_solutions$"mean_pval" <- outcome_pvals$"mean_pval"
     if (!is.null(split_vector)) {
-        splits <- split_at(vector = split_vector, nrow = 2000)
+        splits <- label_splits(vector = split_vector, nrow = 2000)
     } else {
         splits <- NULL
     }
@@ -909,68 +722,6 @@ lite_similarity_matrix_heatmap <- function(aris,
         row_title_gp = grid::gpar(fontsize = 20)
     )
     return(mc_heatmap)
-}
-
-my_manhattan_plot <- function(solutions_matrix,
-                              aris_order = NULL,
-                              split_vector = NULL,
-                              sorted_labels = NULL,
-                              mcs = NULL,
-                              data_list,
-                              target_list,
-                              colours) {
-    if (is.null(sorted_labels)) {
-        # Managing the MC labels
-        reordered_labels <- split_at(split_vector, 2000)
-        names(aris_order) <- reordered_labels
-        sorted_labels <- sort(aris_order)
-    }
-    # Reformatting the data lists to pull names
-    data_list_renamed <- data_list |> lapply(
-        function(x) {
-            x$"domain" <- paste0("I-", x$"domain")
-            return(x)
-        }
-    )
-    target_list_renamed <- target_list |> lapply(
-        function(x) {
-            x$"domain" <- paste0("O-", x$"domain")
-            return(x)
-        }
-    )
-    data_list <- c(data_list_renamed, target_list_renamed)
-    # Extract p-values
-    target_pvals <- pval_select(solutions_matrix)
-    target_pvals$"mc_label" <- names(sorted_labels)
-    target_pvals <- dplyr::select(
-        target_pvals,
-        -dplyr::starts_with(c("mean", "min"))
-    )
-    # Assign all MCs if none specified
-    if (is.null(mcs)) {
-        mcs <- sorted_labels |>
-            names() |>
-            unique() |>
-            sort()
-    }
-    # Main call to manhattan plot
-    mc_associations <- manhattan_plot(
-        target_pvals,
-        threshold = 0.05,
-        bonferroni_line = FALSE,
-        data_list = data_list,
-        mc_labels = mcs,
-        colours = colours
-    )
-    return(mc_associations)
-}
-
-split_letters <- function(split_vec, n = 2000) {
-    split_letters <- split_vec |>
-        split_at(2000) |>
-        unique() |>
-        sort()
-    return(split_letters)
 }
 
 my_corr_plot <- function(data_list, target_list, order) {
@@ -1023,9 +774,9 @@ representative_mc <- function(split_vector,
     aris <- aris[ari_order, ari_order]
     solutions_matrix <- solutions_matrix[ari_order, ]
     # Assigning meta clusters to the solutions matrix and ARI matrix
-    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    aris$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    mcs <- split_at(split_vector, nrow(solutions_matrix)) |>
+    solutions_matrix$"mc" <- label_splits(split_vector, nrow(solutions_matrix))
+    aris$"mc" <- label_splits(split_vector, nrow(solutions_matrix))
+    mcs <- label_splits(split_vector, nrow(solutions_matrix)) |>
         unique()
     for (mc in mcs) {
         mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
@@ -1047,73 +798,6 @@ representative_mc <- function(split_vector,
             group_plots = group_plots
         )
     }
-}
-
-# Restrict a set of solutions matrix to the most representative solutions
-# based on their adjusted Rand Index.
-get_rep_solutions <- function(ari,
-                              split_vector,
-                              ari_order,
-                              solutions_matrix,
-                              labels = NULL,
-                              exclude_mcs = NULL,
-                              include_mcs = NULL,
-                              restriction_function = NULL) {
-    ###########################################################################
-    # Re-sort the solutions matrix based on the aris
-    ###########################################################################
-    ari_order <- unlist(ari_order)
-    ari <- data.frame(ari[ari_order, ari_order])
-    solutions_matrix <- solutions_matrix[ari_order, ]
-    ###########################################################################
-    # Extract and assign meta cluster labels
-    ###########################################################################
-    mcs <- unique(split_at(split_vector, nrow(solutions_matrix)))
-    solutions_matrix$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    ari$"mc" <- split_at(split_vector, nrow(solutions_matrix))
-    ###########################################################################
-    # Iterate through the meta clusters and keep the representative solution
-    ###########################################################################
-    rep_solutions <- data.frame()
-    for (mc in mcs) {
-        # Subset to just those solutions and ARIs within the MC
-        mc_sm <- solutions_matrix[solutions_matrix$"mc" == mc, ]
-        mc_ari <- ari[ari$"mc" == mc, ]
-        mc_ari$"mc" <- NULL
-        if (!is.null(restriction_function)) {
-            mc_indices <- restriction_function(mc_sm)
-            mc_ari <- mc_ari[mc_indices, ]
-            mc_sm <- mc_sm[mc_indices, ]
-        }
-        # The most representative solution
-        rep_mc <- which(rowSums(mc_ari) == max(rowSums(mc_ari)))[1]
-        rep_solution <- mc_sm[rep_mc, ]
-        rep_solutions <- rbind(rep_solutions, rep_solution)
-    }
-    ###########################################################################
-    # Assign labels to the representative solutions
-    ###########################################################################
-    if (is.null(labels)) {
-        labels <- rep_solutions$"mc"
-    }
-    rep_solutions$"label" <- labels
-    ###########################################################################
-    # Restrict representative solutions based on the inclusion/exclusion lists
-    ###########################################################################
-    if (!is.null(exclude_mcs) & !is.null(include_mcs)) {
-        warning(
-            "`exclude_mcs` and `include_mcs` cannot both be specified.",
-            " Representative solutions will not be filtered."
-        )
-        return(rep_solutions)
-    }
-    if (!is.null(exclude_mcs)) {
-        rep_solutions <- rep_solutions[!rep_solutions$"mc" %in% exclude_mcs, ]
-    }
-    if (!is.null(include_mcs)) {
-        rep_solutions <- rep_solutions[rep_solutions$"mc" %in% include_mcs, ]
-    }
-    return(rep_solutions)
 }
 
 subject_filter_dl <- function(data_list, subject_vector) {

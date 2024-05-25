@@ -300,3 +300,66 @@ characterize_solution <- function(solution = NULL,
     print("Done")
     return(plot_list)
 }
+
+my_manhattan_plot <- function(solutions_matrix,
+                              aris_order = NULL,
+                              split_vector = NULL,
+                              sorted_labels = NULL,
+                              mcs = NULL,
+                              data_list,
+                              target_list,
+                              colours) {
+    if (is.null(sorted_labels)) {
+        # Managing the MC labels
+        reordered_labels <- label_splits(split_vector, 2000)
+        names(aris_order) <- reordered_labels
+        sorted_labels <- sort(aris_order)
+    }
+    # Reformatting the data lists to pull names
+    data_list_renamed <- data_list |> lapply(
+        function(x) {
+            x$"domain" <- paste0("I-", x$"domain")
+            return(x)
+        }
+    )
+    target_list_renamed <- target_list |> lapply(
+        function(x) {
+            x$"domain" <- paste0("O-", x$"domain")
+            return(x)
+        }
+    )
+    data_list <- c(data_list_renamed, target_list_renamed)
+    # Extract p-values
+    target_pvals <- pval_select(solutions_matrix)
+    target_pvals$"mc_label" <- names(sorted_labels)
+    target_pvals <- dplyr::select(
+        target_pvals,
+        -dplyr::starts_with(c("mean", "min"))
+    )
+    # Assign all MCs if none specified
+    if (is.null(mcs)) {
+        mcs <- sorted_labels |>
+            names() |>
+            unique() |>
+            sort()
+    }
+    # Main call to manhattan plot
+    mc_associations <- manhattan_plot(
+        target_pvals,
+        threshold = 0.05,
+        bonferroni_line = FALSE,
+        data_list = data_list,
+        mc_labels = mcs,
+        colours = colours
+    )
+    return(mc_associations)
+}
+
+split_letters <- function(split_vec, n = 2000) {
+    split_letters <- split_vec |>
+        label_splits(2000) |>
+        unique() |>
+        sort()
+    return(split_letters)
+}
+
