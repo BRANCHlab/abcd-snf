@@ -20,7 +20,7 @@ uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
 
 mtbi_train_subjects <- read_csv(sub_path("2024_04_18_mtbi_train_subjects.csv"))
 
-source("abcd/functions.R")
+#source("abcd/functions.R")
 ```
 
 ## Loading data and out of model lists
@@ -112,17 +112,21 @@ write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
 ## Re-importing the generated solutions
 
 ```{r}
-
 mtbi_ari <- calc_aris(mtbi_sm, processes = "max")
 write_csv(data.frame(mtbi_ari), proc_path("mtbi_ari.csv", TRUE))
 
 mtbi_ari_order <- ari_order(mtbi_ari)
+
+z <- get_matrix_order(mtbi_ari)
+
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
 
 ```{r}
 mtbi_sm <- read_csv(proc_path("2024_04_23_mtbi_sm.csv"))
+
 mtbi_ari <- as.matrix(read_csv(proc_path("2024_04_23_mtbi_ari.csv")))
+
 mtbi_ari_order <- unlist(read_csv(proc_path("2024_04_23_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
@@ -194,9 +198,36 @@ mtbi_esm <- read_csv(proc_path("2024_04_23_mtbi_esm.csv"))
 
 ```{r}
 
-library(plotly)
-library(ComplexHeatmap)
-library(InteractiveComplexHeatmap)
+base_ari_hm <- similarity_matrix_heatmap(
+    mtbi_ari,
+    order = z,
+    log_graph = FALSE,
+    min_colour = "navy",
+    max_colour = "red",
+    split_vector = mtbi_split_vec
+)
+
+shiny_annotator(base_ari_hm)
+
+# The one for Z
+mtbi_split_vec <- c(
+    60,
+    135,
+    275,
+    490,
+    585,
+    940,
+    1086,
+    1175,
+    1432,
+    1660
+)
+my_similarity_matrix_heatmap(
+    aris = mtbi_ari,
+    aris_order = z,
+    extended_solutions = mtbi_esm,
+    split_vector = mtbi_split_vec
+)
 
 mtbi_split_vec <- c(
     233,
@@ -206,6 +237,23 @@ mtbi_split_vec <- c(
     978,
     1240,
     1465
+)
+
+
+my_similarity_matrix_heatmap(
+    aris = mtbi_ari,
+    aris_order = mtbi_ari_order,
+    extended_solutions = mtbi_esm,
+    split_vector = mtbi_split_vec
+)
+
+similarity_matrix_heatmap(
+    mtbi_ari,
+    order = mtbi_ari_order,
+    log_graph = FALSE,
+    min_colour = "navy",
+    max_colour = "red",
+    split_vector = mtbi_split_vec
 )
 
 mtbi_mc_heatmap <- similarity_matrix_heatmap(

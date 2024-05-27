@@ -6,12 +6,6 @@ summarize_dl(data_list)
 
 summarize_dl(target_list)
 
-
-
-
-
-
-
 keep_numeric <- function(df) {
     df <- metasnf::numcol_to_numeric(df)
     classes <- as.vector(sapply(df, class))
@@ -578,7 +572,7 @@ my_similarity_matrix_heatmap <- function(aris,
     extended_solutions$"mean_pval" <- outcome_pvals$"mean_pval"
     extended_solutions$"nclust2" <- extended_solutions$"nclust" - 2
     if (!is.null(split_vector)) {
-        splits <- label_splits(vector = split_vector, nrow = 2000)
+        splits <- label_splits(split_vector, nrow = 2000)
     } else {
         splits <- NULL
     }
