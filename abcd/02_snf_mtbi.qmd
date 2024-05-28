@@ -19,8 +19,6 @@ mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
 uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
 
 mtbi_train_subjects <- read_csv(sub_path("2024_04_18_mtbi_train_subjects.csv"))
-
-#source("abcd/functions.R")
 ```
 
 ## Loading data and out of model lists
@@ -115,9 +113,7 @@ write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
 mtbi_ari <- calc_aris(mtbi_sm, processes = "max")
 write_csv(data.frame(mtbi_ari), proc_path("mtbi_ari.csv", TRUE))
 
-mtbi_ari_order <- ari_order(mtbi_ari)
-
-z <- get_matrix_order(mtbi_ari)
+mtbi_ari_order <- get_matrix_order(mtbi_ari)
 
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
@@ -127,14 +123,13 @@ mtbi_sm <- read_csv(proc_path("2024_04_23_mtbi_sm.csv"))
 
 mtbi_ari <- as.matrix(read_csv(proc_path("2024_04_23_mtbi_ari.csv")))
 
-mtbi_ari_order <- unlist(read_csv(proc_path("2024_04_23_mtbi_ari_order.csv")))
+mtbi_ari_order <- unlist(read_csv(proc_path("2024_05_27_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
 ## Full imputation meta clustering plot with impairment levels
 
 ```{r}
-
 imputation_labels <- data.frame(
     "imputation" = c(
         rep("m1", 200),
@@ -154,204 +149,248 @@ imputation_labels <- data.frame(
     )
 )
 
-###############################################################################
-# Setting up merged data lists and outcome lists for visualizing p-values over
-# inputs and outputs.
-###############################################################################
-mtbi_train_dls <- c(
-    all_dls$"mtbi_train_data_lists",
-    all_dls$"mtbi_pooled_data_lists"
-)
-
-mtbi_train_ols <- c(
-    all_dls$"mtbi_train_oom_lists",
-    all_dls$"mtbi_pooled_oom_lists"
-)
-
-mtbi_train_dls_ols <- lapply(
-    1:10,
-    function(x) {
-        c(mtbi_train_dls[[x]], mtbi_train_ols[[x]])
-    }
-)
-
-names(mtbi_train_dls_ols) <- c(
-    paste0("m", 1:5),
-    paste0("pm", 1:5)
-)
-
 mtbi_sm_l <- cbind(mtbi_sm, imputation_labels)
 
-mtbi_esm <- extend_solutions_imp(
-    mtbi_sm_l,
-    imputed_targets = mtbi_train_dls_ols,
+mtbi_sm_solo <- mtbi_sm_l |>
+    dplyr::filter(pooled == "no")
+
+mtbi_sm_pooled <- mtbi_sm_l |>
+    dplyr::filter(pooled == "yes")
+
+mtbi_esm_m1 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "m1", ],
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_1",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_1",
     min_pval = 1e-10,
-    calculate_summaries = FALSE,
     processes = "max"
 )
+#
+mtbi_esm_m2 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "m2", ],
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_2",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_m3 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "m3", ],
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_m4 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "m4", ],
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_4",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_4",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_m5 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "m5", ],
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_5",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_5",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_pm1 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "pm1", ],
+    data_list = all_dls$"mtbi_pooled_data_lists"$"imp_1",
+    target_list = all_dls$"mtbi_pooled_oom_lists"$"imp_1",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_pm2 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "pm2", ],
+    data_list = all_dls$"mtbi_pooled_data_lists"$"imp_2",
+    target_list = all_dls$"mtbi_pooled_oom_lists"$"imp_2",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_pm3 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "pm3", ],
+    data_list = all_dls$"mtbi_pooled_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_pooled_oom_lists"$"imp_3",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_pm4 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "pm4", ],
+    data_list = all_dls$"mtbi_pooled_data_lists"$"imp_4",
+    target_list = all_dls$"mtbi_pooled_oom_lists"$"imp_4",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+mtbi_esm_pm5 <- extend_solutions(
+    mtbi_sm_l[mtbi_sm_l$"imputation" == "pm5", ],
+    data_list = all_dls$"mtbi_pooled_data_lists"$"imp_5",
+    target_list = all_dls$"mtbi_pooled_oom_lists"$"imp_5",
+    min_pval = 1e-10,
+    processes = "max"
+)
+
+mtbi_esm <- dplyr::bind_rows(
+    mtbi_esm_m1,
+    mtbi_esm_m2,
+    mtbi_esm_m3,
+    mtbi_esm_m4,
+    mtbi_esm_m5,
+    mtbi_esm_pm1,
+    mtbi_esm_pm2,
+    mtbi_esm_pm3,
+    mtbi_esm_pm4,
+    mtbi_esm_pm5
+)
+
+mtbi_esm$"impairment_separation" <- -log10(mtbi_esm$"mean_pval")
+
 write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 ```
 
 ```{r}
-mtbi_esm <- read_csv(proc_path("2024_04_23_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_05_27_mtbi_esm.csv"))
 ```
 
 ```{r}
-
-base_ari_hm <- similarity_matrix_heatmap(
+base_ari_hm <- adjusted_rand_index_heatmap(
     mtbi_ari,
-    order = z,
-    log_graph = FALSE,
-    min_colour = "navy",
-    max_colour = "red",
-    split_vector = mtbi_split_vec
+    order = mtbi_ari_order
 )
 
 shiny_annotator(base_ari_hm)
 
-# The one for Z
 mtbi_split_vec <- c(
     60,
-    135,
+    137,
     275,
     490,
-    585,
+    580,
     940,
     1086,
     1175,
-    1432,
+    1435,
     1660
-)
-my_similarity_matrix_heatmap(
-    aris = mtbi_ari,
-    aris_order = z,
-    extended_solutions = mtbi_esm,
-    split_vector = mtbi_split_vec
-)
-
-mtbi_split_vec <- c(
-    233,
-    380,
-    672,
-    830,
-    978,
-    1240,
-    1465
-)
-
-
-my_similarity_matrix_heatmap(
-    aris = mtbi_ari,
-    aris_order = mtbi_ari_order,
-    extended_solutions = mtbi_esm,
-    split_vector = mtbi_split_vec
-)
-
-similarity_matrix_heatmap(
-    mtbi_ari,
-    order = mtbi_ari_order,
-    log_graph = FALSE,
-    min_colour = "navy",
-    max_colour = "red",
-    split_vector = mtbi_split_vec
-)
-
-mtbi_mc_heatmap <- similarity_matrix_heatmap(
-    mtbi_ari,
-    order = mtbi_ari_order,
-    log_graph = FALSE,
-    min_colour = "navy",
-    max_colour = "red",
-    split_vector = mtbi_split_vec
-)
-
-mtbi_mc_heatmap
-###############################################################################
-
-mtbi_mc_heatmap <- lite_similarity_matrix_heatmap(
-    aris = mtbi_ari,
-    aris_order = mtbi_ari_order,
-    extended_solutions = mtbi_esm
-)
-
-# Plot the heatmap
-ht_plot <- draw(mtbi_mc_heatmap)
-
-htShiny(
-    ht_plot,
-    response = "click",
-    title = "Meta Cluster Identification",
-    description = paste0(
-        "Click on the heatmap to identify the indices of the meta cluster",
-        " boundaries. You can recreate the similarity matrix heatmap",
-        " passing these values as the `split_vector` argument to have the",
-        " meta clusters visually separated and labeled. For example,",
-        " if the boundaries of the meta clusters were at row/column indices",
-        " 150, 300, and 313, use the argument",
-        " `split_vector = c(150, 300, 313) when recreating the heatmap."
-    )
-)
-
-mtbi_split_vec <- c(
-    233,
-    380,
-    672,
-    830,
-    978,
-    1240,
-    1465
-)
-
-mtbi_mc_heatmap_lite <- lite_similarity_matrix_heatmap(
-    aris = mtbi_ari,
-    aris_order = mtbi_ari_order,
-    extended_solutions = mtbi_esm,
-    split_vector = mtbi_split_vec
-)
-mtbi_mc_heatmap_lite
-
-mc_heatmap_save(
-    mtbi_mc_heatmap_lite,
-    fig_path("mtbi_mc_heatmap_lite.png", TRUE)
 )
 
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
-
-mtbi_split_vec <- read_csv(proc_path("2024_04_23_mtbi_split_vec.csv")) |>
+mtbi_split_vec <- read_csv(proc_path("2024_05_27_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 
+divergent_colours <- function(column)  {
+    values <- unique(column)
+    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
+    names(colours) <- values
+    return(colours)
+}
+
+full_mtbi_ari_hm <- adjusted_rand_index_heatmap(
+    aris = mtbi_ari,
+    order = mtbi_ari_order,
+    data = mtbi_esm,
+    min_colour = "black",
+    split_vector = mtbi_split_vec,
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    left_hm = list(
+        "Pooled" = "pooled",
+        "Imputation" = "imputation"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            mtbi_esm$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        ),
+        "Imputation" = divergent_colours(mtbi_esm$"imputation"),
+        "Pooled" = c(
+            "yes" = "orange",
+            "no" = "purple"
+        )
+    )
+)
+
+save_heatmap(
+    heatmap = full_mtbi_ari_hm,
+    path = fig_path("full_mtbi_ari_hm.png", TRUE),
+    width = 950,
+    height = 900,
+    res = 100
+)
+
+lite_mtbi_ari_hm <- adjusted_rand_index_heatmap(
+    aris = mtbi_ari,
+    order = mtbi_ari_order,
+    data = mtbi_esm,
+    min_colour = "black",
+    split_vector = mtbi_split_vec,
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            mtbi_esm$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+
+save_heatmap(
+    heatmap = lite_mtbi_ari_hm,
+    path = fig_path("lite_mtbi_ari_hm.png", TRUE),
+    width = 900,
+    height = 700,
+    res = 100
+)
 ```
+
+When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have
+values for all features.
 
 ```{r}
 
-# Function to try to lean on mTBI-including solutions when possible.
-restrict_fn <- function(x, threshold = 0.1) {
-    x_solo_ind <- x$"imputation" %in% c("m1", "m2", "m3", "m4", "m5")
-    x_pool_ind <- x$"imputation" %in% c("pm1", "pm2", "pm3", "pm4", "pm5")
-    x_solo <- x[x_solo_ind, ]
-    x_pool <- x[x_pool_ind, ]
-    frac_solo <- nrow(x_solo) / (nrow(x_solo) + nrow(x_pool))
-    print(frac_solo)
-    print(threshold)
-    if (frac_solo < threshold) {
-        return(x_pool_ind)
-    } else {
-        return(x_solo_ind)
-    }
-}
+z <- mtbi_esm
 
-# Representative solutions
-mtbi_rep <- get_rep_solutions(
-    ari = mtbi_ari,
+z[mtbi_ari_order, "label"] <- label_splits(mtbi_split_vec, 2000)
+
+z$"label"
+
+###############################################################################
+# Here i am
+###############################################################################
+
+mtbi_rep_solutions <- get_representative_solutions(
+    mtbi_ari,
     split_vector = mtbi_split_vec,
-    ari_order = mtbi_ari_order,
-    solutions_matrix = mtbi_esm,
-    exclude_mcs = "G",
-    restriction_function = restrict_fn
+    order = mtbi_ari_order,
+    mtbi_esm
 )
+```
+
+```{r}
+mtbi_rep_solutions$"imputation"
 
 write_csv(mtbi_rep, proc_path("mtbi_rep.csv", TRUE))
+
+# Solutions B, E, H, K are relatively unstable
+
+
 
 mtbi_rep <- read_csv(proc_path("2024_04_23_mtbi_rep.csv"))
 
