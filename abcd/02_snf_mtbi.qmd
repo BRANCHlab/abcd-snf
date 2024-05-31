@@ -9,6 +9,8 @@ library(here)
 library(metasnf)
 library(progressr)
 library(rlist)
+library(ggplot2)
+library(patchwork)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -47,7 +49,7 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
 )
 
-summarize_distance_metrics_list(my_distance_metrics)
+summarize_dml(my_distance_metrics)
 ```
 
 ## Generating the settings matrix
@@ -144,18 +146,12 @@ imputation_labels <- data.frame(
         rep("pm5", 200)
     ),
     "pooled" = c(
-        rep("yes", 1000),
-        rep("no", 1000)
+        rep("no", 1000),
+        rep("yes", 1000)
     )
 )
 
 mtbi_sm_l <- cbind(mtbi_sm, imputation_labels)
-
-mtbi_sm_solo <- mtbi_sm_l |>
-    dplyr::filter(pooled == "no")
-
-mtbi_sm_pooled <- mtbi_sm_l |>
-    dplyr::filter(pooled == "yes")
 
 mtbi_esm_m1 <- extend_solutions(
     mtbi_sm_l[mtbi_sm_l$"imputation" == "m1", ],
@@ -256,7 +252,7 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 ```
 
 ```{r}
-mtbi_esm <- read_csv(proc_path("2024_05_27_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_05_29_mtbi_esm.csv"))
 ```
 
 ```{r}
@@ -279,12 +275,16 @@ mtbi_split_vec <- c(
     1435,
     1660
 )
-
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
+```
+
+```{r}
 mtbi_split_vec <- read_csv(proc_path("2024_05_27_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
+```
 
+```{r}
 divergent_colours <- function(column)  {
     values <- unique(column)
     colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
@@ -364,144 +364,771 @@ When picking out representative solutions, I'd like to preferentially go for sol
 values for all features.
 
 ```{r}
-
-z <- mtbi_esm
-
-z[mtbi_ari_order, "label"] <- label_splits(mtbi_split_vec, 2000)
-
-z$"label"
-
-###############################################################################
-# Here i am
-###############################################################################
+# Function to try to lean on mTBI-including solutions when possible.
+# This function will pick from solo solutions unless over 70% of the meta
+# cluster is pooled.
+restrict_fn <- function(x, threshold = 0.3) {
+    x_solo_ind <- x$"imputation" %in% c("m1", "m2", "m3", "m4", "m5")
+    x_pool_ind <- x$"imputation" %in% c("pm1", "pm2", "pm3", "pm4", "pm5")
+    x_solo <- x[x_solo_ind, ]
+    x_pool <- x[x_pool_ind, ]
+    frac_solo <- nrow(x_solo) / (nrow(x_solo) + nrow(x_pool))
+    if (frac_solo < threshold) {
+        return(x[x_pool_ind, ])
+    } else {
+        return(x[x_solo_ind, ])
+    }
+}
 
 mtbi_rep_solutions <- get_representative_solutions(
     mtbi_ari,
     split_vector = mtbi_split_vec,
     order = mtbi_ari_order,
+    filter_fn = restrict_fn,
     mtbi_esm
 )
+
+# Based on the heatmap, we'll remove B, E, H, K (unstable meta clusters)
+mtbi_rep_solutions <- dplyr::filter(
+    mtbi_rep_solutions,
+    !label %in% c("B", "E", "H", "K")
+)
+
+write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
 ```
 
 ```{r}
-mtbi_rep_solutions$"imputation"
+mtbi_rep_solutions <- read_csv(proc_path("2024_05_29_mtbi_rep_solutions.csv"))
 
-write_csv(mtbi_rep, proc_path("mtbi_rep.csv", TRUE))
-
-# Solutions B, E, H, K are relatively unstable
-
-
-
-mtbi_rep <- read_csv(proc_path("2024_04_23_mtbi_rep.csv"))
-
-        #ggplot2::scale_colour_manual(
-        #    values = c(
-        #        "I-AS" = "#85929e",
-        #        "I-D" = "#bb8fce",
-        #        "I-N" = "#e59866",
-        #        "I-MH" = "#7fb3d5",
-        #        "I-P" = "#52be80",
-        #        "O-S" = "#d98880",
-        #        "O-B" = "#ff3131"
-        #    )
-        #) +
-
-mtbi_manhattan <- manhattan_plot2(
-    mtbi_rep,
-    data_list = mtbi_train_dls[[1]],
-    target_list = mtbi_train_ols[[1]],
-    threshold = 0.05
+mtbi_manhattan <- mc_manhattan_plot(
+    mtbi_rep_solutions,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_1",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_1",
+    domain_colours = c(
+        "AS" = "#85929e",
+        "D" = "#bb8fce",
+        "N" = "#e59866",
+        "MH" = "#7fb3d5",
+        "P" = "#52be80",
+        "S" = "#d98880",
+        "B" = "#ff3131"
+    )
 )
-mtbi_manhattan
 
 ggsave(
     plot = mtbi_manhattan,
     filename = fig_path("mtbi_manhattan.png", TRUE),
     width = 18,
-    height = 7 * 2,
+    height = 14,
     dpi = 120
 )
 
-mtbi_mc_a_manhattan <- mtbi_rep |>
-    dplyr::filter(mc == "A") |>
-    manhattan_plot2(
-        data_list = mtbi_train_dls[[1]],
-        target_list = mtbi_train_ols[[1]],
-        threshold = 0.05
+# The most robust solution
+mtbi_mc_d_esm <- mtbi_rep_solutions |>
+    dplyr::filter(label == "D")
+
+write_csv(mtbi_mc_d_esm, proc_path("mtbi_mc_d_esm.csv", TRUE))
+
+mtbi_mc_d_esm <- read_csv(proc_path("2024_05_30_mtbi_mc_d_esm.csv"))
+
+# Feature plot generation
+plot_list <- auto_plot(
+    solutions_matrix_row = mtbi_mc_d_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+    save = fig_path("mtbi_mc_d", TRUE)
+)
+
+all_plots <- wrap_plots(plot_list)
+
+# Good enough as a snapshot
+ggsave(
+    fig_path("mtbi_mc_d_all_plots.png", TRUE),
+    all_plots,
+    width = 35,
+    height = 30,
+    dpi = 50
+)
+```
+
+## Key attributes of the cluster solution
+
+Doesn't seem to be a big difference:
+- mtbi_mem_daze: 1 = 2 = 3
+- mtbi_loc: 1 = 2 = 3
+- mtbi_age: 1 = 2 = 3
+- previous_mtbis: 1 = 2 = 3
+- major_wm_ndi: 1 = 2 = 3
+- pericortical_wm_ndi: 1 = 2 = 3
+- fmri_cort_cors: 1 = 2 = 3
+- school_programs: 1 = 2 = 3
+
+Small difference:
+- mtbi_mechanism 1 < 2 = 3
+- age 1 = 2 < 3
+- headache_history: 3 < 1 = 2
+- fmri_cort_subcort_cors: 1 < 3 < 2
+- cortical_thickness: 1 < 2 = 3
+- school_programs: 1 < 2 < 3
+- same_sex_friend: 3 > 1 = 2
+- opp_sex_friend: 1 > 2 = 3
+
+Seems to be a big difference:
+- sex (n_female): 3 >> 1 > 2
+- household_income: 1 << 2 = 3
+- race (minority groups): 1 >> 2 = 3
+- pubertal_status: 2 < 1 = 3
+- brain_volume: 2 >> 1 > 3
+- cortical thickness: 1 < 2 = 3
+- cortical_sa: 2 >> 1 > 3
+- same_sex_close_friend: 3 >> 2 > 1
+- opp_sex_close_friend: 1 > 2 = 3
+- weekend_screentime: 1 > 2 = 3
+- weekday_screentime: 1 > 2 = 3
+- non_school_programs: 1 << 2 = 3
+- private_instruction: 1 < 2 < 3
+- programs_this_year: 1 << 2 = 3
+- exercise_time: 1 < 2 = 3
+- considerate: 1 < 2 < 3
+- helps_hurt: 3 > 1 = 2
+- helpful: 3 > 1 = 2
+- family_fight: 1 > 2 = 3
+- family_angry: 1 > 2 = 3
+- family_throw: 1 > 2 = 3
+- family_temper: 1 > 2 = 3
+- family_criticize: 1 > 2 = 3
+- family_hit: 1 > 2 = 3
+- family_peaceful: 1 > 2 > 3
+- family_outdo: 1 > 2 = 3
+- family_yell: 1 > 2 > 3
+- parent_perstr: 1 < 2 < 3
+- parent_anxdep: 1 >> 2 = 3
+- parent_withdrawn: 1 > 2 = 3
+- parent_somatic: 1 > 2 = 3
+- parent_thought: 1 > 2 = 3
+- parent_attention: 1 > 2 = 3
+- parent_aggressive: 1 > 2 = 3
+- parent_intrusive: 1 > 2 = 3
+- parent_depress: 1 > 2 = 3
+- parent_anxdisord: 1 > 2 = 3
+- parent_avoidant: 1 > 2 > 3
+- parent_antisocial: 1 > 2 = 3
+- parent_hyperactive: 1 > 2 = 3
+- cbcl_anxdep: 1 > 2 = 3
+- cbcl_withdep: 1 > 2 = 3
+- cbcl_somatic: 1 > 2 = 3
+- cbcl_social: 1 > 2 = 3
+- cbcl_thought: 1 > 2 = 3
+- cbcl_attention: 1 > 2 = 3
+- cbcl_rulebreak: 1 > 2 = 3
+- cbcl_aggressive: 1 > 2 = 3
+- sds_sleep: 1 > 2 = 3
+
+Pause, what's the deal with race and cognition?
+
+Dennis, E., Manza, P. & Volkow, N.D. Socioeconomic status, BMI, and brain development in children. Transl Psychiatry 12, 33 (2022). https://doi.org/10.1038/s41398-022-01779-3
+
+In the study above, they looked at SES based on household income, highest level of parental education, and area deprivation.
+They also found that BMI played a role in brain development.
+
+Orben, A., Meier, A., Dalgleish, T. et al. Mechanisms linking social media use to adolescent mental health vulnerability. Nat Rev Psychol (2024). https://doi.org/10.1038/s44159-024-00307-y
+
+```{r}
+dl_df <- auto_plot(
+    solutions_matrix_row = mtbi_mc_d_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+    return_plots = FALSE
+)
+
+dl_df |>
+    dplyr::filter(sex == 0) |>
+    ggplot(
+        aes(
+            x = race,
+            y = brain_volume,
+            colour = race,
+            group = race
+        )
+    ) +
+    geom_point() +
+    theme_bw() +
+    facet_grid(household_income ~ .)
+
+dl_df$"household_income" <- factor(dl_df$"household_income")
+dl_df$"sex" <- factor(dl_df$"sex")
+
+dl_df |>
+    ggplot(
+        aes(
+            x = household_income,
+            y = cbcl_aggressive,
+            colour = race,
+            group = interaction(race, household_income)
+        )
+    ) +
+    geom_violin(position = position_dodge(width = 0.75)) +
+    geom_jitter(
+        position = position_jitterdodge(
+            jitter.width = 0,
+            jitter.height = 0.5
+        ),
+    ) +
+    theme_bw()
+
+dl_df |>
+    ggplot(
+        aes(
+            x = sex,
+            y = cbcl_aggressive,
+            colour = race,
+            group = interaction(race, sex)
+        )
+    ) +
+    geom_boxplot(position = position_dodge(width = 0.75), width = 0.4) +
+    geom_jitter(
+        position = position_jitterdodge(
+            jitter.width = 0,
+            jitter.height = 0.5
+        ),
+    ) +
+    theme_bw()
+```
+
+
+```{r}
+# Calculating feature importances
+nmis <- batch_nmi(
+    all_dls$"mtbi_train_data_lists"$"imp_3",
+    mtbi_mc_d_esm,
+    distance_metrics_list = my_distance_metrics
+)
+
+nmi_order <- sort(
+    nmis$"row_id_67",
+    decreasing = TRUE,
+    index.return = TRUE
+)
+
+nmis <- nmis[nmi_order$ix, ]
+
+write_csv(nmis, proc_path("mtbi_mc_d_nmis.csv", TRUE))
+
+mtbi_mc_d_nmis <- read_csv(proc_path("2024_05_29_mtbi_mc_d_nmis.csv"))
+```
+
+NMI order:
+
+                  feature   row_id_67
+1                     sex 0.243209963
+2            brain_volume 0.191430570
+3             cortical_sa 0.176465863
+4        household_income 0.173650190
+5                    race 0.106974328
+6     non_school_programs 0.089535118
+7      programs_this_year 0.085778912
+8         pubertal_status 0.073815053
+9      weekend_screentime 0.068591085
+10         parent_thought 0.065605239
+11         parent_somatic 0.063379204
+12 fmri_cort_subcort_cors 0.062316738
+13      parent_aggressive 0.061766652
+14        parent_avoidant 0.061007979
+15    private_instruction 0.060788001
+16       parent_withdrawn 0.058834958
+17      parent_antisocial 0.058439486
+18     weekday_screentime 0.052901237
+19       parent_anxdisord 0.047661089
+20     parent_hyperactive 0.046030868
+21        family_peaceful 0.045456812
+22       parent_intrusive 0.044010345
+23         fmri_cort_cors 0.041913000
+24          parent_anxdep 0.041754962
+25          parent_perstr 0.037575118
+26         parent_depress 0.036061882
+27          family_temper 0.034659741
+28            considerate 0.034615358
+29             helps_hurt 0.034538988
+30       headache_history 0.033912559
+31          exercise_time 0.033209402
+32           family_outdo 0.031435016
+33  same_sex_close_friend 0.029747204
+34           family_angry 0.029313684
+35           family_fight 0.028924925
+36       parent_attention 0.028905738
+37         mtbi_mechanism 0.028635369
+38    pericortical_wm_ndi 0.028290869
+39     cortical_thickness 0.025146517
+40       family_criticize 0.024516708
+41                    age 0.024484370
+42        school_programs 0.023241074
+43                helpful 0.022037230
+44           major_wm_ndi 0.020916865
+45               mtbi_age 0.018499859
+46           family_throw 0.018149749
+47          mtbi_mem_daze 0.015706414
+48             family_hit 0.014753237
+49        same_sex_friend 0.012166623
+50               mtbi_loc 0.011030747
+51         previous_mtbis 0.009733142
+52            family_yell 0.009473181
+53         opp_sex_friend 0.003748435
+54   opp_sex_close_friend 0.003587654
+
+## NMIs vs. p-values
+
+```{r}
+pvals <- get_pvals(
+    mtbi_mc_d_esm,
+    keep_summaries = FALSE
+)
+pvals <- data.frame(
+    "feature" = gsub("_pval", "", names(pvals)),
+    "neg_log_pval" = -log10(as.numeric(unlist(pvals)))
+)
+pvals <- pvals[-1, ]
+pvals_order <- sort(
+    pvals$"neg_log_pval",
+    decreasing = TRUE,
+    index.return = TRUE
+)
+pvals <- pvals[pvals_order$ix, ]
+
+mtbi_mc_d_nmi_pval <- dplyr::full_join(mtbi_mc_d_nmis, pvals, by = "feature")
+
+var_metadata <- dl_variable_summary(
+    c(
+        all_dls$"mtbi_train_data_lists"$"imp_3",
+        all_dls$"mtbi_train_oom_lists"$"imp_3"
     )
-mtbi_mc_a_manhattan
+)
+
+mtbi_mc_d_nmi_pval <- dplyr::full_join(
+    mtbi_mc_d_nmi_pval,
+    var_metadata,
+    by = c("feature" = "name")
+)
+
+colnames(mtbi_mc_d_nmi_pval) <- c(
+    "feature",
+    "nmi",
+    "neg_log_pval",
+    "type",
+    "domain"
+)
+
+r2 <- function(df) {
+    df <- na.omit(df)
+    return(round(cor(df$"nmi", df$"neg_log_pval")^2, 3))
+}
+
+mtbi_mc_d_nmi_pval_r2 <- mtbi_mc_d_nmi_pval |>
+    dplyr::filter(neg_log_pval < 10) |>
+    dplyr::filter(domain != "B") |>
+    r2()
+
+no_diff <- data.frame(
+    vis_diff = "none",
+    feature = c(
+        "mtbi_mem_daze",
+        "mtbi_loc",
+        "previous_mtbis",
+        "cortical thickness",
+        "major_wm_ndi",
+        "pericortical_wm_ndi",
+        "fmri_cort_cors",
+        "opp_sex_close_friend",
+        "school_programs"
+    )
+)
+
+small_diff <- data.frame(
+    vis_diff = "small",
+    feature = c(
+        "mtbi_mechanism",
+        "age",
+        "mtbi_age",
+        "fmri_cort_subcort_cors",
+        "cortical_thickness",
+        "school_programs",
+        "headache_history",
+        "same_sex_friend",
+        "opp_sex_friend",
+        "exercise_time",
+        "helpful",
+        "family_yell",
+        "parent_intrusive",
+        "weekend_screentime"
+    )
+)
+
+big_diff <- data.frame(
+    vis_diff = "big",
+    feature = c(
+        "sex",
+        "household_income",
+        "race",
+        "pubertal_status",
+        "brain_volume",
+        "cortical_sa",
+        "same_sex_close_friend",
+        "weekday_screentime",
+        "non_school_programs",
+        "private_instruction",
+        "programs_this_year",
+        "considerate",
+        "helps_hurt",
+        "family_fight",
+        "family_angry",
+        "family_throw",
+        "family_temper",
+        "family_criticize",
+        "family_hit",
+        "family_peaceful",
+        "family_outdo",
+        "parent_perstr",
+        "parent_anxdep",
+        "parent_withdrawn",
+        "parent_somatic",
+        "parent_thought",
+        "parent_attention",
+        "parent_aggressive",
+        "parent_depress",
+        "parent_anxdisord",
+        "parent_avoidant",
+        "parent_antisocial",
+        "parent_hyperactive",
+        "cbcl_anxdep",
+        "cbcl_withdep",
+        "cbcl_somatic",
+        "cbcl_social",
+        "cbcl_thought",
+        "cbcl_attention",
+        "cbcl_rulebreak",
+        "cbcl_aggressive",
+        "sds_sleep"
+    )
+)
+
+vis_diff <- dplyr::bind_rows(
+    no_diff,
+    small_diff,
+    big_diff
+)
+
+mtbi_mc_d_nmi_pval_vis <- dplyr::full_join(
+    mtbi_mc_d_nmi_pval,
+    vis_diff,
+    by = "feature"
+)
+
+write_csv(
+    mtbi_mc_d_nmi_pval_vis,
+    proc_path("mtbi_mc_d_nmi_pval_vis.csv", TRUE)
+)
+
+```
+
+```{r}
+mtbi_mc_d_nmi_pval_vis <- read_csv(
+    proc_path("2024_05_31_mtbi_mc_d_nmi_pval_vis.csv")
+)
+```
+
+```{r}
+mtbi_mc_d_nmi_vs_pval_thresh <- mtbi_mc_d_nmi_pval_vis |>
+    dplyr::filter(neg_log_pval < 10) |>
+    dplyr::filter(domain != "B") |>
+    na.omit() |>
+    ggplot(
+        aes(
+            x = nmi,
+            y = neg_log_pval,
+            label = feature
+        )
+    ) +
+    labs(
+        x = "Normalized Mutual Information",
+        y = expression("-log"[10] * "(p)")
+    ) +
+    geom_point(
+        aes(
+            colour = domain,
+            shape = type
+        ),
+        size = 2
+    ) +
+    geom_smooth(
+        aes(
+            x = nmi,
+            y = neg_log_pval
+        ),
+        colour = "gray",
+        alpha = 0.1,
+        method = "lm"
+    ) +
+    xlim(0, 0.08) +
+    annotate(
+        "text",
+        x = 0.02,
+        y = 7.5,
+        size = 6,
+        label = parse(text = paste0("R^2 == ", mtbi_mc_d_nmi_pval_r2))
+    ) +
+    theme_bw() +
+    theme(
+        text = element_text(size = 16)
+    ) +
+    scale_colour_manual(
+        values = c(
+            "AS" = "#85929e",
+            "D" = "#bb8fce",
+            "N" = "#e59866",
+            "MH" = "#7fb3d5",
+            "P" = "#52be80",
+            "S" = "#d98880",
+            "B" = "#ff3131"
+        )
+    ) +
+    ggrepel::geom_text_repel(
+        aes(
+            colour = domain
+        )
+    )
+mtbi_mc_d_nmi_vs_pval_thresh
 
 ggsave(
-    plot = mtbi_mc_a_manhattan,
-    filename = fig_path("mtbi_mc_a_manhattan.png", TRUE),
-    width = 18,
-    height = 6,
+    fig_path("mtbi_mc_d_nmi_vs_pval_thresh.png", TRUE),
+    mtbi_mc_d_nmi_vs_pval_thresh,
+    width = 14,
+    height = 7,
     dpi = 100
 )
 
-plot_solutions_matrix
+mtbi_mc_d_nmi_vs_pval <- mtbi_mc_d_nmi_pval_vis |>
+    dplyr::filter(domain != "B") |>
+    na.omit() |>
+    ggplot(
+        aes(
+            x = nmi,
+            y = neg_log_pval,
+            colour = domain,
+            shape = type,
+            label = feature
+        )
+    ) +
+    labs(
+        x = "Normalized Mutual Information",
+        y = expression("-log"[10] * "(p)")
+    ) +
+    geom_point(
+        size = 2
+    ) +
+    ggrepel::geom_text_repel(
+        vjust = 2,
+        hjust = 1.2,
+        max.overlaps = 11,
+        size = 3
+    ) +
+    theme_bw() +
+    theme(
+        text = element_text(size = 12)
+    ) +
+    scale_colour_manual(
+        values = c(
+            "AS" = "#85929e",
+            "D" = "#bb8fce",
+            "N" = "#e59866",
+            "MH" = "#7fb3d5",
+            "P" = "#52be80",
+            "S" = "#d98880",
+            "B" = "#ff3131"
+        )
+    )
+mtbi_mc_d_nmi_vs_pval
 
-mc_a_cluster_df <- mtbi_rep |>
-    dplyr::filter(mc == "A") |>
-    get_cluster_df()
-
-mtbi_mc_a_plots <- characterize_solution(
-    cluster_df = mc_a_cluster_df,
-    data_list = c(
-        all_dls$"mtbi_train_data_lists"$"imp_3",
-        all_dls$"mtbi_train_oom_lists"$"imp_3"
-    ),
-    plotname = fig_path("mtbi_mc_a", TRUE),
-    individual_plots = TRUE,
-    group_plots = TRUE
+ggsave(
+    fig_path("mtbi_mc_d_nmi_vs_pval.png", TRUE),
+    mtbi_mc_d_nmi_vs_pval,
+    width = 10,
+    height = 10,
+    dpi = 100
 )
 
-#mtbi_rep |>
-#    dplyr::filter(mc == "A") |>
-#    plot_solutions_matrix(
-#        "mtbi",
-#        possible_data = mtbi_train_dls_ols,
-#        individual_plots = TRUE,
-#        group_plots = TRUE
-#    )
-
-mtbi_rep_a <- mtbi_rep |> dplyr::filter(mc == "A")
-
-pvals <- unlist(get_pvals(mtbi_rep_a))
-
-options(scipen = 999)
-
-p.adjust(pvals, method = "holm")
-
-mtbi_train_dls_ols
-
-pval_df <- c(
-    all_dls$"mtbi_train_data_lists"$"imp_3",
-    all_dls$"mtbi_train_oom_lists"$"imp_3"
+mtbi_mc_d_nmi_pval_vis$"vis_diff" <- factor(
+    mtbi_mc_d_nmi_pval_vis$"vis_diff",
+    levels = c("none", "small", "big")
 )
 
-pval_df <- collapse_dl(pval_df)
+mtbi_mc_d_nmi_vs_pval_vs_vis <- mtbi_mc_d_nmi_pval_vis |>
+    dplyr::filter(domain != "B") |>
+    na.omit() |>
+    ggplot(
+        aes(
+            x = nmi,
+            y = neg_log_pval,
+            colour = vis_diff,
+            label = feature
+        )
+    ) +
+    labs(
+        x = "Normalized Mutual Information",
+        y = expression("-log"[10] * "(p)"),
+        colour = "Perceived\nSeparation\n"
+    ) +
+    geom_point(
+        size = 2
+    ) +
+    ggrepel::geom_text_repel(
+        vjust = 2,
+        hjust = 1.2,
+        max.overlaps = 11,
+        size = 3
+    ) +
+    theme_bw() +
+    theme(
+        text = element_text(size = 12)
+    ) +
+    scale_colour_manual(
+        values = c(
+            "none" = "red",
+            "small" = "#c79c26",
+            "big" = "#41ad2f"
+        )
+    )
+mtbi_mc_d_nmi_vs_pval_vs_vis
 
-pval_df$
-
-a_clusters <- get_cluster_df(mtbi_rep_a)
-
-pval_df <- dplyr::inner_join(a_clusters, pval_df, by = "subjectkey") |>
-    tibble::tibble()
-
-pval_df |> colnames()
-
-t.test(
-    pval_df$"sds_sleep"[pval_df$cluster == 1],
-    pval_df$"sds_sleep"[pval_df$cluster == 2]
+ggsave(
+    fig_path("mtbi_mc_d_nmi_vs_pval_vs_vis.png", TRUE),
+    mtbi_mc_d_nmi_vs_pval_vs_vis,
+    width = 10,
+    height = 10,
+    dpi = 100
 )
 
-pval_df$"sds_sleep"[pval_df$cluster == 1]
+###############################################################################
+# Key variable identification
+###############################################################################
+mtbi_mc_d_nmi_vs_pval_vs_vis_t <- mtbi_mc_d_nmi_pval_vis |>
+    dplyr::filter(neg_log_pval < 10) |>
+    dplyr::filter(domain != "B") |>
+    na.omit() |>
+    ggplot(
+        aes(
+            x = nmi,
+            y = neg_log_pval,
+            colour = vis_diff,
+            label = feature
+        )
+    ) +
+    labs(
+        x = "Normalized Mutual Information",
+        y = expression("-log"[10] * "(p)"),
+        colour = "Perceived\nSeparation\n"
+    ) +
+    geom_point(
+        size = 2
+    ) +
+    ggrepel::geom_text_repel(
+        vjust = 2,
+        hjust = 1.2,
+        max.overlaps = 11,
+        size = 3
+    ) +
+    theme_bw() +
+    theme(
+        text = element_text(size = 12)
+    ) +
+    scale_colour_manual(
+        values = c(
+            "none" = "red",
+            "small" = "#c79c26",
+            "big" = "#41ad2f"
+        )
+    ) +
+    geom_segment(
+        aes(x = 0.04, xend = 0.04, y = 0, yend = 2.75),  # Add vertical dashed line
+        linetype = "dashed",
+        color = "red"
+    ) +
+    geom_segment(
+        aes(x = 0, xend = 0.04, y = 2.75, yend = 2.75),  # Add vertical dashed line
+        linetype = "dashed",
+        color = "red"
+    ) +
+    coord_cartesian(ylim = c(0.1, 10), expand = FALSE)
+mtbi_mc_d_nmi_vs_pval_vs_vis_t
 
-pval_df$"sds_sleep"[pval_df$cluster == 2]
-
-
+ggsave(
+    fig_path("mtbi_mc_d_nmi_vs_pval_vs_vis_t.png", TRUE),
+    mtbi_mc_d_nmi_vs_pval_vs_vis_t,
+    width = 12,
+    height = 7,
+    dpi = 100
+)
 ```
+
+## Key variables
+
+```{r}
+mtbi_mc_d_nmi_pval_vis_key <- mtbi_mc_d_nmi_pval_vis |>
+    dplyr::filter(nmi > 0.04 | neg_log_pval > 2.75)
+
+write_csv(
+    mtbi_mc_d_nmi_pval_vis_key,
+    proc_path("mtbi_mc_d_nmi_pval_vis_key.csv", TRUE)
+)
+
+mtbi_mc_d_nmi_pval_vis_key <- read_csv(
+    proc_path("2024_05_31_mtbi_mc_d_nmi_pval_vis_key.csv")
+)
+
+mtbi_mc_d_nmi_pval_vis_key$"feature"
+
+###############################################################################
+# Here I am
+###############################################################################
+```
+
+Key features appear to be:
+
+- sex
+- brain_volume
+- cortical_sa
+- household_income
+- race
+- non_school_programs
+- programs_this_year
+- pubertal_status
+- weekend_screentime
+- parent_thought
+- parent_somatic
+- fmri_cort_subcort_cors
+- parent_aggressive
+- parent_avoidant
+- private_instruction
+- parent_withdrawn
+- parent_antisocial
+- weekday_screentime
+- parent_anxdisord
+- parent_hyperactive
+- family_peaceful
+- parent_intrusive
+- fmri_cort_cors
+- parent_anxdep
+- parent_perstr
+- parent_depress
+- family_temper
+- considerate
+- helps_hurt
+- family_outdo
+- same_sex_close_friend
+- family_angry
+- family_fight
+- parent_attention
+- family_criticize
+
+
 
 # Label propagation
 
@@ -570,7 +1197,7 @@ mtbi_mc_a_lp_plots <- characterize_solution(
 
 ```{r}
 
-mtbi_train <- read_csv(sub_path("2024_03_12_mtbi_train_subjects.csv"))
+#mtbi_train <- read_csv(sub_path("2024_03_12_mtbi_train_subjects.csv"))
 
 core_path <- path_maker(here(paste0("data/abcd/core")))
 
@@ -581,16 +1208,249 @@ import <- function(path) {
 mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
 ph_p_sds <- import("physical-health/ph_p_sds.csv")
 
+mc_d_cluster_df <- get_cluster_df(mtbi_mc_d_esm)
+
+mc_d_subs <- gsub("subject_", "", mc_d_cluster_df$"subjectkey")
+
 syndromes <- c(
     "anxdep",
-    "withdep",
-    "somatic",
-    "social",
-    "thought",
-    "attention",
-    "rulebreak",
+    #"withdep",
+    #"somatic",
+    #"social",
+    #"thought",
+    #"attention",
+    #"rulebreak",
     "aggressive"
 )
+
+tps <- c(0, 1, 2, 3)
+
+get_syndrome_long <- function(syndrome, timepoints, subs) {
+    full_df <- NULL
+    for (tp in timepoints) {
+        outcomes <- get_cbcl_syndrome_scale(
+            syndrome = syndrome,
+            mh_p_cbcl,
+            raw = FALSE,
+            subjects = subs,
+            t = tp
+        )
+        outcomes$"tp" <- tp
+        if (is.null(full_df)) {
+            full_df <- outcomes
+        } else {
+            full_df <- rbind(full_df, outcomes)
+        }
+    }
+    return(full_df)
+}
+
+
+
+# make change score plots where you plot time on x-axis and visualize change
+# by absolute t-score differences for 2 year and 3 year follow up
+
+# Option 1
+z <- get_syndrome_long("anxdep", tps, mc_d_subs)
+z$"subjectkey" <- paste0("subject_", z$"subjectkey")
+z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
+z_long$"cluster" <- factor(z_long$"cluster")
+anxdep <- ggplot(
+    na.omit(z_long),
+    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+ggsave("anxdep.png", anxdep)
+
+z <- get_syndrome_long("withdep", tps, mc_d_subs)
+z$"subjectkey" <- paste0("subject_", z$"subjectkey")
+z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
+z_long$"cluster" <- factor(z_long$"cluster")
+withdep <- ggplot(
+    na.omit(z_long),
+    aes(x = tp, y = cbcl_scr_syn_withdep_t, colour = cluster, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+ggsave("withdep.png", withdep)
+
+z <- get_syndrome_long("aggressive", tps, mc_d_subs)
+z$"subjectkey" <- paste0("subject_", z$"subjectkey")
+z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
+z_long$"cluster" <- factor(z_long$"cluster")
+aggressive <- ggplot(
+    na.omit(z_long),
+    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cluster, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+ggsave("aggressive.png", aggressive)
+
+
+
+qq <- get_syndrome_long("anxdep", tps, mc_d_subs)
+qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+qq_long$"cluster" <- factor(qq_long$"cluster")
+qq_long <- na.omit(qq_long)
+for (subject in unique(qq_long$"subjectkey")) {
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"] <- 0
+}
+anxdep2 <- ggplot(
+    na.omit(qq_long),
+    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+ggsave("anxdep2.png", anxdep2)
+
+qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+qq_long$"cluster" <- factor(qq_long$"cluster")
+qq_long <- na.omit(qq_long)
+for (subject in unique(qq_long$"subjectkey")) {
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+}
+aggressive2 <- ggplot(
+    na.omit(qq_long),
+    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cbcl_scr_syn_aggressive_t > 0, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+ggsave("aggressive3.png", aggressive2)
+
+
+qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+qq_long$"cluster" <- factor(qq_long$"cluster")
+for (subject in unique(qq_long$"subjectkey")) {
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+}
+unique(qq_long$"subjectkey")
+parent <- all_dls$"mtbi_train_data_lists"$"imp_1"[[24]]$"data"
+summarize_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
+qq_long <- dplyr::full_join(qq_long, parent, by = "subjectkey")
+aggressive4 <- ggplot(
+    na.omit(qq_long),
+    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = parent_aggressive > 60, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+aggressive4
+ggsave("aggressive4.png", aggressive4)
+
+qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+qq_long$"cluster" <- factor(qq_long$"cluster")
+for (subject in unique(qq_long$"subjectkey")) {
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+}
+unique(qq_long$"subjectkey")
+income <- all_dls$"mtbi_train_data_lists"$"imp_1"[[7]]$"data"
+qq_long <- dplyr::full_join(qq_long, income, by = "subjectkey")
+aggressive5 <- ggplot(
+    na.omit(qq_long),
+    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = household_income, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+aggressive5
+ggsave("aggressive5.png", aggressive5)
+
+
+qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+qq_long$"cluster" <- factor(qq_long$"cluster")
+for (subject in unique(qq_long$"subjectkey")) {
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+}
+unique(qq_long$"subjectkey")
+data <- collapse_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
+qq_long <- dplyr::full_join(qq_long, data, by = "subjectkey")
+aggressive6 <- ggplot(
+    na.omit(qq_long),
+    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = sex, group = subjectkey)
+) +
+    geom_point() +
+    geom_line() +
+    facet_grid(cluster ~ .) +
+    theme_bw()
+aggressive6
+ggsave("aggressive6.png", aggressive6)
+
+
+
+
+
+
+
+
+
+
 
 for (tp in c(1, 2, 3)) {
     long_outcomes <- NULL
@@ -879,3 +1739,6 @@ head(long_outcomes)
 #}
 
 ```
+
+
+
