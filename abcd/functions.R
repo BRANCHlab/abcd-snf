@@ -195,10 +195,6 @@ characterize_solution <- function(solution = NULL,
     return(plot_list)
 }
 
-extract_imputed <- function(original_df, imputed_df, partition) {
-    return(imputed_df[imputed_df$".imp" == partition, colnames(original_df)])
-}
-
 rename_data_list <- function(data_list, name_mapping) {
     data_list <- data_list |> lapply(
         function(x) {

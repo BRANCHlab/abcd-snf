@@ -10,7 +10,7 @@ Only the code outputs relevant to the qualitiative finding above are included.
 
 ## Setting up the data
 
-```{r eval = FALSE}
+```{r}
 library(readr)
 library(here)
 
@@ -104,7 +104,7 @@ sum(colnames(clinical) ==
 
 ## Running SNF
 
-```{r eval = FALSE}
+```{r}
 ### Run SNF using PNC data - TBI participants only
 
 # PART 1: SNF SETUP
@@ -211,7 +211,7 @@ var <- cbind(rownames.rsfc, rownames.clinical, rownames.demographics)
 
 ## Comparing clusters
 
-```{r eval = FALSE}
+```{r}
 library(dplyr)
 library(ggplot2)
 #library(MASS)
@@ -752,7 +752,7 @@ theme_bw() + theme(axis.text.x=element_text(size=20), axis.text.y=element_text(s
 ```
 
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 library(knitr)
 library(here)
 
@@ -763,7 +763,7 @@ knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_line_orientation_t
 
 
 
-```{r eval = FALSE}
+```{r}
 
 clinical <- read.csv(here("data/pnc/pilot-snf/tbi_pnc_clinical.csv"),check.names=FALSE)
 clinical<-clinical[,-1]
@@ -881,7 +881,7 @@ ggplot(tbiloc.cluster, aes(x="", y=Proportion, group=TBI_LOC, fill=TBI_LOC)) +
 ```
 
 
-```{r eval = FALSE, echo = FALSE}
+```{r echo = FALSE}
 # For carbon
 ggsave(here("data/pnc/pilot-snf/3_cluster_loc.png"),
     width = 10,
@@ -894,12 +894,12 @@ ggsave(here("figures/pnc/pilot-snf/3_cluster_loc.png"),
 ```
 
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc.png"))
 ```
 
 
-```{r eval = FALSE}
+```{r}
 # TBI_AMN - discrete Y N
 clustering.clinical$cluster.3<-as.factor(clustering.clinical$cluster.3)
 clustering.clinical$TBI_AMN<-factor(clustering.clinical$TBI_AMN, levels = c("yes", "no", "unknown"))
@@ -1055,7 +1055,7 @@ theme(axis.text.x=element_text(size=20), axis.text.y=element_text(size=20), axis
 
 ## Overall connectivity Differences Between Groups 
 
-```{r eval = FALSE}
+```{r}
 library(psych)
 
 # For the subsequent analysis we need to transpose the data so the rows become columnns and the columns become rows - here this is done on data before normalization
@@ -1219,19 +1219,19 @@ boxplot(cluster_edges.bs.oct[,9:12], notch = TRUE, col=c('red','blue', 'green'),
 This is the original plot comparing brainstem-occipital rsfc across clusters.
 The figure does not plot one data point per subject, but rather one data point per edge (?) averaged across all subjects within the cluster.
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc.png"))
 ```
 
 When the values are plotted on a per-subject basis (calculations found later in this chapter), we get the following graph:
 
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_bs_oct_rsfc_per_subject.png"))
 ```
 
 
-```{r eval = FALSE}
+```{r}
 cluster_edges.bs.par<-subset(cluster_edges, V1.lobe=="brainstem" & V2.lobe=="parietal" | V1.lobe=="parietal" & V2.lobe=="brainstem")
 boxplot(cluster_edges.bs.par[,9:12], notch = TRUE, col=c('red','blue', 'green'), main="brainstem parietal", ylab="rsFC")
 
@@ -1567,7 +1567,7 @@ corrplot(adjacency_c4, type = "upper", method = "color", tl.cex = 0.2, title="rs
 ## Associations between LOC, brainstem-occipital cortex rsFC, and the line orientation test
 
 
-```{r eval = FALSE}
+```{r}
 library(dplyr)
 
 clustering.fused.2<-read.csv(here("data/pnc/pilot-snf/clusters_fused_2.csv"))
@@ -1724,12 +1724,12 @@ ggplot(association_df, mapping = aes_string(x = "PLOT_TC", y = "bs_oct_rsfc")) +
 #    height = 10)
 ```
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc.png"))
 ```
 
 
-```{r eval = FALSE}
+```{r}
 # rsfc vs LOC
 noloc <- association_df$bs_oct_rsfc[association_df$TBI_LOC == "no"]
 yloc <- association_df$bs_oct_rsfc[association_df$TBI_LOC == "yes"]
@@ -1753,11 +1753,11 @@ ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "bs_oct_rsfc")) +
 ```
 
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc.png"))
 ```
 
-```{r eval = FALSE}
+```{r}
 # LOC vs LOT
 noloc <- association_df$PLOT_TC[association_df$TBI_LOC == "no"]
 yloc <- association_df$PLOT_TC[association_df$TBI_LOC == "yes"]
@@ -1780,7 +1780,7 @@ ggplot(association_df, mapping = aes_string(x = "TBI_LOC", y = "PLOT_TC")) +
 #    height = 10)
 ```
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png"))
 ```
 
@@ -1788,7 +1788,7 @@ knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc.png"
 No significant associations appear between any pair of LOC, line orientation test performance, and brainstem-occipital cortex functional connectivity.
 Now checking just within cluster 3:
 
-```{r eval = FALSE}
+```{r}
 association_df2 <- association_df |>
     filter(cluster.3 == 3)
 
@@ -1803,7 +1803,7 @@ ggplot(association_df2, mapping = aes_string(x = "PLOT_TC", y = "bs_oct_rsfc")) 
 ```
 
 
-```{r eval = FALSE, echo = FALSE}
+```{r echo = FALSE}
 # For carbon
 ggsave(here("data/pnc/pilot-snf/3_cluster_lot_rsfc_assoc_just_c3.png"),
     width = 10,
@@ -1815,13 +1815,13 @@ ggsave(here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc_just_c3.png"),
     height = 10)
 ```
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(
     here("figures/pnc/pilot-snf/3_cluster_lot_rsfc_assoc_just_c3.png"))
 ```
 
 
-```{r eval = FALSE}
+```{r}
 # rsfc vs LOC
 noloc <- association_df2$bs_oct_rsfc[association_df2$TBI_LOC == "no"]
 yloc <- association_df2$bs_oct_rsfc[association_df2$TBI_LOC == "yes"]
@@ -1834,7 +1834,7 @@ ggplot(association_df2, mapping = aes_string(x = "TBI_LOC", y = "bs_oct_rsfc")) 
     theme(text = element_text(size = 20))
 ```
 
-```{r eval = FALSE, echo = FALSE}
+```{r echo = FALSE}
 # For carbon
 ggsave(here("data/pnc/pilot-snf/3_cluster_loc_rsfc_assoc_just_c3.png"),
     width = 10,
@@ -1847,12 +1847,12 @@ ggsave(here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc_just_c3.png"),
 ```
 
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(
     here("figures/pnc/pilot-snf/3_cluster_loc_rsfc_assoc_just_c3.png"))
 ```
 
-```{r eval = FALSE}
+```{r}
 # LOC vs LOT
 noloc <- association_df2$PLOT_TC[association_df2$TBI_LOC == "no"]
 yloc <- association_df2$PLOT_TC[association_df2$TBI_LOC == "yes"]
@@ -1865,7 +1865,7 @@ ggplot(association_df2, mapping = aes_string(x = "TBI_LOC", y = "PLOT_TC")) +
     theme(text = element_text(size = 20))
 ```
 
-```{r eval = FALSE, echo = FALSE}
+```{r echo = FALSE}
 # For carbon
 ggsave(here("data/pnc/pilot-snf/3_cluster_loc_lot_assoc_just_c3.png"),
     width = 10,
@@ -1877,7 +1877,7 @@ ggsave(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc_just_c3.png"),
     height = 10)
 ```
 
-```{r eval = TRUE, echo = FALSE, out.width = "50%", message = FALSE}
+```{r echo = FALSE, out.width = "50%", message = FALSE}
 knitr::include_graphics(here("figures/pnc/pilot-snf/3_cluster_loc_lot_assoc_just_c3.png"))
 ```
 

@@ -1,13 +1,13 @@
-# Imputation, QCing, and CBCL thresholding
+# Data Preprocessing
 
-This script is used to:
+In this chapter, I
 
 1. Assign train and test sets of the data
 2. Remove neuroimaging data for participants who do not meet ABCD's QC
-3. Impute missing data
-4. Threshold CBCL behaviour measures (raw scores into normal (0), borderline (1), and clinical (2))
+3. Use mice imputation to impute missing data
+4. Organize and export all data as nested lists
 
-## Loading in data
+## Importing Extracted Data
 
 ```{r}
 library(abcdutils)
@@ -18,9 +18,6 @@ library(metasnf)
 library(mice)
 library(rlist)
 
-# The path_maker function helps with managing and date stamping long paths. The
-#  functions are just used here to help with reading and writing data. See
-#  ?path_maker for more information.
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 raw_path <- path_maker(here(paste0("data/abcd/raw")))
 core_path <- path_maker(here(paste0("data/abcd/core")))
@@ -40,8 +37,6 @@ uninj_subjects <- read_subjects(
 read <- function(path) {
     read_csv(input_path(path))
 }
-
-#source("abcd/functions.R")
 ```
 
 ```{r}
@@ -113,9 +108,9 @@ sds_total_probs_uninj <- read("2024_04_17_sds_total_probs_uninj.csv")
 
 ## Neuroimaging quality control
 
-First identify which subjects have valid neuroimaging data.
+Subset neuroimaging data to those subjects who pass neuroimaging QC and PC.
 
-```{r eval = FALSE}
+```{r}
 mri_y_qc_raw_smr_t1 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t1.csv"))
 mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
 mri_y_qc_raw_rsfmr <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
@@ -241,7 +236,6 @@ write_csv(rm_gord_cor_qc_uninj, input_path("rm_gord_cor_qc_uninj.csv", TRUE))
 write_csv(rm_subc_cor_qc_uninj, input_path("rm_subc_cor_qc_uninj.csv", TRUE))
 ```
 
-
 ```{r}
 sm_cort_sa_qc_mtbi <- read("2024_04_17_sm_cort_sa_qc_mtbi.csv")
 sm_cort_t_qc_mtbi <- read("2024_04_17_sm_cort_t_qc_mtbi.csv")
@@ -257,9 +251,10 @@ rm_gord_cor_qc_uninj <- read("2024_04_17_rm_gord_cor_qc_uninj.csv")
 rm_subc_cor_qc_uninj <- read("2024_04_17_rm_subc_cor_qc_uninj.csv")
 ```
 
-## Train/Test split
+## Train/Test Split
 
 To avoid having training and testing data inform each other during imputation, we assign the splits prior to the imputation.
+This is only done in our primary analysis group (baseline mTBI).
 
 ```{r}
 mtbi_split <- train_test_assign(
@@ -365,25 +360,19 @@ mtbi_train_dfs <- lapply(mtbi_dfs, train_filter)
 mtbi_test_dfs <- lapply(mtbi_dfs, test_filter)
 ```
 
-# Imputation
+## Imputation
+
+SNF requires complete data as input for integration.
 
 Data will be imputed under the following schemes:
+
 - 5 imputations of mTBI data alone
 - 5 imputations of uninjured data alone
 - 5 imputations of mTBI + uninjured data together
 
 Resulting in 10 versions of the mTBI data and 10 versions of the uninjured data.
 
-# Imputing missing data
-
-SNF requires complete data as input for integration.
-
-We face a few oddities that may impact the validity of using a multiple imputation approach:
-
-
-Though this work is an exploratory clustering analysis that is designed to reveal insights about patterns across all variables, the experimental design used focuses on those insights particular relevant to better understanding behavioural impairments following concussion.
-Our post-concussion assessments of behavioural impairment come from the CBCL and SDS.
-CBCL data, which comprises a wide set of features, is either completely missing or completely present.
+First, each group has their extracted dataframes merged into a single one for imputation.
 
 ```{r}
 mtbi_train_df <- merge_df_list(mtbi_train_dfs, join = "full")
@@ -391,15 +380,9 @@ mtbi_test_df <- merge_df_list(mtbi_test_dfs, join = "full")
 uninj_df <- merge_df_list(uninj_dfs, join = "full")
 ```
 
-## Imputing missing data
+A check of which columns have missing data.
 
-Generating three different sets of 5:
-
-- Imputing mTBI alone (5 datasets)
-- Imputing uninjured alone (5 datasets)
-- Imputing mTBI and uninjured together (5 datasets)
-
-```{r eval = FALSE}
+```{r}
 missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_train_df)) > 0))
 missing_colnames_mtbi
 
@@ -437,8 +420,6 @@ pairwise_correlations <- function(df, threshold = 0) {
 top_correlating_vars <- function(df, threshold = 0) {
     # Dataframe highlighting strongest correlations
     df <- pairwise_correlations(df, threshold)
-    # List of all variables present in the top correlating variables
-    variables <- c(df$"X1", df$"X2") |> unique()
     # Iteratively build up an ordered correlations matrix by:
     #   - Record one of the two variables contributing to the largest
     #     pairwise correlation
@@ -461,8 +442,10 @@ top_correlating_vars <- function(df, threshold = 0) {
                 max_cor = max_cor
             )
         )
-        df <- df |>
-            dplyr::filter(X1 != var_with_max_cor & X2 != var_with_max_cor)
+        df <- dplyr::filter(
+            df,
+            df$"X1" != var_with_max_cor & df$"X2" != var_with_max_cor
+        )
     }
     return(max_cor_df)
 }
@@ -611,9 +594,8 @@ five_imputed_uninj <- read_csv(
 # Imputation - mTBI and uninjured data stacked on top of each other
 # This will only look at the variables shared between the two groups
 ###############################################################################
-mtbi_train_df_no_subs_limited_vars <-
-    mtbi_train_df_no_subs[, colnames(uninj_df_no_subs)]
-pooled_df <- rbind(mtbi_train_df_no_subs_limited_vars, uninj_df_no_subs)
+mtbi_train_df_u_vars <- mtbi_train_df_no_subs[, colnames(uninj_df_no_subs)]
+pooled_df <- rbind(mtbi_train_df_u_vars, uninj_df_no_subs)
 pooled_df <- char_to_fac(pooled_df)
 
 pooled_pred_mat <- build_pred_mat(pooled_df, 1)
@@ -701,8 +683,7 @@ five_imputed_pooled <- read_csv(
 # mTBI subsetting
 
 ```{r}
-
-extract_train <- function(original_df, partition) {
+extract_imputed <- function(original_df, imputed_df, partition) {
     return(imputed_df[imputed_df$".imp" == partition, colnames(original_df)])
 }
 
@@ -769,7 +750,7 @@ mtbi_pooled_parsed_imputations <- pooled_parsed_imputations |>
         }
     )
 
-uninj_pooled_parsed_imputations <- pooled_parsed_imputations |>
+uninj_pooled_parsed_imps <- pooled_parsed_imputations |>
     lapply(
         function(variable) {
             lapply(
@@ -800,7 +781,7 @@ list.save(
     input_path("uninj_parsed_imputations.rds", TRUE)
 )
 list.save(
-    uninj_pooled_parsed_imputations,
+    uninj_pooled_parsed_imps,
     input_path("uninj_pooled_parsed_imputations.rds", TRUE)
 )
 ```
@@ -820,7 +801,7 @@ mtbi_pooled_parsed_imputations <- list.load(
 uninj_parsed_imputations <- list.load(
     input_path("2024_04_19_uninj_parsed_imputations.rds")
 )
-uninj_pooled_parsed_imputations <- list.load(
+uninj_pooled_parsed_imps <- list.load(
     input_path("2024_04_19_uninj_pooled_parsed_imputations.rds")
 )
 ```
@@ -850,7 +831,7 @@ build_dls <- function(parsed_imputations) {
     data_lists <- lapply(
         seq_len(5),
         function(x) {
-            data_list <- generate_data_list(
+            generate_data_list(
                 list(
                     parsed_imputations$"as_mem_daze"[[x + 1]],
                     "as_mem_daze",
@@ -1012,7 +993,7 @@ build_ols <- function(parsed_imputations, s) {
     oom_lists <- lapply(
         seq_len(5),
         function(x) {
-            oom_list <- generate_data_list(
+            generate_data_list(
                 list(
                     parsed_imputations[[paste0("cbcl_anxdep")]][[x + 1]],
                     "cbcl_anxdep",
@@ -1083,8 +1064,8 @@ mtbi_pooled_data_lists <- build_dls(mtbi_pooled_parsed_imputations)
 mtbi_pooled_oom_lists <- build_ols(mtbi_pooled_parsed_imputations)
 uninj_data_lists <- build_dls(uninj_parsed_imputations)
 uninj_oom_lists <- build_ols(uninj_parsed_imputations)
-uninj_pooled_data_lists <- build_dls(uninj_pooled_parsed_imputations)
-uninj_pooled_oom_lists <- build_ols(uninj_pooled_parsed_imputations)
+uninj_pooled_data_lists <- build_dls(uninj_pooled_parsed_imps)
+uninj_pooled_oom_lists <- build_ols(uninj_pooled_parsed_imps)
 
 all_dls <- list(
     "mtbi_train_data_lists" = mtbi_train_data_lists,
@@ -1222,6 +1203,6 @@ loaded via a namespace (and not attached):
 [29] glue_1.7.0        data.table_1.15.4 fansi_1.0.6       colorspace_2.1-0
 [33] purrr_1.0.2       tools_4.3.2       pkgconfig_2.0.3   htmltools_0.5.5
 
-```{r eval = FALSE}
+```{r}
 writeLines(capture.output(sessionInfo()), "01_preprocessing_session_info.txt")
 ```

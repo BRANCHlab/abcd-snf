@@ -1,4 +1,6 @@
-# SNF in mTBI
+# MetaSNF
+
+In this chapter, I use the metaSNF package to generate and characterize meta clusters of the extracted data.
 
 ## Importing packages and establishing file paths
 
@@ -18,12 +20,11 @@ fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
-
 mtbi_train_subjects <- read_csv(sub_path("2024_04_18_mtbi_train_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
 ```
 
-## Loading data and out of model lists
+## Importing data
 
 ```{r}
 all_dls <- list.load(input_path("2024_04_19_all_dls.rds"))
@@ -69,7 +70,7 @@ mtbi_settings_matrix <- read_csv(
 )
 ```
 
-## SNF for each of the imputations
+## Running SNF for each of the imputations
 
 ```{r}
 mtbi_train_dls <- c(
@@ -107,18 +108,17 @@ mtbi_sm <- do.call(
 )
 
 write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
-```
 
-## Re-importing the generated solutions
-
-```{r}
 mtbi_ari <- calc_aris(mtbi_sm, processes = "max")
+
 write_csv(data.frame(mtbi_ari), proc_path("mtbi_ari.csv", TRUE))
 
 mtbi_ari_order <- get_matrix_order(mtbi_ari)
 
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
+
+## Re-importing data
 
 ```{r}
 mtbi_sm <- read_csv(proc_path("2024_04_23_mtbi_sm.csv"))
@@ -129,7 +129,7 @@ mtbi_ari_order <- unlist(read_csv(proc_path("2024_05_27_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
-## Full imputation meta clustering plot with impairment levels
+## Calculating associations between cluster solutions and features
 
 ```{r}
 imputation_labels <- data.frame(
@@ -255,6 +255,8 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 mtbi_esm <- read_csv(proc_path("2024_05_29_mtbi_esm.csv"))
 ```
 
+## Identifying and visualizing meta clusters
+
 ```{r}
 base_ari_hm <- adjusted_rand_index_heatmap(
     mtbi_ari,
@@ -330,6 +332,7 @@ save_heatmap(
     res = 100
 )
 
+# Another heatmap without the imputation-related columns
 lite_mtbi_ari_hm <- adjusted_rand_index_heatmap(
     aris = mtbi_ari,
     order = mtbi_ari_order,
@@ -360,8 +363,7 @@ save_heatmap(
 )
 ```
 
-When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have
-values for all features.
+When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have values for all features.
 
 ```{r}
 # Function to try to lean on mTBI-including solutions when possible.
@@ -439,6 +441,13 @@ plot_list <- auto_plot(
     save = fig_path("mtbi_mc_d", TRUE)
 )
 
+# No save version:
+plot_list <- auto_plot(
+    solutions_matrix_row = mtbi_mc_d_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
+)
+
 all_plots <- wrap_plots(plot_list)
 
 # Good enough as a snapshot
@@ -454,6 +463,7 @@ ggsave(
 ## Key attributes of the cluster solution
 
 Doesn't seem to be a big difference:
+
 - mtbi_mem_daze: 1 = 2 = 3
 - mtbi_loc: 1 = 2 = 3
 - mtbi_age: 1 = 2 = 3
@@ -464,6 +474,7 @@ Doesn't seem to be a big difference:
 - school_programs: 1 = 2 = 3
 
 Small difference:
+
 - mtbi_mechanism 1 < 2 = 3
 - age 1 = 2 < 3
 - headache_history: 3 < 1 = 2
@@ -474,6 +485,7 @@ Small difference:
 - opp_sex_friend: 1 > 2 = 3
 
 Seems to be a big difference:
+
 - sex (n_female): 3 >> 1 > 2
 - household_income: 1 << 2 = 3
 - race (minority groups): 1 >> 2 = 3
@@ -524,77 +536,12 @@ Seems to be a big difference:
 - cbcl_aggressive: 1 > 2 = 3
 - sds_sleep: 1 > 2 = 3
 
-Pause, what's the deal with race and cognition?
-
 Dennis, E., Manza, P. & Volkow, N.D. Socioeconomic status, BMI, and brain development in children. Transl Psychiatry 12, 33 (2022). https://doi.org/10.1038/s41398-022-01779-3
 
 In the study above, they looked at SES based on household income, highest level of parental education, and area deprivation.
 They also found that BMI played a role in brain development.
 
 Orben, A., Meier, A., Dalgleish, T. et al. Mechanisms linking social media use to adolescent mental health vulnerability. Nat Rev Psychol (2024). https://doi.org/10.1038/s44159-024-00307-y
-
-```{r}
-dl_df <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
-    return_plots = FALSE
-)
-
-dl_df |>
-    dplyr::filter(sex == 0) |>
-    ggplot(
-        aes(
-            x = race,
-            y = brain_volume,
-            colour = race,
-            group = race
-        )
-    ) +
-    geom_point() +
-    theme_bw() +
-    facet_grid(household_income ~ .)
-
-dl_df$"household_income" <- factor(dl_df$"household_income")
-dl_df$"sex" <- factor(dl_df$"sex")
-
-dl_df |>
-    ggplot(
-        aes(
-            x = household_income,
-            y = cbcl_aggressive,
-            colour = race,
-            group = interaction(race, household_income)
-        )
-    ) +
-    geom_violin(position = position_dodge(width = 0.75)) +
-    geom_jitter(
-        position = position_jitterdodge(
-            jitter.width = 0,
-            jitter.height = 0.5
-        ),
-    ) +
-    theme_bw()
-
-dl_df |>
-    ggplot(
-        aes(
-            x = sex,
-            y = cbcl_aggressive,
-            colour = race,
-            group = interaction(race, sex)
-        )
-    ) +
-    geom_boxplot(position = position_dodge(width = 0.75), width = 0.4) +
-    geom_jitter(
-        position = position_jitterdodge(
-            jitter.width = 0,
-            jitter.height = 0.5
-        ),
-    ) +
-    theme_bw()
-```
-
 
 ```{r}
 # Calculating feature importances
@@ -613,7 +560,9 @@ nmi_order <- sort(
 nmis <- nmis[nmi_order$ix, ]
 
 write_csv(nmis, proc_path("mtbi_mc_d_nmis.csv", TRUE))
+```
 
+```{r}
 mtbi_mc_d_nmis <- read_csv(proc_path("2024_05_29_mtbi_mc_d_nmis.csv"))
 ```
 
@@ -1047,12 +996,12 @@ mtbi_mc_d_nmi_vs_pval_vs_vis_t <- mtbi_mc_d_nmi_pval_vis |>
         )
     ) +
     geom_segment(
-        aes(x = 0.04, xend = 0.04, y = 0, yend = 2.75),  # Add vertical dashed line
+        aes(x = 0.04, xend = 0.04, y = 0, yend = 2.75),
         linetype = "dashed",
         color = "red"
     ) +
     geom_segment(
-        aes(x = 0, xend = 0.04, y = 2.75, yend = 2.75),  # Add vertical dashed line
+        aes(x = 0, xend = 0.04, y = 2.75, yend = 2.75),
         linetype = "dashed",
         color = "red"
     ) +
@@ -1070,6 +1019,8 @@ ggsave(
 
 ## Key variables
 
+These are the variables that, based on NMI score, p-values, and visual inspection, appear to be more important in characterizing our cluster solution.
+
 ```{r}
 mtbi_mc_d_nmi_pval_vis_key <- mtbi_mc_d_nmi_pval_vis |>
     dplyr::filter(nmi > 0.04 | neg_log_pval > 2.75)
@@ -1084,50 +1035,88 @@ mtbi_mc_d_nmi_pval_vis_key <- read_csv(
 )
 
 mtbi_mc_d_nmi_pval_vis_key$"feature"
-
-###############################################################################
-# Here I am
-###############################################################################
 ```
 
-Key features appear to be:
+The key features appear to be:
 
-- sex
-- brain_volume
-- cortical_sa
-- household_income
-- race
-- non_school_programs
-- programs_this_year
-- pubertal_status
-- weekend_screentime
-- parent_thought
-- parent_somatic
-- fmri_cort_subcort_cors
-- parent_aggressive
-- parent_avoidant
-- private_instruction
-- parent_withdrawn
-- parent_antisocial
-- weekday_screentime
-- parent_anxdisord
-- parent_hyperactive
-- family_peaceful
-- parent_intrusive
-- fmri_cort_cors
-- parent_anxdep
-- parent_perstr
-- parent_depress
-- family_temper
-- considerate
-- helps_hurt
-- family_outdo
-- same_sex_close_friend
-- family_angry
-- family_fight
-- parent_attention
-- family_criticize
+- [x] sex
+- [ ] brain_volume
+- [ ] cortical_sa
+- [ ] household_income
+- [ ] race
+- [ ] non_school_programs
+- [ ] programs_this_year
+- [ ] pubertal_status
+- [ ] weekend_screentime
+- [ ] parent_thought
+- [ ] parent_somatic
+- [ ] fmri_cort_subcort_cors
+- [ ] parent_aggressive
+- [ ] parent_avoidant
+- [ ] private_instruction
+- [ ] parent_withdrawn
+- [ ] parent_antisocial
+- [ ] weekday_screentime
+- [ ] parent_anxdisord
+- [ ] parent_hyperactive
+- [ ] family_peaceful
+- [ ] parent_intrusive
+- [ ] fmri_cort_cors
+- [ ] parent_anxdep
+- [ ] parent_perstr
+- [ ] parent_depress
+- [ ] family_temper
+- [ ] considerate
+- [ ] helps_hurt
+- [ ] family_outdo
+- [ ] same_sex_close_friend
+- [ ] family_angry
+- [ ] family_fight
+- [ ] parent_attention
+- [ ] family_criticize
 
+In the next sections, I'll step through exactly how each of these key features differ.
+
+## Sex
+
+```{r}
+sex_plot <- plot_list$"sex" +
+    ggplot2::labs(
+        fill = "Sex",
+        x = "Cluster"
+    ) +
+    ggplot2::scale_fill_hue(
+        labels = c(
+            "1" = "F",
+            "0" = "M"
+        )
+    )
+
+ggsave(
+    plot = sex_plot,
+    filename = fig_path("mtbi_mc_d_sex_plot_clean.png", TRUE)
+)
+```
+
+Clusters 1 and 2 appear to be primarily male, while cluster 3 appears to be primarily female.
+
+## Neuroimaging measures
+
+HERE I AM
+
+```{r}
+
+plot_list$"brain_volume" +
+    ggplot2::labs(
+        x = "Cluster",
+        y = "Brain Volume"
+    )
+
+plot_list$"cortical_sa"
+
+plot_list$"fmri_cort_subcort_cors"
+
+```
 
 
 # Label propagation
@@ -1143,10 +1132,6 @@ train_data_list_m3 <- all_dls$"mtbi_train_data_lists"$"imp_3"
 test_data_list_m1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
 
 full_data_list <- merge_data_lists(train_data_list_m3, test_data_list_m1)
-
-#full_data_list_m3 <- list.load(input_path("2024_03_17_full_data_list_m3.rds"))
-#test_data_list_m3 <- list.load(input_path("2024_03_17_test_data_list_m3.rds"))
-#test_oom_list_m3 <- list.load(input_path("2024_03_17_test_oom_list_m3.rds"))
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -1442,16 +1427,6 @@ aggressive6 <- ggplot(
 aggressive6
 ggsave("aggressive6.png", aggressive6)
 
-
-
-
-
-
-
-
-
-
-
 for (tp in c(1, 2, 3)) {
     long_outcomes <- NULL
     for (syndrome in syndromes) {
@@ -1626,118 +1601,71 @@ nrow(mtbi_mc_a)
 head(mtbi_mc_a)
 
 head(long_outcomes)
+```
 
-#for (tp in c(1, 2, 3)) {
-#    for (syndrome in syndromes) {
-#        if (is.null(long_outcomes)) {
-#            long_outcomes <- get_cbcl_syndrome_scale(
-#                syndrome = syndrome,
-#                mh_p_cbcl,
-#                raw = FALSE,
-#                subjects = mtbi_train,
-#                t = tp
-#            )
-#        } else {
-#            long_outcomes <- dplyr::inner_join(
-#                long_outcomes,
-#                get_cbcl_syndrome_scale(
-#                    syndrome = syndrome,
-#                    mh_p_cbcl,
-#                    raw = FALSE,
-#                    subjects = mtbi_train,
-#                    t = tp
-#                ),
-#                by = "subjectkey"
-#            )
-#        }
-#    }
-#    long_outcomes <- dplyr::inner_join(
-#        long_outcomes,
-#        get_sds_total_probs(
-#            ph_p_sds,
-#            mtbi_train,
-#            t = tp
-#        ),
-#        by = "subjectkey"
-#    )
-#    long_outcomes$"subjectkey" <- paste0("subject_", long_outcomes$"subjectkey")
-#    colnames(long_outcomes) <- c(
-#        "subjectkey",
-#        paste0("cbcl_", syndromes),
-#        "sds_sleep"
-#    )
-#    baseline_outcomes <- collapse_dl(oom_list_m3)
-#    d_outcomes <- NULL
-#    for (outcome in colnames(baseline_outcomes[-1])) {
-#        t0 <- dplyr::select(baseline_outcomes, "subjectkey", outcome)
-#        tn <- dplyr::select(long_outcomes, "subjectkey", outcome)
-#        colnames(t0) <- c("subjectkey", paste0(outcome, "_0"))
-#        colnames(tn) <- c("subjectkey", paste0(outcome, "_", tp))
-#        both_t <- dplyr::inner_join(t0, tn, by = "subjectkey")
-#        both_t[, 4] <- both_t[, 3] - both_t[, 2]
-#        colnames(both_t)[4] <- paste0("d_", outcome)
-#        both_t <- both_t[, c(1, 4)]
-#        if (is.null(d_outcomes)) {
-#            d_outcomes <- both_t
-#        } else {
-#            d_outcomes <- dplyr::full_join(d_outcomes, both_t, by = "subjectkey")
-#        }
-#    }
-#    mtbi_mc_a <- mtbi_rep[1, ]
-#    mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
-#    mtbi_mc_a <- dplyr::full_join(
-#        mtbi_mc_a,
-#        d_outcomes,
-#        by = "subjectkey"
-#    )
-#    mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
-#    d_plots <- list()
-#    for (outcome in colnames(d_outcomes)[-1]) {
-#        plot <- mtbi_mc_a |>
-#            ggplot(
-#                aes(
-#                    x = cluster,
-#                    y = !!sym(outcome),
-#                    colour = cluster
-#                )
-#            ) +
-#            geom_violin(alpha = 0.4) +
-#            geom_jitter(width = 0.2, height = 0.2) +
-#            stat_summary(
-#                fun = "mean",
-#                geom = "point",
-#                colour = "black",
-#                size = 2
-#            ) +
-#            labs(
-#                x = "Cluster",
-#                y = gsub("d_", "Δ", outcome)
-#            ) +
-#            theme_bw() +
-#            theme(
-#                legend.position = "none"
-#            )
-#        d_plots[[length(d_plots) + 1]] <- plot
-#    }
-#    d_plots <- d_plots |>
-#        wrap_plots() +
-#        plot_annotation(
-#            paste0("CBCL/SDS Outcomes, ", tp, "-year Follow-Up Minus Baseline"),
-#            theme = theme(plot.title=element_text(hjust=0.5))
-#        )
-#    # Looks like cluster 1 has the higher variance, indicating potential for intervention?
-#    ggsave(
-#        plot = d_plots,
-#        filename = fig_path(
-#            paste0("mtbi_mc_a_outcomes_t", tp, "_plots.png"),
-#            TRUE
-#        ),
-#        width = 8,
-#        height = 8,
-#        dpi = 120
-#    )
-#}
 
+## A deeper dive at feature separation
+
+```{r}
+dl_df <- auto_plot(
+    solutions_matrix_row = mtbi_mc_d_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+    return_plots = FALSE
+)
+
+dl_df |>
+    dplyr::filter(sex == 0) |>
+    ggplot(
+        aes(
+            x = race,
+            y = brain_volume,
+            colour = race,
+            group = race
+        )
+    ) +
+    geom_point() +
+    theme_bw() +
+    facet_grid(household_income ~ .)
+
+dl_df$"household_income" <- factor(dl_df$"household_income")
+dl_df$"sex" <- factor(dl_df$"sex")
+
+dl_df |>
+    ggplot(
+        aes(
+            x = household_income,
+            y = cbcl_aggressive,
+            colour = race,
+            group = interaction(race, household_income)
+        )
+    ) +
+    geom_violin(position = position_dodge(width = 0.75)) +
+    geom_jitter(
+        position = position_jitterdodge(
+            jitter.width = 0,
+            jitter.height = 0.5
+        ),
+    ) +
+    theme_bw()
+
+dl_df |>
+    ggplot(
+        aes(
+            x = sex,
+            y = cbcl_aggressive,
+            colour = race,
+            group = interaction(race, sex)
+        )
+    ) +
+    geom_boxplot(position = position_dodge(width = 0.75), width = 0.4) +
+    geom_jitter(
+        position = position_jitterdodge(
+            jitter.width = 0,
+            jitter.height = 0.5
+        ),
+    ) +
+    theme_bw()
 ```
 
 
