@@ -10,6 +10,7 @@ library(metasnf)
 library(progressr)
 library(rlist)
 library(MatchIt)
+library(ggplot2)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -19,34 +20,14 @@ sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 mtbi_subjects <- read_csv(sub_path("2024_02_13_mtbi_subjects.csv"))
 uninjured_subjects <- read_csv(sub_path("2024_02_13_uninjured_subjects.csv"))
 mtbi_subjects_train <- read_csv(sub_path("2024_02_13_mtbi_train_subjects.csv"))
-
-source("abcd/functions.R")
-
 ```
 
 ## Loading data and out of model lists
 
 ```{r}
-data_list_mu1 <- list.load(input_path("2024_03_17_data_list_mu1.rds"))
-data_list_mu2 <- list.load(input_path("2024_03_17_data_list_mu2.rds"))
-data_list_mu3 <- list.load(input_path("2024_03_17_data_list_mu3.rds"))
-data_list_mu4 <- list.load(input_path("2024_03_17_data_list_mu4.rds"))
-data_list_mu5 <- list.load(input_path("2024_03_17_data_list_mu5.rds"))
-data_list_mpu1 <- list.load(input_path("2024_03_17_data_list_mpu1.rds"))
-data_list_mpu2 <- list.load(input_path("2024_03_17_data_list_mpu2.rds"))
-data_list_mpu3 <- list.load(input_path("2024_03_17_data_list_mpu3.rds"))
-data_list_mpu4 <- list.load(input_path("2024_03_17_data_list_mpu4.rds"))
-data_list_mpu5 <- list.load(input_path("2024_03_17_data_list_mpu5.rds"))
-oom_list_mu1 <- list.load(input_path("2024_03_17_oom_list_mu1.rds"))
-oom_list_mu2 <- list.load(input_path("2024_03_17_oom_list_mu2.rds"))
-oom_list_mu3 <- list.load(input_path("2024_03_17_oom_list_mu3.rds"))
-oom_list_mu4 <- list.load(input_path("2024_03_17_oom_list_mu4.rds"))
-oom_list_mu5 <- list.load(input_path("2024_03_17_oom_list_mu5.rds"))
-oom_list_mpu1 <- list.load(input_path("2024_03_17_oom_list_mpu1.rds"))
-oom_list_mpu2 <- list.load(input_path("2024_03_17_oom_list_mpu2.rds"))
-oom_list_mpu3 <- list.load(input_path("2024_03_17_oom_list_mpu3.rds"))
-oom_list_mpu4 <- list.load(input_path("2024_03_17_oom_list_mpu4.rds"))
-oom_list_mpu5 <- list.load(input_path("2024_03_17_oom_list_mpu5.rds"))
+demo_matched_uninj_dls <- list.load(
+    input_path("2024_06_13_demo_matched_uninj_dls.rds")
+)
 ```
 
 ## Generating custom distance measures
@@ -64,229 +45,134 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
 )
 
+# Forcing 3 cluster solutions only
 clust_algs_list <- generate_clust_algs_list(
     "three_cluster_spectral" = spectral_three,
     disable_base = TRUE
 )
 
-settings_matrix_mu <- generate_settings_matrix(
-    data_list_mu1,
+demo_matched_settings_matrix <- generate_settings_matrix(
+    demo_matched_uninj_dls$"uninj_data_lists"$"imp_1",
     nrow = 200,
     seed = 42,
     clustering_algorithms = clust_algs_list,
     distance_metrics_list = my_distance_metrics
 )
 
-write_csv(settings_matrix_mu, proc_path("settings_matrix_mu.csv", TRUE))
+write_csv(
+    demo_matched_settings_matrix,
+    proc_path("dmu_settings_matrix.csv", TRUE)
+)
 
-settings_matrix_mu <- read_csv(proc_path("2024_03_18_settings_matrix_mu.csv"))
+# DMU = demographic matched uninjured
+dmu_settings_matrix <- read_csv(
+    proc_path("2024_06_13_dmu_settings_matrix.csv")
+)
 
 ```
 
 ## SNF for each of the imputations
 
 ```{r}
+dmu_dls <- c(
+    demo_matched_uninj_dls$"uninj_data_lists",
+    demo_matched_uninj_dls$"uninj_pooled_data_lists"
+)
 
-# Uninjured only imputed
-# Imputation 1
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mu1 <- batch_snf(
-        data_list = data_list_mu1,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mu1, proc_path("solutions_matrix_mu1.csv", TRUE))
-# Imputation 2
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mu2 <- batch_snf(
-        data_list = data_list_mu2,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mu2, proc_path("solutions_matrix_mu2.csv", TRUE))
-# Imputation 3
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mu3 <- batch_snf(
-        data_list = data_list_mu3,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mu3, proc_path("solutions_matrix_mu3.csv", TRUE))
-# Imputation 4
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mu4 <- batch_snf(
-        data_list = data_list_mu4,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mu4, proc_path("solutions_matrix_mu4.csv", TRUE))
-# Imputation 5
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mu5 <- batch_snf(
-        data_list = data_list_mu5,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mu5, proc_path("solutions_matrix_mu5.csv", TRUE))
-#
-# Uninjured pooled imputed
-# Imputation 1
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mpu1 <- batch_snf(
-        data_list = data_list_mpu1,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mpu1, proc_path("solutions_matrix_mpu1.csv", TRUE))
-# Imputation 2
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mpu2 <- batch_snf(
-        data_list = data_list_mpu2,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mpu2, proc_path("solutions_matrix_mpu2.csv", TRUE))
-# Imputation 3
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mpu3 <- batch_snf(
-        data_list = data_list_mpu3,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mpu3, proc_path("solutions_matrix_mpu3.csv", TRUE))
-# Imputation 4
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mpu4 <- batch_snf(
-        data_list = data_list_mpu4,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mpu4, proc_path("solutions_matrix_mpu4.csv", TRUE))
-# Imputation 5
-start <- proc.time()
-progressr::with_progress({
-    solutions_matrix_mpu5 <- batch_snf(
-        data_list = data_list_mpu5,
-        settings_matrix = settings_matrix_mu,
-        distance_metrics_list = my_distance_metrics,
-        clust_algs_list = clust_algs_list,
-        processes = "max"
-    )
-})
-proc.time() - start
-write_csv(solutions_matrix_mpu5, proc_path("solutions_matrix_mpu5.csv", TRUE))
+dmu_ols <- c(
+    demo_matched_uninj_dls$"uninj_oom_lists",
+    demo_matched_uninj_dls$"uninj_pooled_oom_lists"
+)
+
+names(dmu_dls) <- c(
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+)
+
+names(dmu_ols) <- c(
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+)
+
+dmu_solutions_matrices <- lapply(
+    dmu_dls,
+    function(dmu_dl) {
+        solutions_matrix <- batch_snf(
+            data_list = dmu_dl,
+            settings_matrix = dmu_settings_matrix,
+            distance_metrics_list = my_distance_metrics,
+            processes = "max"
+        )
+    }
+)
+
+list.save(
+    dmu_solutions_matrices,
+    input_path("dmu_solutions_matrices.rds", TRUE)
+)
 ```
 
 ## Re-importing the generated solutions
 
 ```{r}
-solutions_matrix_mu1 <- read_csv(proc_path("2024_03_18_solutions_matrix_mu1.csv"))
-solutions_matrix_mu2 <- read_csv(proc_path("2024_03_18_solutions_matrix_mu2.csv"))
-solutions_matrix_mu3 <- read_csv(proc_path("2024_03_18_solutions_matrix_mu3.csv"))
-solutions_matrix_mu4 <- read_csv(proc_path("2024_03_18_solutions_matrix_mu4.csv"))
-solutions_matrix_mu5 <- read_csv(proc_path("2024_03_18_solutions_matrix_mu5.csv"))
-solutions_matrix_mpu1 <- read_csv(proc_path("2024_03_18_solutions_matrix_mpu1.csv"))
-solutions_matrix_mpu2 <- read_csv(proc_path("2024_03_18_solutions_matrix_mpu2.csv"))
-solutions_matrix_mpu3 <- read_csv(proc_path("2024_03_18_solutions_matrix_mpu3.csv"))
-solutions_matrix_mpu4 <- read_csv(proc_path("2024_03_18_solutions_matrix_mpu4.csv"))
-solutions_matrix_mpu5 <- read_csv(proc_path("2024_03_18_solutions_matrix_mpu5.csv"))
-
-mu_sm <- do.call(
-    "rbind",
-    list(
-        solutions_matrix_mu1,
-        solutions_matrix_mu2,
-        solutions_matrix_mu3,
-        solutions_matrix_mu4,
-        solutions_matrix_mu5,
-        solutions_matrix_mpu1,
-        solutions_matrix_mpu2,
-        solutions_matrix_mpu3,
-        solutions_matrix_mpu4,
-        solutions_matrix_mpu5
-    )
+dmu_solutions_matrices <- list.load(
+    input_path("2024_06_13_dmu_solutions_matrices.rds")
 )
 
-write_csv(data.frame(mu_sm), proc_path("mu_sm.csv", TRUE))
+dmu_sm <- do.call("rbind", dmu_solutions_matrices)
 
-mu_ari <- calc_aris(mu_sm, processes = "max")
-write_csv(data.frame(mu_ari), proc_path("mu_ari.csv", TRUE))
+write_csv(data.frame(dmu_sm), proc_path("dmu_sm.csv", TRUE))
 
-mu_ari_order <- ari_order(mu_ari)
-write_csv(data.frame(mu_ari_order), proc_path("mu_ari_order.csv", TRUE))
+dmu_ari <- calc_aris(dmu_sm, processes = "max")
 
+write_csv(data.frame(dmu_ari), proc_path("dmu_ari.csv", TRUE))
+
+dmu_ari_order <- get_matrix_order(dmu_ari)
+
+write_csv(data.frame(dmu_ari_order), proc_path("dmu_ari_order.csv", TRUE))
 ```
 
 ```{r}
-mu_sm <- read_csv(proc_path("2024_03_18_mu_sm.csv"))
+dmu_sm <- read_csv(proc_path("2024_06_13_dmu_sm.csv"))
 
-mu_ari <- read_csv(proc_path("2024_03_18_mu_ari.csv")) |> as.matrix()
+dmu_ari <- as.matrix(read_csv(proc_path("2024_06_13_dmu_ari.csv")))
 
-mu_ari_order <- unlist(read_csv(proc_path("2024_03_18_mu_ari_order.csv")))
-names(mu_ari_order) <- NULL
+dmu_ari_order <- unlist(read_csv(proc_path("2024_06_13_dmu_ari_order.csv")))
+names(dmu_ari_order) <- NULL
 ```
 
 ## Full imputation meta clustering plot with impairment levels
 
 ```{r}
-
+# Solo vs. pooled
 imputation_labels <- data.frame(
     "imputation" = c(
-        rep("u1", 200),
-        rep("u2", 200),
-        rep("u3", 200),
-        rep("u4", 200),
-        rep("u5", 200),
-        rep("pu1", 200),
-        rep("pu2", 200),
-        rep("pu3", 200),
-        rep("pu4", 200),
-        rep("pu5", 200)
+        rep("s1", 200),
+        rep("s2", 200),
+        rep("s3", 200),
+        rep("s4", 200),
+        rep("s5", 200),
+        rep("p1", 200),
+        rep("p2", 200),
+        rep("p3", 200),
+        rep("p4", 200),
+        rep("p5", 200)
     ),
     "pooled" = c(
         rep("yes", 1000),
@@ -294,53 +180,195 @@ imputation_labels <- data.frame(
     )
 )
 
-imputed_data <- list(
-    "u1" = c(data_list_mu1, oom_list_mu1),
-    "u2" = c(data_list_mu2, oom_list_mu2),
-    "u3" = c(data_list_mu3, oom_list_mu3),
-    "u4" = c(data_list_mu4, oom_list_mu4),
-    "u5" = c(data_list_mu5, oom_list_mu5),
-    "pu5" = c(data_list_mpu5, oom_list_mpu5),
-    "pu1" = c(data_list_mpu1, oom_list_mpu1),
-    "pu2" = c(data_list_mpu2, oom_list_mpu2),
-    "pu3" = c(data_list_mpu3, oom_list_mpu3),
-    "pu4" = c(data_list_mpu4, oom_list_mpu4),
-    "pu5" = c(data_list_mpu5, oom_list_mpu5)
-)
+dmu_sm_l <- cbind(dmu_sm, imputation_labels)
 
-mu_sm_l <- cbind(mu_sm, imputation_labels)
-
-mu_esm <- extend_solutions_imp(
-    mu_sm_l,
-    imputed_targets = imputed_data,
-    min_p = 1e-10,
-    calculate_summaries = FALSE,
+dmu_esm_s1 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "s1", ],
+    data_list = dmu_dls$"s1",
+    target_list = dmu_ols$"s1",
+    min_pval = 1e-10,
     processes = "max"
 )
-write_csv(mu_esm, proc_path("mu_esm.csv", TRUE))
-
-```
-
-```{r}
-mu_esm <- read_csv(proc_path("2024_03_18_mu_esm.csv"))
-```
-
-```{r}
-
-mu_mc_heatmap <- my_similarity_matrix_heatmap(
-    aris = mu_ari,
-    aris_order = mu_ari_order,
-    extended_solutions = mu_esm,
-    show_clusters = FALSE
+#
+dmu_esm_s2 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "s2", ],
+    data_list = dmu_dls$"s2",
+    target_list = dmu_ols$"s2",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_s3 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "s3", ],
+    data_list = dmu_dls$"s3",
+    target_list = dmu_ols$"s3",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_s4 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "s4", ],
+    data_list = dmu_dls$"s4",
+    target_list = dmu_ols$"s4",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_s5 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "s5", ],
+    data_list = dmu_dls$"s5",
+    target_list = dmu_ols$"s5",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_p1 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "p1", ],
+    data_list = dmu_dls$"p1",
+    target_list = dmu_ols$"p1",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_p2 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "p2", ],
+    data_list = dmu_dls$"p2",
+    target_list = dmu_ols$"p2",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_p3 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "p3", ],
+    data_list = dmu_dls$"p3",
+    target_list = dmu_ols$"p3",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_p4 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "p4", ],
+    data_list = dmu_dls$"p4",
+    target_list = dmu_ols$"p4",
+    min_pval = 1e-10,
+    processes = "max"
+)
+#
+dmu_esm_p5 <- extend_solutions(
+    dmu_sm_l[dmu_sm_l$"imputation" == "p5", ],
+    data_list = dmu_dls$"p5",
+    target_list = dmu_ols$"p5",
+    min_pval = 1e-10,
+    processes = "max"
 )
 
-mc_heatmap_save(mu_mc_heatmap, fig_path("mu_mc_heatmap.png", TRUE))
+dmu_esm <- dplyr::bind_rows(
+    dmu_esm_s1,
+    dmu_esm_s2,
+    dmu_esm_s3,
+    dmu_esm_s4,
+    dmu_esm_s5,
+    dmu_esm_p1,
+    dmu_esm_p2,
+    dmu_esm_p3,
+    dmu_esm_p4,
+    dmu_esm_p5
+)
+
+dmu_esm$"impairment_separation" <- -log10(dmu_esm$"mean_pval")
+
+write_csv(dmu_esm, proc_path("dmu_esm.csv", TRUE))
+```
+
+```{r}
+###############################################################################
+# Here I am! 2024-06-13 15:17
+###############################################################################
+dmu_esm <- read_csv(proc_path("2024_06_13_dmu_esm.csv"))
+
+base_ari_hm <- adjusted_rand_index_heatmap(
+    dmu_ari,
+    order = dmu_ari_order
+)
+
+divergent_colours <- function(column)  {
+    values <- unique(column)
+    colours <- RColorBrewer::brewer.pal(n = length(values), name = "Set3")
+    names(colours) <- values
+    return(colours)
+}
+
+lite_dmu_ari_hm <- adjusted_rand_index_heatmap(
+    aris = dmu_ari,
+    order = dmu_ari_order,
+    data = dmu_esm,
+    min_colour = "black",
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            dmu_esm$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+
+save_heatmap(
+    heatmap = lite_dmu_ari_hm,
+    path = fig_path("lite_dmu_ari_hm.png", TRUE),
+    width = 900,
+    height = 700,
+    res = 100
+)
+```
+
+# Matching by CBCL measures
+
+This previous matched sample showed significantly lower CBCL and SDS impairment levels than our mTBI group, which may have made it difficult to obtain a qualitatively similar clustering structure.
+
+```{r}
+dmu_df <- collapse_dl(c(dmu_dls$"s1", dmu_ols$"s1"))
+
+mtbi_df <- collapse_dl(c(mtbi_matching_dl, mtbi_matching_ol))
+
+uninj_df <- collapse_dl(c(uninj_matching_dl, uninj_matching_ol))
+uninj_df <- dplyr::filter(
+    uninj_df,
+    !subjectkey %in% dmu_df$"subjectkey"
+)
+
+dmu_df$"cluster" <- "dmu"
+mtbi_df$"cluster" <- "mtbi"
+uninj_df$"cluster" <- "uninj"
+
+comparison_df <- dplyr::bind_rows(
+    uninj_df,
+    dmu_df,
+    mtbi_df
+)
+
+colnames(comparison_df)
+
+bar_plot(comparison_df, "sex")
+
+jitter_plot(comparison_df, "sds_sleep")
+
+jitter_plot(comparison_df, "cbcl_aggressive")
+
+bar_plot(comparison_df, "household_income")
+
+bar_plot(comparison_df, "race")
+
+# These really make it seem like an interaction effect exists
+
 ```
 
 
-# Matching with demographics, family environment, and parent psychopathology
-
-Our previous matched sample showed significantly lower CBCL and SDS impairment levels.
 Here we examine another uninjured matched group that includes these outcomes as matching variables.
 
 ## Importing packages and establishing file paths

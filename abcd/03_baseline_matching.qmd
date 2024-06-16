@@ -32,7 +32,6 @@ Finding matched uninjured controls for each mtbi subject based on demographic va
 Matching will be done based on the first imputed dataset of the baseline data.
 
 ```{r}
-
 matching_vars <- c(
     "d_income",
     "d_race",
@@ -48,71 +47,40 @@ mtbi_matching_dl <- all_dls$"mtbi_train_data_lists"$"imp_1" |>
             }
         }
     )
+mtbi_matching_dl <- Filter(Negate(is.null), mtbi_matching_dl)
 
-summarize_dl(mtbi_matching_dl)
+uninj_matching_dl <- all_dls$"uninj_data_lists"$"imp_1" |>
+    lapply(
+        function(x) {
+            if (x$"name" %in% matching_vars) {
+                return(x)
+            }
+        }
+    )
+uninj_matching_dl <- Filter(Negate(is.null), uninj_matching_dl)
 
-#
-
-d_interview_age_mtbi_train_imp_1 <- read_csv(
-    input_path("2024_03_12_d_interview_age_mtbi_train_imp_1.csv")
-)
-d_sex_mtbi_train_imp_1 <- read_csv(
-    input_path("2024_03_12_d_sex_mtbi_train_imp_1.csv")
-)
-d_income_mtbi_train_imp_1 <- read_csv(
-    input_path("2024_03_12_d_income_mtbi_train_imp_1.csv")
-)
-d_race_mtbi_train_imp_1 <- read_csv(
-    input_path("2024_03_12_d_race_mtbi_train_imp_1.csv")
-)
-
-d_interview_age_uninj_imp_1 <- read_csv(
-    input_path("2024_03_12_d_interview_age_uninj_imp_1.csv")
-)
-d_sex_uninj_imp_1 <- read_csv(
-    input_path("2024_03_12_d_sex_uninj_imp_1.csv")
-)
-d_income_uninj_imp_1 <- read_csv(
-    input_path("2024_03_12_d_income_uninj_imp_1.csv")
-)
-d_race_uninj_imp_1 <- read_csv(
-    input_path("2024_03_12_d_race_uninj_imp_1.csv")
-)
-
-mtbi_matching_df <- list(
-    d_interview_age_mtbi_train_imp_1,
-    d_sex_mtbi_train_imp_1,
-    d_income_mtbi_train_imp_1,
-    d_race_mtbi_train_imp_1
-) |>
-    merge_df_list()
+mtbi_matching_df <- collapse_dl(mtbi_matching_dl)
+uninj_matching_df <- collapse_dl(uninj_matching_dl)
 
 mtbi_matching_df$"mtbi" <- 1
+uninj_matching_df$"mtbi" <- 0
 
-uninjured_matching_df <- list(
-    d_interview_age_uninj_imp_1,
-    d_sex_uninj_imp_1,
-    d_income_uninj_imp_1,
-    d_race_uninj_imp_1
-) |>
-    merge_df_list()
-
-uninjured_matching_df$"mtbi" <- 0
-
-matching_df <- rbind(mtbi_matching_df, uninjured_matching_df)
+matching_df <- rbind(mtbi_matching_df, uninj_matching_df)
 
 # Nearest neighbour matching
 matching_results <- matchit(
-    formula(mtbi ~ household_income + race + interview_age + sex),
+    formula(mtbi ~ household_income + race + age + sex),
     data = matching_df,
     method = "nearest"
 )
 
 # The uninjured matching has 0 mean diff on all matching variables
-summary(matching_results)
+matching_summary <- capture.output(print(summary(matching_results)))
+
+writeLines(matching_summary, proc_path("demo_matching_summary.txt", TRUE))
 
 grDevices::png(
-    filename = fig_path("mu_matching_summary.png", TRUE),
+    filename = fig_path("demo_matching_summary.png", TRUE),
     width = 1000,
     height = 500,
     res = 120
@@ -124,42 +92,31 @@ grDevices::dev.off()
 matched_data <- match.data(matching_results)
 
 # Extract the control group from the matched data
-matched_uninjured <- matched_data |>
+matched_uninj <- matched_data |>
     dplyr::filter(mtbi == 0) |>
     dplyr::select(subjectkey)
 
-write_csv(matched_uninjured, sub_path("matched_uninjured.csv", TRUE))
+write_csv(matched_uninj, sub_path("demo_matched_uninj.csv", TRUE))
 ```
 
 ## Loading data and out of model lists
 
 ```{r}
-matched_uninjured <- read_csv(sub_path("2024_03_12_matched_uninjured.csv"))
 
-data_list_u1 <- list.load(input_path("2024_03_12_data_list_u1.rds"))
-data_list_u2 <- list.load(input_path("2024_03_12_data_list_u2.rds"))
-data_list_u3 <- list.load(input_path("2024_03_12_data_list_u3.rds"))
-data_list_u4 <- list.load(input_path("2024_03_12_data_list_u4.rds"))
-data_list_u5 <- list.load(input_path("2024_03_12_data_list_u5.rds"))
-data_list_pu1 <- list.load(input_path("2024_03_12_data_list_pu1.rds"))
-data_list_pu2 <- list.load(input_path("2024_03_12_data_list_pu2.rds"))
-data_list_pu3 <- list.load(input_path("2024_03_12_data_list_pu3.rds"))
-data_list_pu4 <- list.load(input_path("2024_03_12_data_list_pu4.rds"))
-data_list_pu5 <- list.load(input_path("2024_03_12_data_list_pu5.rds"))
+matched_uninj <- read_csv(sub_path("2024_06_13_demo_matched_uninj.csv"))
 
-oom_list_u1 <- list.load(input_path("2024_03_17_oom_list_u1.rds"))
-oom_list_u2 <- list.load(input_path("2024_03_17_oom_list_u2.rds"))
-oom_list_u3 <- list.load(input_path("2024_03_17_oom_list_u3.rds"))
-oom_list_u4 <- list.load(input_path("2024_03_17_oom_list_u4.rds"))
-oom_list_u5 <- list.load(input_path("2024_03_17_oom_list_u5.rds"))
-oom_list_pu1 <- list.load(input_path("2024_03_17_oom_list_pu1.rds"))
-oom_list_pu2 <- list.load(input_path("2024_03_17_oom_list_pu2.rds"))
-oom_list_pu3 <- list.load(input_path("2024_03_17_oom_list_pu3.rds"))
-oom_list_pu4 <- list.load(input_path("2024_03_17_oom_list_pu4.rds"))
-oom_list_pu5 <- list.load(input_path("2024_03_17_oom_list_pu5.rds"))
+all_dls |> names()
+
+uninj_dls <- all_dls[
+    c(
+        "uninj_data_lists",
+        "uninj_pooled_data_lists",
+        "uninj_oom_lists",
+        "uninj_pooled_oom_lists"
+    )
+]
 
 subject_filter_dl <- function(data_list, subject_vector) {
-    subject_vector <- paste0("subject_", subject_vector)
     data_list <- data_list |>
         lapply(
             function(x) {
@@ -171,47 +128,20 @@ subject_filter_dl <- function(data_list, subject_vector) {
     return(data_list)
 }
 
-# The matched data lists
-data_list_mu1 <- data_list_u1 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mu2 <- data_list_u2 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mu3 <- data_list_u3 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mu4 <- data_list_u4 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mu5 <- data_list_u5 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mpu1 <- data_list_pu1 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mpu2 <- data_list_pu2 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mpu3 <- data_list_pu3 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mpu4 <- data_list_pu4 |> subject_filter_dl(matched_uninjured$"subjectkey")
-data_list_mpu5 <- data_list_pu5 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mu1 <- oom_list_u1 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mu2 <- oom_list_u2 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mu3 <- oom_list_u3 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mu4 <- oom_list_u4 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mu5 <- oom_list_u5 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mpu1 <- oom_list_pu1 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mpu2 <- oom_list_pu2 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mpu3 <- oom_list_pu3 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mpu4 <- oom_list_pu4 |> subject_filter_dl(matched_uninjured$"subjectkey")
-oom_list_mpu5 <- oom_list_pu5 |> subject_filter_dl(matched_uninjured$"subjectkey")
+demo_matched_uninj_dls <- lapply(
+    uninj_dls,
+    function(x) {
+        lapply(
+            x,
+            function(y) {
+                subject_filter_dl(y, matched_uninj$"subjectkey")
+            }
+        )
+    }
+)
 
-list.save(data_list_mu1, input_path("data_list_mu1.rds", TRUE))
-list.save(data_list_mu2, input_path("data_list_mu2.rds", TRUE))
-list.save(data_list_mu3, input_path("data_list_mu3.rds", TRUE))
-list.save(data_list_mu4, input_path("data_list_mu4.rds", TRUE))
-list.save(data_list_mu5, input_path("data_list_mu5.rds", TRUE))
-list.save(data_list_mpu1, input_path("data_list_mpu1.rds", TRUE))
-list.save(data_list_mpu2, input_path("data_list_mpu2.rds", TRUE))
-list.save(data_list_mpu3, input_path("data_list_mpu3.rds", TRUE))
-list.save(data_list_mpu4, input_path("data_list_mpu4.rds", TRUE))
-list.save(data_list_mpu5, input_path("data_list_mpu5.rds", TRUE))
-list.save(oom_list_mu1, input_path("oom_list_mu1.rds", TRUE))
-list.save(oom_list_mu2, input_path("oom_list_mu2.rds", TRUE))
-list.save(oom_list_mu3, input_path("oom_list_mu3.rds", TRUE))
-list.save(oom_list_mu4, input_path("oom_list_mu4.rds", TRUE))
-list.save(oom_list_mu5, input_path("oom_list_mu5.rds", TRUE))
-list.save(oom_list_mpu1, input_path("oom_list_mpu1.rds", TRUE))
-list.save(oom_list_mpu2, input_path("oom_list_mpu2.rds", TRUE))
-list.save(oom_list_mpu3, input_path("oom_list_mpu3.rds", TRUE))
-list.save(oom_list_mpu4, input_path("oom_list_mpu4.rds", TRUE))
-list.save(oom_list_mpu5, input_path("oom_list_mpu5.rds", TRUE))
-
+list.save(
+    demo_matched_uninj_dls,
+    input_path("demo_matched_uninj_dls.rds", TRUE)
+)
 ```

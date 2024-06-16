@@ -111,6 +111,8 @@ mtbi_subjects_t2 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
+mtbi_subjects_t1
+
 mtbi_subjects_t1o <- mtbi_subjects_t1[!mtbi_subjects_t1 %in% mtbi_subjects_t0]
 mtbi_subjects_t2o <- mtbi_subjects_t2[!mtbi_subjects_t2 %in% mtbi_subjects_t0]
 
@@ -201,6 +203,8 @@ uninjured_subjects_0 <- read_subjects(
 ```{r}
 # Subjects who should have their injury information collected from t1
 t1_latest <- mtbi_subjects_0_to_2[!mtbi_subjects_0_to_2 %in% mtbi_subjects_t2]
+
+# Subjects who should have their injury information collected from t2
 t2_latest <- mtbi_subjects_0_to_2[!mtbi_subjects_0_to_2 %in% t1_latest]
 
 as_mem_daze_mtbi_l1 <- get_mtbi_mem_daze(
@@ -218,8 +222,8 @@ as_mem_daze_mtbi_l2 <- get_mtbi_mem_daze(
 )
 
 as_mem_daze_mtbi_l <- rbind(
-    as_mtbi_mem_daze_mtbi_l1,
-    as_mtbi_mem_daze_mtbi_l2
+    as_mem_daze_mtbi_l1,
+    as_mem_daze_mtbi_l2
 )
 
 write_csv(
@@ -249,8 +253,6 @@ as_mechanism_mtbi_l <- rbind(
     as_mechanism_mtbi_l1,
     as_mechanism_mtbi_l2
 )
-
-nrow(as_mechanism_mtbi_l)
 
 write_csv(
     as_mechanism_mtbi_l,
@@ -300,7 +302,7 @@ Demographic variables included in the analyses are:
 #### Interview age
 
 ```{r}
-d_interview_age_l0 <- get_interview_age(
+d_interview_age_mtbi_l0 <- get_interview_age(
     abcd_y_lt,
     mtbi_subjects_0_to_2,
     t = 0,
@@ -309,7 +311,7 @@ d_interview_age_l0 <- get_interview_age(
 
 write_csv(
     d_interview_age_l0,
-    input_path("d_interview_age_l0.csv", TRUE)
+    input_path("d_interview_age_mtbi_l0.csv", TRUE)
 )
 
 d_interview_age_uninj_l0 <- get_interview_age(
@@ -363,7 +365,7 @@ d_mtbi_age_mtbi_l1 <- get_mtbi_age(
 d_mtbi_age_mtbi_l2 <- get_mtbi_age(
     ph_p_otbi,
     abcd_y_lt,
-    mtbi_subjects_0_to_2,
+    t2_latest,
     t = 2,
     as_years = FALSE
 )
@@ -456,7 +458,7 @@ write_csv(
 
 d_race_uninj_l0 <- get_race(
     abcd_p_demo,
-    uninjured_subjects_l0,
+    uninjured_subjects_0_to_2,
     asian_as_other = TRUE,
     t = 0
 )
@@ -582,10 +584,12 @@ mh_mtbi_count_mtbi_l2 <- dplyr::full_join(
     mh_mtbi_count_mtbi_0_to_2_t2,
     by = "subjectkey"
 ) |>
+    dplyr::rowwise() |>
     dplyr::mutate(
-        mtbi_count = mtbi_count.x + mtbi_count.y,
+        mtbi_count = sum(mtbi_count.x, mtbi_count.y, na.rm = TRUE),
         .keep = "unused"
-    )
+    ) |>
+    dplyr::ungroup()
 
 write_csv(
     mh_mtbi_count_mtbi_l2,
@@ -750,7 +754,6 @@ write_csv(
 ##### White matter neurite densities
 
 ```{r}
-
 dm_all_wmnd_mtbi_l0 <- get_all_wmnd(
     mri_y_rsi_rnd_at,
     mri_y_rsi_rnd_wm_dsk,
@@ -904,6 +907,8 @@ write_csv(
 Psychosocial factors of interest include:
 
 #### Loneliness
+
+Data only present at baseline.
 
 ```{r}
 p_loneliness_mtbi_l0 <- get_loneliness(
@@ -1118,7 +1123,7 @@ write_csv(
 p_fam_fn_uninj_l0 <- get_family_function(
     ce_y_fes,
     ce_p_fes,
-    uninjured_subjects_l0,
+    uninjured_subjects_0_to_2,
     t = 0
 )
 write_csv(
@@ -1147,6 +1152,7 @@ write_csv(
     p_fam_fn_uninj_l2,
     input_path("p_fam_fn_uninj_l2.csv", date = TRUE)
 )
+
 ```
 
 #### Parent psychopathology
@@ -1438,7 +1444,7 @@ write_csv(
     input_path("cbcl_thought_uninj_l0.csv", date = TRUE)
 )
 
-cbcl_thought_mtbi_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_thought_mtbi_l2 <- get_cbcl_syndrome_scale(
     syndrome = "thought",
     mh_p_cbcl,
     raw = FALSE,
@@ -1446,11 +1452,11 @@ cbcl_thought_mtbi_0_to_2 <- get_cbcl_syndrome_scale(
     t = 2
 )
 write_csv(
-    cbcl_thought_mtbi_0_to_2,
-    input_path("cbcl_thought_mtbi_0_to_2.csv", date = TRUE)
+    cbcl_thought_mtbi_l2,
+    input_path("cbcl_thought_mtbi_l2.csv", date = TRUE)
 )
 
-cbcl_thought_uninj_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_thought_uninj_l2 <- get_cbcl_syndrome_scale(
     syndrome = "thought",
     mh_p_cbcl,
     raw = FALSE,
@@ -1458,8 +1464,8 @@ cbcl_thought_uninj_0_to_2 <- get_cbcl_syndrome_scale(
     t = 2
 )
 write_csv(
-    cbcl_thought_uninj_0_to_2,
-    input_path("cbcl_thought_uninj_0_to_2.csv", date = TRUE)
+    cbcl_thought_uninj_l2,
+    input_path("cbcl_thought_uninj_l2.csv", date = TRUE)
 )
 
 ```
@@ -1467,37 +1473,83 @@ write_csv(
 #### Attention complaints
 
 ```{r}
-cbcl_attention_mtbi_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_attention_mtbi_l0 <- get_cbcl_syndrome_scale(
+    syndrome = "attention",
+    mh_p_cbcl,
+    raw = FALSE,
+    subjects = mtbi_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    cbcl_attention_mtbi_l0,
+    input_path("cbcl_attention_mtbi_l0.csv", date = TRUE)
+)
+
+cbcl_attention_uninj_l0 <- get_cbcl_syndrome_scale(
+    syndrome = "attention",
+    mh_p_cbcl,
+    raw = FALSE,
+    subjects = uninjured_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    cbcl_attention_uninj_l0,
+    input_path("cbcl_attention_uninj_l0.csv", date = TRUE)
+)
+
+cbcl_attention_mtbi_l2 <- get_cbcl_syndrome_scale(
     syndrome = "attention",
     mh_p_cbcl,
     raw = FALSE,
     subjects = mtbi_subjects_0_to_2,
     t = 2
 )
-
 write_csv(
-    cbcl_attention_mtbi_0_to_2,
-    input_path("cbcl_attention_mtbi_0_to_2.csv", date = TRUE)
+    cbcl_attention_mtbi_l2,
+    input_path("cbcl_attention_mtbi_l2.csv", date = TRUE)
 )
 
-cbcl_attention_uninj_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_attention_uninj_l2 <- get_cbcl_syndrome_scale(
     syndrome = "attention",
     mh_p_cbcl,
     raw = FALSE,
     subjects = uninjured_subjects_0_to_2,
     t = 2
 )
-
 write_csv(
-    cbcl_attention_uninj_0_to_2,
-    input_path("cbcl_attention_uninj_0_to_2.csv", date = TRUE)
+    cbcl_attention_uninj_l2,
+    input_path("cbcl_attention_uninj_l2.csv", date = TRUE)
 )
 ```
 
 #### Rulebreak complaints
 
 ```{r}
-cbcl_rulebreak_mtbi_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_rulebreak_mtbi_l0 <- get_cbcl_syndrome_scale(
+    syndrome = "rulebreak",
+    mh_p_cbcl,
+    raw = FALSE,
+    subjects = mtbi_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    cbcl_rulebreak_mtbi_l0,
+    input_path("cbcl_rulebreak_mtbi_l0.csv", date = TRUE)
+)
+
+cbcl_rulebreak_uninj_l0 <- get_cbcl_syndrome_scale(
+    syndrome = "rulebreak",
+    mh_p_cbcl,
+    raw = FALSE,
+    subjects = uninjured_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    cbcl_rulebreak_uninj_l0,
+    input_path("cbcl_rulebreak_uninj_l0.csv", date = TRUE)
+)
+
+cbcl_rulebreak_mtbi_l2 <- get_cbcl_syndrome_scale(
     syndrome = "rulebreak",
     mh_p_cbcl,
     raw = FALSE,
@@ -1505,81 +1557,115 @@ cbcl_rulebreak_mtbi_0_to_2 <- get_cbcl_syndrome_scale(
     t = 2
 )
 write_csv(
-    cbcl_rulebreak_mtbi_0_to_2,
-    input_path("cbcl_rulebreak_mtbi_0_to_2.csv", date = TRUE)
+    cbcl_rulebreak_mtbi_l2,
+    input_path("cbcl_rulebreak_mtbi_l2.csv", date = TRUE)
 )
 
-cbcl_rulebreak_uninj_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_rulebreak_uninj_l2 <- get_cbcl_syndrome_scale(
     syndrome = "rulebreak",
     mh_p_cbcl,
     raw = FALSE,
     subjects = uninjured_subjects_0_to_2,
     t = 2
 )
-
 write_csv(
-    cbcl_rulebreak_uninj_0_to_2,
-    input_path("cbcl_rulebreak_uninj_0_to_2.csv", date = TRUE)
+    cbcl_rulebreak_uninj_l2,
+    input_path("cbcl_rulebreak_uninj_l2.csv", date = TRUE)
 )
 ```
 
 #### Aggressive complaints
 
 ```{r}
-cbcl_aggressive_mtbi_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_aggressive_mtbi_l0 <- get_cbcl_syndrome_scale(
+    syndrome = "aggressive",
+    mh_p_cbcl,
+    raw = FALSE,
+    subjects = mtbi_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    cbcl_aggressive_mtbi_l0,
+    input_path("cbcl_aggressive_mtbi_l0.csv", date = TRUE)
+)
+
+cbcl_aggressive_uninj_l0 <- get_cbcl_syndrome_scale(
+    syndrome = "aggressive",
+    mh_p_cbcl,
+    raw = FALSE,
+    subjects = uninjured_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    cbcl_aggressive_uninj_l0,
+    input_path("cbcl_aggressive_uninj_l0.csv", date = TRUE)
+)
+
+cbcl_aggressive_mtbi_l2 <- get_cbcl_syndrome_scale(
     syndrome = "aggressive",
     mh_p_cbcl,
     raw = FALSE,
     subjects = mtbi_subjects_0_to_2,
     t = 2
 )
-
 write_csv(
-    cbcl_aggressive_mtbi_0_to_2,
-    input_path("cbcl_aggressive_mtbi_0_to_2.csv", date = TRUE)
+    cbcl_aggressive_mtbi_l2,
+    input_path("cbcl_aggressive_mtbi_l2.csv", date = TRUE)
 )
 
-cbcl_aggressive_uninj_0_to_2 <- get_cbcl_syndrome_scale(
+cbcl_aggressive_uninj_l2 <- get_cbcl_syndrome_scale(
     syndrome = "aggressive",
     mh_p_cbcl,
     raw = FALSE,
     subjects = uninjured_subjects_0_to_2,
     t = 2
 )
-
 write_csv(
-    cbcl_aggressive_uninj_0_to_2,
-    input_path("cbcl_aggressive_uninj_0_to_2.csv", date = TRUE)
+    cbcl_aggressive_uninj_l2,
+    input_path("cbcl_aggressive_uninj_l2.csv", date = TRUE)
 )
 ```
 
 ### Sleep disturbance scale
 
 ```{r}
-sds_total_probs_mtbi_0_to_2 <- get_sds_total_probs(
+sds_total_probs_mtbi_l0 <- get_sds_total_probs(
+    ph_p_sds,
+    mtbi_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    sds_total_probs_mtbi_l0,
+    input_path("sds_total_probs_mtbi_l0.csv", date = TRUE)
+)
+
+sds_total_probs_uninj_l0 <- get_sds_total_probs(
+    ph_p_sds,
+    uninjured_subjects_0_to_2,
+    t = 0
+)
+write_csv(
+    sds_total_probs_uninj_l0,
+    input_path("sds_total_probs_uninj_l0.csv", date = TRUE)
+)
+
+sds_total_probs_mtbi_l2 <- get_sds_total_probs(
     ph_p_sds,
     mtbi_subjects_0_to_2,
     t = 2
 )
-
 write_csv(
-    sds_total_probs_mtbi_0_to_2,
-    input_path(
-        "sds_total_probs_mtbi_0_to_2.csv",
-        date = TRUE
-    )
+    sds_total_probs_mtbi_l2,
+    input_path("sds_total_probs_mtbi_l2.csv", date = TRUE)
 )
 
-sds_total_probs_uninj_0_to_2 <- get_sds_total_probs(
+sds_total_probs_uninj_l2 <- get_sds_total_probs(
     ph_p_sds,
     uninjured_subjects_0_to_2,
     t = 2
 )
 write_csv(
-    sds_total_probs_uninj_0_to_2,
-    input_path(
-        "sds_total_probs_uninj_0_to_2.csv",
-        date = TRUE
-    )
+    sds_total_probs_uninj_l2,
+    input_path("sds_total_probs_uninj_l2.csv", date = TRUE)
 )
 ```
