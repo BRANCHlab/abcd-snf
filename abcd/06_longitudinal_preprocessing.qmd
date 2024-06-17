@@ -510,6 +510,43 @@ mtbi_l2_df_no_subs <- char_to_fac(mtbi_l2_df[, -1])
 uninj_l0_df_no_subs <- char_to_fac(uninj_l0_df[, -1])
 uninj_l2_df_no_subs <- char_to_fac(uninj_l2_df[, -1])
 
+# Check to see if any columns have 0 variance
+no_var_column_checker <- function(df) {
+    no_var_cols <- list()
+    for (col in colnames(df)) {
+        single_val <- df[, col] |>
+            na.omit() |>
+            unique() |>
+            length() |>
+            all.equal(1) |>
+            isTRUE()
+        if (single_val) {
+            no_var_cols <- c(no_var_cols, col)
+        }
+    }
+    if (length(no_var_cols) > 0) {
+        return(unlist(no_var_cols))
+    }
+}
+
+# Good
+no_var_column_checker(mtbi_l0_df_no_subs)
+
+# Not good
+mtbi_l2_zv <- no_var_column_checker(mtbi_l2_df_no_subs)
+
+# No zero variance vars
+mtbi_l2_df_no_subs_no_zv <- mtbi_l2_df_no_subs |>
+    dplyr::select(-all_of(mtbi_l2_zv))
+
+# Good
+no_var_column_checker(uninj_l0_df_no_subs)
+
+# Not good
+uninj_l2_zv <- no_var_column_checker(uninj_l2_df_no_subs)
+uninj_l2_df_no_subs_no_zv <- uninj_l2_df_no_subs |>
+    dplyr::select(-all_of(uninj_l2_zv))
+
 # Function that checks which variables have the biggest correlations
 pairwise_correlations <- function(df, threshold = 0) {
     # Remove missing data to help calculate correlations
@@ -531,6 +568,7 @@ pairwise_correlations <- function(df, threshold = 0) {
     paired_cors <- paired_cors[paired_cors$"cor" > threshold, ]
     return(paired_cors)
 }
+
 # Function to help sort variables by pairwise correlations
 top_correlating_vars <- function(df, threshold = 0) {
     df <- pairwise_correlations(df, threshold)
@@ -595,7 +633,7 @@ mtbi_l0_pred_mat <- build_pred_mat(mtbi_l0_df_no_subs, 1)
 write.table(mtbi_l0_pred_mat, proc_path("mtbi_l0_pred_mat.txt", TRUE))
 
 mtbi_l0_pred_mat <- as.matrix(
-    read.table(proc_path("2024_06_14_mtbi_l0_pred_mat.txt"))
+    read.table(proc_path("2024_06_17_mtbi_l0_pred_mat.txt"))
 )
 storage.mode(mtbi_l0_pred_mat) <- "double"
 
@@ -622,23 +660,72 @@ write_csv(five_imputed_mtbi_l0, input_path("five_imputed_mtbi_l0.csv", TRUE))
 ###############################################################################
 # Doesn't run
 imputed_mtbi_l2 <- futuremice(
-    mtbi_l2_df_no_subs,
+    mtbi_l2_df_no_subs_no_zv,
     m = 5,
     maxit = 10,
     parallelseed = 42
 )
 
-mtbi_l2_pred_mat <- build_pred_mat(mtbi_l2_df_no_subs, 28)
+mtbi_l2_pred_mat <- build_pred_mat(mtbi_l2_df_no_subs_no_zv, 6)
 
+# Pubertal status has an extremely high NA fraction
+mtbi_l2_pred_mat[, "pubertal_status"] <- 0
+
+sapply(mtbi_l2_df_no_subs_no_zv, function(x) sum(is.na(x)))
+
+
+calc_comissingness <- function(df) {
+    comissing_df <- NULL
+    features <- colnames(df)
+    pairwise_features <- combn(features, 2)
+    for (i in seq_len(ncol(pairwise_features))) {
+        feature1 <- pairwise_features[1, i]
+        feature2 <- pairwise_features[2, i]
+        missing_together <- sum(
+            is.na(df[, feature1]) & is.na(df[, feature2])
+        )
+        missing_at_all <- sum(
+            is.na(df[, feature1]) | is.na(df[, feature2])
+        )
+        comissingness <- 100 * missing_together / missing_at_all
+        this_df <- data.frame(
+            var1 = feature1,
+            var2 = feature2,
+            comissingness = comissingness
+        )
+        if (is.null(comissing_df)) {
+            comissing_df <- this_df
+        } else {
+            comissing_df <- rbind(comissing_df, this_df)
+        }
+    }
+    return(comissing_df)
+}
+
+###############################################################################
+# good stuff
+###############################################################################
+z <- calc_comissingness(mtbi_l2_df_no_subs_no_zv)
+
+z
+
+
+
+library(ComplexHeatmap)
+
+Heatmap(mtbi_l2_pred_mat, cluster_rows = FALSE, cluster_columns = FALSE)
+
+
+#
 # Write and recover
 write.table(mtbi_l2_pred_mat, proc_path("mtbi_l2_pred_mat.txt", TRUE))
 mtbi_l2_pred_mat <- as.matrix(
     read.table(proc_path("2024_06_17_mtbi_l2_pred_mat.txt"))
 )
 storage.mode(mtbi_l2_pred_mat) <- "double"
-
+#
 imputed_mtbi_l2 <- futuremice(
-    mtbi_l2_df_no_subs,
+    mtbi_l2_df_no_subs_no_zv,
     m = 5,
     n.core = 5,
     maxit = 10,
@@ -853,6 +940,39 @@ uninj_l0_oom_lists <- build_ols(uninj_l0_parsed_imps)
 uninj_l2_data_lists <- build_dls(uninj_l2_parsed_imps)
 uninj_l2_oom_lists <- build_ols(uninj_l2_parsed_imps)
 
+na.omit(mtbi_l2_parsed_imps[[2]][[1]]) |> nrow()
+
+
+length(mtbi_l2_parsed_imps)
+
+for (i in mtbi_l2_parsed_imps) {
+    if (nrow(na.omit(i[[3]])) == 216) {
+        print(na.omit(i[[1]]))
+    }
+}
+
+lapply(
+    mtbi_l2_parsed_imps,
+    function(x) {
+        z <- lapply(
+            x,
+            function(y) {
+                if (nrow(na.omit(y)) == 216) {
+                    return(colnames(y))
+                }
+            }
+        )
+        return(as.character(unlist(z)))
+    }
+)
+
+mtbi_l2_data_lists |>
+    lapply(
+        function(x) {
+            nrow(na.omit(collapse_dl(x)))
+        }
+    )
+
 all_dls <- list(
     "mtbi_l0_data_lists" = mtbi_l0_data_lists,
     "mtbi_l0_oom_lists" = mtbi_l0_oom_lists,
@@ -944,4 +1064,7 @@ all_dls <- all_dls |>
     )
 
 list.save(all_dls, input_path("all_dls_l.rds", TRUE))
+
+# Subs NDAR_INV56J3P7WJ, NDAR_INVT0056CXX, NDAR_INVUZBAVXHW
+
 ```

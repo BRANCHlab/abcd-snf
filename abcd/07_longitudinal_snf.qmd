@@ -40,6 +40,23 @@ The other is to just try using label propagation.
 The label propagation approach seems reasonable enough.
 
 ```{r}
+
+###############################################################################
+# So it would seem the patients don't all line up...
+###############################################################################
+
+all_dls_l |>
+    lapply(
+        function(x) {
+            lapply(
+                x,
+                function(y) {
+                    summarize_dl(y)
+                }
+            )
+        }
+    )
+
 mtbi_l0_data_lists <- all_dls_l$"mtbi_l0_data_lists"
 mtbi_l2_data_lists <- all_dls_l$"mtbi_l2_data_lists"
 mtbi_l0_oom_lists <- all_dls_l$"mtbi_l0_oom_lists"
@@ -73,12 +90,14 @@ It is clear from these plots that the outcome measures were considerably higher 
 Let's see how the two propagate onto the baseline solution.
 
 ```{r}
-
 mtbi_b_data_list <- all_dls_b$"mtbi_train_data_lists"$"imp_3"
 names(mtbi_b_data_list) <- summarize_dl(mtbi_b_data_list)$"name"
 
 mtbi_l0_data_list_1 <- mtbi_l0_data_lists$"imp_1"
 names(mtbi_l0_data_list_1) <- summarize_dl(mtbi_l0_data_list_1)$"name"
+
+mtbi_l2_data_list_1 <- mtbi_l2_data_lists$"imp_1"
+names(mtbi_l2_data_list_1) <- summarize_dl(mtbi_l2_data_list_1)$"name"
 
 # Remove injury variables from baseline data list
 preinjury_components <- names(mtbi_l0_data_list_1)
@@ -98,6 +117,52 @@ mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
         )
     )
 
-merge_data_lists()
+mtbi_b_l0_dl <- merge_data_lists(mtbi_b_data_list_no_mtbi, mtbi_l0_data_list_1)
+mtbi_b_l2_dl <- merge_data_lists(mtbi_b_data_list, mtbi_l2_data_list_1)
+
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+)
+
+###############################################################################
+# Label propagation
+###############################################################################
+mtbi_b_l0_lp <- lp_solutions_matrix(
+    mtbi_mc_d_esm_no_mtbi,
+    mtbi_b_l0_dl,
+    distance_metrics_list = my_distance_metrics
+)
+
+mtbi_b_l2_lp <- lp_solutions_matrix(
+    mtbi_mc_d_esm,
+    mtbi_b_l2_dl,
+    distance_metrics_list = my_distance_metrics
+)
+
+mtbi_l0_lp <- mtbi_b_l0_lp |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
+
+mtbi_l2_lp <- mtbi_b_l2_lp |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
+
+length(mtbi_l0_lp$"67")
+
+length(mtbi_l2_lp$"67")
+
+summarize_dl(mtbi_b_l2_dl)
+summarize_dl(mtbi_b_l0_dl)
+
+mclust::adjustedRandIndex(mtbi_l0_lp$"67", mtbi_l2_lp$"67")
+
 
 ```
