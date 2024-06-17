@@ -1,0 +1,103 @@
+# metaSNF of Longitudinal mTBI subjects
+
+## 1. Baseline vs. Longitudinal data of longitudinal mTBI subjects
+
+We are interested in knowing, how effective is our baseline cluster solution at explaining CBCL levels within our longitudinal sample?
+If our clustering is primarily informing us about risk-factors, we should expect that the baseline (pre-injury) data of the longitudinal mTBI subjects will be highly informative of their behaviour separations.
+On the other hand, if our cluster solution is primarily driven by the injury, we should expect that the longitudinal data will be more informative of the behaviour separations.
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(progressr)
+library(rlist)
+library(ggplot2)
+library(patchwork)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+```
+
+```{r}
+# The longitudinal subject data
+all_dls_l <- list.load(input_path("2024_06_17_all_dls_l.rds"))
+
+# The baseline subject data
+all_dls_b <- list.load(input_path("2024_04_19_all_dls.rds"))
+
+# The baseline solution
+mtbi_mc_d_esm <- read_csv(proc_path("2024_05_30_mtbi_mc_d_esm.csv"))
+```
+
+There's a few approaches that I could take here.
+
+One is to try running SNF from scratch on the two sets.
+The other is to just try using label propagation.
+The label propagation approach seems reasonable enough.
+
+```{r}
+mtbi_l0_data_lists <- all_dls_l$"mtbi_l0_data_lists"
+mtbi_l2_data_lists <- all_dls_l$"mtbi_l2_data_lists"
+mtbi_l0_oom_lists <- all_dls_l$"mtbi_l0_oom_lists"
+mtbi_l2_oom_lists <- all_dls_l$"mtbi_l2_oom_lists"
+uninj_l0_data_lists <- all_dls_l$"uninj_l0_data_lists"
+uninj_l2_data_lists <- all_dls_l$"uninj_l2_data_lists"
+uninj_l0_oom_lists <- all_dls_l$"uninj_l0_oom_lists"
+uninj_l2_oom_lists <- all_dls_l$"uninj_l2_oom_lists"
+
+mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
+mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
+
+uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
+uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
+
+mtbi_l0_oom_df_1$"cluster" <- "mtbi_l_t0"
+mtbi_l2_oom_df_1$"cluster" <- "mtbi_l_t2"
+uninj_l0_oom_df_1$"cluster" <- "uninj_l_t0"
+uninj_l2_oom_df_1$"cluster" <- "uninj_l_t2"
+
+mtbi_l_oom_df_1 <- rbind(mtbi_l0_oom_df_1, mtbi_l2_oom_df_1)
+uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
+l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
+
+jitter_plot(l_oom_df_1, "cbcl_anxdep")
+jitter_plot(l_oom_df_1, "sds_sleep")
+```
+
+It is clear from these plots that the outcome measures were considerably higher in the mTBI group even before they sustained an mTBI.
+
+Let's see how the two propagate onto the baseline solution.
+
+```{r}
+
+mtbi_b_data_list <- all_dls_b$"mtbi_train_data_lists"$"imp_3"
+names(mtbi_b_data_list) <- summarize_dl(mtbi_b_data_list)$"name"
+
+mtbi_l0_data_list_1 <- mtbi_l0_data_lists$"imp_1"
+names(mtbi_l0_data_list_1) <- summarize_dl(mtbi_l0_data_list_1)$"name"
+
+# Remove injury variables from baseline data list
+preinjury_components <- names(mtbi_l0_data_list_1)
+mtbi_b_data_list_no_mtbi <- mtbi_b_data_list[preinjury_components]
+
+# Remove injury variables from baseline solutions matrix
+mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
+    dplyr::select(
+        -dplyr::contains(
+            c(
+                "mtbi_mem_daze",
+                "mtbi_mechanism",
+                "mtbi_loc",
+                "mtbi_age",
+                "previous_mtbis"
+            )
+        )
+    )
+
+merge_data_lists()
+
+```
