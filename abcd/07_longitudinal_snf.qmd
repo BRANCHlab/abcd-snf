@@ -1,4 +1,4 @@
-# metaSNF of Longitudinal mTBI subjects
+# Label propagation of Longitudinal mTBI subjects
 
 ## 1. Baseline vs. Longitudinal data of longitudinal mTBI subjects
 
@@ -24,7 +24,7 @@ sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 ```{r}
 # The longitudinal subject data
-all_dls_l <- list.load(input_path("2024_06_17_all_dls_l.rds"))
+all_dls_l <- list.load(input_path("2024_06_18_all_dls_l.rds"))
 
 # The baseline subject data
 all_dls_b <- list.load(input_path("2024_04_19_all_dls.rds"))
@@ -33,30 +33,9 @@ all_dls_b <- list.load(input_path("2024_04_19_all_dls.rds"))
 mtbi_mc_d_esm <- read_csv(proc_path("2024_05_30_mtbi_mc_d_esm.csv"))
 ```
 
-There's a few approaches that I could take here.
-
-One is to try running SNF from scratch on the two sets.
-The other is to just try using label propagation.
-The label propagation approach seems reasonable enough.
+I will check to see how good of a fit the baseline data of the longitudinal subjects is to the baseline solution.
 
 ```{r}
-
-###############################################################################
-# So it would seem the patients don't all line up...
-###############################################################################
-
-all_dls_l |>
-    lapply(
-        function(x) {
-            lapply(
-                x,
-                function(y) {
-                    summarize_dl(y)
-                }
-            )
-        }
-    )
-
 mtbi_l0_data_lists <- all_dls_l$"mtbi_l0_data_lists"
 mtbi_l2_data_lists <- all_dls_l$"mtbi_l2_data_lists"
 mtbi_l0_oom_lists <- all_dls_l$"mtbi_l0_oom_lists"
@@ -82,6 +61,7 @@ uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
 l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
 
 jitter_plot(l_oom_df_1, "cbcl_anxdep")
+
 jitter_plot(l_oom_df_1, "sds_sleep")
 ```
 
@@ -96,6 +76,9 @@ names(mtbi_b_data_list) <- summarize_dl(mtbi_b_data_list)$"name"
 mtbi_l0_data_list_1 <- mtbi_l0_data_lists$"imp_1"
 names(mtbi_l0_data_list_1) <- summarize_dl(mtbi_l0_data_list_1)$"name"
 
+mtbi_l0_oom_list_1 <- mtbi_l0_oom_lists$"imp_1"
+names(mtbi_l0_oom_list_1) <- summarize_dl(mtbi_l0_oom_list_1)$"name"
+
 mtbi_l2_data_list_1 <- mtbi_l2_data_lists$"imp_1"
 names(mtbi_l2_data_list_1) <- summarize_dl(mtbi_l2_data_list_1)$"name"
 
@@ -103,7 +86,7 @@ names(mtbi_l2_data_list_1) <- summarize_dl(mtbi_l2_data_list_1)$"name"
 preinjury_components <- names(mtbi_l0_data_list_1)
 mtbi_b_data_list_no_mtbi <- mtbi_b_data_list[preinjury_components]
 
-# Remove injury variables from baseline solutions matrix
+# Remove inclusion injury variables from baseline solutions matrix
 mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
     dplyr::select(
         -dplyr::contains(
@@ -118,7 +101,6 @@ mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
     )
 
 mtbi_b_l0_dl <- merge_data_lists(mtbi_b_data_list_no_mtbi, mtbi_l0_data_list_1)
-mtbi_b_l2_dl <- merge_data_lists(mtbi_b_data_list, mtbi_l2_data_list_1)
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -141,28 +123,70 @@ mtbi_b_l0_lp <- lp_solutions_matrix(
     distance_metrics_list = my_distance_metrics
 )
 
-mtbi_b_l2_lp <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    mtbi_b_l2_dl,
-    distance_metrics_list = my_distance_metrics
-)
-
 mtbi_l0_lp <- mtbi_b_l0_lp |>
     dplyr::filter(group == "test") |>
     dplyr::select(-group)
 
-mtbi_l2_lp <- mtbi_b_l2_lp |>
-    dplyr::filter(group == "test") |>
-    dplyr::select(-group)
+colnames(mtbi_l0_lp) <- c("subjectkey", "cluster")
 
-length(mtbi_l0_lp$"67")
+mtbi_l0_lp_plots <- auto_plot(
+    cluster_df = mtbi_l0_lp,
+    data_list = mtbi_l0_data_list_1,
+    target_list = mtbi_l0_oom_list_1,
+    save = fig_path("mtbi_l0_lp", TRUE)
+)
 
-length(mtbi_l2_lp$"67")
+mtbi_l0_lp_all_plots <- wrap_plots(mtbi_l0_lp_plots)
 
-summarize_dl(mtbi_b_l2_dl)
-summarize_dl(mtbi_b_l0_dl)
-
-mclust::adjustedRandIndex(mtbi_l0_lp$"67", mtbi_l2_lp$"67")
-
-
+ggsave(
+    fig_path("mtbi_l0_lp_all_plots.png", TRUE),
+    mtbi_l0_lp_all_plots,
+    width = 30,
+    height = 20
+)
 ```
+
+A comparison of the topologies of the original solution (baseline subjects, baseline data) and the new solution (longitudinal subjects, longitudinal data):
+
+[o] means match, [x] means no match, [~] means pretty close
+
+- [o] brain_volume: 2 >> 1 > 3
+- [o] considerate: 1 < 2 < 3
+- [o] cortical_sa: 2 >> 1 > 3
+- [~] family_angry: 1 > 2 = 3
+- [o] family_criticize: 1 > 2 = 3
+- [o] family_fight: 1 > 2 = 3
+- [~] family_outdo: 1 > 2 = 3
+- [x] family_peaceful: 1 > 2 > 3
+- [~] family_temper: 1 > 2 = 3
+- [o] fmri_cort_cors: 1 = 2 = 3
+- [x] fmri_cort_subcort_cors: 1 < 3 < 2
+- [x] helps_hurt: 3 > 1 = 2
+- [~] household_income: 1 << 2 = 3
+- [~] non_school_programs: 1 << 2 = 3
+- parent_aggressive: 1 > 2 = 3
+- parent_antisocial
+- parent_anxdep
+- parent_anxdisord
+- parent_attention
+- parent_avoidant
+- parent_depress
+- parent_hyperactive
+- [x] parent_intrusive: 1 > 2 = 3
+- parent_perstr
+- parent_somatic
+- parent_thought
+- parent_withdrawn
+- private_instruction
+- programs_this_year
+- [o] pubertal_status: 2 < 1 = 3
+- race
+- [x] same_sex_close_friend: 3 >> 2 > 1
+- [o] sex (n_female): 3 >> 1 > 2
+- weekday_screentime
+- weekend_screentime
+
+Long story short, the solution fits quite well.
+
+Next we will compare the effect size of the outcome measures across clusters vs. the effect size based on pre/post injury.
+
