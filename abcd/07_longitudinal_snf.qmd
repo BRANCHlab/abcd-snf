@@ -44,25 +44,29 @@ uninj_l0_data_lists <- all_dls_l$"uninj_l0_data_lists"
 uninj_l2_data_lists <- all_dls_l$"uninj_l2_data_lists"
 uninj_l0_oom_lists <- all_dls_l$"uninj_l0_oom_lists"
 uninj_l2_oom_lists <- all_dls_l$"uninj_l2_oom_lists"
+```
 
-mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
-mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
+Quick plot of a couple of CBCL variables:
 
-uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
-uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
-
-mtbi_l0_oom_df_1$"cluster" <- "mtbi_l_t0"
-mtbi_l2_oom_df_1$"cluster" <- "mtbi_l_t2"
-uninj_l0_oom_df_1$"cluster" <- "uninj_l_t0"
-uninj_l2_oom_df_1$"cluster" <- "uninj_l_t2"
-
-mtbi_l_oom_df_1 <- rbind(mtbi_l0_oom_df_1, mtbi_l2_oom_df_1)
-uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
-l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
-
-jitter_plot(l_oom_df_1, "cbcl_anxdep")
-
-jitter_plot(l_oom_df_1, "sds_sleep")
+```{r}
+#mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
+#mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
+#
+#uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
+#uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
+#
+#mtbi_l0_oom_df_1$"cluster" <- "mtbi_l_t0"
+#mtbi_l2_oom_df_1$"cluster" <- "mtbi_l_t2"
+#uninj_l0_oom_df_1$"cluster" <- "uninj_l_t0"
+#uninj_l2_oom_df_1$"cluster" <- "uninj_l_t2"
+#
+#mtbi_l_oom_df_1 <- rbind(mtbi_l0_oom_df_1, mtbi_l2_oom_df_1)
+#uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
+#l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
+#
+#jitter_plot(l_oom_df_1, "cbcl_anxdep")
+#
+#jitter_plot(l_oom_df_1, "sds_sleep")
 ```
 
 It is clear from these plots that the outcome measures were considerably higher in the mTBI group even before they sustained an mTBI.
@@ -71,20 +75,24 @@ Let's see how the two propagate onto the baseline solution.
 
 ```{r}
 mtbi_b_data_list <- all_dls_b$"mtbi_train_data_lists"$"imp_3"
-names(mtbi_b_data_list) <- summarize_dl(mtbi_b_data_list)$"name"
 
-mtbi_l0_data_list_1 <- mtbi_l0_data_lists$"imp_1"
-names(mtbi_l0_data_list_1) <- summarize_dl(mtbi_l0_data_list_1)$"name"
-
-mtbi_l0_oom_list_1 <- mtbi_l0_oom_lists$"imp_1"
-names(mtbi_l0_oom_list_1) <- summarize_dl(mtbi_l0_oom_list_1)$"name"
-
-mtbi_l2_data_list_1 <- mtbi_l2_data_lists$"imp_1"
-names(mtbi_l2_data_list_1) <- summarize_dl(mtbi_l2_data_list_1)$"name"
+mtbi_l0_data_list_imp_1 <- mtbi_l0_data_lists$"imp_1"
+mtbi_l0_data_list_imp_2 <- mtbi_l0_data_lists$"imp_2"
+mtbi_l0_data_list_imp_3 <- mtbi_l0_data_lists$"imp_3"
+mtbi_l0_data_list_imp_4 <- mtbi_l0_data_lists$"imp_4"
+mtbi_l0_data_list_imp_5 <- mtbi_l0_data_lists$"imp_5"
+mtbi_l0_oom_list_imp_1 <- mtbi_l0_oom_lists$"imp_1"
+mtbi_l0_oom_list_imp_2 <- mtbi_l0_oom_lists$"imp_2"
+mtbi_l0_oom_list_imp_3 <- mtbi_l0_oom_lists$"imp_3"
+mtbi_l0_oom_list_imp_4 <- mtbi_l0_oom_lists$"imp_4"
+mtbi_l0_oom_list_imp_5 <- mtbi_l0_oom_lists$"imp_5"
 
 # Remove injury variables from baseline data list
-preinjury_components <- names(mtbi_l0_data_list_1)
-mtbi_b_data_list_no_mtbi <- mtbi_b_data_list[preinjury_components]
+preinjury_components <- summarize_dl(mtbi_l0_data_list_imp_1)$"name"
+mtbi_b_components <- summarize_dl(mtbi_b_data_list)$"name"
+keep_components <- mtbi_b_components %in% preinjury_components
+
+mtbi_b_data_list_no_mtbi <- mtbi_b_data_list[keep_components]
 
 # Remove inclusion injury variables from baseline solutions matrix
 mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
@@ -100,7 +108,48 @@ mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
         )
     )
 
-mtbi_b_l0_dl <- merge_data_lists(mtbi_b_data_list_no_mtbi, mtbi_l0_data_list_1)
+summarize_dl(mtbi_l0_data_list_imp_1)
+
+summarize_dl(mtbi_b_data_list_no_mtbi)
+
+mtbi_b_l0_imp_1_dl <- merge_data_lists(
+    mtbi_b_data_list_no_mtbi,
+    mtbi_l0_data_list_imp_1
+)
+
+mtbi_b_l0_imp_2_dl <- merge_data_lists(
+    mtbi_b_data_list_no_mtbi,
+    mtbi_l0_data_list_imp_2
+)
+
+mtbi_b_l0_imp_3_dl <- merge_data_lists(
+    mtbi_b_data_list_no_mtbi,
+    mtbi_l0_data_list_imp_3
+)
+
+mtbi_b_l0_imp_4_dl <- merge_data_lists(
+    mtbi_b_data_list_no_mtbi,
+    mtbi_l0_data_list_imp_4
+)
+
+mtbi_b_l0_imp_5_dl <- merge_data_lists(
+    mtbi_b_data_list_no_mtbi,
+    mtbi_l0_data_list_imp_5
+)
+
+list.save(mtbi_b_l0_imp_1_dl, proc_path("mtbi_b_l0_imp_1_dl.rds", TRUE))
+list.save(mtbi_b_l0_imp_2_dl, proc_path("mtbi_b_l0_imp_2_dl.rds", TRUE))
+list.save(mtbi_b_l0_imp_3_dl, proc_path("mtbi_b_l0_imp_3_dl.rds", TRUE))
+list.save(mtbi_b_l0_imp_4_dl, proc_path("mtbi_b_l0_imp_4_dl.rds", TRUE))
+list.save(mtbi_b_l0_imp_5_dl, proc_path("mtbi_b_l0_imp_5_dl.rds", TRUE))
+```
+
+```{r}
+mtbi_b_l0_imp_1_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_1_dl.rds"))
+mtbi_b_l0_imp_2_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_2_dl.rds"))
+mtbi_b_l0_imp_3_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_3_dl.rds"))
+mtbi_b_l0_imp_4_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_4_dl.rds"))
+mtbi_b_l0_imp_5_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_5_dl.rds"))
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -117,30 +166,156 @@ my_distance_metrics <- generate_distance_metrics_list(
 ###############################################################################
 # Label propagation
 ###############################################################################
-mtbi_b_l0_lp <- lp_solutions_matrix(
+mtbi_b_l0_imp_1_lp <- lp_solutions_matrix(
     mtbi_mc_d_esm_no_mtbi,
-    mtbi_b_l0_dl,
+    mtbi_b_l0_imp_1_dl,
     distance_metrics_list = my_distance_metrics
 )
+write_csv(mtbi_b_l0_imp_1_lp, proc_path("mtbi_b_l0_imp_1_lp.csv", TRUE))
 
-mtbi_l0_lp <- mtbi_b_l0_lp |>
+mtbi_b_l0_imp_2_lp <- lp_solutions_matrix(
+    mtbi_mc_d_esm_no_mtbi,
+    mtbi_b_l0_imp_2_dl,
+    distance_metrics_list = my_distance_metrics
+)
+write_csv(mtbi_b_l0_imp_2_lp, proc_path("mtbi_b_l0_imp_2_lp.csv", TRUE))
+
+mtbi_b_l0_imp_3_lp <- lp_solutions_matrix(
+    mtbi_mc_d_esm_no_mtbi,
+    mtbi_b_l0_imp_3_dl,
+    distance_metrics_list = my_distance_metrics
+)
+write_csv(mtbi_b_l0_imp_3_lp, proc_path("mtbi_b_l0_imp_3_lp.csv", TRUE))
+
+mtbi_b_l0_imp_4_lp <- lp_solutions_matrix(
+    mtbi_mc_d_esm_no_mtbi,
+    mtbi_b_l0_imp_4_dl,
+    distance_metrics_list = my_distance_metrics
+)
+write_csv(mtbi_b_l0_imp_4_lp, proc_path("mtbi_b_l0_imp_4_lp.csv", TRUE))
+
+mtbi_b_l0_imp_5_lp <- lp_solutions_matrix(
+    mtbi_mc_d_esm_no_mtbi,
+    mtbi_b_l0_imp_5_dl,
+    distance_metrics_list = my_distance_metrics
+)
+write_csv(mtbi_b_l0_imp_5_lp, proc_path("mtbi_b_l0_imp_5_lp.csv", TRUE))
+```
+
+```{r}
+mtbi_b_l0_imp_1_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_1_lp.csv"))
+mtbi_b_l0_imp_2_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_2_lp.csv"))
+mtbi_b_l0_imp_3_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_3_lp.csv"))
+mtbi_b_l0_imp_4_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_4_lp.csv"))
+mtbi_b_l0_imp_5_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_5_lp.csv"))
+
+mtbi_l0_imp_1_lp <- mtbi_b_l0_imp_1_lp |>
     dplyr::filter(group == "test") |>
     dplyr::select(-group)
 
-colnames(mtbi_l0_lp) <- c("subjectkey", "cluster")
+mtbi_l0_imp_2_lp <- mtbi_b_l0_imp_2_lp |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
 
-mtbi_l0_lp_plots <- auto_plot(
-    cluster_df = mtbi_l0_lp,
-    data_list = mtbi_l0_data_list_1,
-    target_list = mtbi_l0_oom_list_1,
-    save = fig_path("mtbi_l0_lp", TRUE)
+mtbi_l0_imp_3_lp <- mtbi_b_l0_imp_3_lp |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
+
+mtbi_l0_imp_4_lp <- mtbi_b_l0_imp_4_lp |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
+
+mtbi_l0_imp_5_lp <- mtbi_b_l0_imp_5_lp |>
+    dplyr::filter(group == "test") |>
+    dplyr::select(-group)
+
+colnames(mtbi_l0_imp_1_lp) <- c("subjectkey", "cluster")
+colnames(mtbi_l0_imp_2_lp) <- c("subjectkey", "cluster")
+colnames(mtbi_l0_imp_3_lp) <- c("subjectkey", "cluster")
+colnames(mtbi_l0_imp_4_lp) <- c("subjectkey", "cluster")
+colnames(mtbi_l0_imp_5_lp) <- c("subjectkey", "cluster")
+
+write_csv(mtbi_l0_imp_1_lp, proc_path("mtbi_l0_imp_1_lp.csv", TRUE))
+write_csv(mtbi_l0_imp_2_lp, proc_path("mtbi_l0_imp_2_lp.csv", TRUE))
+write_csv(mtbi_l0_imp_3_lp, proc_path("mtbi_l0_imp_3_lp.csv", TRUE))
+write_csv(mtbi_l0_imp_4_lp, proc_path("mtbi_l0_imp_4_lp.csv", TRUE))
+write_csv(mtbi_l0_imp_5_lp, proc_path("mtbi_l0_imp_5_lp.csv", TRUE))
+```
+
+```{r}
+mtbi_l0_imp_1_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_1_lp.csv"))
+mtbi_l0_imp_2_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_2_lp.csv"))
+mtbi_l0_imp_3_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_3_lp.csv"))
+mtbi_l0_imp_4_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_4_lp.csv"))
+mtbi_l0_imp_5_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_5_lp.csv"))
+
+mtbi_l0_imp_1_lp_plots <- auto_plot(
+    cluster_df = mtbi_l0_imp_1_lp,
+    data_list = mtbi_l0_data_list_imp_1,
+    target_list = mtbi_l0_oom_list_imp_1,
+    save = fig_path("mtbi_l0_imp_1_lp", TRUE)
 )
 
-mtbi_l0_lp_all_plots <- wrap_plots(mtbi_l0_lp_plots)
+mtbi_l0_imp_2_lp_plots <- auto_plot(
+    cluster_df = mtbi_l0_imp_2_lp,
+    data_list = mtbi_l0_data_list_imp_2,
+    target_list = mtbi_l0_oom_list_imp_2,
+    save = fig_path("mtbi_l0_imp_2_lp", TRUE)
+)
+
+mtbi_l0_imp_3_lp_plots <- auto_plot(
+    cluster_df = mtbi_l0_imp_3_lp,
+    data_list = mtbi_l0_data_list_imp_3,
+    target_list = mtbi_l0_oom_list_imp_3,
+    save = fig_path("mtbi_l0_imp_3_lp", TRUE)
+)
+#
+mtbi_l0_imp_4_lp_plots <- auto_plot(
+    cluster_df = mtbi_l0_imp_4_lp,
+    data_list = mtbi_l0_data_list_imp_4,
+    target_list = mtbi_l0_oom_list_imp_4,
+    save = fig_path("mtbi_l0_imp_4_lp", TRUE)
+)
+#
+mtbi_l0_imp_5_lp_plots <- auto_plot(
+    cluster_df = mtbi_l0_imp_5_lp,
+    data_list = mtbi_l0_data_list_imp_5,
+    target_list = mtbi_l0_oom_list_imp_5,
+    save = fig_path("mtbi_l0_imp_5_lp", TRUE)
+)
+
+saveRDS(
+    object = mtbi_l0_imp_1_lp_plots,
+    file = fig_path("mtbi_l0_imp_1_lp_plots.rds", TRUE)
+)
+saveRDS(
+    object = mtbi_l0_imp_2_lp_plots,
+    file = fig_path("mtbi_l0_imp_2_lp_plots.rds", TRUE)
+)
+saveRDS(
+    object = mtbi_l0_imp_3_lp_plots,
+    file = fig_path("mtbi_l0_imp_3_lp_plots.rds", TRUE)
+)
+saveRDS(
+    object = mtbi_l0_imp_4_lp_plots,
+    file = fig_path("mtbi_l0_imp_4_lp_plots.rds", TRUE)
+)
+saveRDS(
+    object = mtbi_l0_imp_5_lp_plots,
+    file = fig_path("mtbi_l0_imp_5_lp_plots.rds", TRUE)
+)
+```
+
+```{r}
+mtbi_l0_imp_1_lp_plots <- readRDS(
+    fig_path("2024_06_20_mtbi_l0_imp_1_lp_plots.rds")
+)
+
+mtbi_l0_imp_1_lp_all_plots <- wrap_plots(mtbi_l0_imp_1_lp_plots)
 
 ggsave(
-    fig_path("mtbi_l0_lp_all_plots.png", TRUE),
-    mtbi_l0_lp_all_plots,
+    fig_path("mtbi_l0_imp_1_lp_all_plots.png", TRUE),
+    mtbi_l0_imp_1_lp_all_plots,
     width = 30,
     height = 20
 )
@@ -190,3 +365,276 @@ Long story short, the solution fits quite well.
 
 Next we will compare the effect size of the outcome measures across clusters vs. the effect size based on pre/post injury.
 
+```{r}
+lp_dfs <- list(
+    mtbi_l0_imp_1_lp,
+    mtbi_l0_imp_2_lp,
+    mtbi_l0_imp_3_lp,
+    mtbi_l0_imp_4_lp,
+    mtbi_l0_imp_5_lp
+)
+
+pairwise_combinations <- combn(5, 2)
+
+ari_mat <- matrix(ncol = 5, nrow = 5)
+diag(ari_mat) <- 1
+colnames(ari_mat) <- paste0("imp_", 1:5)
+rownames(ari_mat) <- paste0("imp_", 1:5)
+for (i in seq_len(ncol(pairwise_combinations))) {
+    imp_a <- pairwise_combinations[1, i]
+    imp_b <- pairwise_combinations[2, i]
+    ari <- mclust::adjustedRandIndex(
+        lp_dfs[[imp_a]]$"cluster",
+        lp_dfs[[imp_b]]$"cluster"
+    )
+    ari_mat[imp_a, imp_b] <- ari
+    ari_mat[imp_b, imp_a] <- ari
+}
+
+library(ComplexHeatmap)
+
+imp_ari_mat <- adjusted_rand_index_heatmap(
+    ari_mat,
+    show_column_names = TRUE,
+    show_row_names = TRUE
+)
+
+# Demonstrates how tight the different imputations are to each other
+save_heatmap(
+    imp_ari_mat,
+    fig_path("mtbi_l0_lp_imp_ari_mat.png", TRUE),
+    width = 320,
+    height = 250,
+    res = 100
+)
+
+identical(mtbi_l0_oom_lists[[1]], mtbi_l0_oom_lists[[2]])
+
+mtbi_l0_oom_dfs <- lapply(
+    seq_along(mtbi_l0_oom_lists),
+    function(x) {
+        dl <- mtbi_l0_oom_lists[[x]]
+        df <- collapse_dl(dl)
+        df$"imputation" <- x
+        df$"tp" <- 0
+        return(df)
+    }
+)
+
+mtbi_l2_oom_dfs <- lapply(
+    seq_along(mtbi_l2_oom_lists),
+    function(x) {
+        dl <- mtbi_l2_oom_lists[[x]]
+        df <- collapse_dl(dl)
+        df$"imputation" <- x
+        df$"tp" <- 2
+        return(df)
+    }
+)
+
+mtbi_l0_oom_long_dfs <- lapply(
+    mtbi_l0_oom_dfs,
+    function(x) {
+        x <- tidyr::pivot_longer(
+            x,
+            cols = matches("^(cbcl|sds)_"),
+            names_to = "outcome",
+            values_to = "value"
+        )
+        return(x)
+    }
+)
+
+mtbi_l2_oom_long_dfs <- lapply(
+    mtbi_l2_oom_dfs,
+    function(x) {
+        x <- tidyr::pivot_longer(
+            x,
+            cols = matches("^(cbcl|sds)_"),
+            names_to = "outcome",
+            values_to = "value"
+        )
+        return(x)
+    }
+)
+
+mtbi_l0_oom_long_dfs[[1]]
+
+mtbi_l0_oom_long_dfs[[2]]
+
+mtbi_l0_oom_long_df <- do.call(rbind, mtbi_l0_oom_long_dfs)
+mtbi_l2_oom_long_df <- do.call(rbind, mtbi_l2_oom_long_dfs)
+mtbi_oom_long_df <- rbind(mtbi_l0_oom_long_df, mtbi_l2_oom_long_df)
+mtbi_oom_long_df$"tp" <- factor(mtbi_oom_long_df$"tp")
+
+mtbi_oom_long_df |>
+    dplyr::filter(outcome != "sds_sleep") |>
+    ggplot(
+        aes(x = outcome, y = value, colour = tp),
+        group = tp
+    ) +
+    geom_violin() +
+    geom_point(
+        position = position_jitterdodge(
+            jitter.width = 0.2,
+            jitter.height = 0.3
+        ),
+        size = 3,
+        alpha = 0.3
+    ) + theme_bw() +
+    facet_wrap(~imputation)
+
+
+#df_long_t0 <- mtbi_l0_oom_dfs[[2]] |>
+#    tidyr::pivot_longer(
+#        cols = matches("^(cbcl|sds)_"),
+#        names_to = "outcome",
+#        values_to = "value"
+#    )
+#
+#df_long_t2 <- mtbi_l2_oom_dfs[[2]] |>
+#    tidyr::pivot_longer(
+#        cols = matches("^(cbcl|sds)_"),
+#        names_to = "outcome",
+#        values_to = "value"
+#    )
+#
+#df_long <- rbind(df_long_t0, df_long_t2)
+#df_long$"tp" <- as.factor(df_long$"tp")
+#
+#df_long |>
+#    ggplot(
+#        aes(x = outcome, y = value, fill = tp)
+#    ) +
+#    geom_bar(
+#        stat = "identity",
+#        position = position_dodge()
+#    )
+#
+#df_long |>
+#    dplyr::filter(outcome != "sds_sleep") |>
+#    ggplot(
+#        aes(x = outcome, y = value, colour = tp),
+#        group = tp
+#    ) +
+#    geom_violin() +
+#    geom_point(
+#        position = position_jitterdodge(
+#            jitter.width = 0.2,
+#            jitter.height = 0.3
+#        ),
+#        size = 3,
+#        alpha = 0.3
+#    ) + theme_bw() +
+#    facet_wrap(~imputation)
+#
+#df_long |>
+#    dplyr::filter(outcome == "sds_sleep") |>
+#    ggplot(
+#        aes(x = tp, y = value, colour = tp),
+#        group = tp
+#    ) +
+#    geom_violin() +
+#    geom_point(
+#        position = position_jitterdodge(
+#            jitter.width = 0.2,
+#            jitter.height = 0.2
+#        ),
+#        size = 3,
+#        alpha = 0.3
+#    ) + theme_bw()
+#
+
+
+
+rbind(mtbi_l0_oom_dfs[[1]], mtbi_l2_oom_dfs[[1]]) |>
+    ggplot(aes(x = factor(tp), y = cbcl_anxdep)) +
+    geom_point(aes(colour = factor(tp)), size = 5) +
+    geom_line(aes(group = subjectkey))
+
+mtbi_l0_oom_dfs
+
+outcome_vars <- dl_variable_summary(mtbi_l0_oom_lists[[1]])$"name"
+
+mtbi_l0_oom_dfs[[1]]
+
+for (i in mtbi_l0_oom_dfs) {
+    for (j in mtbi_l2_oom_dfs) {
+        merged_df <- dplyr::inner_join(i, j, by = "subjectkey")
+        for (var in outcome_vars) {
+            v0 <- merged_df[, paste0(var, "_t0")]
+            v2 <- merged_df[, paste0(var, "_t2")]
+            merged_df[, paste0(var, "_delta")] <- v2 - v0
+        }
+    }
+}
+
+
+# Good for individual scores, but not particularly relevant
+for (i in mtbi_l0_oom_dfs) {
+    for (j in mtbi_l2_oom_dfs) {
+        merged_df <- dplyr::inner_join(i, j, by = "subjectkey")
+        for (var in outcome_vars) {
+            v0 <- merged_df[, paste0(var, "_t0")]
+            v2 <- merged_df[, paste0(var, "_t2")]
+            merged_df[, paste0(var, "_delta")] <- v2 - v0
+        }
+    }
+}
+```
+
+Effect size prep
+
+```{r}
+effect_size_raw <- function(x1, x2) {
+    n1 <- length(x1)
+    n2 <- length(x2)
+    s1 <- sd(x1)
+    s2 <- sd(x2)
+    s <- pooled_sd(n1, s1, n2, s2)
+    mean1 <- mean(x1)
+    mean2 <- mean(x2)
+    d <- cohens_d(mean1, mean2, s)
+    return(d)
+}
+
+pooled_sd <- function(n1, s1, n2, s2) {
+    numerator <- ((n1 - 1) * (s1^2)) + ((n2 - 1) * (s2^2))
+    denominator <- n1 + n2 - 2
+    s <- sqrt(numerator / denominator)
+    return(s)
+}
+
+cohens_d <- function(mean1, mean2, pooled_sd) {
+    d <- (mean1 - mean2) / pooled_sd
+    return(d)
+}
+
+tstat <- function(d, n1, n2) {
+    t <- d * sqrt((n1 * n2) / (n1 + n2))
+    return(t)
+}
+
+es_bound <- function(d, n1, n2) {
+    t <- tstat(d, n1, n2)
+    es_data <- compute.es::tes(
+        t = t,
+        n.1 = n1,
+        n.2 = n2,
+        verbose = FALSE
+    )
+    return(
+        list(
+            "lower" = es_data$"l.d",
+            "upper" = es_data$"u.d"
+        )
+    )
+}
+```
+
+Effect size 1: Pre-injury vs. Post-injury
+
+
+Effect size 2: Pre-injury Group 0 vs Group 1/2
+
+Effect size 3: Pre-injury Group 0 vs Post-injury Group 0
