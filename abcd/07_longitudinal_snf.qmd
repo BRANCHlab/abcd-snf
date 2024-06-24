@@ -49,29 +49,62 @@ uninj_l2_oom_lists <- all_dls_l$"uninj_l2_oom_lists"
 Quick plot of a couple of CBCL variables:
 
 ```{r}
-#mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
-#mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
-#
-#uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
-#uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
-#
-#mtbi_l0_oom_df_1$"cluster" <- "mtbi_l_t0"
-#mtbi_l2_oom_df_1$"cluster" <- "mtbi_l_t2"
-#uninj_l0_oom_df_1$"cluster" <- "uninj_l_t0"
-#uninj_l2_oom_df_1$"cluster" <- "uninj_l_t2"
-#
-#mtbi_l_oom_df_1 <- rbind(mtbi_l0_oom_df_1, mtbi_l2_oom_df_1)
-#uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
-#l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
-#
-#jitter_plot(l_oom_df_1, "cbcl_anxdep")
-#
-#jitter_plot(l_oom_df_1, "sds_sleep")
+mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
+mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
+
+uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
+uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
+
+mtbi_l0_oom_df_1$"cluster" <- "mtbi_l_t0"
+mtbi_l2_oom_df_1$"cluster" <- "mtbi_l_t2"
+uninj_l0_oom_df_1$"cluster" <- "uninj_l_t0"
+uninj_l2_oom_df_1$"cluster" <- "uninj_l_t2"
+
+mtbi_l_oom_df_1 <- rbind(mtbi_l0_oom_df_1, mtbi_l2_oom_df_1)
+uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
+l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
+
+outcomes <- dl_variable_summary(mtbi_l0_oom_lists[[1]])$"name"
+
+
+outcome_plot_list <- list()
+for (outcome in outcomes) {
+    plot <- jitter_plot(l_oom_df_1, outcome)
+    outcome_plot_list[[length(outcome_plot_list) + 1]] <- plot
+}
+
+library(patchwork)
+
+outcome_plot_list <- lapply(
+    outcome_plot_list,
+    function(x) {
+        x <- x +
+            ggplot2::stat_summary(
+                fun = "mean",
+                geom = "crossbar",
+                colour = "black",
+                size = 2
+            ) +
+            ggplot2::stat_summary(
+                fun = "mean", colour = "white", size = 4,
+                geom = "text", aes(label = round(after_stat(y), 2)),
+                position = position_nudge(y = 0)
+            )
+    }
+)
+
+outcome_plot_wrap <- wrap_plots(outcome_plot_list)
+
+ggsave(
+    plot = outcome_plot_wrap,
+    file = fig_path("quick_outcome_inj_v_t.png", TRUE),
+    dpi = 100,
+    width = 20,
+    height = 20
+)
 ```
 
-It is clear from these plots that the outcome measures were considerably higher in the mTBI group even before they sustained an mTBI.
-
-Let's see how the two propagate onto the baseline solution.
+Here I check how the longitudinal subjects map onto our initial baseline mTBI solution.
 
 ```{r}
 mtbi_b_data_list <- all_dls_b$"mtbi_train_data_lists"$"imp_3"
