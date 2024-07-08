@@ -51,9 +51,240 @@ Quick plot of a couple of CBCL variables:
 ```{r}
 mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
 mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
-
 uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
 uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
+
+###############################################################################
+
+mtbi_l0_oom_df_1 <- mtbi_l0_oom_lists$"imp_1" |> collapse_dl()
+mtbi_l2_oom_df_1 <- mtbi_l2_oom_lists$"imp_1" |> collapse_dl()
+uninj_l0_oom_df_1 <- uninj_l0_oom_lists$"imp_1" |> collapse_dl()
+uninj_l2_oom_df_1 <- uninj_l2_oom_lists$"imp_1" |> collapse_dl()
+
+mtbi_l0_oom_df_lp_1 <- dplyr::inner_join(
+    mtbi_l0_oom_df_1,
+    mtbi_l0_imp_1_lp,
+    by = "subjectkey"
+)
+mtbi_l0_oom_df_lp_1$"group" <- "mtbi"
+mtbi_l0_oom_df_lp_1$"time" <- "t0"
+
+mtbi_l2_oom_df_lp_1 <- dplyr::inner_join(
+    mtbi_l2_oom_df_1,
+    mtbi_l0_imp_1_lp,
+    by = "subjectkey"
+)
+mtbi_l2_oom_df_lp_1$"group" <- "mtbi"
+mtbi_l2_oom_df_lp_1$"time" <- "t2"
+
+uninj_l0_oom_df_1$"cluster" <- "none"
+uninj_l0_oom_df_1$"group" <- "uninj"
+uninj_l0_oom_df_1$"time" <- "t0"
+
+uninj_l2_oom_df_1$"cluster" <- "none"
+uninj_l2_oom_df_1$"group" <- "uninj"
+uninj_l2_oom_df_1$"time" <- "t2"
+
+mtbi_l_oom_df_lp_1 <- rbind(mtbi_l0_oom_df_lp_1, mtbi_l2_oom_df_lp_1)
+uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
+l_oom_df_1 <- rbind(mtbi_l_oom_df_lp_1, uninj_l_oom_df_1)
+
+outcomes <- dl_variable_summary(mtbi_l0_oom_lists[[1]])$"name"
+
+jitter_dodged_outcomes <- function(df, outcomes) {
+    plot_list <- list()
+    for (outcome in outcomes) {
+        plot <- df |>
+        ggplot(
+            aes(
+                x = cluster,
+                y = .data[[outcome]],
+                group = interaction(cluster, time),
+                fill = time,
+                colour = time,
+                shape = group
+            )
+        ) +
+        geom_jitter(
+            size = 3,
+            alpha = 0.4,
+            position = position_jitterdodge(jitter.width = 0.3)
+        ) +
+        geom_violin(
+            alpha = 0.1,
+            position = position_dodge(width = 0.75)
+        ) +
+        stat_summary(
+            fun = "mean",
+            geom = "crossbar",
+            colour = "black",
+            linewidth = 2.3,
+            position = position_dodge(width = 0.75)
+        ) +
+        stat_summary(
+            fun = "mean",
+            size = 5,
+            geom = "text", aes(label = round(after_stat(y), 2)),
+            position = position_dodge(width = 0.75)
+        ) + 
+        theme_bw() +
+        labs(
+            x = "Label Propagated Cluster",
+            fill = "Timepoint",
+            colour = "Timepoint"
+        )
+        plot_list[[length(plot_list) + 1]] <- plot
+    }
+    return(plot_list)
+}
+
+my_plots <- jitter_dodged_outcomes(l_oom_df_1, outcomes)
+
+outcome_plot_wrap2 <- wrap_plots(my_plots)
+
+ggsave(
+    plot = outcome_plot_wrap2,
+    file = fig_path("outcome_plot_wrap2.png", TRUE),
+    dpi = 100,
+    width = 30,
+    height = 20
+)
+
+colnames(l_oom_df_1)
+
+loomdf_t0 <- l_oom_df_1 |>
+    dplyr::filter(time == "t0") |>
+    dplyr::select(-time)
+loomdf_t2 <- l_oom_df_1 |>
+    dplyr::filter(time == "t2") |>
+    dplyr::select(-time)
+colnames(loomdf_t0) <- paste0(colnames(loomdf_t0), "_0")
+colnames(loomdf_t2) <- paste0(colnames(loomdf_t2), "_2")
+colnames(loomdf_t0)[1] <- "subjectkey"
+colnames(loomdf_t2)[1] <- "subjectkey"
+loomdf <- dplyr::inner_join(loomdf_t0, loomdf_t2, by = "subjectkey")
+
+loom_df <- loomdf |>
+    dplyr::mutate(
+        cbcl_anxdep_d = cbcl_anxdep_2 - cbcl_anxdep_0,
+        cbcl_withdep_d = cbcl_withdep_2 - cbcl_withdep_0,
+        cbcl_withdep_d = cbcl_withdep_2 - cbcl_withdep_0,
+        cbcl_somatic_d = cbcl_somatic_2 - cbcl_somatic_0,
+        cbcl_social_d = cbcl_social_2 - cbcl_social_0,
+        cbcl_thought_d = cbcl_thought_2 - cbcl_thought_0,
+        cbcl_attention_d = cbcl_attention_2 - cbcl_attention_0,
+        cbcl_rulebreak_d = cbcl_rulebreak_2 - cbcl_rulebreak_0,
+        cbcl_aggressive_d = cbcl_aggressive_2 - cbcl_aggressive_0,
+        sds_sleep_d = sds_sleep_2 - sds_sleep_0,
+        .keep = "unused"
+    ) |>
+    dplyr::select(-cluster_2, -group_2) |>
+    dplyr::rename("cluster" = "cluster_0", "group" = "group_0")
+
+loom_df
+
+outcomes_d <- paste0(outcomes, "_d")
+
+jitter_dodged_outcomes_d <- function(df, outcomes) {
+    plot_list <- list()
+    for (outcome in outcomes) {
+        plot <- df |>
+        ggplot(
+            aes(
+                x = cluster,
+                y = .data[[outcome]],
+                colour = group,
+                group = interaction(cluster, group)
+            )
+        ) +
+        geom_jitter(
+            size = 3,
+            alpha = 0.4
+        ) +
+        geom_violin(
+            alpha = 0.1
+        ) +
+        stat_summary(
+            fun = "mean",
+            geom = "crossbar",
+            colour = "black",
+            linewidth = 2.3
+        ) +
+        stat_summary(
+            fun = "mean",
+            size = 5,
+            geom = "text", aes(label = round(after_stat(y), 2))
+        ) + 
+        theme_bw()
+        plot_list[[length(plot_list) + 1]] <- plot
+    }
+    return(plot_list)
+}
+z <- jitter_dodged_outcomes_d(loom_df, outcomes_d)
+
+jitter_wrapped_2 <- wrap_plots(z)
+
+jitter_wrapped_2
+
+ggsave(
+    plot = jitter_wrapped_2,
+    file = fig_path("jitter_wrapped_2.png", TRUE),
+    dpi = 100,
+    width = 30,
+    height = 20
+)
+
+preinj_v_change_df <- dplyr::inner_join(loom_df, loomdf_t0, by = "subjectkey")
+
+
+preinj_v_change <- function(df, outcomes) {
+    plot_list <- list()
+    for (outcome in outcomes) {
+        outcome_0 <- paste0(outcome, "_0")
+        outcome_d <- paste0(outcome, "_d")
+        plot <- df |>
+        ggplot(
+            aes(
+                x = .data[[outcome_0]],
+                y = .data[[outcome_d]],
+                group = cluster,
+                colour = cluster
+            )
+        ) +
+        geom_jitter(
+            data = df |> dplyr::filter(cluster != "none"),
+            size = 2.5,
+            alpha = 0.5
+        ) +
+        geom_smooth(
+            method = "lm",
+            alpha = 0.2
+        ) +
+        labs(
+            x = paste0(outcome, " (preinjury)"),
+            y = paste0(outcome, " (pre-to-post change)"),
+            group = "predicted cluster",
+            colour = "predicted cluster",
+        ) +
+        theme_bw() +
+        theme(text = element_text(size = 18))
+        plot_list[[length(plot_list) + 1]] <- plot
+    }
+    return(plot_list)
+}
+z2 <- preinj_v_change(preinj_v_change_df, outcomes)
+
+outcome_trajectories <- wrap_plots(z2)
+
+ggsave(
+    plot = outcome_trajectories,
+    file = fig_path("cbcl_lp_preinj_v_change.png", TRUE),
+    dpi = 100,
+    width = 30,
+    height = 20
+)
+
+###############################################################################
 
 mtbi_l0_oom_df_1$"cluster" <- "mtbi_l_t0"
 mtbi_l2_oom_df_1$"cluster" <- "mtbi_l_t2"
@@ -65,7 +296,6 @@ uninj_l_oom_df_1 <- rbind(uninj_l0_oom_df_1, uninj_l2_oom_df_1)
 l_oom_df_1 <- rbind(mtbi_l_oom_df_1, uninj_l_oom_df_1)
 
 outcomes <- dl_variable_summary(mtbi_l0_oom_lists[[1]])$"name"
-
 
 outcome_plot_list <- list()
 for (outcome in outcomes) {
@@ -83,7 +313,7 @@ outcome_plot_list <- lapply(
                 fun = "mean",
                 geom = "crossbar",
                 colour = "black",
-                size = 2
+                linewidth = 2
             ) +
             ggplot2::stat_summary(
                 fun = "mean", colour = "white", size = 4,
@@ -94,6 +324,8 @@ outcome_plot_list <- lapply(
 )
 
 outcome_plot_wrap <- wrap_plots(outcome_plot_list)
+
+outcome_plot_wrap
 
 ggsave(
     plot = outcome_plot_wrap,
@@ -345,6 +577,8 @@ mtbi_l0_imp_1_lp_plots <- readRDS(
 )
 
 mtbi_l0_imp_1_lp_all_plots <- wrap_plots(mtbi_l0_imp_1_lp_plots)
+
+mtbi_l0_imp_1_lp_all_plots
 
 ggsave(
     fig_path("mtbi_l0_imp_1_lp_all_plots.png", TRUE),
