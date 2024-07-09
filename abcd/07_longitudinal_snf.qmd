@@ -142,6 +142,32 @@ my_plots <- jitter_dodged_outcomes(l_oom_df_1, outcomes)
 
 outcome_plot_wrap2 <- wrap_plots(my_plots)
 
+###############################################################################
+# Side-side investigation
+
+cluster_1_explain <- l_oom_df_1 |> 
+    dplyr::filter(cluster == "1")
+
+c1e_t0 <- cluster_1_explain |>
+    dplyr::filter(time == "t0") |>
+    dplyr::select(subjectkey, cbcl_aggressive) |>
+    dplyr::rename("agg0" = "cbcl_aggressive")
+
+c1e_t2 <- cluster_1_explain |>
+    dplyr::filter(time == "t2") |>
+    dplyr::select(subjectkey, cbcl_aggressive) |>
+    dplyr::rename("agg2" = "cbcl_aggressive")
+
+c1e <- dplyr::inner_join(c1e_t0, c1e_t2, by = "subjectkey")
+
+c1e |>
+    ggplot(aes(x = agg0, y = agg2, colour = agg2 > agg0)) +
+    geom_jitter(size = 4, alpha = 0.5)
+
+
+
+###############################################################################
+
 ggsave(
     plot = outcome_plot_wrap2,
     file = fig_path("outcome_plot_wrap2.png", TRUE),
