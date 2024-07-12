@@ -11,7 +11,7 @@ library(dplyr)
 library(here)
 library(abcdutils)
 
-core_path <- path_maker(here(paste0("data/abcd/core")))
+core_path <- path_maker(here(paste0("data/abcd/core2")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
@@ -21,7 +21,7 @@ import <- function(path) {
 }
 ```
 
-Import raw data.
+## Import raw data
 
 ```{r}
 # Ohio TBI screen
@@ -114,6 +114,13 @@ The fixed nature of the questionnaire also meant that some information about mul
 For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
 
 ```{r}
+ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
+
+# 11864 total children included in baseline TBI data
+ph_p_otbi |>
+    filter_timepoint(0) |>
+    nrow()
+
 # mTBI subjects (latest mTBI at least 3 months prior to baseline collection
 mtbi_subjects <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 0)
 
