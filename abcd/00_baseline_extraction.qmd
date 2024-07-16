@@ -34,6 +34,8 @@ ph_y_pds <- import("physical-health/ph_y_pds.csv")
 ph_p_pds <- import("physical-health/ph_p_pds.csv")
 # Parent report of gender identity
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+# Youth report of gender identity
+gish_y_gi <- import("gender-identity-sexual-health/gish_y_gi.csv")
 # Demographic data
 abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
 # Medical history
@@ -135,16 +137,8 @@ write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
 # Note that the longitudinal subjects have not been filtered in any way based on
 #  whether or not they also had an mTBI at baseline or another timepoint
-mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
-
-mtbi_subjects <- read_subjects(
-    sub_path("2024_04_17_mtbi_subjects.csv")
-)
-uninjured_subjects <- read_subjects(
-    sub_path("2024_04_17_uninjured_subjects.csv")
-)
-
+mtbi_subjects <- read_subjects(sub_path("2024_04_17_mtbi_subjects.csv"))
+uninjured_subjects <- read_subjects(sub_path("2024_04_17_uninjured_subjects.csv"))
 ```
 
 A few types of injuries were handled differently from the rest in the above code.
@@ -194,6 +188,13 @@ as_mechanism_mtbi <- get_mtbi_mechanism(
     mtbi_subjects,
     t = 0
 )
+
+get_mtbi_mechanism(
+    ph_p_otbi,
+    abcd_y_lt,
+    mtbi_subjects,
+    t = 0
+)$"latest_mtbi_mechanism" |> unique()
 
 write_csv(
     as_mechanism_mtbi,
@@ -276,7 +277,8 @@ d_sex_mtbi <- get_sex(
     gish_p_gi,
     mtbi_subjects,
     t = 0,
-    as_numeric = TRUE
+    as_numeric = TRUE,
+    only_m_f = TRUE
 )
 
 write_csv(
@@ -288,7 +290,8 @@ d_sex_uninj <- get_sex(
     gish_p_gi,
     uninjured_subjects,
     t = 0,
-    as_numeric = TRUE
+    as_numeric = TRUE,
+    only_m_f = TRUE
 )
 
 write_csv(
