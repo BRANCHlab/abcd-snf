@@ -1,0 +1,263 @@
+# Pre-imputation Data Exploration
+
+## Sex and Gender
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(abcdutils)
+library(ComplexUpset)
+library(fastDummies)
+library(patchwork)
+
+core_path <- path_maker(here(paste0("data/abcd/core2")))
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+mtbi_subjects <- read_subjects(sub_path("2024_04_17_mtbi_subjects.csv"))
+uninjured_subjects <- read_subjects(sub_path("2024_04_17_uninjured_subjects.csv"))
+
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+gish_y_gi <- import("gender-identity-sexual-health/gish_y_gi.csv")
+```
+
+```{r}
+mtbi_y_sex <- gish_y_gi |>
+    filter_subjects(mtbi_subjects) |>
+    filter_timepoint(t = 3) |>
+    dplyr::select(
+        subjectkey,
+        kbi_sex_assigned_at_birth
+    ) |>
+    dplyr::rename(
+        "y_sex" = "kbi_sex_assigned_at_birth"
+    ) |>
+    dplyr::mutate(group = "mtbi", t = 3) |>
+    dplyr::mutate(
+        y_sex = dplyr::case_when(
+            y_sex == 1 ~ "M",
+            y_sex == 2 ~ "F",
+            TRUE ~ NA
+        )
+    )
+
+uninj_y_sex <- gish_y_gi |>
+    filter_subjects(uninjured_subjects) |>
+    filter_timepoint(t = 3) |>
+    dplyr::select(
+        subjectkey,
+        kbi_sex_assigned_at_birth
+    ) |>
+    dplyr::rename(
+        "y_sex" = "kbi_sex_assigned_at_birth"
+    ) |>
+    dplyr::mutate(group = "uninj", t = 3) |>
+    dplyr::mutate(
+        y_sex = dplyr::case_when(
+            y_sex == 1 ~ "M",
+            y_sex == 2 ~ "F",
+            TRUE ~ NA
+        )
+    )
+
+mtbi_p_sex <- get_sex(
+    gish_p_gi,
+    mtbi_subjects,
+    t = 0,
+    as_numeric = FALSE,
+    only_m_f = FALSE
+) |>
+    dplyr::mutate(group = "mtbi", t = 0)
+
+length(uninjured_subjects)
+
+uninj_p_sex <- get_sex(
+    gish_p_gi,
+    uninjured_subjects,
+    t = 0,
+    as_numeric = FALSE,
+    only_m_f = FALSE
+) |>
+    dplyr::mutate(group = "uninj", t = 0)
+
+mtbi_y_gender <- get_y_gender(
+    gish_y_gi,
+    mtbi_subjects,
+    t = 3
+) |>
+    dplyr::mutate(group = "mtbi", t = 3)
+
+uninj_y_gender <- get_y_gender(
+    gish_y_gi,
+    uninjured_subjects,
+    t = 3
+) |>
+    dplyr::mutate(group = "uninj", t = 3)
+
+mtbi_p_gender <- get_p_gender(
+    gish_p_gi,
+    mtbi_subjects,
+    t = 0
+) |>
+    dplyr::mutate(group = "mtbi", t = 0)
+
+uninj_p_gender <- get_p_gender(
+    gish_p_gi,
+    uninjured_subjects,
+    t = 0
+) |>
+    dplyr::mutate(group = "uninj", t = 0)
+
+y_sex <- rbind(mtbi_y_sex, uninj_y_sex)
+y_gender <- rbind(mtbi_y_gender, uninj_y_gender)
+p_sex <- rbind(mtbi_p_sex, uninj_p_sex)
+p_gender <- rbind(mtbi_p_gender, uninj_p_gender)
+
+y_report <- dplyr::full_join(y_sex, y_gender) |>
+    dplyr::select(-t)
+
+p_report <- dplyr::full_join(p_sex, p_gender) |>
+    dplyr::rename("p_sex" = "sex") |>
+    dplyr::select(-t)
+
+sex_and_gender <- dplyr::full_join(
+    y_report,
+    p_report
+)
+
+sex_and_gender[is.na(sex_and_gender)] <- "NA"
+
+sex_and_gender <- sex_and_gender |>
+    dummy_cols(
+        select_columns = c("y_sex", "y_gender", "p_sex", "p_gender"),
+        remove_selected_columns = TRUE
+    ) |>
+    tibble()
+
+sex_and_gender_mtbi <- sex_and_gender |>
+    dplyr::filter(group == "mtbi")  |>
+    dplyr::select(-group)
+
+sex_and_gender_uninj <- sex_and_gender |>
+    dplyr::filter(group == "uninj")  |>
+    dplyr::select(-group)
+```
+
+### Gender Upset Plots
+
+```{r}
+gender_sets <- c(
+    "p_gender_NB",
+    "p_gender_NA",
+    "y_gender_NB",
+    "y_gender_NA",
+    "y_gender_F",
+    "y_gender_M",
+    "p_gender_F",
+    "p_gender_M"
+)
+
+gender_ints <- list(
+    c("p_gender_M", "y_gender_M"),
+    c("p_gender_F", "y_gender_F"),
+    c("p_gender_F", "y_gender_NA"),
+    c("p_gender_M", "y_gender_NA"),
+    c("p_gender_F", "y_gender_NB"),
+    c("p_gender_F", "y_gender_M"),
+    c("p_gender_M", "y_gender_NB"),
+    c("p_gender_M", "y_gender_F"),
+    c("p_gender_NA", "y_gender_F"),
+    c("p_gender_NA", "y_gender_M"),
+    c("p_gender_NA", "y_gender_NB"),
+    c("p_gender_NA", "y_gender_NA"),
+    c("p_gender_NB", "y_gender_F"),
+    c("p_gender_NB", "y_gender_NA"),
+    c("p_gender_NB", "y_gender_NB")
+)
+
+uninj_gender_upset <- upset(
+    sex_and_gender_uninj,
+    gender_sets,
+    intersections = gender_ints,
+    name = "",
+    sort_sets = FALSE,
+    sort_intersections = FALSE
+) +
+    ggtitle("Uninjured") +
+    theme(text = element_text(size = 14))
+
+mtbi_gender_upset <- upset(
+    sex_and_gender_mtbi,
+    gender_sets,
+    intersections = gender_ints,
+    name = "Gender Identity",
+    sort_sets = FALSE,
+    sort_intersections = FALSE
+) +
+    ggtitle("mTBI") +
+    theme(text = element_text(size = 14))
+mtbi_gender_upset
+
+gender_upset_plots <- uninj_gender_upset / mtbi_gender_upset
+
+pdf(fig_path("gender_upset_plots.pdf", TRUE), width = 10, height = 10)
+print(gender_upset_plots)
+dev.off()
+```
+
+### Sex Upset Plots
+
+```{r}
+sex_sets <- c(
+    "p_sex_IM",
+    "y_sex_NA",
+    "y_sex_F",
+    "y_sex_M",
+    "p_sex_F",
+    "p_sex_M"
+)
+
+sex_ints <- list(
+    c("p_sex_M", "y_sex_M"),
+    c("p_sex_F", "y_sex_F"),
+    c("p_sex_M", "y_sex_NA"),
+    c("p_sex_F", "y_sex_NA"),
+    c("p_sex_M", "y_sex_F"),
+    c("p_sex_F", "y_sex_M"),
+    c("y_sex_M", "p_sex_IM")
+)
+
+mtbi_sex_upset <- upset(
+    sex_and_gender_mtbi,
+    sex_sets,
+    intersections = sex_ints,
+    name = "Sex at Birth",
+    sort_sets = FALSE,
+    sort_intersections = FALSE
+) +
+    ggtitle("mTBI") +
+    theme(text = element_text(size = 14))
+uninj_sex_upset <- upset(
+    sex_and_gender_uninj,
+    sex_sets,
+    intersections = sex_ints,
+    name = "Sex at Birth",
+    sort_sets = FALSE,
+    sort_intersections = FALSE
+) +
+    ggtitle("Uninjured") +
+    theme(text = element_text(size = 14))
+sex_upset_plots <- uninj_sex_upset / mtbi_sex_upset
+
+
+pdf(fig_path("sex_upset_plots.pdf", TRUE), width = 10, height = 10)
+print(sex_upset_plots)
+dev.off()
+```
