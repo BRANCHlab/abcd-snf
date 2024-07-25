@@ -76,8 +76,6 @@ mtbi_p_sex <- get_sex(
 ) |>
     dplyr::mutate(group = "mtbi", t = 0)
 
-length(uninjured_subjects)
-
 uninj_p_sex <- get_sex(
     gish_p_gi,
     uninjured_subjects,
@@ -104,14 +102,16 @@ uninj_y_gender <- get_y_gender(
 mtbi_p_gender <- get_p_gender(
     gish_p_gi,
     mtbi_subjects,
-    t = 0
+    t = 0,
+    match_y_report = TRUE
 ) |>
     dplyr::mutate(group = "mtbi", t = 0)
 
 uninj_p_gender <- get_p_gender(
     gish_p_gi,
     uninjured_subjects,
-    t = 0
+    t = 0,
+    match_y_report = TRUE
 ) |>
     dplyr::mutate(group = "uninj", t = 0)
 
@@ -203,7 +203,6 @@ mtbi_gender_upset <- upset(
 ) +
     ggtitle("mTBI") +
     theme(text = element_text(size = 14))
-mtbi_gender_upset
 
 gender_upset_plots <- uninj_gender_upset / mtbi_gender_upset
 
@@ -260,4 +259,59 @@ sex_upset_plots <- uninj_sex_upset / mtbi_sex_upset
 pdf(fig_path("sex_upset_plots.pdf", TRUE), width = 10, height = 10)
 print(sex_upset_plots)
 dev.off()
+```
+
+### Parent Report Upset Plots
+
+```{r}
+
+parent_sets <- c(
+    "p_gender_NB",
+    "p_gender_NA",
+    "p_gender_F",
+    "p_gender_M",
+    "p_sex_IM",
+    "p_sex_F",
+    "p_sex_M"
+)
+
+parent_ints <- list(
+    c("p_sex_M", "p_gender_M"),
+    c("p_sex_F", "p_gender_F"),
+    c("p_sex_F", "p_gender_F"),
+    c("p_sex_F", "p_gender_NA"),
+    c("p_sex_M", "p_gender_NB"),
+    c("p_sex_F", "p_gender_NB"),
+    c("p_gender_M", "p_sex_IM"),
+    c("p_sex_M", "p_gender_F"), 
+    c("p_sex_M", "p_gender_NA"), 
+    c("p_gender_M", "p_sex_F")
+)
+
+mtbi_parent_sag <- upset(
+    sex_and_gender_mtbi,
+    parent_sets,
+    intersections = parent_ints,
+    set_sizes = FALSE,
+    matrix = FALSE
+
+) +
+    ggtitle("mTBI") +
+    theme(text = element_text(size = 14))
+
+str(mtbi_parent_sag)
+
+uninj_parent_sag <- upset(
+    sex_and_gender_uninj,
+    parent_sets,
+    intersections = parent_ints,
+    set_sizes = FALSE
+) +
+    ggtitle("Uninjured") +
+    theme(text = element_text(size = 14))
+
+parent_sag <- uninj_parent_sag | mtbi_parent_sag
+parent_sag
+
+
 ```

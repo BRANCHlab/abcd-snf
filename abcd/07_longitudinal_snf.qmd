@@ -30,7 +30,7 @@ all_dls_l <- list.load(input_path("2024_06_18_all_dls_l.rds"))
 all_dls_b <- list.load(input_path("2024_04_19_all_dls.rds"))
 
 # The baseline solution
-mtbi_mc_d_esm <- read_csv(proc_path("2024_05_30_mtbi_mc_d_esm.csv"))
+mtbi_mc_d_full_esm <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full_esm.csv"))
 ```
 
 I will check to see how good of a fit the baseline data of the longitudinal subjects is to the baseline solution.
@@ -207,8 +207,6 @@ loom_df <- loomdf |>
     dplyr::select(-cluster_2, -group_2) |>
     dplyr::rename("cluster" = "cluster_0", "group" = "group_0")
 
-loom_df
-
 outcomes_d <- paste0(outcomes, "_d")
 
 jitter_dodged_outcomes_d <- function(df, outcomes) {
@@ -254,14 +252,13 @@ jitter_wrapped_2
 
 ggsave(
     plot = jitter_wrapped_2,
-    file = fig_path("jitter_wrapped_2.png", TRUE),
+    file = fig_path("cbcl_lp_long.png", TRUE),
     dpi = 100,
     width = 30,
     height = 20
 )
 
 preinj_v_change_df <- dplyr::inner_join(loom_df, loomdf_t0, by = "subjectkey")
-
 
 preinj_v_change <- function(df, outcomes) {
     plot_list <- list()
@@ -301,6 +298,8 @@ preinj_v_change <- function(df, outcomes) {
 z2 <- preinj_v_change(preinj_v_change_df, outcomes)
 
 outcome_trajectories <- wrap_plots(z2)
+
+outcome_trajectories
 
 ggsave(
     plot = outcome_trajectories,
@@ -365,7 +364,11 @@ ggsave(
 Here I check how the longitudinal subjects map onto our initial baseline mTBI solution.
 
 ```{r}
-mtbi_b_data_list <- all_dls_b$"mtbi_train_data_lists"$"imp_3"
+mtbi_b_data_list <- list.load(
+    proc_path(
+        "2024_07_22_mtbi_mc_d_full_data_list.rds"
+    )
+)
 
 mtbi_l0_data_list_imp_1 <- mtbi_l0_data_lists$"imp_1"
 mtbi_l0_data_list_imp_2 <- mtbi_l0_data_lists$"imp_2"
@@ -386,7 +389,7 @@ keep_components <- mtbi_b_components %in% preinjury_components
 mtbi_b_data_list_no_mtbi <- mtbi_b_data_list[keep_components]
 
 # Remove inclusion injury variables from baseline solutions matrix
-mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_esm |>
+mtbi_mc_d_esm_no_mtbi <- mtbi_mc_d_full_esm |>
     dplyr::select(
         -dplyr::contains(
             c(
@@ -436,11 +439,14 @@ list.save(mtbi_b_l0_imp_5_dl, proc_path("mtbi_b_l0_imp_5_dl.rds", TRUE))
 ```
 
 ```{r}
-mtbi_b_l0_imp_1_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_1_dl.rds"))
-mtbi_b_l0_imp_2_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_2_dl.rds"))
-mtbi_b_l0_imp_3_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_3_dl.rds"))
-mtbi_b_l0_imp_4_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_4_dl.rds"))
-mtbi_b_l0_imp_5_dl <- list.load(proc_path("2024_06_21_mtbi_b_l0_imp_5_dl.rds"))
+mtbi_b_l0_imp_1_dl <- list.load(proc_path("2024_07_22_mtbi_b_l0_imp_1_dl.rds"))
+
+summarize_dl(mtbi_b_l0_imp_1_dl)
+
+mtbi_b_l0_imp_2_dl <- list.load(proc_path("2024_07_22_mtbi_b_l0_imp_2_dl.rds"))
+mtbi_b_l0_imp_3_dl <- list.load(proc_path("2024_07_22_mtbi_b_l0_imp_3_dl.rds"))
+mtbi_b_l0_imp_4_dl <- list.load(proc_path("2024_07_22_mtbi_b_l0_imp_4_dl.rds"))
+mtbi_b_l0_imp_5_dl <- list.load(proc_path("2024_07_22_mtbi_b_l0_imp_5_dl.rds"))
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -470,21 +476,21 @@ mtbi_b_l0_imp_2_lp <- lp_solutions_matrix(
     distance_metrics_list = my_distance_metrics
 )
 write_csv(mtbi_b_l0_imp_2_lp, proc_path("mtbi_b_l0_imp_2_lp.csv", TRUE))
-
+#
 mtbi_b_l0_imp_3_lp <- lp_solutions_matrix(
     mtbi_mc_d_esm_no_mtbi,
     mtbi_b_l0_imp_3_dl,
     distance_metrics_list = my_distance_metrics
 )
 write_csv(mtbi_b_l0_imp_3_lp, proc_path("mtbi_b_l0_imp_3_lp.csv", TRUE))
-
+#
 mtbi_b_l0_imp_4_lp <- lp_solutions_matrix(
     mtbi_mc_d_esm_no_mtbi,
     mtbi_b_l0_imp_4_dl,
     distance_metrics_list = my_distance_metrics
 )
 write_csv(mtbi_b_l0_imp_4_lp, proc_path("mtbi_b_l0_imp_4_lp.csv", TRUE))
-
+#
 mtbi_b_l0_imp_5_lp <- lp_solutions_matrix(
     mtbi_mc_d_esm_no_mtbi,
     mtbi_b_l0_imp_5_dl,
@@ -494,11 +500,11 @@ write_csv(mtbi_b_l0_imp_5_lp, proc_path("mtbi_b_l0_imp_5_lp.csv", TRUE))
 ```
 
 ```{r}
-mtbi_b_l0_imp_1_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_1_lp.csv"))
-mtbi_b_l0_imp_2_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_2_lp.csv"))
-mtbi_b_l0_imp_3_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_3_lp.csv"))
-mtbi_b_l0_imp_4_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_4_lp.csv"))
-mtbi_b_l0_imp_5_lp <- read_csv(proc_path("2024_06_20_mtbi_b_l0_imp_5_lp.csv"))
+mtbi_b_l0_imp_1_lp <- read_csv(proc_path("2024_07_22_mtbi_b_l0_imp_1_lp.csv"))
+mtbi_b_l0_imp_2_lp <- read_csv(proc_path("2024_07_22_mtbi_b_l0_imp_2_lp.csv"))
+mtbi_b_l0_imp_3_lp <- read_csv(proc_path("2024_07_22_mtbi_b_l0_imp_3_lp.csv"))
+mtbi_b_l0_imp_4_lp <- read_csv(proc_path("2024_07_22_mtbi_b_l0_imp_4_lp.csv"))
+mtbi_b_l0_imp_5_lp <- read_csv(proc_path("2024_07_22_mtbi_b_l0_imp_5_lp.csv"))
 
 mtbi_l0_imp_1_lp <- mtbi_b_l0_imp_1_lp |>
     dplyr::filter(group == "test") |>
@@ -534,11 +540,22 @@ write_csv(mtbi_l0_imp_5_lp, proc_path("mtbi_l0_imp_5_lp.csv", TRUE))
 ```
 
 ```{r}
-mtbi_l0_imp_1_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_1_lp.csv"))
-mtbi_l0_imp_2_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_2_lp.csv"))
-mtbi_l0_imp_3_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_3_lp.csv"))
-mtbi_l0_imp_4_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_4_lp.csv"))
-mtbi_l0_imp_5_lp <- read_csv(proc_path("2024_06_20_mtbi_l0_imp_5_lp.csv"))
+mtbi_l0_imp_1_lp <- read_csv(proc_path("2024_07_22_mtbi_l0_imp_1_lp.csv"))
+mtbi_l0_imp_2_lp <- read_csv(proc_path("2024_07_22_mtbi_l0_imp_2_lp.csv"))
+mtbi_l0_imp_3_lp <- read_csv(proc_path("2024_07_22_mtbi_l0_imp_3_lp.csv"))
+mtbi_l0_imp_4_lp <- read_csv(proc_path("2024_07_22_mtbi_l0_imp_4_lp.csv"))
+mtbi_l0_imp_5_lp <- read_csv(proc_path("2024_07_22_mtbi_l0_imp_5_lp.csv"))
+
+mtbi_l0_imp_1_lp$"cluster"
+
+mtbi_l0_imp_2_lp$"cluster"
+
+mtbi_l0_imp_3_lp$"cluster"
+
+mtbi_l0_imp_4_lp$"cluster"
+
+mtbi_l0_imp_5_lp$"cluster"
+
 
 mtbi_l0_imp_1_lp_plots <- auto_plot(
     cluster_df = mtbi_l0_imp_1_lp,

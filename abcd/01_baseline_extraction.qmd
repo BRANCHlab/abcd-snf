@@ -11,6 +11,8 @@ library(dplyr)
 library(here)
 library(abcdutils)
 
+here(paste0("data/abcd/core2"))
+
 core_path <- path_maker(here(paste0("data/abcd/core2")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
@@ -302,6 +304,21 @@ write_csv(
 
 #### Household income
 
+Income was coded as a 3-level variable. 
+Here are some other ABCD studies looking at income:
+
+- 10-levels
+    - Tomasi 2021 (https://pubmed.ncbi.nlm.nih.gov/33990770/)
+    - Rakesh 2021 (https://pubmed.ncbi.nlm.nih.gov/34419766/)
+    - Guberman 2022 (https://pubmed.ncbi.nlm.nih.gov/35579325/)
+- 6-levels
+    - Nagata 2024 (https://pubmed.ncbi.nlm.nih.gov/38323959/)
+- 3-levels
+    - Nishat 2023 (https://pubmed.ncbi.nlm.nih.gov/37441978/)
+    - Nishat 2024 (https://pubmed.ncbi.nlm.nih.gov/38237797/)
+    - Cook 2021 (https://pubmed.ncbi.nlm.nih.gov/34790165/)
+    - Veliz 2023 (https://pubmed.ncbi.nlm.nih.gov/36689685/)
+
 ```{r}
 d_income_mtbi <- get_income(abcd_p_demo, mtbi_subjects, t = 0)
 
@@ -327,6 +344,8 @@ d_race_mtbi <- get_race(
     asian_as_other = TRUE, # distinct Asian category only has N = 4
     t = 0
 )
+
+d_race_uninj$race |> unique()
 
 write_csv(
     d_race_mtbi,
@@ -571,6 +590,16 @@ We are interested in the following rs-fMRI measures:
 ##### Cortical parcellation network correlations
 
 ```{r}
+
+
+search_dd("mri_y_rsfmr_cor_gp_gp")$"var_label"
+
+z <- get_gord_cor(
+    mri_y_rsfmr_cor_gp_gp,
+    mtbi_subjects,
+    t = 0
+)
+
 rm_gord_cor_mtbi <- get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
     mtbi_subjects,

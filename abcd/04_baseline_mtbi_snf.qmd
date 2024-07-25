@@ -390,6 +390,8 @@ mtbi_rep_solutions <- get_representative_solutions(
     mtbi_esm
 )
 
+mtbi_rep_solutions
+
 # Based on the heatmap, we'll remove B, E, H, K (unstable meta clusters)
 mtbi_rep_solutions <- dplyr::filter(
     mtbi_rep_solutions,
@@ -430,7 +432,6 @@ mtbi_mc_d_esm <- mtbi_rep_solutions |>
     dplyr::filter(label == "D")
 
 write_csv(mtbi_mc_d_esm, proc_path("mtbi_mc_d_esm.csv", TRUE))
-
 mtbi_mc_d_esm <- read_csv(proc_path("2024_05_30_mtbi_mc_d_esm.csv"))
 
 # Feature plot generation
@@ -1124,14 +1125,21 @@ plot_list$"fmri_cort_subcort_cors"
 This top solution specifically came from the third imputed dataset, so that's what we'll label propagate off of.
 
 ```{r}
-
 all_dls |> names()
 
 train_data_list_m3 <- all_dls$"mtbi_train_data_lists"$"imp_3"
 
 test_data_list_m1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
+test_data_list_m2 <- all_dls$"mtbi_test_data_lists"$"imp_2"
+test_data_list_m3 <- all_dls$"mtbi_test_data_lists"$"imp_3"
+test_data_list_m4 <- all_dls$"mtbi_test_data_lists"$"imp_4"
+test_data_list_m5 <- all_dls$"mtbi_test_data_lists"$"imp_5"
 
-full_data_list <- merge_data_lists(train_data_list_m3, test_data_list_m1)
+full_data_list_1 <- merge_data_lists(train_data_list_m3, test_data_list_m1)
+full_data_list_2 <- merge_data_lists(train_data_list_m3, test_data_list_m2)
+full_data_list_3 <- merge_data_lists(train_data_list_m3, test_data_list_m3)
+full_data_list_4 <- merge_data_lists(train_data_list_m3, test_data_list_m4)
+full_data_list_5 <- merge_data_lists(train_data_list_m3, test_data_list_m5)
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -1145,34 +1153,227 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
 )
 
-mtbi_mc_a <- mtbi_rep[1, ]
+mtbi_mc_d_esm
 
-set.seed(42)
-mtbi_mc_a_lp <- lp_solutions_matrix(
-    mtbi_mc_a,
-    full_data_list,
+mtbi_mc_d_lp_1 <- lp_solutions_matrix(
+    mtbi_mc_d_esm,
+    full_data_list_1,
     distance_metrics_list = my_distance_metrics
 )
-colnames(mtbi_mc_a_lp) <- c("subjectkey", "group", "cluster")
 
-mtbi_mc_a_lp <- mtbi_mc_a_lp |>
+mtbi_mc_d_lp_2 <- lp_solutions_matrix(
+    mtbi_mc_d_esm,
+    full_data_list_2,
+    distance_metrics_list = my_distance_metrics
+)
+
+mtbi_mc_d_lp_3 <- lp_solutions_matrix(
+    mtbi_mc_d_esm,
+    full_data_list_3,
+    distance_metrics_list = my_distance_metrics
+)
+
+mtbi_mc_d_lp_4 <- lp_solutions_matrix(
+    mtbi_mc_d_esm,
+    full_data_list_4,
+    distance_metrics_list = my_distance_metrics
+)
+
+mtbi_mc_d_lp_5 <- lp_solutions_matrix(
+    mtbi_mc_d_esm,
+    full_data_list_5,
+    distance_metrics_list = my_distance_metrics
+)
+
+colnames(mtbi_mc_d_lp_1) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_d_lp_2) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_d_lp_3) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_d_lp_4) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_d_lp_5) <- c("subjectkey", "group", "cluster")
+
+write_csv(mtbi_mc_d_lp_1, proc_path("mtbi_mc_d_lp_1.csv", TRUE))
+write_csv(mtbi_mc_d_lp_2, proc_path("mtbi_mc_d_lp_2.csv", TRUE))
+write_csv(mtbi_mc_d_lp_3, proc_path("mtbi_mc_d_lp_3.csv", TRUE))
+write_csv(mtbi_mc_d_lp_4, proc_path("mtbi_mc_d_lp_4.csv", TRUE))
+write_csv(mtbi_mc_d_lp_5, proc_path("mtbi_mc_d_lp_5.csv", TRUE))
+
+mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
+mtbi_mc_d_lp_2 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_2.csv"))
+mtbi_mc_d_lp_3 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_3.csv"))
+mtbi_mc_d_lp_4 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_4.csv"))
+mtbi_mc_d_lp_5 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_5.csv"))
+```
+
+How similar are the label propagated results across imputations?
+
+```{r}
+
+lp1_vec <- dplyr::filter(mtbi_mc_d_lp_1, group == "test")$"cluster"
+lp2_vec <- dplyr::filter(mtbi_mc_d_lp_2, group == "test")$"cluster"
+lp3_vec <- dplyr::filter(mtbi_mc_d_lp_3, group == "test")$"cluster"
+lp4_vec <- dplyr::filter(mtbi_mc_d_lp_4, group == "test")$"cluster"
+lp5_vec <- dplyr::filter(mtbi_mc_d_lp_5, group == "test")$"cluster"
+
+lp_vecs <- list(
+    lp1_vec,
+    lp2_vec,
+    lp3_vec,
+    lp4_vec,
+    lp5_vec
+)
+
+lp_ari_mat <- matrix(1, 5, 5)
+for (i in seq_along(lp_vecs)) {
+    for (j in seq_along(lp_vecs)) {
+        lp_ari_mat[i, j] <- mclust::adjustedRandIndex(
+            lp_vecs[[i]],
+            lp_vecs[[j]]
+        )
+    }
+}
+
+rownames(lp_ari_mat) <- paste0("lp_imp_", 1:5)
+colnames(lp_ari_mat) <- paste0("lp_imp_", 1:5)
+
+lp_ari_hm <- adjusted_rand_index_heatmap(
+    lp_ari_mat,
+    show_row_names = TRUE,
+    show_column_names = TRUE
+)
+
+save_heatmap(
+    lp_ari_hm,
+    fig_path("lp_ari_hm.png", TRUE),
+    width = 450,
+    height = 350,
+    res = 100
+)
+
+min(lp_ari_mat)
+
+lp_ari_mat == min(lp_ari_mat)
+
+sum(lp_vecs[[3]] != lp_vecs[[5]]) / length(lp_vecs[[3]])
+```
+
+The label propagated results were extremely similar across imputations.
+The most dissimilar results differed by assignment of 4 (out of 85) children.
+
+The "full" suffix below refers to the original + label propagated subjects, together
+
+```{r}
+mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
+
+
+mtbi_mc_d_full <- mtbi_mc_d_lp_1 |>
+    dplyr::select(-group)
+
+mtbi_mc_d_lp_only <- mtbi_mc_d_lp_1 |>
     dplyr::filter(group == "test") |>
     dplyr::select(-group)
 
-write_csv(mtbi_mc_a_lp, proc_path("mtbi_mc_a_lp.csv", TRUE))
+write_csv(mtbi_mc_d_full, proc_path("mtbi_mc_d_full.csv", TRUE))
+write_csv(mtbi_mc_d_lp_only, proc_path("mtbi_mc_d_lp_only.csv", TRUE))
 
-mtbi_mc_a_lp <- read_csv(proc_path("2024_04_23_mtbi_mc_a_lp.csv"))
+mtbi_mc_d_full <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full.csv"))
+mtbi_mc_d_lp_only <- read_csv(proc_path("2024_07_22_mtbi_mc_d_lp_only.csv"))
 
-mtbi_mc_a_lp_plots <- characterize_solution(
-    cluster_df = mtbi_mc_a_lp,
-    data_list = c(
-        all_dls$"mtbi_test_data_lists"$"imp_1",
-        all_dls$"mtbi_test_oom_lists"$"imp_1"
-    ),
-    plotname = fig_path("mtbi_mc_a_lp", TRUE),
-    individual_plots = TRUE,
-    group_plots = TRUE
+train_oom_list_m3 <- all_dls$"mtbi_train_oom_lists"$"imp_3"
+test_oom_list_m1 <- all_dls$"mtbi_test_oom_lists"$"imp_1"
+
+mtbi_mc_d_data_list <- merge_data_lists(
+    train_data_list_m3,
+    test_data_list_m1
 )
+
+mtbi_mc_d_oom_list <- merge_data_lists(
+    train_oom_list_m3,
+    test_oom_list_m1
+)
+
+list.save(
+    mtbi_mc_d_data_list, 
+    proc_path("mtbi_mc_d_full_data_list.rds", TRUE)
+)
+list.save(
+    mtbi_mc_d_oom_list, 
+    proc_path("mtbi_mc_d_full_oom_list.rds", TRUE)
+)
+
+
+mtbi_mc_d_full_data_list <- list.load(
+    proc_path(
+        "2024_07_22_mtbi_mc_d_full_data_list.rds"
+    )
+)
+mtbi_mc_d_full_oom_list <- list.load(
+    proc_path(
+        "2024_07_22_mtbi_mc_d_full_oom_list.rds"
+    )
+)
+
+
+mtbi_mc_d_full_plot_list <- auto_plot(
+    cluster_df = mtbi_mc_d_full,
+    data_list = mtbi_mc_d_full_data_list,
+    target_list = mtbi_mc_d_full_oom_list,
+    save = fig_path("mtbi_mc_d_full", TRUE)
+)
+
+mtbi_mc_d_lp_only_plot_list <- auto_plot(
+    cluster_df = mtbi_mc_d_lp_only,
+    data_list = test_data_list_m1,
+    target_list = test_oom_list_m1,
+    save = fig_path("mtbi_mc_d_lp_only", TRUE)
+)
+
+mtbi_mc_d_full_wrap <- wrap_plots(mtbi_mc_d_full_plot_list)
+mtbi_mc_d_lp_only_wrap <- wrap_plots(mtbi_mc_d_lp_only_plot_list)
+
+ggsave(
+    fig_path("mtbi_mc_d_full_wrap.png", TRUE),
+    mtbi_mc_d_full_wrap,
+    width = 35,
+    height = 30,
+    dpi = 50
+)
+
+ggsave(
+    fig_path("mtbi_mc_d_lp_only_wrap.png", TRUE),
+    mtbi_mc_d_lp_only_wrap,
+    width = 35,
+    height = 30,
+    dpi = 50
+)
+
+# Creating ESM formatted full solution
+mtbi_mc_d_full_sm <- mtbi_mc_d_esm |>
+    dplyr::select(
+        -dplyr::contains("pval"),
+        -dplyr::contains("impairment"),
+        -label,
+        -imputation,
+        -pooled
+    )
+mtbi_mc_d_lp_only_sm_row <- data.frame(
+    t(mtbi_mc_d_lp_only$"cluster")
+)
+colnames(mtbi_mc_d_lp_only_sm_row) <- mtbi_mc_d_lp_only$"subjectkey"
+mtbi_mc_d_full_sm <- cbind(
+    mtbi_mc_d_full_sm,
+    mtbi_mc_d_lp_only_sm_row
+)
+
+mtbi_mc_d_full_esm <- extend_solutions(
+    mtbi_mc_d_full_sm,
+    data_list = mtbi_mc_d_full_data_list,
+    target_list = mtbi_mc_d_full_oom_list,
+    min_pval = 1e-10,
+    processes = "max"
+)
+
+write_csv(mtbi_mc_d_full_esm, proc_path("mtbi_mc_d_full_esm.csv", TRUE))
+mtbi_mc_d_full_esm <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full_esm.csv"))
 
 ```
 
