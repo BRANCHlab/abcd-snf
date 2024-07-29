@@ -11,15 +11,17 @@ library(dplyr)
 library(here)
 library(abcdutils)
 
-here(paste0("data/abcd/core2"))
-
-core_path <- path_maker(here(paste0("data/abcd/core2")))
+core_path <- path_maker(here(paste0("data/abcd/core3")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 
 import <- function(path) {
     return(abcd_load(core_path(path)))
+}
+
+import2 <- function(path) {
+    return(abcd_load(core_path2(path)))
 }
 ```
 
@@ -80,7 +82,113 @@ mh_p_asr <- import("mental-health/mh_p_asr.csv")
 mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
 # Sleep disturbance scale
 ph_p_sds <- import("physical-health/ph_p_sds.csv")
+
+
+identical(abcd_y_lt, abcd_y_lt2)
+identical(mh_y_or, mh_y_or2)
+identical(mh_p_cbcl, mh_p_cbcl2)
+
+library(waldo)
+
+# 5.0 to 5.1 changes
+# These are the only loaded csv files that were different
+abcd_y_lt_d <- compare(abcd_y_lt, abcd_y_lt2)
+mh_y_or_d <- compare(mh_y_or, mh_y_or2)
+
+tp_waldo <- function(df1, df2, tp, subjects) {
+    df1 <- df1 |>
+        filter_subjects(subjects) |>
+        filter_timepoint(tp)
+    df2 <- df2 |>
+        filter_subjects(subjects) |>
+        filter_timepoint(tp)
+    results <- compare(df1, df2)
+    return(results)
+}
+
+tp_waldo(abcd_y_lt, abcd_y_lt2, 0, mtbi_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 1, mtbi_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 2, mtbi_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 3, mtbi_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 4, mtbi_subjects)
+
+tp_waldo(abcd_y_lt, abcd_y_lt2, 0, uninjured_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 1, uninjured_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 2, uninjured_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 3, uninjured_subjects)
+tp_waldo(abcd_y_lt, abcd_y_lt2, 4, uninjured_subjects)
+
+tp_waldo(mh_y_or, mh_y_or2, 0, mtbi_subjects)
+
+tp_waldo(mh_y_or, mh_y_or2, 1, mtbi_subjects)
+tp_waldo(mh_y_or, mh_y_or2, 2, mtbi_subjects)
+tp_waldo(mh_y_or, mh_y_or2, 3, mtbi_subjects)
+tp_waldo(mh_y_or, mh_y_or2, 4, mtbi_subjects)
+
+tp_waldo(mh_y_or, mh_y_or2, 0, uninjured_subjects)
+
+mh_y_or$"resiliency7a_y"
+
+mh_y_or2$"resiliency7a_y"
+
+
+tp_waldo(mh_y_or, mh_y_or2, 1, uninjured_subjects)
+tp_waldo(mh_y_or, mh_y_or2, 2, uninjured_subjects)
+tp_waldo(mh_y_or, mh_y_or2, 3, uninjured_subjects)
+tp_waldo(mh_y_or, mh_y_or2, 4, uninjured_subjects)
+
+compare(c("1", "2", "3", "4"), c(1, 2, 5, 4))
+
+
+zz <- compare(
+    filter_timepoint(abcd_y_lt, 0),
+    filter_timepoint(abcd_y_lt2, 0)
+)
+
+zz
+
+mh_y_or_d <- compare(mh_y_or, mh_y_or2)
+
+# To big for waldo::compare
+all.equal(mh_p_cbcl, mh_p_cbcl2)
+
+x <- 0
+c1 <- mh_p_cbcl |>
+    dplyr::select(
+        subjectkey,
+        eventname,
+        dplyr::contains("cbcl_scr_syn")
+    ) |>
+    dplyr::select(
+        subjectkey,
+        eventname,
+        dplyr::ends_with("_r")
+    ) |>
+    filter_subjects(mtbi_subjects) |>
+    filter_timepoint(x)
+c2 <- mh_p_cbcl2 |>
+    dplyr::select(
+        subjectkey,
+        eventname,
+        dplyr::contains("cbcl_scr_syn")
+    ) |>
+    dplyr::select(
+        subjectkey,
+        eventname,
+        dplyr::ends_with("_r")
+    ) |>
+    filter_subjects(mtbi_subjects) |>
+    filter_timepoint(x)
+c1 |> na.omit() |> nrow()
+c2 |> na.omit() |> nrow()
+
+mh_p_cbcl_d <- compare(c1, c2)
+mh_p_cbcl_d
+
+
 ```
+
+
 
 ## Subjects
 
