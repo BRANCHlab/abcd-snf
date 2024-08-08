@@ -191,57 +191,15 @@ build_ols <- function(parsed_imputations) {
         function(x) {
             generate_data_list(
                 list(
-                    parsed_imputations$"cbcl_anxdep"[[x + 1]],
-                    "cbcl_anxdep",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_withdep"[[x + 1]],
-                    "cbcl_withdep",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_somatic"[[x + 1]],
-                    "cbcl_somatic",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_social"[[x + 1]],
-                    "cbcl_social",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_thought"[[x + 1]],
-                    "cbcl_thought",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_attention"[[x + 1]],
-                    "cbcl_attention",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_rulebreak"[[x + 1]],
-                    "cbcl_rulebreak",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"cbcl_aggressive"[[x + 1]],
-                    "cbcl_aggressive",
+                    parsed_imputations$"cbcl"[[x + 1]],
+                    "cbcl",
                     "B",
                     "discrete"
                 ),
                 list(
                     parsed_imputations$"sds_total_probs"[[x + 1]],
                     "sds_total_probs",
-                    "S",
+                    "B",
                     "discrete"
                 ),
                 uid = "subjectkey"

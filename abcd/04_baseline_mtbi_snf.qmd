@@ -19,15 +19,15 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
-mtbi_train_subjects <- read_csv(sub_path("2024_04_18_mtbi_train_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
+mtbi_subjects <- read_csv(sub_path("2024_07_31_mtbi_subjects.csv"))
+mtbi_train_subjects <- read_csv(sub_path("2024_07_31_mtbi_train_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_07_31_uninjured_subjects.csv"))
 ```
 
 ## Importing data
 
 ```{r}
-all_dls <- list.load(input_path("2024_04_19_all_dls.rds"))
+all_dls <- list.load(input_path("2024_08_07_all_dls.rds"))
 ```
 
 ## Generating custom distance measures
@@ -66,7 +66,7 @@ mtbi_settings_matrix <- generate_settings_matrix(
 write_csv(mtbi_settings_matrix, proc_path("mtbi_settings_matrix.csv", TRUE))
 
 mtbi_settings_matrix <- read_csv(
-    proc_path("2024_04_19_mtbi_settings_matrix.csv")
+    proc_path("2024_08_07_mtbi_settings_matrix.csv")
 )
 ```
 
@@ -93,39 +93,40 @@ mtbi_train_solutions_matrices <- lapply(
     }
 )
 
+#
 list.save(
     mtbi_train_solutions_matrices,
     input_path("mtbi_train_solutions_matrices.rds", TRUE)
 )
-
+#
 mtbi_train_solutions_matrices <- list.load(
-    input_path("2024_04_22_mtbi_train_solutions_matrices.rds")
+    input_path("2024_08_07_mtbi_train_solutions_matrices.rds")
 )
-
+#
 mtbi_sm <- do.call(
     "rbind",
     mtbi_train_solutions_matrices
 )
-
+#
 write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
-
+#
 mtbi_ari <- calc_aris(mtbi_sm, processes = "max")
-
+#
 write_csv(data.frame(mtbi_ari), proc_path("mtbi_ari.csv", TRUE))
-
+#
 mtbi_ari_order <- get_matrix_order(mtbi_ari)
-
+#
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
 
 ## Re-importing data
 
 ```{r}
-mtbi_sm <- read_csv(proc_path("2024_04_23_mtbi_sm.csv"))
+mtbi_sm <- read_csv(proc_path("2024_08_07_mtbi_sm.csv"))
 
-mtbi_ari <- as.matrix(read_csv(proc_path("2024_04_23_mtbi_ari.csv")))
+mtbi_ari <- as.matrix(read_csv(proc_path("2024_08_07_mtbi_ari.csv")))
 
-mtbi_ari_order <- unlist(read_csv(proc_path("2024_05_27_mtbi_ari_order.csv")))
+mtbi_ari_order <- unlist(read_csv(proc_path("2024_08_07_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
@@ -252,7 +253,7 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 ```
 
 ```{r}
-mtbi_esm <- read_csv(proc_path("2024_05_29_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_08_07_mtbi_esm.csv"))
 ```
 
 ## Identifying and visualizing meta clusters
@@ -266,22 +267,34 @@ base_ari_hm <- adjusted_rand_index_heatmap(
 shiny_annotator(base_ari_hm)
 
 mtbi_split_vec <- c(
-    60,
-    137,
-    275,
-    490,
-    580,
-    940,
-    1086,
-    1175,
-    1435,
-    1660
+    130,
+    405,
+    632,
+    800,
+    874,
+    949,
+    1327,
+    1400,
+    1569
 )
+
+
+mtbi_split_vec <- c(
+    206,
+    230,
+    466,
+    555,
+    797,
+    959,
+    1247,
+    1490
+)
+
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 ```
 
 ```{r}
-mtbi_split_vec <- read_csv(proc_path("2024_05_27_mtbi_split_vec.csv")) |>
+mtbi_split_vec <- read_csv(proc_path("2024_08_07_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 ```
@@ -1102,8 +1115,6 @@ ggsave(
 Clusters 1 and 2 appear to be primarily male, while cluster 3 appears to be primarily female.
 
 ## Neuroimaging measures
-
-HERE I AM
 
 ```{r}
 

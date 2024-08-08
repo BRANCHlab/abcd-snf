@@ -1,10 +1,39 @@
-# Clustering and Classification for Paediatric mTBI
+# Introduction
 
-This repository contains a [quarto](https://quarto.org/) book containing all the documentation associated with my PhD research projects.
+This quarto book contains documented R code (formatted as .qmd files) used to identify and characterize biopsychosocial subtypes of pediatric concussion in the Adolescent Brain Cognitive Development study that are driven by separation across behavioural measures.
 
-To read the book, you can either open a pre-rendered version (the .pdf file or one of the .html files in /\_book\/, soon to be uploaded to carbon), or render the book yourself:
+To work through the code yourself, you will need:
 
-1. Install quarto https://quarto.org/docs/get-started/
-2. Establish a symbolic link to `lab-data` (from our lab carbon folder) in the `research/` directory
-3. Establish a symbolic link to `subtyping-mtbi` (from the [subtyping-mtbi repository](https://github.com/psvelayudhan/subtyping-mtbi)) in the `research/` directory
-4. `cd` to this project folder and run the command `quarto render .`
+* R (at least version 4.1.0)
+* The `abcdutils` package, available at [BRANCHlab/abcdutils](https://github.com/BRANCHlab/abcdutils)
+* The `metasnf` package, available at [BRANCHlab/abcdutils](https://github.com/BRANCHlab/metasnf)
+* Access to the following ABCD 5.1 release core data files:
+    * ph_p_otbi.csv
+    * abcd_y_lt.csv
+    * ph_y_pds.csv
+    * ph_p_pds.csv
+    * gish_p_gi.csv
+    * gish_y_gi.csv
+    * abcd_p_demo.csv
+    * ph_p_mhx.csv
+    * mri_y_smr_vol_aseg.csv
+    * mri_y_smr_thk_dst.csv
+    * mri_y_smr_thk_dsk.csv
+    * mri_y_smr_area_dst.csv
+    * mri_y_smr_area_dsk.csv
+    * mri_y_rsi_rnd_at.csv
+    * mri_y_rsi_rnd_wm_dsk.csv
+    * mri_y_rsi_rnd_wm_dst.csv
+    * mri_y_rsfmr_cor_gp_gp.csv
+    * mri_y_rsfmr_cor_gp_aseg.csv
+    * mh_y_or.csv
+    * nt_p_stq.csv
+    * ph_p_saiq.csv
+    * ph_y_yrb.csv
+    * ce_y_psb.csv
+    * ce_p_psb.csv
+    * ce_y_fes.csv
+    * ce_p_fes.csv
+    * mh_p_asr.csv
+    * mh_p_cbcl.csv
+    * ph_p_sds.csv
