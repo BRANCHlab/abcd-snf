@@ -727,185 +727,233 @@ mtbi_mc_e_nmi_v_pval$"joint_rank" <- rank(
     ties.method = "min"
 )
 
-sort(mtbi_mc_e_nmi_v_pval$"joint_rank", index.return = TRUE)
-
 joint_order <- sort(
     mtbi_mc_e_nmi_v_pval$"joint_rank",
     decreasing = FALSE,
     index.return = TRUE
 )
-mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval[joint_order$ix, ]
+mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval[joint_order$ix, ]
 
-mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval |>
+data.frame(mtbi_mc_e_nmi_v_pval_rank)
 
-```
-
-```{r}
-
-###############################################################################
-# CODE BELOW IS OLD
-###############################################################################
-
-###############################################################################
-# Key variable identification
-###############################################################################
-mtbi_mc_d_nmi_vs_pval_vs_vis_t <- mtbi_mc_d_nmi_pval_vis |>
-    dplyr::filter(neg_log_pval < 10) |>
-    dplyr::filter(domain != "B") |>
-    na.omit() |>
-    ggplot(
-        aes(
-            x = nmi,
-            y = neg_log_pval,
-            colour = vis_diff,
-            label = feature
-        )
-    ) +
-    labs(
-        x = "Normalized Mutual Information",
-        y = expression("-log"[10] * "(p)"),
-        colour = "Perceived\nSeparation\n"
-    ) +
-    geom_point(
-        size = 2
-    ) +
-    ggrepel::geom_text_repel(
-        vjust = 2,
-        hjust = 1.2,
-        max.overlaps = 11,
-        size = 3
-    ) +
-    theme_bw() +
-    theme(
-        text = element_text(size = 12)
-    ) +
-    scale_colour_manual(
-        values = c(
-            "none" = "red",
-            "small" = "#c79c26",
-            "big" = "#41ad2f"
-        )
-    ) +
-    geom_segment(
-        aes(x = 0.04, xend = 0.04, y = 0, yend = 2.75),
-        linetype = "dashed",
-        color = "red"
-    ) +
-    geom_segment(
-        aes(x = 0, xend = 0.04, y = 2.75, yend = 2.75),
-        linetype = "dashed",
-        color = "red"
-    ) +
-    coord_cartesian(ylim = c(0.1, 10), expand = FALSE)
-mtbi_mc_d_nmi_vs_pval_vs_vis_t
-
-ggsave(
-    fig_path("mtbi_mc_d_nmi_vs_pval_vs_vis_t.png", TRUE),
-    mtbi_mc_d_nmi_vs_pval_vs_vis_t,
-    width = 12,
-    height = 7,
-    dpi = 100
-)
-```
-
-## Key variables
-
-These are the variables that, based on NMI score, p-values, and visual inspection, appear to be more important in characterizing our cluster solution.
-
-```{r}
-mtbi_mc_d_nmi_pval_vis_key <- mtbi_mc_d_nmi_pval_vis |>
-    dplyr::filter(nmi > 0.04 | neg_log_pval > 2.75)
+mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
+    dplyr::select("feature", dplyr::contains("rank"))
 
 write_csv(
-    mtbi_mc_d_nmi_pval_vis_key,
-    proc_path("mtbi_mc_d_nmi_pval_vis_key.csv", TRUE)
+    mtbi_mc_e_nmi_v_pval_rank,
+    proc_path("mtbi_mc_e_nmi_v_pval_rank.csv", TRUE)
 )
 
-mtbi_mc_d_nmi_pval_vis_key <- read_csv(
-    proc_path("2024_05_31_mtbi_mc_d_nmi_pval_vis_key.csv")
+mtbi_mc_e_nmi_v_pval_rank <- read_csv(
+    proc_path("2024_08_09_mtbi_mc_e_nmi_v_pval_rank.csv")
 )
 
-mtbi_mc_d_nmi_pval_vis_key$"feature"
-```
+sorted_features <- mtbi_mc_e_nmi_v_pval_rank$"feature"
 
-The key features appear to be:
+names(plot_list)
 
-- [x] sex
-- [ ] brain_volume
-- [ ] cortical_sa
-- [ ] household_income
-- [ ] race
-- [ ] non_school_programs
-- [ ] programs_this_year
-- [ ] pubertal_status
-- [ ] weekend_screentime
-- [ ] parent_thought
-- [ ] parent_somatic
-- [ ] fmri_cort_subcort_cors
-- [ ] parent_aggressive
-- [ ] parent_avoidant
-- [ ] private_instruction
-- [ ] parent_withdrawn
-- [ ] parent_antisocial
-- [ ] weekday_screentime
-- [ ] parent_anxdisord
-- [ ] parent_hyperactive
-- [ ] family_peaceful
-- [ ] parent_intrusive
-- [ ] fmri_cort_cors
-- [ ] parent_anxdep
-- [ ] parent_perstr
-- [ ] parent_depress
-- [ ] family_temper
-- [ ] considerate
-- [ ] helps_hurt
-- [ ] family_outdo
-- [ ] same_sex_close_friend
-- [ ] family_angry
-- [ ] family_fight
-- [ ] parent_attention
-- [ ] family_criticize
+ranked_plot_list <- plot_list[sorted_features]
 
-In the next sections, I'll step through exactly how each of these key features differ.
-
-## Sex
-
-```{r}
-sex_plot <- plot_list$"sex" +
-    ggplot2::labs(
-        fill = "Sex",
-        x = "Cluster"
-    ) +
-    ggplot2::scale_fill_hue(
-        labels = c(
-            "1" = "F",
-            "0" = "M"
-        )
-    )
+ranked_all_plots <- wrap_plots(ranked_plot_list)
 
 ggsave(
-    plot = sex_plot,
-    filename = fig_path("mtbi_mc_d_sex_plot_clean.png", TRUE)
+    fig_path("mtbi_mc_e_ranked_all_plots.png", TRUE),
+    ranked_all_plots,
+    width = 35,
+    height = 30,
+    dpi = 50
+)
+
+saveRDS(
+    ranked_all_plots,
+    file = fig_path("mtbi_mc_e_ranked_all_plots.rds", TRUE)
+)
+
+mtbi_mc_e_ranked_all_plots <- readRDS(
+    fig_path("2024_08_09_mtbi_mc_e_ranked_all_plots.rds")
 )
 ```
 
-Clusters 1 and 2 appear to be primarily male, while cluster 3 appears to be primarily female.
+                  feature nmi_rank pval_rank joint_rank
+1                     sex        1         1          1
+2            brain_volume        2         1          2
+3             cortical_sa        3         1          3
+4        household_income        4         1          4
+5       pubertal_status_p        5         1          5
+6      programs_this_year        7         1          6
+7     non_school_programs        8         1          7
+8          parent_somatic        9         1          8
+9      weekday_screentime       11         1          9
+10                   race        6        10         10
+11         parent_thought       14        14         11
+12    private_instruction       13        16         12
+13          parent_anxdep       16        13         12
+14 fmri_cort_subcort_cors       12        19         14
+15         parent_depress       20        11         14
+16         fmri_cort_cors       15        18         16
+17      parent_aggressive       21        12         16
+18      parent_antisocial       19        15         18
+19     weekend_screentime       10        29         19
+20       parent_anxdisord       23        17         20
+21            considerate       22        20         21
+22       headache_history       17        28         22
+23           family_outdo       24        21         22
+24             helps_hurt       26        23         24
+25     parent_hyperactive       27        22         24
+26           major_wm_ndi       25        26         26
+27       parent_withdrawn       30        24         27
+28        parent_avoidant       28        27         28
+29          parent_perstr       18        41         29
+30       parent_attention       34        25         29
+31     cortical_thickness       32        30         31
+32          exercise_time       29        35         32
+33           family_fight       33        31         32
+34          family_temper       31        34         34
+35       family_criticize       37        33         35
+36           family_angry       38        32         35
+37        family_peaceful       35        36         37
+38           family_throw       36        40         38
+39       parent_intrusive       40        39         39
+40                helpful       41        38         39
+41  same_sex_close_friend       42        37         39
+42      pubertal_status_y       39        44         42
+43    pericortical_wm_ndi       44        42         43
+44                    age       46        43         44
+45        school_programs       45        45         45
+46        same_sex_friend       47        47         46
+47            family_yell       49        46         47
+48               mtbi_age       43        53         48
+49         mtbi_mechanism       50        48         49
+50             family_hit       48        51         50
+51               mtbi_loc       52        50         51
+52         previous_mtbis       53        49         51
+53          mtbi_mem_daze       51        52         53
+54         opp_sex_friend       54        54         54
+55   opp_sex_close_friend       55        55         55
 
-## Neuroimaging measures
+### Description of feature topologies
 
 ```{r}
 
-plot_list$"brain_volume" +
-    ggplot2::labs(
-        x = "Cluster",
-        y = "Brain Volume"
-    )
+mtbi_mc_e_esm_plot_df <- auto_plot(
+    solutions_matrix_row = mtbi_mc_e_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_1",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_1",
+    return_plots = FALSE
+)
 
-plot_list$"cortical_sa"
+mtbi_mc_e_esm_plot_df |> head()
 
-plot_list$"fmri_cort_subcort_cors"
+mtbi_mc_e_esm_plot_df$"cluster"
+
+sf <- sorted_features[1:5]
+
+metadata_df <- dl_variable_summary(all_dls$"mtbi_train_data_lists"$"imp_1")
+rownames(metadata_df) <- NULL
+
+#for (ft in sorted_features) {
+for (ft in sf) {
+}
+
+m
+
+tibble::tibble(mtbi_mc_e_esm_plot_df)
+
+binary_or <- function(df, feature, ca, cb) {
+    ca_values <- df[df$"cluster" == ca, feature]
+    cb_values <- df[df$"cluster" == cb, feature]
+    print(ca_values)
+    print(".")
+    print(cb_values)
+}
+binary_or(
+    mtbi_mc_e_esm_plot_df,
+    feature = "sex",
+    ca = 1,
+    cb = 2
+)
+
+sorted_features
+
+# OR calculations
+or_from_table <- function(table, exposed_c, ctrl_c, outcome_cat, nothing_cat) {
+    df <- data.frame(table)
+    colnames(df) <- c("cluster", "event", "freq")
+    exposed_outcome <- dplyr::filter(
+        df,
+        cluster == exposed_c & event == outcome_cat
+    )$"freq"
+    ctrl_outcome <- dplyr::filter( df,
+        cluster == ctrl_c & event == outcome_cat
+    )$"freq"
+    exposed_nothing <- dplyr::filter(
+        df,
+        cluster == exposed_c & event == nothing_cat
+    )$"freq"
+    ctrl_nothing <- dplyr::filter( df,
+        cluster == ctrl_c & event == nothing_cat
+    )$"freq"
+    or_num <- exposed_outcome / ctrl_outcome
+    or_den <- exposed_nothing / ctrl_nothing
+    or <- or_num / or_den
+    d <- ln()
+    return(or_num / or_den)
+}
+
+# Race
+race_df <- mtbi_mc_e_esm_plot_df |>
+    dplyr::select(cluster, race)
+
+race_df$"race"[race_df$"race" != "white"] <- "minority"
+
+race_tab <- table(race_df)
+
+for (i in 1:3) {
+    for (j in 1:3) {
+        if (i != j) {
+            or <- or_from_table(race_tab, i, j, "minority", "white")
+            print(paste0("Cluster ", i, " vs. ", j, ": ", round(or, 2)))
+            d <- 
+            cat("\n")
+        }
+    }
+}
+
+or_from_table(race_tab, 1, 2, "minority", "white")
+
+or_from_table(race_tab, 1, 3, "minority", "white")
+
+or_from_table(race_tab, 1, 3, "minority", "white")
+
+race_tab
+
+
+metadata_df
+
+sorted_features
+
+mtbi_mc_e_esm_plot_df |> head()
+
+odds_ratio <- function(de, he, dn, hn) {
+    numerator <- de / he
+    denominator <- dn / hn
+    return(numerator / denominator)
+}
+
+
+
 
 ```
+
+ordinal variable -> cohen's d
+continuous variable -> cohen's d
+discrete variable -> cohen's d
+categorical variable -> odd's ratio -> cohen's d
+binary variable -> odd's ratio -> cohen's d
+
+log odds * sqrt(3)/pi
+
+
 
 
 # Label propagation
