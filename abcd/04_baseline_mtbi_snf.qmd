@@ -27,7 +27,7 @@ uninjured_subjects <- read_csv(sub_path("2024_07_31_uninjured_subjects.csv"))
 ## Importing data
 
 ```{r}
-all_dls <- list.load(input_path("2024_08_07_all_dls.rds"))
+all_dls <- list.load(input_path("2024_07_31_all_dls.rds"))
 ```
 
 ## Generating custom distance measures
@@ -66,7 +66,7 @@ mtbi_settings_matrix <- generate_settings_matrix(
 write_csv(mtbi_settings_matrix, proc_path("mtbi_settings_matrix.csv", TRUE))
 
 mtbi_settings_matrix <- read_csv(
-    proc_path("2024_08_07_mtbi_settings_matrix.csv")
+    proc_path("2024_07_31_mtbi_settings_matrix.csv")
 )
 ```
 
@@ -100,7 +100,7 @@ list.save(
 )
 #
 mtbi_train_solutions_matrices <- list.load(
-    input_path("2024_08_07_mtbi_train_solutions_matrices.rds")
+    input_path("2024_07_31_mtbi_train_solutions_matrices.rds")
 )
 #
 mtbi_sm <- do.call(
@@ -122,11 +122,11 @@ write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ## Re-importing data
 
 ```{r}
-mtbi_sm <- read_csv(proc_path("2024_08_07_mtbi_sm.csv"))
+mtbi_sm <- read_csv(proc_path("2024_07_31_mtbi_sm.csv"))
 
-mtbi_ari <- as.matrix(read_csv(proc_path("2024_08_07_mtbi_ari.csv")))
+mtbi_ari <- as.matrix(read_csv(proc_path("2024_07_31_mtbi_ari.csv")))
 
-mtbi_ari_order <- unlist(read_csv(proc_path("2024_08_07_mtbi_ari_order.csv")))
+mtbi_ari_order <- unlist(read_csv(proc_path("2024_07_31_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
@@ -253,7 +253,7 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 ```
 
 ```{r}
-mtbi_esm <- read_csv(proc_path("2024_08_07_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_07_31_mtbi_esm.csv"))
 ```
 
 ## Identifying and visualizing meta clusters
@@ -265,19 +265,6 @@ base_ari_hm <- adjusted_rand_index_heatmap(
 )
 
 shiny_annotator(base_ari_hm)
-
-mtbi_split_vec <- c(
-    130,
-    405,
-    632,
-    800,
-    874,
-    949,
-    1327,
-    1400,
-    1569
-)
-
 
 mtbi_split_vec <- c(
     206,
@@ -294,7 +281,7 @@ write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 ```
 
 ```{r}
-mtbi_split_vec <- read_csv(proc_path("2024_08_07_mtbi_split_vec.csv")) |>
+mtbi_split_vec <- read_csv(proc_path("2024_07_31_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 ```
@@ -336,6 +323,7 @@ full_mtbi_ari_hm <- adjusted_rand_index_heatmap(
         )
     )
 )
+full_mtbi_ari_hm
 
 save_heatmap(
     heatmap = full_mtbi_ari_hm,
@@ -408,14 +396,14 @@ mtbi_rep_solutions
 # Based on the heatmap, we'll remove B, E, H, K (unstable meta clusters)
 mtbi_rep_solutions <- dplyr::filter(
     mtbi_rep_solutions,
-    !label %in% c("B", "E", "H", "K")
+    !label %in% c("B", "D", "I")
 )
 
 write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
 ```
 
 ```{r}
-mtbi_rep_solutions <- read_csv(proc_path("2024_05_29_mtbi_rep_solutions.csv"))
+mtbi_rep_solutions <- read_csv(proc_path("2024_08_08_mtbi_rep_solutions.csv"))
 
 mtbi_manhattan <- mc_manhattan_plot(
     mtbi_rep_solutions,
@@ -431,6 +419,7 @@ mtbi_manhattan <- mc_manhattan_plot(
         "B" = "#ff3131"
     )
 )
+mtbi_manhattan
 
 ggsave(
     plot = mtbi_manhattan,
@@ -441,32 +430,35 @@ ggsave(
 )
 
 # The most robust solution
-mtbi_mc_d_esm <- mtbi_rep_solutions |>
-    dplyr::filter(label == "D")
+mtbi_mc_e_esm <- mtbi_rep_solutions |>
+    dplyr::filter(label == "E")
 
-write_csv(mtbi_mc_d_esm, proc_path("mtbi_mc_d_esm.csv", TRUE))
-mtbi_mc_d_esm <- read_csv(proc_path("2024_05_30_mtbi_mc_d_esm.csv"))
+write_csv(mtbi_mc_e_esm, proc_path("mtbi_mc_e_esm.csv", TRUE))
+
+mtbi_mc_e_esm <- read_csv(proc_path("2024_08_08_mtbi_mc_e_esm.csv"))
+
+mtbi_mc_e_esm$"imputation"
 
 # Feature plot generation
 plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
-    save = fig_path("mtbi_mc_d", TRUE)
+    solutions_matrix_row = mtbi_mc_e_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_1",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_1",
+    save = fig_path("mtbi_mc_e", TRUE)
 )
 
 # No save version:
 plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
+    solutions_matrix_row = mtbi_mc_e_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_1",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_1"
 )
 
 all_plots <- wrap_plots(plot_list)
 
 # Good enough as a snapshot
 ggsave(
-    fig_path("mtbi_mc_d_all_plots.png", TRUE),
+    fig_path("mtbi_mc_e_all_plots.png", TRUE),
     all_plots,
     width = 35,
     height = 30,
@@ -474,175 +466,97 @@ ggsave(
 )
 ```
 
-## Key attributes of the cluster solution
+## Characterization of meta cluster E representative solution
 
-Doesn't seem to be a big difference:
-
-- mtbi_mem_daze: 1 = 2 = 3
-- mtbi_loc: 1 = 2 = 3
-- mtbi_age: 1 = 2 = 3
-- previous_mtbis: 1 = 2 = 3
-- major_wm_ndi: 1 = 2 = 3
-- pericortical_wm_ndi: 1 = 2 = 3
-- fmri_cort_cors: 1 = 2 = 3
-- school_programs: 1 = 2 = 3
-
-Small difference:
-
-- mtbi_mechanism 1 < 2 = 3
-- age 1 = 2 < 3
-- headache_history: 3 < 1 = 2
-- fmri_cort_subcort_cors: 1 < 3 < 2
-- cortical_thickness: 1 < 2 = 3
-- school_programs: 1 < 2 < 3
-- same_sex_friend: 3 > 1 = 2
-- opp_sex_friend: 1 > 2 = 3
-
-Seems to be a big difference:
-
-- sex (n_female): 3 >> 1 > 2
-- household_income: 1 << 2 = 3
-- race (minority groups): 1 >> 2 = 3
-- pubertal_status: 2 < 1 = 3
-- brain_volume: 2 >> 1 > 3
-- cortical thickness: 1 < 2 = 3
-- cortical_sa: 2 >> 1 > 3
-- same_sex_close_friend: 3 >> 2 > 1
-- opp_sex_close_friend: 1 > 2 = 3
-- weekend_screentime: 1 > 2 = 3
-- weekday_screentime: 1 > 2 = 3
-- non_school_programs: 1 << 2 = 3
-- private_instruction: 1 < 2 < 3
-- programs_this_year: 1 << 2 = 3
-- exercise_time: 1 < 2 = 3
-- considerate: 1 < 2 < 3
-- helps_hurt: 3 > 1 = 2
-- helpful: 3 > 1 = 2
-- family_fight: 1 > 2 = 3
-- family_angry: 1 > 2 = 3
-- family_throw: 1 > 2 = 3
-- family_temper: 1 > 2 = 3
-- family_criticize: 1 > 2 = 3
-- family_hit: 1 > 2 = 3
-- family_peaceful: 1 > 2 > 3
-- family_outdo: 1 > 2 = 3
-- family_yell: 1 > 2 > 3
-- parent_perstr: 1 < 2 < 3
-- parent_anxdep: 1 >> 2 = 3
-- parent_withdrawn: 1 > 2 = 3
-- parent_somatic: 1 > 2 = 3
-- parent_thought: 1 > 2 = 3
-- parent_attention: 1 > 2 = 3
-- parent_aggressive: 1 > 2 = 3
-- parent_intrusive: 1 > 2 = 3
-- parent_depress: 1 > 2 = 3
-- parent_anxdisord: 1 > 2 = 3
-- parent_avoidant: 1 > 2 > 3
-- parent_antisocial: 1 > 2 = 3
-- parent_hyperactive: 1 > 2 = 3
-- cbcl_anxdep: 1 > 2 = 3
-- cbcl_withdep: 1 > 2 = 3
-- cbcl_somatic: 1 > 2 = 3
-- cbcl_social: 1 > 2 = 3
-- cbcl_thought: 1 > 2 = 3
-- cbcl_attention: 1 > 2 = 3
-- cbcl_rulebreak: 1 > 2 = 3
-- cbcl_aggressive: 1 > 2 = 3
-- sds_sleep: 1 > 2 = 3
-
-Dennis, E., Manza, P. & Volkow, N.D. Socioeconomic status, BMI, and brain development in children. Transl Psychiatry 12, 33 (2022). https://doi.org/10.1038/s41398-022-01779-3
-
-In the study above, they looked at SES based on household income, highest level of parental education, and area deprivation.
-They also found that BMI played a role in brain development.
-
-Orben, A., Meier, A., Dalgleish, T. et al. Mechanisms linking social media use to adolescent mental health vulnerability. Nat Rev Psychol (2024). https://doi.org/10.1038/s44159-024-00307-y
+### NMI
 
 ```{r}
 # Calculating feature importances
 nmis <- batch_nmi(
-    all_dls$"mtbi_train_data_lists"$"imp_3",
-    mtbi_mc_d_esm,
+    all_dls$"mtbi_train_data_lists"$"imp_1",
+    mtbi_mc_e_esm,
     distance_metrics_list = my_distance_metrics
 )
-
 nmi_order <- sort(
-    nmis$"row_id_67",
+    nmis$"row_id_81",
     decreasing = TRUE,
     index.return = TRUE
 )
-
 nmis <- nmis[nmi_order$ix, ]
+nmis
 
-write_csv(nmis, proc_path("mtbi_mc_d_nmis.csv", TRUE))
-```
+write_csv(nmis, proc_path("mtbi_mc_e_nmis.csv", TRUE))
+mtbi_mc_e_nmis <- read_csv(proc_path("2024_08_08_mtbi_mc_e_nmis.csv"))
 
-```{r}
-mtbi_mc_d_nmis <- read_csv(proc_path("2024_05_29_mtbi_mc_d_nmis.csv"))
+data.frame(mtbi_mc_e_nmis)
+
 ```
 
 NMI order:
 
-                  feature   row_id_67
-1                     sex 0.243209963
-2            brain_volume 0.191430570
-3             cortical_sa 0.176465863
-4        household_income 0.173650190
-5                    race 0.106974328
-6     non_school_programs 0.089535118
-7      programs_this_year 0.085778912
-8         pubertal_status 0.073815053
-9      weekend_screentime 0.068591085
-10         parent_thought 0.065605239
-11         parent_somatic 0.063379204
-12 fmri_cort_subcort_cors 0.062316738
-13      parent_aggressive 0.061766652
-14        parent_avoidant 0.061007979
-15    private_instruction 0.060788001
-16       parent_withdrawn 0.058834958
-17      parent_antisocial 0.058439486
-18     weekday_screentime 0.052901237
-19       parent_anxdisord 0.047661089
-20     parent_hyperactive 0.046030868
-21        family_peaceful 0.045456812
-22       parent_intrusive 0.044010345
-23         fmri_cort_cors 0.041913000
-24          parent_anxdep 0.041754962
-25          parent_perstr 0.037575118
-26         parent_depress 0.036061882
-27          family_temper 0.034659741
-28            considerate 0.034615358
-29             helps_hurt 0.034538988
-30       headache_history 0.033912559
-31          exercise_time 0.033209402
-32           family_outdo 0.031435016
-33  same_sex_close_friend 0.029747204
-34           family_angry 0.029313684
-35           family_fight 0.028924925
-36       parent_attention 0.028905738
-37         mtbi_mechanism 0.028635369
-38    pericortical_wm_ndi 0.028290869
-39     cortical_thickness 0.025146517
-40       family_criticize 0.024516708
-41                    age 0.024484370
-42        school_programs 0.023241074
-43                helpful 0.022037230
-44           major_wm_ndi 0.020916865
-45               mtbi_age 0.018499859
-46           family_throw 0.018149749
-47          mtbi_mem_daze 0.015706414
-48             family_hit 0.014753237
-49        same_sex_friend 0.012166623
-50               mtbi_loc 0.011030747
-51         previous_mtbis 0.009733142
-52            family_yell 0.009473181
-53         opp_sex_friend 0.003748435
-54   opp_sex_close_friend 0.003587654
+                  feature   row_id_81 nmi_rank
+1                     sex 0.275526597        1
+2            brain_volume 0.210296415        2
+3             cortical_sa 0.184404762        3
+4        household_income 0.166172559        4
+5       pubertal_status_p 0.122584831        5
+6                    race 0.088071636        6
+7      programs_this_year 0.084278633        7
+8     non_school_programs 0.081924484        8
+9          parent_somatic 0.076984578        9
+10     weekend_screentime 0.069927358       10
+11     weekday_screentime 0.069889352       11
+12 fmri_cort_subcort_cors 0.063850773       12
+13    private_instruction 0.054050497       13
+14         parent_thought 0.043251992       14
+15         fmri_cort_cors 0.040882414       15
+16          parent_anxdep 0.040648766       16
+17       headache_history 0.040265567       17
+18          parent_perstr 0.039215874       18
+19      parent_antisocial 0.038275871       19
+20         parent_depress 0.038094711       20
+21      parent_aggressive 0.035884445       21
+22            considerate 0.035052610       22
+23       parent_anxdisord 0.034747645       23
+24           family_outdo 0.032472213       24
+25           major_wm_ndi 0.031484982       25
+26             helps_hurt 0.031050319       26
+27     parent_hyperactive 0.030866031       27
+28        parent_avoidant 0.028372879       28
+29          exercise_time 0.028298248       29
+30       parent_withdrawn 0.028166332       30
+31          family_temper 0.027048041       31
+32     cortical_thickness 0.025519804       32
+33           family_fight 0.024800636       33
+34       parent_attention 0.024588368       34
+35        family_peaceful 0.023107261       35
+36           family_throw 0.023093326       36
+37       family_criticize 0.021713654       37
+38           family_angry 0.020785098       38
+39      pubertal_status_y 0.020067468       39
+40       parent_intrusive 0.019630108       40
+41                helpful 0.019391479       41
+42  same_sex_close_friend 0.018634682       42
+43               mtbi_age 0.015366885       43
+44    pericortical_wm_ndi 0.014752662       44
+45        school_programs 0.012770795       45
+46                    age 0.012249243       46
+47        same_sex_friend 0.009985895       47
+48             family_hit 0.009825276       48
+49            family_yell 0.009790276       49
+50         mtbi_mechanism 0.008265686       50
+51          mtbi_mem_daze 0.007403597       51
+52               mtbi_loc 0.007210643       52
+53         previous_mtbis 0.007052524       53
+54         opp_sex_friend 0.005411475       54
+55   opp_sex_close_friend 0.002462148       55
 
-## NMIs vs. p-values
+### p-values
 
 ```{r}
+
 pvals <- get_pvals(
-    mtbi_mc_d_esm,
+    mtbi_mc_e_esm,
     keep_summaries = FALSE
 )
 pvals <- data.frame(
@@ -656,318 +570,181 @@ pvals_order <- sort(
     index.return = TRUE
 )
 pvals <- pvals[pvals_order$ix, ]
-
-mtbi_mc_d_nmi_pval <- dplyr::full_join(mtbi_mc_d_nmis, pvals, by = "feature")
-
-var_metadata <- dl_variable_summary(
-    c(
-        all_dls$"mtbi_train_data_lists"$"imp_3",
-        all_dls$"mtbi_train_oom_lists"$"imp_3"
-    )
+pvals <- dplyr::filter(
+    pvals,
+    !grepl("^cbcl|^sds", feature)
 )
 
-mtbi_mc_d_nmi_pval <- dplyr::full_join(
-    mtbi_mc_d_nmi_pval,
-    var_metadata,
-    by = c("feature" = "name")
+write_csv(pvals, proc_path("mtbi_mc_e_pvals.csv", TRUE))
+
+mtbi_mc_e_pvals <- read_csv(proc_path("2024_08_08_mtbi_mc_e_pvals.csv"))
+
+data.frame(mtbi_mc_e_pvals)
+
+```
+                  feature neg_log_pval pval_rank
+1                     sex   10.0000000         1
+2        household_income   10.0000000         1
+3       pubertal_status_p   10.0000000         1
+4            brain_volume   10.0000000         1
+5             cortical_sa   10.0000000         1
+6      weekday_screentime   10.0000000         1
+7     non_school_programs   10.0000000         1
+8      programs_this_year   10.0000000         1
+9          parent_somatic   10.0000000         1
+10                   race    9.9851428        10
+11         parent_depress    7.5227388        11
+12      parent_aggressive    7.3540555        12
+13          parent_anxdep    7.3173966        13
+14         parent_thought    7.0034199        14
+15      parent_antisocial    6.9312020        15
+16    private_instruction    6.5096860        16
+17       parent_anxdisord    6.1157933        17
+18         fmri_cort_cors    6.0233908        18
+19 fmri_cort_subcort_cors    5.8557565        19
+20            considerate    5.2459699        20
+21           family_outdo    5.1282293        21
+22     parent_hyperactive    4.9567045        22
+23             helps_hurt    4.6600296        23
+24       parent_withdrawn    4.6593934        24
+25       parent_attention    4.4443911        25
+26           major_wm_ndi    4.2191702        26
+27        parent_avoidant    4.2128400        27
+28       headache_history    3.8034048        28
+29     weekend_screentime    3.7372043        29
+30     cortical_thickness    3.7210189        30
+31           family_fight    3.4858695        31
+32           family_angry    3.2580565        32
+33       family_criticize    3.2132658        33
+34          family_temper    3.2085406        34
+35          exercise_time    3.1548592        35
+36        family_peaceful    3.0518592        36
+37  same_sex_close_friend    3.0112434        37
+38                helpful    2.8425081        38
+39       parent_intrusive    2.8120690        39
+40           family_throw    2.6673169        40
+41          parent_perstr    2.1950143        41
+42    pericortical_wm_ndi    1.9417773        42
+43                    age    1.6206383        43
+44      pubertal_status_y    1.5321973        44
+45        school_programs    1.4410232        45
+46            family_yell    1.3552800        46
+47        same_sex_friend    1.0351215        47
+48         mtbi_mechanism    0.8948445        48
+49         previous_mtbis    0.8892980        49
+50               mtbi_loc    0.8849865        50
+51             family_hit    0.8523426        51
+52          mtbi_mem_daze    0.7441445        52
+53               mtbi_age    0.3763523        53
+54         opp_sex_friend    0.1345863        54
+55   opp_sex_close_friend    0.0505548        55
+
+### Correlation of NMI and p-value
+
+```{r}
+mtbi_mc_e_pvals$"pval_rank" <- rank(
+    -mtbi_mc_e_pvals$"neg_log_pval",
+    ties.method = "min"
 )
 
-colnames(mtbi_mc_d_nmi_pval) <- c(
-    "feature",
-    "nmi",
-    "neg_log_pval",
-    "type",
-    "domain"
+mtbi_mc_e_nmis$"nmi_rank" <- rank(
+    -mtbi_mc_e_nmis$"row_id_81",
+    ties.method = "min"
 )
 
-r2 <- function(df) {
-    df <- na.omit(df)
-    return(round(cor(df$"nmi", df$"neg_log_pval")^2, 3))
-}
-
-mtbi_mc_d_nmi_pval_r2 <- mtbi_mc_d_nmi_pval |>
-    dplyr::filter(neg_log_pval < 10) |>
-    dplyr::filter(domain != "B") |>
-    r2()
-
-no_diff <- data.frame(
-    vis_diff = "none",
-    feature = c(
-        "mtbi_mem_daze",
-        "mtbi_loc",
-        "previous_mtbis",
-        "cortical thickness",
-        "major_wm_ndi",
-        "pericortical_wm_ndi",
-        "fmri_cort_cors",
-        "opp_sex_close_friend",
-        "school_programs"
-    )
-)
-
-small_diff <- data.frame(
-    vis_diff = "small",
-    feature = c(
-        "mtbi_mechanism",
-        "age",
-        "mtbi_age",
-        "fmri_cort_subcort_cors",
-        "cortical_thickness",
-        "school_programs",
-        "headache_history",
-        "same_sex_friend",
-        "opp_sex_friend",
-        "exercise_time",
-        "helpful",
-        "family_yell",
-        "parent_intrusive",
-        "weekend_screentime"
-    )
-)
-
-big_diff <- data.frame(
-    vis_diff = "big",
-    feature = c(
-        "sex",
-        "household_income",
-        "race",
-        "pubertal_status",
-        "brain_volume",
-        "cortical_sa",
-        "same_sex_close_friend",
-        "weekday_screentime",
-        "non_school_programs",
-        "private_instruction",
-        "programs_this_year",
-        "considerate",
-        "helps_hurt",
-        "family_fight",
-        "family_angry",
-        "family_throw",
-        "family_temper",
-        "family_criticize",
-        "family_hit",
-        "family_peaceful",
-        "family_outdo",
-        "parent_perstr",
-        "parent_anxdep",
-        "parent_withdrawn",
-        "parent_somatic",
-        "parent_thought",
-        "parent_attention",
-        "parent_aggressive",
-        "parent_depress",
-        "parent_anxdisord",
-        "parent_avoidant",
-        "parent_antisocial",
-        "parent_hyperactive",
-        "cbcl_anxdep",
-        "cbcl_withdep",
-        "cbcl_somatic",
-        "cbcl_social",
-        "cbcl_thought",
-        "cbcl_attention",
-        "cbcl_rulebreak",
-        "cbcl_aggressive",
-        "sds_sleep"
-    )
-)
-
-vis_diff <- dplyr::bind_rows(
-    no_diff,
-    small_diff,
-    big_diff
-)
-
-mtbi_mc_d_nmi_pval_vis <- dplyr::full_join(
-    mtbi_mc_d_nmi_pval,
-    vis_diff,
+mtbi_mc_e_nmi_v_pval <- dplyr::full_join(
+    mtbi_mc_e_nmis,
+    mtbi_mc_e_pvals,
     by = "feature"
 )
 
-write_csv(
-    mtbi_mc_d_nmi_pval_vis,
-    proc_path("mtbi_mc_d_nmi_pval_vis.csv", TRUE)
+domain_df <- dl_variable_summary(all_dls$"mtbi_train_data_lists"$"imp_1") |>
+    dplyr::select(name, domain) |>
+    dplyr::rename("feature" = "name")
+
+mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval |>
+    dplyr::inner_join(domain_df, by = "feature")
+
+write_csv(mtbi_mc_e_nmi_v_pval, proc_path("mtbi_mc_e_nmi_v_pval.csv", TRUE))
+
+mtbi_mc_e_nmi_v_pval <- read_csv(
+    proc_path("2024_08_08_mtbi_mc_e_nmi_v_pval.csv")
 )
 
-```
-
-```{r}
-mtbi_mc_d_nmi_pval_vis <- read_csv(
-    proc_path("2024_05_31_mtbi_mc_d_nmi_pval_vis.csv")
+nmi_v_p_rho <- cor(
+    mtbi_mc_e_nmi_v_pval$"nmi_rank",
+    mtbi_mc_e_nmi_v_pval$"pval_rank",
+    method = "spearman"
 )
-```
 
-```{r}
-mtbi_mc_d_nmi_vs_pval_thresh <- mtbi_mc_d_nmi_pval_vis |>
-    dplyr::filter(neg_log_pval < 10) |>
-    dplyr::filter(domain != "B") |>
-    na.omit() |>
+nmi_v_pval_plot <- mtbi_mc_e_nmi_v_pval |>
     ggplot(
-        aes(
-            x = nmi,
-            y = neg_log_pval,
-            label = feature
+        aes(x = nmi_rank, y = pval_rank, label = feature, colour = domain)
+    ) +
+    geom_point(size = 2) + 
+    scale_colour_manual(
+        values = c(
+            "AS" = "#85929e",
+            "D" = "#bb8fce",
+            "N" = "#e59866",
+            "MH" = "#7fb3d5",
+            "P" = "#52be80"
         )
     ) +
-    labs(
-        x = "Normalized Mutual Information",
-        y = expression("-log"[10] * "(p)")
+    theme_bw() +
+    labs(x = "Rank by NMI", y = "Rank by p-value") +
+    ggrepel::geom_text_repel(
+        #vjust = 3,
+        #hjust = 1,
+        force = 1,
+        max.overlaps = 20,
+        size = 4
     ) +
-    geom_point(
-        aes(
-            colour = domain,
-            shape = type
-        ),
-        size = 2
-    ) +
-    geom_smooth(
-        aes(
-            x = nmi,
-            y = neg_log_pval
-        ),
-        colour = "gray",
-        alpha = 0.1,
-        method = "lm"
-    ) +
-    xlim(0, 0.08) +
     annotate(
         "text",
-        x = 0.02,
-        y = 7.5,
-        size = 6,
-        label = parse(text = paste0("R^2 == ", mtbi_mc_d_nmi_pval_r2))
-    ) +
-    theme_bw() +
-    theme(
-        text = element_text(size = 16)
-    ) +
-    scale_colour_manual(
-        values = c(
-            "AS" = "#85929e",
-            "D" = "#bb8fce",
-            "N" = "#e59866",
-            "MH" = "#7fb3d5",
-            "P" = "#52be80",
-            "S" = "#d98880",
-            "B" = "#ff3131"
-        )
-    ) +
-    ggrepel::geom_text_repel(
-        aes(
-            colour = domain
-        )
-    )
-mtbi_mc_d_nmi_vs_pval_thresh
+        x = 4,
+        y = 50,
+        size = 5,
+        label = paste("Spearman's ρ =", round(nmi_v_p_rho, 2)),
+        hjust = 0
+    ) + 
+    theme(text = element_text(size = 16))
+nmi_v_pval_plot
 
 ggsave(
-    fig_path("mtbi_mc_d_nmi_vs_pval_thresh.png", TRUE),
-    mtbi_mc_d_nmi_vs_pval_thresh,
-    width = 14,
-    height = 7,
-    dpi = 100
+    fig_path("nmi_v_pval_plot.png", TRUE),
+    nmi_v_pval_plot,
+    width = 12,
+    height = 12
+)
+```
+
+### Rankings
+
+```{r}
+mtbi_mc_e_nmi_v_pval$"joint_rank" <- rank(
+    mtbi_mc_e_nmi_v_pval$"nmi_rank" + mtbi_mc_e_nmi_v_pval$"pval_rank",
+    ties.method = "min"
 )
 
-mtbi_mc_d_nmi_vs_pval <- mtbi_mc_d_nmi_pval_vis |>
-    dplyr::filter(domain != "B") |>
-    na.omit() |>
-    ggplot(
-        aes(
-            x = nmi,
-            y = neg_log_pval,
-            colour = domain,
-            shape = type,
-            label = feature
-        )
-    ) +
-    labs(
-        x = "Normalized Mutual Information",
-        y = expression("-log"[10] * "(p)")
-    ) +
-    geom_point(
-        size = 2
-    ) +
-    ggrepel::geom_text_repel(
-        vjust = 2,
-        hjust = 1.2,
-        max.overlaps = 11,
-        size = 3
-    ) +
-    theme_bw() +
-    theme(
-        text = element_text(size = 12)
-    ) +
-    scale_colour_manual(
-        values = c(
-            "AS" = "#85929e",
-            "D" = "#bb8fce",
-            "N" = "#e59866",
-            "MH" = "#7fb3d5",
-            "P" = "#52be80",
-            "S" = "#d98880",
-            "B" = "#ff3131"
-        )
-    )
-mtbi_mc_d_nmi_vs_pval
+sort(mtbi_mc_e_nmi_v_pval$"joint_rank", index.return = TRUE)
 
-ggsave(
-    fig_path("mtbi_mc_d_nmi_vs_pval.png", TRUE),
-    mtbi_mc_d_nmi_vs_pval,
-    width = 10,
-    height = 10,
-    dpi = 100
+joint_order <- sort(
+    mtbi_mc_e_nmi_v_pval$"joint_rank",
+    decreasing = FALSE,
+    index.return = TRUE
 )
+mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval[joint_order$ix, ]
 
-mtbi_mc_d_nmi_pval_vis$"vis_diff" <- factor(
-    mtbi_mc_d_nmi_pval_vis$"vis_diff",
-    levels = c("none", "small", "big")
-)
+mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval |>
 
-mtbi_mc_d_nmi_vs_pval_vs_vis <- mtbi_mc_d_nmi_pval_vis |>
-    dplyr::filter(domain != "B") |>
-    na.omit() |>
-    ggplot(
-        aes(
-            x = nmi,
-            y = neg_log_pval,
-            colour = vis_diff,
-            label = feature
-        )
-    ) +
-    labs(
-        x = "Normalized Mutual Information",
-        y = expression("-log"[10] * "(p)"),
-        colour = "Perceived\nSeparation\n"
-    ) +
-    geom_point(
-        size = 2
-    ) +
-    ggrepel::geom_text_repel(
-        vjust = 2,
-        hjust = 1.2,
-        max.overlaps = 11,
-        size = 3
-    ) +
-    theme_bw() +
-    theme(
-        text = element_text(size = 12)
-    ) +
-    scale_colour_manual(
-        values = c(
-            "none" = "red",
-            "small" = "#c79c26",
-            "big" = "#41ad2f"
-        )
-    )
-mtbi_mc_d_nmi_vs_pval_vs_vis
+```
 
-ggsave(
-    fig_path("mtbi_mc_d_nmi_vs_pval_vs_vis.png", TRUE),
-    mtbi_mc_d_nmi_vs_pval_vs_vis,
-    width = 10,
-    height = 10,
-    dpi = 100
-)
+```{r}
+
+###############################################################################
+# CODE BELOW IS OLD
+###############################################################################
 
 ###############################################################################
 # Key variable identification
