@@ -30,7 +30,6 @@ uninjured_subjects <- read_csv(sub_path("2024_07_31_uninjured_subjects.csv"))
 ```{r}
 # CHECKMARK
 all_dls <- list.load(input_path("2024_07_31_all_dls.rds"))
-
 ```
 
 ## Generating custom distance measures
@@ -1258,27 +1257,11 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
 )
 
-my_clust_algs_list <- generate_clust_algs_list(
-    "three_cluster_spectral" = spectral_three,
-    disable_base = TRUE
-)
-
 mtbi_mc_e_lp_1 <- lp_solutions_matrix(
     mtbi_mc_e_esm,
     full_data_list_1,
-    distance_metrics_list = my_distance_metrics,
-    clust_algs_list = my_clust_algs_list
+    distance_metrics_list = my_distance_metrics
 )
-
-dplyr::filter(mtbi_mc_d_lp_1, group == "test")$"subjectkey"
-
-collapse_dl(train_data_list_m1)$"household_income"
-
-collapse_dl(test_data_list_m1)$"household_income"
-
-mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
-
-dplyr::filter(mtbi_mc_e_lp_1, group == "test")$"81"
 
 #
 mtbi_mc_e_lp_2 <- lp_solutions_matrix(
@@ -1306,24 +1289,28 @@ mtbi_mc_e_lp_5 <- lp_solutions_matrix(
 )
 
 # HERE I AM!
-
 colnames(mtbi_mc_e_lp_1) <- c("subjectkey", "group", "cluster")
 colnames(mtbi_mc_e_lp_2) <- c("subjectkey", "group", "cluster")
 colnames(mtbi_mc_e_lp_3) <- c("subjectkey", "group", "cluster")
 colnames(mtbi_mc_e_lp_4) <- c("subjectkey", "group", "cluster")
 colnames(mtbi_mc_e_lp_5) <- c("subjectkey", "group", "cluster")
 
-mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
-mtbi_mc_d_lp_2 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_2.csv"))
-mtbi_mc_d_lp_3 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_3.csv"))
-mtbi_mc_d_lp_4 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_4.csv"))
-mtbi_mc_d_lp_5 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_5.csv"))
+write_csv(mtbi_mc_e_lp_1, proc_path("mtbi_mc_e_lp_1.csv", TRUE))
+write_csv(mtbi_mc_e_lp_2, proc_path("mtbi_mc_e_lp_2.csv", TRUE))
+write_csv(mtbi_mc_e_lp_3, proc_path("mtbi_mc_e_lp_3.csv", TRUE))
+write_csv(mtbi_mc_e_lp_4, proc_path("mtbi_mc_e_lp_4.csv", TRUE))
+write_csv(mtbi_mc_e_lp_5, proc_path("mtbi_mc_e_lp_5.csv", TRUE))
+
+mtbi_mc_e_lp_1 <- read_csv(proc_path("2024_08_16_mtbi_mc_e_lp_1.csv"))
+mtbi_mc_e_lp_2 <- read_csv(proc_path("2024_08_16_mtbi_mc_e_lp_2.csv"))
+mtbi_mc_e_lp_3 <- read_csv(proc_path("2024_08_16_mtbi_mc_e_lp_3.csv"))
+mtbi_mc_e_lp_4 <- read_csv(proc_path("2024_08_16_mtbi_mc_e_lp_4.csv"))
+mtbi_mc_e_lp_5 <- read_csv(proc_path("2024_08_16_mtbi_mc_e_lp_5.csv"))
 ```
 
 How similar are the label propagated results across imputations?
 
 ```{r}
-
 lp1_vec <- dplyr::filter(mtbi_mc_e_lp_1, group == "test")$"cluster"
 lp2_vec <- dplyr::filter(mtbi_mc_e_lp_2, group == "test")$"cluster"
 lp3_vec <- dplyr::filter(mtbi_mc_e_lp_3, group == "test")$"cluster"
@@ -1365,91 +1352,93 @@ save_heatmap(
     res = 100
 )
 
-(lp_ari_mat)
+min(lp_ari_mat)
 
 lp_ari_mat == min(lp_ari_mat)
 
 sum(lp_vecs[[1]] != lp_vecs[[2]])
 
-sum(lp_vecs[[1]] != lp_vecs[[2]]) / length(lp_vecs[[2]])
-
-lp1_vec
-
 ```
 
 The label propagated results were extremely similar across imputations.
-The most dissimilar results differed by assignment of 1 (out of 85) children.
+The most dissimilar results differed by assignment of 4 (out of 85) children.
 
 The "full" suffix below refers to the original + label propagated subjects, together
 
 ```{r}
-mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
+mtbi_mc_e_lp_1 <- read_csv(proc_path("2024_08_16_mtbi_mc_e_lp_1.csv"))
 
-
-mtbi_mc_d_full <- mtbi_mc_d_lp_1 |>
+mtbi_mc_e_full <- mtbi_mc_e_lp_1 |>
     dplyr::select(-group)
 
-mtbi_mc_d_lp_only <- mtbi_mc_d_lp_1 |>
+mtbi_mc_e_lp_only <- mtbi_mc_e_lp_1 |>
     dplyr::filter(group == "test") |>
     dplyr::select(-group)
 
-write_csv(mtbi_mc_d_full, proc_path("mtbi_mc_d_full.csv", TRUE))
-write_csv(mtbi_mc_d_lp_only, proc_path("mtbi_mc_d_lp_only.csv", TRUE))
+write_csv(mtbi_mc_e_full, proc_path("mtbi_mc_e_full.csv", TRUE))
+write_csv(mtbi_mc_e_lp_only, proc_path("mtbi_mc_e_lp_only.csv", TRUE))
 
-mtbi_mc_d_full <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full.csv"))
-mtbi_mc_d_lp_only <- read_csv(proc_path("2024_07_22_mtbi_mc_d_lp_only.csv"))
+mtbi_mc_e_full <- read_csv(proc_path("2024_07_22_mtbi_mc_e_full.csv"))
+mtbi_mc_e_lp_only <- read_csv(proc_path("2024_07_22_mtbi_mc_e_lp_only.csv"))
 
-train_oom_list_m3 <- all_dls$"mtbi_train_oom_lists"$"imp_3"
+train_oom_list_m1 <- all_dls$"mtbi_train_oom_lists"$"imp_1"
 test_oom_list_m1 <- all_dls$"mtbi_test_oom_lists"$"imp_1"
 
-mtbi_mc_d_data_list <- merge_data_lists(
-    train_data_list_m3,
+mtbi_mc_e_data_list <- merge_data_lists(
+    train_data_list_m1,
     test_data_list_m1
 )
 
-mtbi_mc_d_oom_list <- merge_data_lists(
-    train_oom_list_m3,
+mtbi_mc_e_oom_list <- merge_data_lists(
+    train_oom_list_m1,
     test_oom_list_m1
 )
 
 list.save(
-    mtbi_mc_d_data_list, 
-    proc_path("mtbi_mc_d_full_data_list.rds", TRUE)
+    mtbi_mc_e_data_list, 
+    proc_path("mtbi_mc_e_full_data_list.rds", TRUE)
 )
 list.save(
-    mtbi_mc_d_oom_list, 
-    proc_path("mtbi_mc_d_full_oom_list.rds", TRUE)
+    mtbi_mc_e_oom_list, 
+    proc_path("mtbi_mc_e_full_oom_list.rds", TRUE)
 )
 
 
-mtbi_mc_d_full_data_list <- list.load(
+mtbi_mc_e_full_data_list <- list.load(
     proc_path(
-        "2024_07_22_mtbi_mc_d_full_data_list.rds"
+        "2024_08_16_mtbi_mc_e_full_data_list.rds"
     )
 )
-mtbi_mc_d_full_oom_list <- list.load(
+mtbi_mc_e_full_oom_list <- list.load(
     proc_path(
-        "2024_07_22_mtbi_mc_d_full_oom_list.rds"
+        "2024_08_16_mtbi_mc_e_full_oom_list.rds"
     )
 )
 
 
-mtbi_mc_d_full_plot_list <- auto_plot(
-    cluster_df = mtbi_mc_d_full,
-    data_list = mtbi_mc_d_full_data_list,
-    target_list = mtbi_mc_d_full_oom_list,
-    save = fig_path("mtbi_mc_d_full", TRUE)
+mtbi_mc_e_full_plot_list <- auto_plot(
+    cluster_df = mtbi_mc_e_full,
+    data_list = mtbi_mc_e_full_data_list,
+    target_list = mtbi_mc_e_full_oom_list
 )
 
-mtbi_mc_d_lp_only_plot_list <- auto_plot(
-    cluster_df = mtbi_mc_d_lp_only,
+
+mtbi_mc_e_full_plot_list <- auto_plot(
+    cluster_df = mtbi_mc_e_full,
+    data_list = mtbi_mc_e_full_data_list,
+    target_list = mtbi_mc_e_full_oom_list,
+    save = fig_path("mtbi_mc_e_full", TRUE)
+)
+
+mtbi_mc_e_lp_only_plot_list <- auto_plot(
+    cluster_df = mtbi_mc_e_lp_only,
     data_list = test_data_list_m1,
-    target_list = test_oom_list_m1,
-    save = fig_path("mtbi_mc_d_lp_only", TRUE)
+    target_list = test_oom_list_m1
 )
 
-mtbi_mc_d_full_wrap <- wrap_plots(mtbi_mc_d_full_plot_list)
-mtbi_mc_d_lp_only_wrap <- wrap_plots(mtbi_mc_d_lp_only_plot_list)
+mtbi_mc_e_full_wrap <- wrap_plots(mtbi_mc_e_full_plot_list)
+
+mtbi_mc_e_lp_only_wrap <- wrap_plots(mtbi_mc_e_lp_only_plot_list)
 
 ggsave(
     fig_path("mtbi_mc_d_full_wrap.png", TRUE),
@@ -1460,8 +1449,8 @@ ggsave(
 )
 
 ggsave(
-    fig_path("mtbi_mc_d_lp_only_wrap.png", TRUE),
-    mtbi_mc_d_lp_only_wrap,
+    fig_path("mtbi_mc_e_lp_only_wrap.png", TRUE),
+    mtbi_mc_e_lp_only_wrap,
     width = 35,
     height = 30,
     dpi = 50
