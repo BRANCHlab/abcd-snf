@@ -13,6 +13,7 @@ library(progressr)
 library(rlist)
 library(ggplot2)
 library(patchwork)
+library(xtable)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -27,7 +28,9 @@ uninjured_subjects <- read_csv(sub_path("2024_07_31_uninjured_subjects.csv"))
 ## Importing data
 
 ```{r}
+# CHECKMARK
 all_dls <- list.load(input_path("2024_07_31_all_dls.rds"))
+
 ```
 
 ## Generating custom distance measures
@@ -122,6 +125,7 @@ write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ## Re-importing data
 
 ```{r}
+# CHECKMARK
 mtbi_sm <- read_csv(proc_path("2024_07_31_mtbi_sm.csv"))
 
 mtbi_ari <- as.matrix(read_csv(proc_path("2024_07_31_mtbi_ari.csv")))
@@ -253,6 +257,7 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 ```
 
 ```{r}
+# CHECKMARK
 mtbi_esm <- read_csv(proc_path("2024_07_31_mtbi_esm.csv"))
 ```
 
@@ -281,6 +286,7 @@ write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 ```
 
 ```{r}
+# CHECKMARK
 mtbi_split_vec <- read_csv(proc_path("2024_07_31_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
@@ -403,8 +409,11 @@ write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
 ```
 
 ```{r}
+# CHECKMARK
 mtbi_rep_solutions <- read_csv(proc_path("2024_08_08_mtbi_rep_solutions.csv"))
+```
 
+```{r}
 mtbi_manhattan <- mc_manhattan_plot(
     mtbi_rep_solutions,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_1",
@@ -434,9 +443,14 @@ mtbi_mc_e_esm <- mtbi_rep_solutions |>
     dplyr::filter(label == "E")
 
 write_csv(mtbi_mc_e_esm, proc_path("mtbi_mc_e_esm.csv", TRUE))
+```
 
+```{r}
+# CHECKMARK
 mtbi_mc_e_esm <- read_csv(proc_path("2024_08_08_mtbi_mc_e_esm.csv"))
+```
 
+```{r}
 mtbi_mc_e_esm$"imputation"
 
 # Feature plot generation
@@ -486,10 +500,10 @@ nmis <- nmis[nmi_order$ix, ]
 nmis
 
 write_csv(nmis, proc_path("mtbi_mc_e_nmis.csv", TRUE))
+
 mtbi_mc_e_nmis <- read_csv(proc_path("2024_08_08_mtbi_mc_e_nmis.csv"))
 
 data.frame(mtbi_mc_e_nmis)
-
 ```
 
 NMI order:
@@ -554,7 +568,6 @@ NMI order:
 ### p-values
 
 ```{r}
-
 pvals <- get_pvals(
     mtbi_mc_e_esm,
     keep_summaries = FALSE
@@ -580,7 +593,6 @@ write_csv(pvals, proc_path("mtbi_mc_e_pvals.csv", TRUE))
 mtbi_mc_e_pvals <- read_csv(proc_path("2024_08_08_mtbi_mc_e_pvals.csv"))
 
 data.frame(mtbi_mc_e_pvals)
-
 ```
                   feature neg_log_pval pval_rank
 1                     sex   10.0000000         1
@@ -666,11 +678,16 @@ mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval |>
     dplyr::inner_join(domain_df, by = "feature")
 
 write_csv(mtbi_mc_e_nmi_v_pval, proc_path("mtbi_mc_e_nmi_v_pval.csv", TRUE))
+```
 
+```{r}
+# CHECKMARK
 mtbi_mc_e_nmi_v_pval <- read_csv(
     proc_path("2024_08_08_mtbi_mc_e_nmi_v_pval.csv")
 )
+```
 
+```{r}
 nmi_v_p_rho <- cor(
     mtbi_mc_e_nmi_v_pval$"nmi_rank",
     mtbi_mc_e_nmi_v_pval$"pval_rank",
@@ -719,7 +736,7 @@ ggsave(
 )
 ```
 
-### Rankings
+### Joint rankings
 
 ```{r}
 mtbi_mc_e_nmi_v_pval$"joint_rank" <- rank(
@@ -734,8 +751,6 @@ joint_order <- sort(
 )
 mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval[joint_order$ix, ]
 
-data.frame(mtbi_mc_e_nmi_v_pval_rank)
-
 mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
     dplyr::select("feature", dplyr::contains("rank"))
 
@@ -743,11 +758,25 @@ write_csv(
     mtbi_mc_e_nmi_v_pval_rank,
     proc_path("mtbi_mc_e_nmi_v_pval_rank.csv", TRUE)
 )
+```
 
+```{r}
+# CHECKMARK
 mtbi_mc_e_nmi_v_pval_rank <- read_csv(
     proc_path("2024_08_09_mtbi_mc_e_nmi_v_pval_rank.csv")
 )
+```
 
+```{r}
+data.frame(mtbi_mc_e_nmi_v_pval_rank)
+
+# Latex table
+xtable(data.frame(mtbi_mc_e_nmi_v_pval_rank))
+```
+
+### Visualizing top 10 features
+
+```{r}
 sorted_features <- mtbi_mc_e_nmi_v_pval_rank$"feature"
 
 names(plot_list)
@@ -772,7 +801,78 @@ saveRDS(
 mtbi_mc_e_ranked_all_plots <- readRDS(
     fig_path("2024_08_09_mtbi_mc_e_ranked_all_plots.rds")
 )
+
+###############################################################################
+# Building the top 10 plot list
+###############################################################################
+
+mc_e_top_ten_pl <- ranked_plot_list[1:10]
+
+names(mc_e_top_ten_pl) <- sorted_features[1:10]
+
+names(mc_e_top_ten_pl)
+
+#
+mc_e_top_ten_pl$"sex" <- mc_e_top_ten_pl$"sex" +
+    labs(fill = "Sex") +
+    scale_fill_discrete(labels = c("F", "M"))
+#
+mc_e_top_ten_pl$"brain_volume" <- mc_e_top_ten_pl$"brain_volume" +
+    labs(y = expression(paste("Brain Volume ", (mm^3))))
+#
+mc_e_top_ten_pl$"cortical_sa" <- mc_e_top_ten_pl$"cortical_sa" +
+    labs(y = expression(paste("Cortical Area ", (mm^2))))
+#
+mc_e_top_ten_pl$"household_income" <- mc_e_top_ten_pl$"household_income" +
+    labs(y = "Household Income")
+#
+mc_e_top_ten_pl$"pubertal_status_p" <- mc_e_top_ten_pl$"pubertal_status_p" +
+    labs(y = "Pubertal Status - P")
+#
+mc_e_top_ten_pl$"pubertal_status_p" <- mc_e_top_ten_pl$"pubertal_status_p" +
+    labs(y = "Pubertal Status - P")
+#
+mc_e_top_ten_pl$"programs_this_year" <- mc_e_top_ten_pl$"programs_this_year" +
+    labs(y = "Total Activities this Year")
+#
+mc_e_top_ten_pl$"non_school_programs" <- mc_e_top_ten_pl$"non_school_programs" +
+    labs(y = "Lifetime Extracurriculars")
+#
+mc_e_top_ten_pl$"parent_somatic" <- mc_e_top_ten_pl$"parent_somatic" +
+    labs(y = "Parent Somatic Problems")
+#
+mc_e_top_ten_pl$"weekday_screentime" <- mc_e_top_ten_pl$"weekday_screentime" +
+    labs(y = "Weekday Screentime")
+#
+mc_e_top_ten_pl$"race" <- mc_e_top_ten_pl$"race" +
+    labs(fill = "Race") +
+    scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
+#
+mc_e_top_ten_p <- wrap_plots(
+    mc_e_top_ten_pl,
+    ncol = 2
+) & labs(x = "Cluster") & theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
+#
+ggsave(
+    fig_path("mtbi_mc_e_ranked_all_plots_ten.png", TRUE),
+    mc_e_top_ten_p,
+    width = 15,
+    height = 20,
+    dpi = 150
+)
+
+# PDF equivalent
+pdf(
+    fig_path("mtbi_mc_e_ranked_all_plots_ten.pdf", TRUE),
+    width = 15,
+    height = 20
+)
+print(mc_e_top_ten_p)
+dev.off()
+
 ```
+
+just show top 10 clusters by similarity
 
                   feature nmi_rank pval_rank joint_rank
 1                     sex        1         1          1
@@ -831,9 +931,11 @@ mtbi_mc_e_ranked_all_plots <- readRDS(
 54         opp_sex_friend       54        54         54
 55   opp_sex_close_friend       55        55         55
 
-### Description of feature topologies
+### Detailed cluster topologies
 
-```{r}
+Can come back to this later.
+
+```{r}# {{{
 
 mtbi_mc_e_esm_plot_df <- auto_plot(
     solutions_matrix_row = mtbi_mc_e_esm,
@@ -842,22 +944,191 @@ mtbi_mc_e_esm_plot_df <- auto_plot(
     return_plots = FALSE
 )
 
-mtbi_mc_e_esm_plot_df |> head()
+mtbi_mc_e_ranked_all_plots[[2]]
 
-mtbi_mc_e_esm_plot_df$"cluster"
+outcome_plot_list <- auto_plot(
+    solutions_matrix_row = mtbi_mc_e_esm,
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_1"
+)
 
-sf <- sorted_features[1:5]
+names(outcome_plot_list)
 
-metadata_df <- dl_variable_summary(all_dls$"mtbi_train_data_lists"$"imp_1")
-rownames(metadata_df) <- NULL
-
-#for (ft in sorted_features) {
-for (ft in sf) {
+clean_names <- c(
+    "CBCL\nAnxious-Depressed",
+    "CBCL\nWithdrawn-Depressed",
+    "CBCL\nSomatic Problems",
+    "CBCL\nSocial Problems",
+    "CBCL\nThought Problems",
+    "CBCL\nAttention Problems",
+    "CBCL\nRule-breaking Problems",
+    "CBCL\nAggression Problems",
+    "SDS Total\nSleeping Problems"
+)
+for (i in seq_along(outcome_plot_list)) {
+    outcome_plot_list[[i]] <- outcome_plot_list[[i]] +
+        labs(y = clean_names[[i]], x = "Cluster")
 }
 
-m
+outcome_plot_wrap <- wrap_plots(outcome_plot_list) &
+    theme(plot.margin = unit(c(0, 1, 1, 0), "cm"))
 
-tibble::tibble(mtbi_mc_e_esm_plot_df)
+ggsave(
+    fig_path("mtbi_mc_e_outcome_plot_wrap.png", TRUE),
+    outcome_plot_wrap,
+    width = 14,
+    height = 14,
+    dpi = 150
+)
+
+proptable <- function(df, ft) {
+    tab <- prop.table(
+        table(df[, ft], df$"cluster"),
+        margin = 2
+    ) * 100
+    return(tab)
+}
+
+proptable(mtbi_mc_e_esm_plot_df, "sex")
+
+proptable(mtbi_mc_e_esm_plot_df, "sex")
+
+tstat <- function(d, n1, n2) {
+    t <- d * sqrt((n1 * n2) / (n1 + n2))
+    return(t)
+}
+pooled_sd <- function(n1, s1, n2, s2) {
+    numerator <- ((n1 - 1) * (s1^2)) + ((n2 - 1) * (s2^2))
+    denominator <- n1 + n2 - 2
+    s <- sqrt(numerator / denominator)
+    return(s)
+}
+cohens_d <- function(mean1, mean2, pooled_sd) {
+    d <- (mean1 - mean2) / pooled_sd
+    return(d)
+}
+
+calc_es <- function(x1, x2) {
+    n1 <- length(x1)
+    n2 <- length(x2)
+    s1 <- sd(x1)
+    s2 <- sd(x2)
+    s <- pooled_sd(n1, s1, n2, s2)
+    mean1 <- mean(x1)
+    mean2 <- mean(x2)
+    d <- cohens_d(mean1, mean2, s)
+    d_full <- des(d, n1, n2, verbose = FALSE)
+    return(
+        list(
+            "d" = d_full$"d",
+            
+        )
+    )
+}
+
+mc_e_c1 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 1)
+mc_e_c2 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 2)
+mc_e_c3 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 3)
+
+n1 <- nrow(mc_e_c1)
+n2 <- nrow(mc_e_c2)
+n3 <- nrow(mc_e_c3)
+
+d <- calc_es(
+    mc_e_c1$"brain_volume",
+    mc_e_c2$"brain_volume"
+)
+
+d
+
+z2 <- des(d, n1, n2, verbose = FALSE)
+
+z2
+
+library(compute.es)
+
+table(mc_e_c1$"sex")
+table(mc_e_c3$"sex")
+
+
+
+
+z <- propes(
+    0.1214953,
+    0.8225806,
+    nrow(mc_e_c1),
+    nrow(mc_e_c3)
+)
+
+z$"OR"
+
+es_bound(d, nrow(mc_e_c1), nrow(mc_e_c2))
+
+
+```
+
+
+sex:  Cluster 1 and 2 were primarily male (87.9% and 83.9% male respectively), while cluster 3 was primarily female (82.3%). 
+
+
+brain_volume
+cortical_sa
+household_income
+pubertal_status_p
+programs_this_year
+non_school_programs
+parent_somatic
+weekday_screentime
+race
+parent_thought
+private_instruction
+parent_anxdep
+fmri_cort_subcort_cors
+parent_depress
+fmri_cort_cors
+parent_aggressive
+parent_antisocial
+weekend_screentime
+parent_anxdisord
+considerate
+headache_history
+family_outdo
+helps_hurt
+parent_hyperactive
+major_wm_ndi
+parent_withdrawn
+parent_avoidant
+parent_perstr
+parent_attention
+cortical_thickness
+exercise_time
+family_fight
+family_temper
+family_criticize
+family_angry
+family_peaceful
+family_throw
+parent_intrusive
+helpful
+same_sex_close_friend
+pubertal_status_y
+pericortical_wm_ndi
+age
+school_programs
+same_sex_friend
+family_yell
+mtbi_age
+mtbi_mechanism
+family_hit
+mtbi_loc
+previous_mtbis
+mtbi_mem_daze
+opp_sex_friend
+opp_sex_close_friend
+
+
+```{r}
+
+
 
 binary_or <- function(df, feature, ca, cb) {
     ca_values <- df[df$"cluster" == ca, feature]
@@ -942,7 +1213,6 @@ odds_ratio <- function(de, he, dn, hn) {
 
 
 
-
 ```
 
 ordinal variable -> cohen's d
@@ -951,19 +1221,18 @@ discrete variable -> cohen's d
 categorical variable -> odd's ratio -> cohen's d
 binary variable -> odd's ratio -> cohen's d
 
-log odds * sqrt(3)/pi
-
-
-
+log odds * sqrt(3)/pi}}}
 
 # Label propagation
 
-This top solution specifically came from the third imputed dataset, so that's what we'll label propagate off of.
+This top solution specifically came from the first imputed dataset, so that's what we'll label propagate off of.
 
 ```{r}
+mtbi_mc_e_esm$"imputation"
+
 all_dls |> names()
 
-train_data_list_m3 <- all_dls$"mtbi_train_data_lists"$"imp_3"
+train_data_list_m1 <- all_dls$"mtbi_train_data_lists"$"imp_1"
 
 test_data_list_m1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
 test_data_list_m2 <- all_dls$"mtbi_test_data_lists"$"imp_2"
@@ -971,11 +1240,11 @@ test_data_list_m3 <- all_dls$"mtbi_test_data_lists"$"imp_3"
 test_data_list_m4 <- all_dls$"mtbi_test_data_lists"$"imp_4"
 test_data_list_m5 <- all_dls$"mtbi_test_data_lists"$"imp_5"
 
-full_data_list_1 <- merge_data_lists(train_data_list_m3, test_data_list_m1)
-full_data_list_2 <- merge_data_lists(train_data_list_m3, test_data_list_m2)
-full_data_list_3 <- merge_data_lists(train_data_list_m3, test_data_list_m3)
-full_data_list_4 <- merge_data_lists(train_data_list_m3, test_data_list_m4)
-full_data_list_5 <- merge_data_lists(train_data_list_m3, test_data_list_m5)
+full_data_list_1 <- merge_data_lists(train_data_list_m1, test_data_list_m1)
+full_data_list_2 <- merge_data_lists(train_data_list_m1, test_data_list_m2)
+full_data_list_3 <- merge_data_lists(train_data_list_m1, test_data_list_m3)
+full_data_list_4 <- merge_data_lists(train_data_list_m1, test_data_list_m4)
+full_data_list_5 <- merge_data_lists(train_data_list_m1, test_data_list_m5)
 
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
@@ -989,49 +1258,60 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
 )
 
-mtbi_mc_d_esm
-
-mtbi_mc_d_lp_1 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    full_data_list_1,
-    distance_metrics_list = my_distance_metrics
+my_clust_algs_list <- generate_clust_algs_list(
+    "three_cluster_spectral" = spectral_three,
+    disable_base = TRUE
 )
 
-mtbi_mc_d_lp_2 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
+mtbi_mc_e_lp_1 <- lp_solutions_matrix(
+    mtbi_mc_e_esm,
+    full_data_list_1,
+    distance_metrics_list = my_distance_metrics,
+    clust_algs_list = my_clust_algs_list
+)
+
+dplyr::filter(mtbi_mc_d_lp_1, group == "test")$"subjectkey"
+
+collapse_dl(train_data_list_m1)$"household_income"
+
+collapse_dl(test_data_list_m1)$"household_income"
+
+mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
+
+dplyr::filter(mtbi_mc_e_lp_1, group == "test")$"81"
+
+#
+mtbi_mc_e_lp_2 <- lp_solutions_matrix(
+    mtbi_mc_e_esm,
     full_data_list_2,
     distance_metrics_list = my_distance_metrics
 )
-
-mtbi_mc_d_lp_3 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
+#
+mtbi_mc_e_lp_3 <- lp_solutions_matrix(
+    mtbi_mc_e_esm,
     full_data_list_3,
     distance_metrics_list = my_distance_metrics
 )
-
-mtbi_mc_d_lp_4 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
+#
+mtbi_mc_e_lp_4 <- lp_solutions_matrix(
+    mtbi_mc_e_esm,
     full_data_list_4,
     distance_metrics_list = my_distance_metrics
 )
-
-mtbi_mc_d_lp_5 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
+#
+mtbi_mc_e_lp_5 <- lp_solutions_matrix(
+    mtbi_mc_e_esm,
     full_data_list_5,
     distance_metrics_list = my_distance_metrics
 )
 
-colnames(mtbi_mc_d_lp_1) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_2) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_3) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_4) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_5) <- c("subjectkey", "group", "cluster")
+# HERE I AM!
 
-write_csv(mtbi_mc_d_lp_1, proc_path("mtbi_mc_d_lp_1.csv", TRUE))
-write_csv(mtbi_mc_d_lp_2, proc_path("mtbi_mc_d_lp_2.csv", TRUE))
-write_csv(mtbi_mc_d_lp_3, proc_path("mtbi_mc_d_lp_3.csv", TRUE))
-write_csv(mtbi_mc_d_lp_4, proc_path("mtbi_mc_d_lp_4.csv", TRUE))
-write_csv(mtbi_mc_d_lp_5, proc_path("mtbi_mc_d_lp_5.csv", TRUE))
+colnames(mtbi_mc_e_lp_1) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_e_lp_2) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_e_lp_3) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_e_lp_4) <- c("subjectkey", "group", "cluster")
+colnames(mtbi_mc_e_lp_5) <- c("subjectkey", "group", "cluster")
 
 mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_1.csv"))
 mtbi_mc_d_lp_2 <- read_csv(proc_path("2024_07_21_mtbi_mc_d_lp_2.csv"))
@@ -1044,11 +1324,11 @@ How similar are the label propagated results across imputations?
 
 ```{r}
 
-lp1_vec <- dplyr::filter(mtbi_mc_d_lp_1, group == "test")$"cluster"
-lp2_vec <- dplyr::filter(mtbi_mc_d_lp_2, group == "test")$"cluster"
-lp3_vec <- dplyr::filter(mtbi_mc_d_lp_3, group == "test")$"cluster"
-lp4_vec <- dplyr::filter(mtbi_mc_d_lp_4, group == "test")$"cluster"
-lp5_vec <- dplyr::filter(mtbi_mc_d_lp_5, group == "test")$"cluster"
+lp1_vec <- dplyr::filter(mtbi_mc_e_lp_1, group == "test")$"cluster"
+lp2_vec <- dplyr::filter(mtbi_mc_e_lp_2, group == "test")$"cluster"
+lp3_vec <- dplyr::filter(mtbi_mc_e_lp_3, group == "test")$"cluster"
+lp4_vec <- dplyr::filter(mtbi_mc_e_lp_4, group == "test")$"cluster"
+lp5_vec <- dplyr::filter(mtbi_mc_e_lp_5, group == "test")$"cluster"
 
 lp_vecs <- list(
     lp1_vec,
@@ -1085,15 +1365,20 @@ save_heatmap(
     res = 100
 )
 
-min(lp_ari_mat)
+(lp_ari_mat)
 
 lp_ari_mat == min(lp_ari_mat)
 
-sum(lp_vecs[[3]] != lp_vecs[[5]]) / length(lp_vecs[[3]])
+sum(lp_vecs[[1]] != lp_vecs[[2]])
+
+sum(lp_vecs[[1]] != lp_vecs[[2]]) / length(lp_vecs[[2]])
+
+lp1_vec
+
 ```
 
 The label propagated results were extremely similar across imputations.
-The most dissimilar results differed by assignment of 4 (out of 85) children.
+The most dissimilar results differed by assignment of 1 (out of 85) children.
 
 The "full" suffix below refers to the original + label propagated subjects, together
 

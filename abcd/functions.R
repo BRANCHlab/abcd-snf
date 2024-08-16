@@ -252,8 +252,9 @@ es_bound <- function(d, n1, n2) {
         t = t,
         n.1 = n1,
         n.2 = n2,
-        verbose = FALSE
+        verbose = TRUE
     )
+    return(es_data)
     return(
         list(
             "lower" = es_data$"l.d",
