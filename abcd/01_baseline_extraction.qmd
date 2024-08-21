@@ -16,6 +16,8 @@ library(dplyr)
 library(here)
 library(abcdutils)
 
+library(visdat)
+
 core_path <- path_maker(here(paste0("data/abcd/core")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
@@ -39,8 +41,6 @@ ph_y_pds <- import("physical-health/ph_y_pds.csv")
 ph_p_pds <- import("physical-health/ph_p_pds.csv")
 # Parent report of gender identity
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
-# Youth report of gender identity
-gish_y_gi <- import("gender-identity-sexual-health/gish_y_gi.csv")
 # Demographic data
 abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
 # Medical history
@@ -140,8 +140,8 @@ write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
 # Note that the longitudinal subjects have not been filtered in any way based on
 #  whether or not they also had an mTBI at baseline or another timepoint
-mtbi_subjects <- read_subjects(sub_path("2024_07_31_mtbi_subjects.csv"))
-uninjured_subjects <- read_subjects(sub_path("2024_07_31_uninjured_subjects.csv"))
+mtbi_subjects <- read_subjects(sub_path("2024_08_17_mtbi_subjects.csv"))
+uninjured_subjects <- read_subjects(sub_path("2024_08_17_uninjured_subjects.csv"))
 
 length(mtbi_subjects)
 length(uninjured_subjects)
@@ -368,29 +368,59 @@ write_csv(d_race_uninj, input_path("d_race_uninj.csv", TRUE))
 
 #### Pubertal status
 
+We take both reports as they aren't super correlated
+
 ```{r}
-d_pubertal_status_mtbi <- get_pubertal_status(
+d_pubertal_status_p_mtbi <- get_pubertal_status_p(
     ph_p_pds,
+    mtbi_subjects,
+    max_value = 3,
+    t = 0
+)
+tibble(d_pubertal_status_p_mtbi)
+
+d_pubertal_status_y_mtbi <- get_pubertal_status_y(
     ph_y_pds,
     mtbi_subjects,
     max_value = 3,
-    t = 0,
-    format = "split"
+    t = 0
 )
-tibble(d_pubertal_status_mtbi)
+tibble(d_pubertal_status_y_mtbi)
+
+d_pubertal_status_mtbi <- dplyr::inner_join(
+    d_pubertal_status_p_mtbi,
+    d_pubertal_status_y_mtbi
+)
+
+# Add this in later?
+#library(ComplexUpset)
+#z <- dplyr::inner_join(d_pubertal_status_p_mtbi, d_pubertal_status_y_mtbi) |>
+#    na.omit()
 
 write_csv(
     d_pubertal_status_mtbi,
     input_path("d_pubertal_status_mtbi.csv", TRUE)
 )
 
-d_pubertal_status_uninj <- get_pubertal_status(
+d_pubertal_status_p_uninj <- get_pubertal_status_p(
     ph_p_pds,
+    uninjured_subjects,
+    max_value = 3,
+    t = 0
+)
+tibble(d_pubertal_status_p_uninj)
+
+d_pubertal_status_y_uninj <- get_pubertal_status_y(
     ph_y_pds,
     uninjured_subjects,
     max_value = 3,
-    t = 0,
-    format = "split"
+    t = 0
+)
+tibble(d_pubertal_status_y_uninj)
+
+d_pubertal_status_uninj <- dplyr::inner_join(
+    d_pubertal_status_p_uninj,
+    d_pubertal_status_y_uninj
 )
 tibble(d_pubertal_status_uninj)
 
@@ -767,25 +797,50 @@ write_csv(
 #### Prosocial behaviour
 
 ```{r}
-p_prosocial_mtbi <- get_prosocial_behaviour(
+p_prosocial_p_mtbi <- get_prosocial_behaviour_p(
     ce_p_psb,
-    ce_y_psb,
     mtbi_subjects,
     no_zero = TRUE,
     t = 0
 )
 tibble(p_prosocial_mtbi)
 
+ p_prosocial_y_mtbi <- get_prosocial_behaviour_y(
+    ce_y_psb,
+    mtbi_subjects,
+    no_zero = TRUE,
+    t = 0
+)
+tibble(p_prosocial_y_mtbi)
+
+p_prosocial_mtbi <- dplyr::inner_join(
+    p_prosocial_y_mtbi,
+    p_prosocial_p_mtbi
+) 
+
 write_csv(
     p_prosocial_mtbi, input_path("p_prosocial_mtbi.csv", date = TRUE)
 )
 
-p_prosocial_uninj <- get_prosocial_behaviour(
+p_prosocial_p_uninj <- get_prosocial_behaviour_p(
     ce_p_psb,
+    uninjured_subjects,
+    no_zero = TRUE,
+    t = 0
+)
+tibble(p_prosocial_p_uninj)
+
+p_prosocial_y_uninj <- get_prosocial_behaviour_y(
     ce_y_psb,
     uninjured_subjects,
     no_zero = TRUE,
     t = 0
+)
+tibble(p_prosocial_y_uninj)
+
+p_prosocial_uninj <- dplyr::inner_join(
+    p_prosocial_p_uninj,
+    p_prosocial_y_uninj
 )
 tibble(p_prosocial_uninj)
 
@@ -795,6 +850,8 @@ write_csv(
 ```
 
 #### Family function
+
+Another feature where we take parent and youth reports on the basis of them not being very similar.
 
 ```{r}
 p_fam_fn_mtbi <- get_family_function(
