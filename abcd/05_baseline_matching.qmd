@@ -16,51 +16,114 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subjects <- read_csv(sub_path("2024_04_17_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_04_17_uninjured_subjects.csv"))
+mtbi_subjects <- read_csv(sub_path("2024_08_17_mtbi_subjects.csv"))
+uninjured_subjects <- read_csv(sub_path("2024_08_17_uninjured_subjects.csv"))
 ```
 
 ## Importing data
 
 ```{r}
-all_dls <- list.load(input_path("2024_04_19_all_dls.rds"))
+all_dls <- list.load(input_path("2024_08_17_all_dls.rds"))
+
+mtbi_full_data_list_1 <- list.load(input_path("2024_08_22_mtbi_full_data_list_1.rds"))
+mtbi_full_oom_list_1 <- list.load(input_path("2024_08_22_mtbi_full_oom_list_1.rds"))
+
+uninj_dl_imp_1 <- all_dls$"uninj_data_lists"$"imp_1"
+uninj_dl_imp_2 <- all_dls$"uninj_data_lists"$"imp_2"
+uninj_dl_imp_3 <- all_dls$"uninj_data_lists"$"imp_3"
+uninj_dl_imp_4 <- all_dls$"uninj_data_lists"$"imp_4"
+uninj_dl_imp_5 <- all_dls$"uninj_data_lists"$"imp_5"
+
+uninj_ol_imp_1 <- all_dls$"uninj_oom_lists"$"imp_1"
+uninj_ol_imp_2 <- all_dls$"uninj_oom_lists"$"imp_2"
+uninj_ol_imp_3 <- all_dls$"uninj_oom_lists"$"imp_3"
+uninj_ol_imp_4 <- all_dls$"uninj_oom_lists"$"imp_4"
+uninj_ol_imp_5 <- all_dls$"uninj_oom_lists"$"imp_5"
 ```
 
 ## Matching
 
-Finding matched uninjured controls for each mtbi subject based on demographic variables.
+Finding matched uninjured controls for each mtbi subject based on a variety of variables.
 Matching will be done based on the first imputed dataset of the baseline data.
 
 ```{r}
-matching_vars <- c(
+names(mtbi_full_data_list_1)
+names(mtbi_full_oom_list_1)
+
+matching_vars_1 <- c(
+    "d_income",
+    "p_parent_psych",
+    "d_race"
+)
+
+matching_vars_2 <- c(
     "d_income",
     "d_race",
     "d_sex",
-    "d_age"
+    "d_pubertal"
+)
+matching_vars_3 <- c(
+    "p_parent_psych"
 )
 
-mtbi_matching_dl <- all_dls$"mtbi_train_data_lists"$"imp_1" |>
-    lapply(
-        function(x) {
-            if (x$"name" %in% matching_vars) {
-                return(x)
-            }
-        }
-    )
-mtbi_matching_dl <- Filter(Negate(is.null), mtbi_matching_dl)
+matching_vars_4 <- c(
+    "cbcl",
+    "sds_total_probs"
+)
+```
 
-uninj_matching_dl <- all_dls$"uninj_data_lists"$"imp_1" |>
-    lapply(
-        function(x) {
-            if (x$"name" %in% matching_vars) {
-                return(x)
-            }
-        }
-    )
-uninj_matching_dl <- Filter(Negate(is.null), uninj_matching_dl)
+```{r}
+names(mtbi_full_data_list_1)
 
-mtbi_matching_df <- collapse_dl(mtbi_matching_dl)
-uninj_matching_df <- collapse_dl(uninj_matching_dl)
+# 5 different combinations for the dl matching
+
+c(mtbi_full_data_list_1, mtbi_full_oom_list_1)
+
+mtbi_dl_match <- mtbi_full_data_list_1[matching_vars_1]
+mtbi_dl_match_2 <- mtbi_full_data_list_1[matching_vars_2]
+mtbi_dl_match_3 <- mtbi_full_data_list_1[matching_vars_3]
+mtbi_ol_match_4 <- mtbi_full_oom_list_1[matching_vars_4]
+
+# 4 different combinations * 5 imputations for the uninjured
+uninj_dl_match_imp_1_1 <- uninj_dl_imp_1[matching_vars_1]
+uninj_dl_match_imp_1_2 <- uninj_dl_imp_1[matching_vars_2]
+uninj_dl_match_imp_1_3 <- uninj_dl_imp_1[matching_vars_3]
+uninj_ol_match_imp_1_4 <- uninj_ol_imp_1[matching_vars_4]
+
+uninj_dl_match_imp_2_1 <- uninj_dl_imp_2[matching_vars_1]
+uninj_dl_match_imp_2_2 <- uninj_dl_imp_2[matching_vars_2]
+uninj_dl_match_imp_2_3 <- uninj_dl_imp_2[matching_vars_3]
+uninj_ol_match_imp_2_4 <- uninj_ol_imp_2[matching_vars_4]
+
+uninj_dl_match_imp_3_1 <- uninj_dl_imp_3[matching_vars_1]
+uninj_dl_match_imp_3_2 <- uninj_dl_imp_3[matching_vars_2]
+uninj_dl_match_imp_3_3 <- uninj_dl_imp_3[matching_vars_3]
+uninj_ol_match_imp_3_4 <- uninj_ol_imp_3[matching_vars_4]
+
+uninj_dl_match_imp_4_1 <- uninj_dl_imp_4[matching_vars_1]
+uninj_dl_match_imp_4_2 <- uninj_dl_imp_4[matching_vars_2]
+uninj_dl_match_imp_4_3 <- uninj_dl_imp_4[matching_vars_3]
+uninj_ol_match_imp_4_4 <- uninj_ol_imp_4[matching_vars_4]
+
+uninj_dl_match_imp_5_1 <- uninj_dl_imp_5[matching_vars_1]
+uninj_dl_match_imp_5_2 <- uninj_dl_imp_5[matching_vars_2]
+uninj_dl_match_imp_5_3 <- uninj_dl_imp_5[matching_vars_3]
+uninj_ol_match_imp_5_4 <- uninj_ol_imp_5[matching_vars_4]
+
+
+###############################################################################
+# Conversion to dataframes
+###############################################################################
+mtbi_df_match_1 <- mtbi_dl_match_1 |> collapse_dl()
+mtbi_df_match_2 <- mtbi_dl_match_2 |> collapse_dl()
+mtbi_df_match_3 <- mtbi_dl_match_3 |> collapse_dl()
+mtbi_df_match_4 <- mtbi_ol_match_4 |> collapse_dl()
+
+```
+
+```{r}
+
+
 
 mtbi_matching_df$"mtbi" <- 1
 uninj_matching_df$"mtbi" <- 0
