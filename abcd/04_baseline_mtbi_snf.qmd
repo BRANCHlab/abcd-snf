@@ -684,6 +684,8 @@ xtable(data.frame(mtbi_mc_d_nmi_v_pval_rank))
 mtbi_mc_d_nmi_v_pval_rank <- read_csv(
     proc_path("2024_08_20_mtbi_mc_d_nmi_v_pval_rank.csv")
 )
+
+sorted_features <- mtbi_mc_d_nmi_v_pval_rank$"feature"
 ```
 
 
@@ -744,8 +746,6 @@ ggsave(
 
 
 ```{r}
-sorted_features <- mtbi_mc_d_nmi_v_pval_rank$"feature"
-
 names(plot_list)
 
 ranked_plot_list <- plot_list[sorted_features]
@@ -879,12 +879,11 @@ ggsave(
 )
 ```
 
-
 ### Detailed cluster topologies
 
 Can come back to this later.
 
-```{r}# 
+```{r}# <!-- {{{ -->
 
 proptable <- function(df, ft) {
     tab <- prop.table(
@@ -1127,7 +1126,7 @@ discrete variable -> cohen's d
 categorical variable -> odd's ratio -> cohen's d
 binary variable -> odd's ratio -> cohen's d
 
-log odds * sqrt(3)/pi
+log odds * sqrt(3)/pi}}}
 
 # Label propagation
 
@@ -1136,11 +1135,13 @@ log odds * sqrt(3)/pi
 A label propagation attempt using the full data list.
 
 ```{r}
+# CHECKPOINT
 mtbi_mc_d_esm$"imputation"
 
 # The data list that generated the top solution
 train_data_list_m2 <- all_dls$"mtbi_train_data_lists"$"imp_2"
 train_oom_list_m2 <- all_dls$"mtbi_train_oom_lists"$"imp_2"
+
 
 # The first test data set, for example
 test_data_list_m1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
@@ -1166,7 +1167,9 @@ full_oom_list_2 <- merge_data_lists(train_oom_list_m2, test_oom_list_m2)
 full_oom_list_3 <- merge_data_lists(train_oom_list_m2, test_oom_list_m3)
 full_oom_list_4 <- merge_data_lists(train_oom_list_m2, test_oom_list_m4)
 full_oom_list_5 <- merge_data_lists(train_oom_list_m2, test_oom_list_m5)
+```
 
+```{r}
 mtbi_mc_d_fdl_lp_1 <- lp_solutions_matrix(
     mtbi_mc_d_esm,
     full_data_list_1,
@@ -1204,90 +1207,24 @@ That attempt leads to 2 cluster propagation driven almost exclusively by sex.
 
 names(mc_d_top_pl)
 
-# This is the list that actually worked most recently
-#top_12_non_sex <- c(
-#    "d_income",
-#    "p_parent_psych",
-#    "d_race"
-#)
-
-top_full_dl_1 |> collapse_dl()
-
-top_12_0 <- c(
-    "d_income",
-    "d_race"
-)
-
-top_12_1 <- c(
+top_features <- c(
     "d_income",
     "p_parent_psych",
-    "d_race"
-)
-
-top_12_2 <- c(
-    "d_income",
-    "p_parent_psych",
-    "p_fam_fn",
-    "d_race"
-)
-
-top_12_3 <- c(
-    "d_income",
-    "p_sports",
-    "p_parent_psych",
-    "p_screen_time",
     "d_race"
 )
 
 # Trim down the data list to just those top features
-get_top_full_dl_a <- function(full_data_list, top_list) {
+get_top_full_dl <- function(full_data_list, top_list) {
     return(full_data_list[top_list])
-}
-
-# Trim down the data list to just those top features
-get_top_full_dl_b <- function(full_data_list, top_list) {
-    top_full_dl <- lapply(
-        full_data_list[top_list],
-        function(x) {
-            x$"data" <- x$"data"[, colnames(x$"data") %in% c("subjectkey", names(mc_d_top_pl))]
-            return(x)
-        }
-    )
-    return(top_full_dl)
 }
 ```
 
-Attempt summary
-
-- fn_a
-    - top_0
-        - 21 in C1
-        - good on income, race, and CBCL. decent on parent psych (see 4th plot)
-        - bad on rationale
-    - top_1
-        - actually really good 4th plot
-    - top_2
-        - good on most things
-        - bad 
-        - eh honestly kind of mid. parent psych and cbcl seems to be pretty rough
-    - top_3
-        - bad
-- fn_b
-    - top_0
-        - bad
-    - top_1
-        - bad
-    - top_2
-        - eh
-    - top_3
-        - bad
-
 ```{r}
-top_full_dl_1 <- get_top_full_dl_a(full_data_list_1, top_12_3)
-top_full_dl_2 <- get_top_full_dl_a(full_data_list_2, top_12_3)
-top_full_dl_3 <- get_top_full_dl_a(full_data_list_3, top_12_3)
-top_full_dl_4 <- get_top_full_dl_a(full_data_list_4, top_12_3)
-top_full_dl_5 <- get_top_full_dl_a(full_data_list_5, top_12_3)
+top_full_dl_1 <- get_top_full_dl(full_data_list_1, top_features)
+top_full_dl_2 <- get_top_full_dl(full_data_list_2, top_features)
+top_full_dl_3 <- get_top_full_dl(full_data_list_3, top_features)
+top_full_dl_4 <- get_top_full_dl(full_data_list_4, top_features)
+top_full_dl_5 <- get_top_full_dl(full_data_list_5, top_features)
 
 summarize_dl(top_full_dl_1)
 
@@ -1342,23 +1279,28 @@ table(dplyr::filter(mtbi_mc_d_lp_1, group == "test")$"cluster")
 # 13 in 1, 63 in 2, 9 in 3
 
 
-#write_csv(mtbi_mc_d_lp_1, proc_path("mtbi_mc_d_lp_1.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_2, proc_path("mtbi_mc_d_lp_2.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_3, proc_path("mtbi_mc_d_lp_3.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_4, proc_path("mtbi_mc_d_lp_4.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_5, proc_path("mtbi_mc_d_lp_5.csv", TRUE))
-#
-#mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_1.csv"))
-#mtbi_mc_d_lp_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_2.csv"))
-#mtbi_mc_d_lp_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_3.csv"))
-#mtbi_mc_d_lp_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_4.csv"))
-#mtbi_mc_d_lp_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_5.csv"))
+write_csv(mtbi_mc_d_lp_1, proc_path("mtbi_mc_d_lp_1.csv", TRUE))
+write_csv(mtbi_mc_d_lp_2, proc_path("mtbi_mc_d_lp_2.csv", TRUE))
+write_csv(mtbi_mc_d_lp_3, proc_path("mtbi_mc_d_lp_3.csv", TRUE))
+write_csv(mtbi_mc_d_lp_4, proc_path("mtbi_mc_d_lp_4.csv", TRUE))
+write_csv(mtbi_mc_d_lp_5, proc_path("mtbi_mc_d_lp_5.csv", TRUE))
+```
 
-#mtbi_mc_d_full_1 <- dplyr::select(mtbi_mc_d_lp_1, -group)
-#mtbi_mc_d_full_2 <- dplyr::select(mtbi_mc_d_lp_2, -group)
-#mtbi_mc_d_full_3 <- dplyr::select(mtbi_mc_d_lp_3, -group)
-#mtbi_mc_d_full_4 <- dplyr::select(mtbi_mc_d_lp_4, -group)
-#mtbi_mc_d_full_5 <- dplyr::select(mtbi_mc_d_lp_5, -group)
+```{r}
+# CHECKPOINT
+mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_1.csv"))
+mtbi_mc_d_lp_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_2.csv"))
+mtbi_mc_d_lp_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_3.csv"))
+mtbi_mc_d_lp_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_4.csv"))
+mtbi_mc_d_lp_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_5.csv"))
+```
+
+```{r}
+mtbi_mc_d_full_1 <- dplyr::select(mtbi_mc_d_lp_1, -group)
+mtbi_mc_d_full_2 <- dplyr::select(mtbi_mc_d_lp_2, -group)
+mtbi_mc_d_full_3 <- dplyr::select(mtbi_mc_d_lp_3, -group)
+mtbi_mc_d_full_4 <- dplyr::select(mtbi_mc_d_lp_4, -group)
+mtbi_mc_d_full_5 <- dplyr::select(mtbi_mc_d_lp_5, -group)
 
 mtbi_mc_d_lp_only_1 <- dplyr::filter(mtbi_mc_d_lp_1, group == "test") |> dplyr::select(-group)
 mtbi_mc_d_lp_only_2 <- dplyr::filter(mtbi_mc_d_lp_2, group == "test") |> dplyr::select(-group)
@@ -1366,31 +1308,35 @@ mtbi_mc_d_lp_only_3 <- dplyr::filter(mtbi_mc_d_lp_3, group == "test") |> dplyr::
 mtbi_mc_d_lp_only_4 <- dplyr::filter(mtbi_mc_d_lp_4, group == "test") |> dplyr::select(-group)
 mtbi_mc_d_lp_only_5 <- dplyr::filter(mtbi_mc_d_lp_5, group == "test") |> dplyr::select(-group)
 
-#write_csv(mtbi_mc_d_full_1, proc_path("mtbi_mc_d_full_1.csv", TRUE))
-#write_csv(mtbi_mc_d_full_2, proc_path("mtbi_mc_d_full_2.csv", TRUE))
-#write_csv(mtbi_mc_d_full_3, proc_path("mtbi_mc_d_full_3.csv", TRUE))
-#write_csv(mtbi_mc_d_full_4, proc_path("mtbi_mc_d_full_4.csv", TRUE))
-#write_csv(mtbi_mc_d_full_5, proc_path("mtbi_mc_d_full_5.csv", TRUE))
-#
-#write_csv(mtbi_mc_d_lp_only_1, proc_path("mtbi_mc_d_lp_only_1.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_only_2, proc_path("mtbi_mc_d_lp_only_2.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_only_3, proc_path("mtbi_mc_d_lp_only_3.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_only_4, proc_path("mtbi_mc_d_lp_only_4.csv", TRUE))
-#write_csv(mtbi_mc_d_lp_only_5, proc_path("mtbi_mc_d_lp_only_5.csv", TRUE))
-#
-## CHECKPOINT
-#mtbi_mc_d_full_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_1.csv"))
-#mtbi_mc_d_full_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_2.csv"))
-#mtbi_mc_d_full_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_3.csv"))
-#mtbi_mc_d_full_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_4.csv"))
-#mtbi_mc_d_full_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_5.csv"))
-#
-#mtbi_mc_d_lp_only_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_1.csv"))
-#mtbi_mc_d_lp_only_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_2.csv"))
-#mtbi_mc_d_lp_only_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_3.csv"))
-#mtbi_mc_d_lp_only_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_4.csv"))
-#mtbi_mc_d_lp_only_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_5.csv"))
+write_csv(mtbi_mc_d_full_1, proc_path("mtbi_mc_d_full_1.csv", TRUE))
+write_csv(mtbi_mc_d_full_2, proc_path("mtbi_mc_d_full_2.csv", TRUE))
+write_csv(mtbi_mc_d_full_3, proc_path("mtbi_mc_d_full_3.csv", TRUE))
+write_csv(mtbi_mc_d_full_4, proc_path("mtbi_mc_d_full_4.csv", TRUE))
+write_csv(mtbi_mc_d_full_5, proc_path("mtbi_mc_d_full_5.csv", TRUE))
 
+write_csv(mtbi_mc_d_lp_only_1, proc_path("mtbi_mc_d_lp_only_1.csv", TRUE))
+write_csv(mtbi_mc_d_lp_only_2, proc_path("mtbi_mc_d_lp_only_2.csv", TRUE))
+write_csv(mtbi_mc_d_lp_only_3, proc_path("mtbi_mc_d_lp_only_3.csv", TRUE))
+write_csv(mtbi_mc_d_lp_only_4, proc_path("mtbi_mc_d_lp_only_4.csv", TRUE))
+write_csv(mtbi_mc_d_lp_only_5, proc_path("mtbi_mc_d_lp_only_5.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+mtbi_mc_d_full_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_1.csv"))
+mtbi_mc_d_full_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_2.csv"))
+mtbi_mc_d_full_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_3.csv"))
+mtbi_mc_d_full_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_4.csv"))
+mtbi_mc_d_full_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_5.csv"))
+
+mtbi_mc_d_lp_only_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_1.csv"))
+mtbi_mc_d_lp_only_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_2.csv"))
+mtbi_mc_d_lp_only_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_3.csv"))
+mtbi_mc_d_lp_only_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_4.csv"))
+mtbi_mc_d_lp_only_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_5.csv"))
+```
+
+```{r}
 mtbi_mc_d_lp_only_plot_list_1 <- auto_plot(
     cluster_df = mtbi_mc_d_lp_only_1,
     data_list = test_data_list_m1,
@@ -1469,88 +1415,186 @@ ggsave(
 )
 ```
 
+Below are the derivation + validation set solutions:
+
 ```{r}
-top_lp_plots <- wrap_plots(mtbi_mc_d_lp_plot_list_1[names(mc_d_top_pl)]) &
-    labs(x = "Cluster") &
-    theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
-
-ggsave(
-    fig_path("mtbi_mc_d_ranked_all_plots_lp_12_1.png", TRUE),
-    top_lp_plots,
-    width = 25,
-    height = 15,
-    dpi = 150
-)
-
-mtbi_mc_d_full_plot_list <- auto_plot(
+mtbi_mc_d_full_plot_list_1 <- auto_plot(
     cluster_df = mtbi_mc_d_full_1,
     data_list = full_data_list_1,
     target_list = full_oom_list_1
 )
 
-## HERE I AM 
+mtbi_mc_d_full_plot_list_2 <- auto_plot(
+    cluster_df = mtbi_mc_d_full_2,
+    data_list = full_data_list_2,
+    target_list = full_oom_list_2
+)
 
+mtbi_mc_d_full_plot_list_3 <- auto_plot(
+    cluster_df = mtbi_mc_d_full_3,
+    data_list = full_data_list_3,
+    target_list = full_oom_list_3
+)
+
+mtbi_mc_d_full_plot_list_4 <- auto_plot(
+    cluster_df = mtbi_mc_d_full_4,
+    data_list = full_data_list_4,
+    target_list = full_oom_list_4
+)
+
+mtbi_mc_d_full_plot_list_5 <- auto_plot(
+    cluster_df = mtbi_mc_d_full_5,
+    data_list = full_data_list_5,
+    target_list = full_oom_list_5
+)
+
+
+mtbi_mc_d_full_5
+
+sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_2$"cluster")
+sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_3$"cluster")
+sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_4$"cluster")
+sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_5$"cluster")
+sum(mtbi_mc_d_lp_2$"cluster" != mtbi_mc_d_lp_3$"cluster")
+sum(mtbi_mc_d_lp_2$"cluster" != mtbi_mc_d_lp_4$"cluster")
+sum(mtbi_mc_d_lp_2$"cluster" != mtbi_mc_d_lp_5$"cluster")
+sum(mtbi_mc_d_lp_3$"cluster" != mtbi_mc_d_lp_4$"cluster")
+sum(mtbi_mc_d_lp_3$"cluster" != mtbi_mc_d_lp_5$"cluster")
+sum(mtbi_mc_d_lp_4$"cluster" != mtbi_mc_d_lp_5$"cluster")
+
+names(mtbi_mc_d_full_plot_list_1)[!names(mtbi_mc_d_full_plot_list_1) %in% sorted_features]
+
+mtbi_mc_d_full_all_plots_1 <- wrap_plots(mtbi_mc_d_full_plot_list_1)
+mtbi_mc_d_full_all_plots_2 <- wrap_plots(mtbi_mc_d_full_plot_list_2)
+mtbi_mc_d_full_all_plots_3 <- wrap_plots(mtbi_mc_d_full_plot_list_3)
+mtbi_mc_d_full_all_plots_4 <- wrap_plots(mtbi_mc_d_full_plot_list_4)
+mtbi_mc_d_full_all_plots_5 <- wrap_plots(mtbi_mc_d_full_plot_list_5)
+
+ggsave(
+    fig_path("mtbi_mc_d_full_all_plots_1.png", TRUE),
+    mtbi_mc_d_full_all_plots_1,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+#
+ggsave(
+    fig_path("mtbi_mc_d_full_all_plots_2.png", TRUE),
+    mtbi_mc_d_full_all_plots_2,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+#
+ggsave(
+    fig_path("mtbi_mc_d_full_all_plots_3.png", TRUE),
+    mtbi_mc_d_full_all_plots_3,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+#
+ggsave(
+    fig_path("mtbi_mc_d_full_all_plots_4.png", TRUE),
+    mtbi_mc_d_full_all_plots_4,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+#
+ggsave(
+    fig_path("mtbi_mc_d_full_all_plots_5.png", TRUE),
+    mtbi_mc_d_full_all_plots_5,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+```
+
+Now we've seen that the label propagated solutions are broadly quite similar.
+Good to focus more on the things that are prevalent in both solutions.
+
+
+```{r}
+#top_lp_plots <- wrap_plots(mtbi_mc_d_lp_plot_list_1[names(mc_d_top_pl)]) &
+#    labs(x = "Cluster") &
+#    theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
+#
+#ggsave(
+#    fig_path("mtbi_mc_d_ranked_all_plots_lp_12_1.png", TRUE),
+#    top_lp_plots,
+#    width = 25,
+#    height = 15,
+#    dpi = 150
+#)
+#
 #mtbi_mc_d_full_plot_list <- auto_plot(
-#    cluster_df = mtbi_mc_d_full,
+#    cluster_df = mtbi_mc_d_full_1,
+#    data_list = full_data_list_1,
+#    target_list = full_oom_list_1
+#)
+#
+##mtbi_mc_d_full_plot_list <- auto_plot(
+##    cluster_df = mtbi_mc_d_full,
+##    data_list = mtbi_mc_d_full_data_list,
+##    target_list = mtbi_mc_d_full_oom_list,
+##    save = fig_path("mtbi_mc_d_full", TRUE)
+##)
+#
+#mtbi_mc_e_lp_only_plot_list <- auto_plot(
+#    cluster_df = mtbi_mc_e_lp_only,
+#    data_list = test_data_list_m1,
+#    target_list = test_oom_list_m1
+#)
+#
+#mtbi_mc_e_full_wrap <- wrap_plots(mtbi_mc_e_full_plot_list)
+#
+#mtbi_mc_e_lp_only_wrap <- wrap_plots(mtbi_mc_e_lp_only_plot_list)
+#
+#ggsave(
+#    fig_path("mtbi_mc_d_full_wrap.png", TRUE),
+#    mtbi_mc_d_full_wrap,
+#    width = 35,
+#    height = 30,
+#    dpi = 50
+#)
+#
+#ggsave(
+#    fig_path("mtbi_mc_e_lp_only_wrap.png", TRUE),
+#    mtbi_mc_e_lp_only_wrap,
+#    width = 35,
+#    height = 30,
+#    dpi = 50
+#)
+#
+## Creating ESM formatted full solution
+#mtbi_mc_d_full_sm <- mtbi_mc_d_esm |>
+#    dplyr::select(
+#        -dplyr::contains("pval"),
+#        -dplyr::contains("impairment"),
+#        -label,
+#        -imputation,
+#        -pooled
+#    )
+#mtbi_mc_d_lp_only_sm_row <- data.frame(
+#    t(mtbi_mc_d_lp_only$"cluster")
+#)
+#colnames(mtbi_mc_d_lp_only_sm_row) <- mtbi_mc_d_lp_only$"subjectkey"
+#mtbi_mc_d_full_sm <- cbind(
+#    mtbi_mc_d_full_sm,
+#    mtbi_mc_d_lp_only_sm_row
+#)
+#
+#mtbi_mc_d_full_esm <- extend_solutions(
+#    mtbi_mc_d_full_sm,
 #    data_list = mtbi_mc_d_full_data_list,
 #    target_list = mtbi_mc_d_full_oom_list,
-#    save = fig_path("mtbi_mc_d_full", TRUE)
+#    min_pval = 1e-10,
+#    processes = "max"
 #)
-
-mtbi_mc_e_lp_only_plot_list <- auto_plot(
-    cluster_df = mtbi_mc_e_lp_only,
-    data_list = test_data_list_m1,
-    target_list = test_oom_list_m1
-)
-
-mtbi_mc_e_full_wrap <- wrap_plots(mtbi_mc_e_full_plot_list)
-
-mtbi_mc_e_lp_only_wrap <- wrap_plots(mtbi_mc_e_lp_only_plot_list)
-
-ggsave(
-    fig_path("mtbi_mc_d_full_wrap.png", TRUE),
-    mtbi_mc_d_full_wrap,
-    width = 35,
-    height = 30,
-    dpi = 50
-)
-
-ggsave(
-    fig_path("mtbi_mc_e_lp_only_wrap.png", TRUE),
-    mtbi_mc_e_lp_only_wrap,
-    width = 35,
-    height = 30,
-    dpi = 50
-)
-
-# Creating ESM formatted full solution
-mtbi_mc_d_full_sm <- mtbi_mc_d_esm |>
-    dplyr::select(
-        -dplyr::contains("pval"),
-        -dplyr::contains("impairment"),
-        -label,
-        -imputation,
-        -pooled
-    )
-mtbi_mc_d_lp_only_sm_row <- data.frame(
-    t(mtbi_mc_d_lp_only$"cluster")
-)
-colnames(mtbi_mc_d_lp_only_sm_row) <- mtbi_mc_d_lp_only$"subjectkey"
-mtbi_mc_d_full_sm <- cbind(
-    mtbi_mc_d_full_sm,
-    mtbi_mc_d_lp_only_sm_row
-)
-
-mtbi_mc_d_full_esm <- extend_solutions(
-    mtbi_mc_d_full_sm,
-    data_list = mtbi_mc_d_full_data_list,
-    target_list = mtbi_mc_d_full_oom_list,
-    min_pval = 1e-10,
-    processes = "max"
-)
-
-write_csv(mtbi_mc_d_full_esm, proc_path("mtbi_mc_d_full_esm.csv", TRUE))
-mtbi_mc_d_full_esm <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full_esm.csv"))
+#
+#write_csv(mtbi_mc_d_full_esm, proc_path("mtbi_mc_d_full_esm.csv", TRUE))
+#mtbi_mc_d_full_esm <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full_esm.csv"))
 
 ```
 
@@ -1559,491 +1603,491 @@ mtbi_mc_d_full_esm <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full_esm.csv"))
 # Longitudinal analyses
 
 ```{r}
-
-#mtbi_train <- read_csv(sub_path("2024_03_12_mtbi_train_subjects.csv"))
-
-core_path <- path_maker(here(paste0("data/abcd/core")))
-
-import <- function(path) {
-    return(abcd_load(core_path(path)))
-}
-
-mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
-ph_p_sds <- import("physical-health/ph_p_sds.csv")
-
-mc_d_cluster_df <- get_cluster_df(mtbi_mc_d_esm)
-
-mc_d_subs <- gsub("subject_", "", mc_d_cluster_df$"subjectkey")
-
-syndromes <- c(
-    "anxdep",
-    #"withdep",
-    #"somatic",
-    #"social",
-    #"thought",
-    #"attention",
-    #"rulebreak",
-    "aggressive"
-)
-
-tps <- c(0, 1, 2, 3)
-
-get_syndrome_long <- function(syndrome, timepoints, subs) {
-    full_df <- NULL
-    for (tp in timepoints) {
-        outcomes <- get_cbcl_syndrome_scale(
-            syndrome = syndrome,
-            mh_p_cbcl,
-            raw = FALSE,
-            subjects = subs,
-            t = tp
-        )
-        outcomes$"tp" <- tp
-        if (is.null(full_df)) {
-            full_df <- outcomes
-        } else {
-            full_df <- rbind(full_df, outcomes)
-        }
-    }
-    return(full_df)
-}
-
-
-
-# make change score plots where you plot time on x-axis and visualize change
-# by absolute t-score differences for 2 year and 3 year follow up
-
-# Option 1
-z <- get_syndrome_long("anxdep", tps, mc_d_subs)
-z$"subjectkey" <- paste0("subject_", z$"subjectkey")
-z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
-z_long$"cluster" <- factor(z_long$"cluster")
-anxdep <- ggplot(
-    na.omit(z_long),
-    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-ggsave("anxdep.png", anxdep)
-
-z <- get_syndrome_long("withdep", tps, mc_d_subs)
-z$"subjectkey" <- paste0("subject_", z$"subjectkey")
-z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
-z_long$"cluster" <- factor(z_long$"cluster")
-withdep <- ggplot(
-    na.omit(z_long),
-    aes(x = tp, y = cbcl_scr_syn_withdep_t, colour = cluster, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-ggsave("withdep.png", withdep)
-
-z <- get_syndrome_long("aggressive", tps, mc_d_subs)
-z$"subjectkey" <- paste0("subject_", z$"subjectkey")
-z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
-z_long$"cluster" <- factor(z_long$"cluster")
-aggressive <- ggplot(
-    na.omit(z_long),
-    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cluster, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-ggsave("aggressive.png", aggressive)
-
-
-
-qq <- get_syndrome_long("anxdep", tps, mc_d_subs)
-qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-qq_long$"cluster" <- factor(qq_long$"cluster")
-qq_long <- na.omit(qq_long)
-for (subject in unique(qq_long$"subjectkey")) {
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"] <- 0
-}
-anxdep2 <- ggplot(
-    na.omit(qq_long),
-    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-ggsave("anxdep2.png", anxdep2)
-
-qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-qq_long$"cluster" <- factor(qq_long$"cluster")
-qq_long <- na.omit(qq_long)
-for (subject in unique(qq_long$"subjectkey")) {
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-}
-aggressive2 <- ggplot(
-    na.omit(qq_long),
-    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cbcl_scr_syn_aggressive_t > 0, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-ggsave("aggressive3.png", aggressive2)
-
-
-qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-qq_long$"cluster" <- factor(qq_long$"cluster")
-for (subject in unique(qq_long$"subjectkey")) {
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-}
-unique(qq_long$"subjectkey")
-parent <- all_dls$"mtbi_train_data_lists"$"imp_1"[[24]]$"data"
-summarize_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
-qq_long <- dplyr::full_join(qq_long, parent, by = "subjectkey")
-aggressive4 <- ggplot(
-    na.omit(qq_long),
-    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = parent_aggressive > 60, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-aggressive4
-ggsave("aggressive4.png", aggressive4)
-
-qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-qq_long$"cluster" <- factor(qq_long$"cluster")
-for (subject in unique(qq_long$"subjectkey")) {
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-}
-unique(qq_long$"subjectkey")
-income <- all_dls$"mtbi_train_data_lists"$"imp_1"[[7]]$"data"
-qq_long <- dplyr::full_join(qq_long, income, by = "subjectkey")
-aggressive5 <- ggplot(
-    na.omit(qq_long),
-    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = household_income, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-aggressive5
-ggsave("aggressive5.png", aggressive5)
-
-
-qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-qq_long$"cluster" <- factor(qq_long$"cluster")
-for (subject in unique(qq_long$"subjectkey")) {
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-}
-unique(qq_long$"subjectkey")
-data <- collapse_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
-qq_long <- dplyr::full_join(qq_long, data, by = "subjectkey")
-aggressive6 <- ggplot(
-    na.omit(qq_long),
-    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = sex, group = subjectkey)
-) +
-    geom_point() +
-    geom_line() +
-    facet_grid(cluster ~ .) +
-    theme_bw()
-aggressive6
-ggsave("aggressive6.png", aggressive6)
-
-for (tp in c(1, 2, 3)) {
-    long_outcomes <- NULL
-    for (syndrome in syndromes) {
-        if (is.null(long_outcomes)) {
-            long_outcomes <- get_cbcl_syndrome_scale(
-                syndrome = syndrome,
-                mh_p_cbcl,
-                raw = FALSE,
-                subjects = mtbi_train,
-                t = tp
-            )
-        } else {
-            long_outcomes <- dplyr::inner_join(
-                long_outcomes,
-                get_cbcl_syndrome_scale(
-                    syndrome = syndrome,
-                    mh_p_cbcl,
-                    raw = FALSE,
-                    subjects = mtbi_train,
-                    t = tp
-                ),
-                by = "subjectkey"
-            )
-        }
-    }
-    long_outcomes <- dplyr::inner_join(
-        long_outcomes,
-        get_sds_total_probs(
-            ph_p_sds,
-            mtbi_train,
-            t = tp
-        ),
-        by = "subjectkey"
-    )
-    long_outcomes$"subjectkey" <- paste0("subject_", long_outcomes$"subjectkey")
-    colnames(long_outcomes) <- c(
-        "subjectkey",
-        paste0("cbcl_", syndromes),
-        "sds_sleep"
-    )
-    baseline_outcomes <- collapse_dl(oom_list_m3)
-    d_outcomes <- NULL
-    for (outcome in colnames(baseline_outcomes[-1])) {
-        t0 <- dplyr::select(baseline_outcomes, "subjectkey", outcome)
-        tn <- dplyr::select(long_outcomes, "subjectkey", outcome)
-        colnames(t0) <- c("subjectkey", paste0(outcome, "_0"))
-        colnames(tn) <- c("subjectkey", paste0(outcome, "_", tp))
-        both_t <- dplyr::inner_join(t0, tn, by = "subjectkey")
-        both_t[, 4] <- both_t[, 3] - both_t[, 2]
-        colnames(both_t)[4] <- paste0("d_", outcome)
-        both_t <- both_t[, c(1, 4)]
-        if (is.null(d_outcomes)) {
-            d_outcomes <- both_t
-        } else {
-            d_outcomes <- dplyr::full_join(d_outcomes, both_t, by = "subjectkey")
-        }
-    }
-    mtbi_mc_a <- mtbi_rep[1, ]
-    mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
-    mtbi_mc_a <- dplyr::full_join(
-        mtbi_mc_a,
-        d_outcomes,
-        by = "subjectkey"
-    )
-    mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
-    d_plots <- list()
-    for (outcome in colnames(d_outcomes)[-1]) {
-        plot <- mtbi_mc_a |>
-            ggplot(
-                aes(
-                    x = cluster,
-                    y = !!sym(outcome),
-                    colour = cluster
-                )
-            ) +
-            geom_violin(alpha = 0.4) +
-            geom_jitter(width = 0.2, height = 0.2) +
-            stat_summary(
-                fun = "mean",
-                geom = "point",
-                colour = "black",
-                size = 2
-            ) +
-            labs(
-                x = "Cluster",
-                y = gsub("d_", "Δ", outcome)
-            ) +
-            theme_bw() +
-            theme(
-                legend.position = "none"
-            )
-        d_plots[[length(d_plots) + 1]] <- plot
-    }
-    d_plots <- d_plots |>
-        wrap_plots() +
-        plot_annotation(
-            paste0("CBCL/SDS Outcomes, ", tp, "-year Follow-Up Minus Baseline"),
-            theme = theme(plot.title=element_text(hjust=0.5))
-        )
-    # Looks like cluster 1 has the higher variance, indicating potential for intervention?
-    ggsave(
-        plot = d_plots,
-        filename = fig_path(
-            paste0("mtbi_mc_a_outcomes_t", tp, "_plots.png"),
-            TRUE
-        ),
-        width = 8,
-        height = 8,
-        dpi = 120
-    )
-}
-
-full_df <- NULL
-for (tp in c(0, 1, 2, 3, 4)) {
-    long_outcomes <- NULL
-    for (syndrome in syndromes) {
-        if (is.null(long_outcomes)) {
-            long_outcomes <- get_cbcl_syndrome_scale(
-                syndrome = syndrome,
-                mh_p_cbcl,
-                raw = FALSE,
-                subjects = mtbi_train,
-                t = tp
-            )
-            colnames(long_outcomes) <- c("subjectkey", syndrome)
-        } else {
-            new_df <- get_cbcl_syndrome_scale(
-                syndrome = syndrome,
-                mh_p_cbcl,
-                raw = FALSE,
-                subjects = mtbi_train,
-                t = tp
-            )
-            colnames(new_df) <- c("subjectkey", syndrome)
-            long_outcomes <- dplyr::full_join(
-                long_outcomes,
-                new_df,
-                by = "subjectkey"
-            )
-        }
-    }
-    long_outcomes$"tp" <- tp
-    if (is.null(full_df)) {
-        full_df <- long_outcomes
-    } else {
-        full_df <- rbind(full_df, long_outcomes)
-    }
-}
-full_df$"subjectkey" <- paste0("subject_", full_df$"subjectkey")
-mtbi_mc_a <- mtbi_rep[1, ]
-mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
-mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
-full_df <- dplyr::full_join(full_df, mtbi_mc_a, by = "subjectkey")
-full_df$"tp" <- factor(full_df$"tp")
-full_df |>
-    dplyr::filter(cluster == 1) |>
-    na.omit() |>
-    ggplot(
-        aes(
-            x = tp,
-            y = aggressive,
-            group = subjectkey,
-            colour = cluster
-        )
-    ) +
-    geom_line() +
-    geom_point() +
-    theme_bw()
-
-nrow(mtbi_mc_a)
-
-head(mtbi_mc_a)
-
-head(long_outcomes)
+#
+##mtbi_train <- read_csv(sub_path("2024_03_12_mtbi_train_subjects.csv"))
+#
+#core_path <- path_maker(here(paste0("data/abcd/core")))
+#
+#import <- function(path) {
+#    return(abcd_load(core_path(path)))
+#}
+#
+#mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+#ph_p_sds <- import("physical-health/ph_p_sds.csv")
+#
+#mc_d_cluster_df <- get_cluster_df(mtbi_mc_d_esm)
+#
+#mc_d_subs <- gsub("subject_", "", mc_d_cluster_df$"subjectkey")
+#
+#syndromes <- c(
+#    "anxdep",
+#    #"withdep",
+#    #"somatic",
+#    #"social",
+#    #"thought",
+#    #"attention",
+#    #"rulebreak",
+#    "aggressive"
+#)
+#
+#tps <- c(0, 1, 2, 3)
+#
+#get_syndrome_long <- function(syndrome, timepoints, subs) {
+#    full_df <- NULL
+#    for (tp in timepoints) {
+#        outcomes <- get_cbcl_syndrome_scale(
+#            syndrome = syndrome,
+#            mh_p_cbcl,
+#            raw = FALSE,
+#            subjects = subs,
+#            t = tp
+#        )
+#        outcomes$"tp" <- tp
+#        if (is.null(full_df)) {
+#            full_df <- outcomes
+#        } else {
+#            full_df <- rbind(full_df, outcomes)
+#        }
+#    }
+#    return(full_df)
+#}
+#
+#
+#
+## make change score plots where you plot time on x-axis and visualize change
+## by absolute t-score differences for 2 year and 3 year follow up
+#
+## Option 1
+#z <- get_syndrome_long("anxdep", tps, mc_d_subs)
+#z$"subjectkey" <- paste0("subject_", z$"subjectkey")
+#z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
+#z_long$"cluster" <- factor(z_long$"cluster")
+#anxdep <- ggplot(
+#    na.omit(z_long),
+#    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#ggsave("anxdep.png", anxdep)
+#
+#z <- get_syndrome_long("withdep", tps, mc_d_subs)
+#z$"subjectkey" <- paste0("subject_", z$"subjectkey")
+#z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
+#z_long$"cluster" <- factor(z_long$"cluster")
+#withdep <- ggplot(
+#    na.omit(z_long),
+#    aes(x = tp, y = cbcl_scr_syn_withdep_t, colour = cluster, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#ggsave("withdep.png", withdep)
+#
+#z <- get_syndrome_long("aggressive", tps, mc_d_subs)
+#z$"subjectkey" <- paste0("subject_", z$"subjectkey")
+#z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
+#z_long$"cluster" <- factor(z_long$"cluster")
+#aggressive <- ggplot(
+#    na.omit(z_long),
+#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cluster, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#ggsave("aggressive.png", aggressive)
+#
+#
+#
+#qq <- get_syndrome_long("anxdep", tps, mc_d_subs)
+#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+#qq_long$"cluster" <- factor(qq_long$"cluster")
+#qq_long <- na.omit(qq_long)
+#for (subject in unique(qq_long$"subjectkey")) {
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"] <- 0
+#}
+#anxdep2 <- ggplot(
+#    na.omit(qq_long),
+#    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#ggsave("anxdep2.png", anxdep2)
+#
+#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+#qq_long$"cluster" <- factor(qq_long$"cluster")
+#qq_long <- na.omit(qq_long)
+#for (subject in unique(qq_long$"subjectkey")) {
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+#}
+#aggressive2 <- ggplot(
+#    na.omit(qq_long),
+#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cbcl_scr_syn_aggressive_t > 0, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#ggsave("aggressive3.png", aggressive2)
+#
+#
+#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+#qq_long$"cluster" <- factor(qq_long$"cluster")
+#for (subject in unique(qq_long$"subjectkey")) {
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+#}
+#unique(qq_long$"subjectkey")
+#parent <- all_dls$"mtbi_train_data_lists"$"imp_1"[[24]]$"data"
+#summarize_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
+#qq_long <- dplyr::full_join(qq_long, parent, by = "subjectkey")
+#aggressive4 <- ggplot(
+#    na.omit(qq_long),
+#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = parent_aggressive > 60, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#aggressive4
+#ggsave("aggressive4.png", aggressive4)
+#
+#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+#qq_long$"cluster" <- factor(qq_long$"cluster")
+#for (subject in unique(qq_long$"subjectkey")) {
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+#}
+#unique(qq_long$"subjectkey")
+#income <- all_dls$"mtbi_train_data_lists"$"imp_1"[[7]]$"data"
+#qq_long <- dplyr::full_join(qq_long, income, by = "subjectkey")
+#aggressive5 <- ggplot(
+#    na.omit(qq_long),
+#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = household_income, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#aggressive5
+#ggsave("aggressive5.png", aggressive5)
+#
+#
+#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
+#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
+#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
+#qq_long$"cluster" <- factor(qq_long$"cluster")
+#for (subject in unique(qq_long$"subjectkey")) {
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
+#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
+#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
+#}
+#unique(qq_long$"subjectkey")
+#data <- collapse_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
+#qq_long <- dplyr::full_join(qq_long, data, by = "subjectkey")
+#aggressive6 <- ggplot(
+#    na.omit(qq_long),
+#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = sex, group = subjectkey)
+#) +
+#    geom_point() +
+#    geom_line() +
+#    facet_grid(cluster ~ .) +
+#    theme_bw()
+#aggressive6
+#ggsave("aggressive6.png", aggressive6)
+#
+#for (tp in c(1, 2, 3)) {
+#    long_outcomes <- NULL
+#    for (syndrome in syndromes) {
+#        if (is.null(long_outcomes)) {
+#            long_outcomes <- get_cbcl_syndrome_scale(
+#                syndrome = syndrome,
+#                mh_p_cbcl,
+#                raw = FALSE,
+#                subjects = mtbi_train,
+#                t = tp
+#            )
+#        } else {
+#            long_outcomes <- dplyr::inner_join(
+#                long_outcomes,
+#                get_cbcl_syndrome_scale(
+#                    syndrome = syndrome,
+#                    mh_p_cbcl,
+#                    raw = FALSE,
+#                    subjects = mtbi_train,
+#                    t = tp
+#                ),
+#                by = "subjectkey"
+#            )
+#        }
+#    }
+#    long_outcomes <- dplyr::inner_join(
+#        long_outcomes,
+#        get_sds_total_probs(
+#            ph_p_sds,
+#            mtbi_train,
+#            t = tp
+#        ),
+#        by = "subjectkey"
+#    )
+#    long_outcomes$"subjectkey" <- paste0("subject_", long_outcomes$"subjectkey")
+#    colnames(long_outcomes) <- c(
+#        "subjectkey",
+#        paste0("cbcl_", syndromes),
+#        "sds_sleep"
+#    )
+#    baseline_outcomes <- collapse_dl(oom_list_m3)
+#    d_outcomes <- NULL
+#    for (outcome in colnames(baseline_outcomes[-1])) {
+#        t0 <- dplyr::select(baseline_outcomes, "subjectkey", outcome)
+#        tn <- dplyr::select(long_outcomes, "subjectkey", outcome)
+#        colnames(t0) <- c("subjectkey", paste0(outcome, "_0"))
+#        colnames(tn) <- c("subjectkey", paste0(outcome, "_", tp))
+#        both_t <- dplyr::inner_join(t0, tn, by = "subjectkey")
+#        both_t[, 4] <- both_t[, 3] - both_t[, 2]
+#        colnames(both_t)[4] <- paste0("d_", outcome)
+#        both_t <- both_t[, c(1, 4)]
+#        if (is.null(d_outcomes)) {
+#            d_outcomes <- both_t
+#        } else {
+#            d_outcomes <- dplyr::full_join(d_outcomes, both_t, by = "subjectkey")
+#        }
+#    }
+#    mtbi_mc_a <- mtbi_rep[1, ]
+#    mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
+#    mtbi_mc_a <- dplyr::full_join(
+#        mtbi_mc_a,
+#        d_outcomes,
+#        by = "subjectkey"
+#    )
+#    mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
+#    d_plots <- list()
+#    for (outcome in colnames(d_outcomes)[-1]) {
+#        plot <- mtbi_mc_a |>
+#            ggplot(
+#                aes(
+#                    x = cluster,
+#                    y = !!sym(outcome),
+#                    colour = cluster
+#                )
+#            ) +
+#            geom_violin(alpha = 0.4) +
+#            geom_jitter(width = 0.2, height = 0.2) +
+#            stat_summary(
+#                fun = "mean",
+#                geom = "point",
+#                colour = "black",
+#                size = 2
+#            ) +
+#            labs(
+#                x = "Cluster",
+#                y = gsub("d_", "Δ", outcome)
+#            ) +
+#            theme_bw() +
+#            theme(
+#                legend.position = "none"
+#            )
+#        d_plots[[length(d_plots) + 1]] <- plot
+#    }
+#    d_plots <- d_plots |>
+#        wrap_plots() +
+#        plot_annotation(
+#            paste0("CBCL/SDS Outcomes, ", tp, "-year Follow-Up Minus Baseline"),
+#            theme = theme(plot.title=element_text(hjust=0.5))
+#        )
+#    # Looks like cluster 1 has the higher variance, indicating potential for intervention?
+#    ggsave(
+#        plot = d_plots,
+#        filename = fig_path(
+#            paste0("mtbi_mc_a_outcomes_t", tp, "_plots.png"),
+#            TRUE
+#        ),
+#        width = 8,
+#        height = 8,
+#        dpi = 120
+#    )
+#}
+#
+#full_df <- NULL
+#for (tp in c(0, 1, 2, 3, 4)) {
+#    long_outcomes <- NULL
+#    for (syndrome in syndromes) {
+#        if (is.null(long_outcomes)) {
+#            long_outcomes <- get_cbcl_syndrome_scale(
+#                syndrome = syndrome,
+#                mh_p_cbcl,
+#                raw = FALSE,
+#                subjects = mtbi_train,
+#                t = tp
+#            )
+#            colnames(long_outcomes) <- c("subjectkey", syndrome)
+#        } else {
+#            new_df <- get_cbcl_syndrome_scale(
+#                syndrome = syndrome,
+#                mh_p_cbcl,
+#                raw = FALSE,
+#                subjects = mtbi_train,
+#                t = tp
+#            )
+#            colnames(new_df) <- c("subjectkey", syndrome)
+#            long_outcomes <- dplyr::full_join(
+#                long_outcomes,
+#                new_df,
+#                by = "subjectkey"
+#            )
+#        }
+#    }
+#    long_outcomes$"tp" <- tp
+#    if (is.null(full_df)) {
+#        full_df <- long_outcomes
+#    } else {
+#        full_df <- rbind(full_df, long_outcomes)
+#    }
+#}
+#full_df$"subjectkey" <- paste0("subject_", full_df$"subjectkey")
+#mtbi_mc_a <- mtbi_rep[1, ]
+#mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
+#mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
+#full_df <- dplyr::full_join(full_df, mtbi_mc_a, by = "subjectkey")
+#full_df$"tp" <- factor(full_df$"tp")
+#full_df |>
+#    dplyr::filter(cluster == 1) |>
+#    na.omit() |>
+#    ggplot(
+#        aes(
+#            x = tp,
+#            y = aggressive,
+#            group = subjectkey,
+#            colour = cluster
+#        )
+#    ) +
+#    geom_line() +
+#    geom_point() +
+#    theme_bw()
+#
+#nrow(mtbi_mc_a)
+#
+#head(mtbi_mc_a)
+#
+#head(long_outcomes)
 ```
 
 
 ## A deeper dive at feature separation
 
 ```{r}
-dl_df <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
-    return_plots = FALSE
-)
-
-dl_df |>
-    dplyr::filter(sex == 0) |>
-    ggplot(
-        aes(
-            x = race,
-            y = brain_volume,
-            colour = race,
-            group = race
-        )
-    ) +
-    geom_point() +
-    theme_bw() +
-    facet_grid(household_income ~ .)
-
-dl_df$"household_income" <- factor(dl_df$"household_income")
-dl_df$"sex" <- factor(dl_df$"sex")
-
-dl_df |>
-    ggplot(
-        aes(
-            x = household_income,
-            y = cbcl_aggressive,
-            colour = race,
-            group = interaction(race, household_income)
-        )
-    ) +
-    geom_violin(position = position_dodge(width = 0.75)) +
-    geom_jitter(
-        position = position_jitterdodge(
-            jitter.width = 0,
-            jitter.height = 0.5
-        ),
-    ) +
-    theme_bw()
-
-dl_df |>
-    ggplot(
-        aes(
-            x = sex,
-            y = cbcl_aggressive,
-            colour = race,
-            group = interaction(race, sex)
-        )
-    ) +
-    geom_boxplot(position = position_dodge(width = 0.75), width = 0.4) +
-    geom_jitter(
-        position = position_jitterdodge(
-            jitter.width = 0,
-            jitter.height = 0.5
-        ),
-    ) +
-    theme_bw()
+#dl_df <- auto_plot(
+#    solutions_matrix_row = mtbi_mc_d_esm,
+#    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+#    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+#    return_plots = FALSE
+#)
+#
+#dl_df |>
+#    dplyr::filter(sex == 0) |>
+#    ggplot(
+#        aes(
+#            x = race,
+#            y = brain_volume,
+#            colour = race,
+#            group = race
+#        )
+#    ) +
+#    geom_point() +
+#    theme_bw() +
+#    facet_grid(household_income ~ .)
+#
+#dl_df$"household_income" <- factor(dl_df$"household_income")
+#dl_df$"sex" <- factor(dl_df$"sex")
+#
+#dl_df |>
+#    ggplot(
+#        aes(
+#            x = household_income,
+#            y = cbcl_aggressive,
+#            colour = race,
+#            group = interaction(race, household_income)
+#        )
+#    ) +
+#    geom_violin(position = position_dodge(width = 0.75)) +
+#    geom_jitter(
+#        position = position_jitterdodge(
+#            jitter.width = 0,
+#            jitter.height = 0.5
+#        ),
+#    ) +
+#    theme_bw()
+#
+#dl_df |>
+#    ggplot(
+#        aes(
+#            x = sex,
+#            y = cbcl_aggressive,
+#            colour = race,
+#            group = interaction(race, sex)
+#        )
+#    ) +
+#    geom_boxplot(position = position_dodge(width = 0.75), width = 0.4) +
+#    geom_jitter(
+#        position = position_jitterdodge(
+#            jitter.width = 0,
+#            jitter.height = 0.5
+#        ),
+#    ) +
+#    theme_bw()
 ```
 
 
