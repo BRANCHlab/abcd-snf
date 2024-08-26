@@ -52,6 +52,7 @@ Matching will be done based on the first imputed dataset of the baseline data.
 names(mtbi_full_data_list_1)
 
 # 5 different combinations for the dl matching
+# Could have included pooled imputations here as well...
 
 mtbi_matching_df <- c(mtbi_full_data_list_1, mtbi_full_oom_list_1) |> collapse_dl()
 uninj_matching_df_imp_1 <- c(uninj_dl_imp_1, uninj_ol_imp_1) |> collapse_dl()
@@ -263,6 +264,7 @@ matched_uninj_4_imp_1 <- read_subjects(sub_path("2024_08_23_matched_uninj_4_imp_
 ```
 
 For the sake of simplicity, we did our matching off of just 1 of the imputed uninjured datasets.
+So matched uninj 1, matched uninj 2, 3, and 4 are all based on solo imputed 1 data.
 
 ## Loading data and out of model lists
 
@@ -415,6 +417,8 @@ matched_uninj_solutions_matrix_4 <- bulk_batch_snf(
 list.save(matched_uninj_solutions_matrix_4, input_path("matched_uninj_solutions_matrix_4.rds", TRUE))
 ```
 
+Even though the matching was done through 1 imputation of the data, the actual SNF was done across all the imputed datasets.
+
 ```{r}
 matched_uninj_solutions_matrix_1 <- list.load(input_path("2024_08_25_matched_uninj_solutions_matrix_1.rds"))
 matched_uninj_solutions_matrix_2 <- list.load(input_path("2024_08_25_matched_uninj_solutions_matrix_2.rds"))
@@ -479,6 +483,33 @@ matched_uninj_ari_order_4 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_or
 ```
 
 ```{r}
+
+matched_uninj_dl_1_s1 <- matched_uninj_dls_1$"uninj_data_lists"$"imp_1"
+matched_uninj_dl_1_s2 <- matched_uninj_dls_1$"uninj_data_lists"$"imp_2"
+matched_uninj_dl_1_s3 <- matched_uninj_dls_1$"uninj_data_lists"$"imp_3"
+matched_uninj_dl_1_s4 <- matched_uninj_dls_1$"uninj_data_lists"$"imp_4"
+matched_uninj_dl_1_s5 <- matched_uninj_dls_1$"uninj_data_lists"$"imp_5"
+
+identical(matched_uninj_dl_1_s1_subs, matched_uninj_dl_1_s2_subs)
+identical(matched_uninj_dl_1_s1_subs, matched_uninj_dl_1_s3_subs)
+identical(matched_uninj_dl_1_s1_subs, matched_uninj_dl_1_s4_subs)
+identical(matched_uninj_dl_1_s1_subs, matched_uninj_dl_1_s5_subs)
+identical(matched_uninj_dl_1_s2_subs, matched_uninj_dl_1_s3_subs)
+identical(matched_uninj_dl_1_s2_subs, matched_uninj_dl_1_s4_subs)
+identical(matched_uninj_dl_1_s2_subs, matched_uninj_dl_1_s5_subs)
+
+length(matched_uninj_solutions_matrix_1) # 10, one for each imputation
+
+collapse_dl(matched_uninj_dls_1[[1]][[1]])$"subjectkey"[1:10]
+
+z <- collapse_dl(matched_uninj_dls_1[[2]][[2]])$"subjectkey"
+z2 <- collapse_dl(matched_uninj_dls_1[[1]][[2]])$"subjectkey"
+
+names(matched_uninj_dls_2)
+
+matched_uninj_dls_3
+matched_uninj_dls_4
+
 uninj_dl_s1 <- all_dls$"uninj_data_lists"$"imp_1"
 uninj_dl_s2 <- all_dls$"uninj_data_lists"$"imp_2"
 uninj_dl_s3 <- all_dls$"uninj_data_lists"$"imp_3"
@@ -508,11 +539,6 @@ uninj_ol_p5 <- all_dls$"uninj_pooled_oom_lists"$"imp_5"
 matched_uninj_esm_1_s1 <- extend_solutions(matched_uninj_solutions_matrix_1$"s1", data_list = uninj_dl_s1, target_list = uninj_ol_s1, min_pval = 1e-10, processes = "max")
 
 names(matched_uninj_dls_1[[1]])
-
-
-
-
-
 
 write_csv(proc_path("matched_uninj_esm_1_s1.csv", TRUE))
 matched_uninj_esm_1_s2 <- extend_solutions(matched_uninj_solutions_matrix_1$"s2", data_list = uninj_dl_s2, target_list = uninj_ol_s2, min_pval = 1e-10, processes = "max")
