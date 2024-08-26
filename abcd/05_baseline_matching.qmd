@@ -24,7 +24,9 @@ uninjured_subjects <- read_csv(sub_path("2024_08_17_uninjured_subjects.csv"))
 
 ```{r}
 all_dls <- list.load(input_path("2024_08_17_all_dls.rds"))
+```
 
+```{r}
 mtbi_full_data_list_1 <- list.load(input_path("2024_08_22_mtbi_full_data_list_1.rds"))
 mtbi_full_oom_list_1 <- list.load(input_path("2024_08_22_mtbi_full_oom_list_1.rds"))
 
@@ -48,126 +50,223 @@ Matching will be done based on the first imputed dataset of the baseline data.
 
 ```{r}
 names(mtbi_full_data_list_1)
-names(mtbi_full_oom_list_1)
-
-matching_vars_1 <- c(
-    "d_income",
-    "p_parent_psych",
-    "d_race"
-)
-
-matching_vars_2 <- c(
-    "d_income",
-    "d_race",
-    "d_sex",
-    "d_pubertal"
-)
-matching_vars_3 <- c(
-    "p_parent_psych"
-)
-
-matching_vars_4 <- c(
-    "cbcl",
-    "sds_total_probs"
-)
-```
-
-```{r}
-names(mtbi_full_data_list_1)
 
 # 5 different combinations for the dl matching
 
-c(mtbi_full_data_list_1, mtbi_full_oom_list_1)
+mtbi_matching_df <- c(mtbi_full_data_list_1, mtbi_full_oom_list_1) |> collapse_dl()
+uninj_matching_df_imp_1 <- c(uninj_dl_imp_1, uninj_ol_imp_1) |> collapse_dl()
+uninj_matching_df_imp_2 <- c(uninj_dl_imp_2, uninj_ol_imp_2) |> collapse_dl()
+uninj_matching_df_imp_3 <- c(uninj_dl_imp_3, uninj_ol_imp_3) |> collapse_dl()
+uninj_matching_df_imp_4 <- c(uninj_dl_imp_4, uninj_ol_imp_4) |> collapse_dl()
+uninj_matching_df_imp_5 <- c(uninj_dl_imp_5, uninj_ol_imp_5) |> collapse_dl()
 
-mtbi_dl_match <- mtbi_full_data_list_1[matching_vars_1]
-mtbi_dl_match_2 <- mtbi_full_data_list_1[matching_vars_2]
-mtbi_dl_match_3 <- mtbi_full_data_list_1[matching_vars_3]
-mtbi_ol_match_4 <- mtbi_full_oom_list_1[matching_vars_4]
+mtbi_matching_df$"mtbi" <- 1
+uninj_matching_df_imp_1$"mtbi" <- 0
+uninj_matching_df_imp_2$"mtbi" <- 0
+uninj_matching_df_imp_3$"mtbi" <- 0
+uninj_matching_df_imp_4$"mtbi" <- 0
+uninj_matching_df_imp_5$"mtbi" <- 0
 
-# 4 different combinations * 5 imputations for the uninjured
-uninj_dl_match_imp_1_1 <- uninj_dl_imp_1[matching_vars_1]
-uninj_dl_match_imp_1_2 <- uninj_dl_imp_1[matching_vars_2]
-uninj_dl_match_imp_1_3 <- uninj_dl_imp_1[matching_vars_3]
-uninj_ol_match_imp_1_4 <- uninj_ol_imp_1[matching_vars_4]
+mtbi_matching_df <- dplyr::select(
+    mtbi_matching_df,
+    colnames(uninj_matching_df_imp_1)
+)
 
-uninj_dl_match_imp_2_1 <- uninj_dl_imp_2[matching_vars_1]
-uninj_dl_match_imp_2_2 <- uninj_dl_imp_2[matching_vars_2]
-uninj_dl_match_imp_2_3 <- uninj_dl_imp_2[matching_vars_3]
-uninj_ol_match_imp_2_4 <- uninj_ol_imp_2[matching_vars_4]
+mtbi_matching_df |> colnames()
 
-uninj_dl_match_imp_3_1 <- uninj_dl_imp_3[matching_vars_1]
-uninj_dl_match_imp_3_2 <- uninj_dl_imp_3[matching_vars_2]
-uninj_dl_match_imp_3_3 <- uninj_dl_imp_3[matching_vars_3]
-uninj_ol_match_imp_3_4 <- uninj_ol_imp_3[matching_vars_4]
-
-uninj_dl_match_imp_4_1 <- uninj_dl_imp_4[matching_vars_1]
-uninj_dl_match_imp_4_2 <- uninj_dl_imp_4[matching_vars_2]
-uninj_dl_match_imp_4_3 <- uninj_dl_imp_4[matching_vars_3]
-uninj_ol_match_imp_4_4 <- uninj_ol_imp_4[matching_vars_4]
-
-uninj_dl_match_imp_5_1 <- uninj_dl_imp_5[matching_vars_1]
-uninj_dl_match_imp_5_2 <- uninj_dl_imp_5[matching_vars_2]
-uninj_dl_match_imp_5_3 <- uninj_dl_imp_5[matching_vars_3]
-uninj_ol_match_imp_5_4 <- uninj_ol_imp_5[matching_vars_4]
-
+matching_df_imp_1 <- rbind(mtbi_matching_df, uninj_matching_df_imp_1)
+matching_df_imp_2 <- rbind(mtbi_matching_df, uninj_matching_df_imp_2)
+matching_df_imp_3 <- rbind(mtbi_matching_df, uninj_matching_df_imp_3)
+matching_df_imp_4 <- rbind(mtbi_matching_df, uninj_matching_df_imp_4)
+matching_df_imp_5 <- rbind(mtbi_matching_df, uninj_matching_df_imp_5)
 
 ###############################################################################
-# Conversion to dataframes
+# Total parent psych
 ###############################################################################
-mtbi_df_match_1 <- mtbi_dl_match_1 |> collapse_dl()
-mtbi_df_match_2 <- mtbi_dl_match_2 |> collapse_dl()
-mtbi_df_match_3 <- mtbi_dl_match_3 |> collapse_dl()
-mtbi_df_match_4 <- mtbi_ol_match_4 |> collapse_dl()
+matching_df_imp_1$"total_parent_psych" <- matching_df_imp_1 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
 
+matching_df_imp_2$"total_parent_psych" <- matching_df_imp_2 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
+
+matching_df_imp_3$"total_parent_psych" <- matching_df_imp_3 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
+
+matching_df_imp_4$"total_parent_psych" <- matching_df_imp_4 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
+
+matching_df_imp_5$"total_parent_psych" <- matching_df_imp_5 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
+
+###############################################################################
+# Total CBCL
+###############################################################################
+matching_df_imp_1$"total_impairments" <- matching_df_imp_1 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
+matching_df_imp_2$"total_impairments" <- matching_df_imp_2 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
+
+matching_df_imp_3$"total_impairments" <- matching_df_imp_3 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
+
+matching_df_imp_4$"total_impairments" <- matching_df_imp_4 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
+
+matching_df_imp_5$"total_impairments" <- matching_df_imp_5 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
+```
+
+We'll try a few different matching schemes:
+
+```{r}
+colnames(matching_df_imp_5)
+
+# Matching by income, race, parent psych
+matching_results_1_imp_1 <- matchit(
+    formula(mtbi ~ household_income + race + total_parent_psych),
+    data = matching_df_imp_1,
+    method = "nearest"
+)
+matching_summary_1_imp_1 <- capture.output(print(summary(matching_results_1_imp_1)))
+matching_summary_1_imp_1
+
+# Matching by demographic variables
+matching_results_2_imp_1 <- matchit(
+    formula(mtbi ~ household_income + race + sex + pubertal_status_p + pubertal_status_y),
+    data = matching_df_imp_1,
+    method = "nearest"
+)
+matching_summary_2_imp_1 <- capture.output(print(summary(matching_results_2_imp_1)))
+matching_summary_2_imp_1
+
+# Matching by parent psych alone
+matching_results_3_imp_1 <- matchit(
+    formula(mtbi ~ total_parent_psych),
+    data = matching_df_imp_1,
+    method = "nearest"
+)
+matching_summary_3_imp_1 <- capture.output(print(summary(matching_results_3_imp_1)))
+matching_summary_3_imp_1
+
+# Matching by CBCL alone
+matching_results_4_imp_1 <- matchit(
+    formula(mtbi ~ total_impairments),
+    data = matching_df_imp_1,
+    method = "nearest"
+)
+matching_summary_4_imp_1 <- capture.output(print(summary(matching_results_4_imp_1)))
+matching_summary_4_imp_1
+
+saveRDS(matching_summary_1_imp_1, proc_path("matching_summary_1_imp_1.rds", TRUE))
+saveRDS(matching_summary_2_imp_1, proc_path("matching_summary_2_imp_1.rds", TRUE))
+saveRDS(matching_summary_3_imp_1, proc_path("matching_summary_3_imp_1.rds", TRUE))
+saveRDS(matching_summary_4_imp_1, proc_path("matching_summary_4_imp_1.rds", TRUE))
 ```
 
 ```{r}
+# CHECKPOINT
+matching_summary_1_imp_1 <- readRDS(proc_path("2024_08_23_matching_summary_1_imp_1.rds"))
+matching_summary_2_imp_1 <- readRDS(proc_path("2024_08_23_matching_summary_2_imp_1.rds"))
+matching_summary_3_imp_1 <- readRDS(proc_path("2024_08_23_matching_summary_3_imp_1.rds"))
+matching_summary_4_imp_1 <- readRDS(proc_path("2024_08_23_matching_summary_4_imp_1.rds"))
+```
 
-
-
-mtbi_matching_df$"mtbi" <- 1
-uninj_matching_df$"mtbi" <- 0
-
-matching_df <- rbind(mtbi_matching_df, uninj_matching_df)
-
-# Nearest neighbour matching
-matching_results <- matchit(
-    formula(mtbi ~ household_income + race + age + sex),
-    data = matching_df,
-    method = "nearest"
-)
-
-# The uninjured matching has 0 mean diff on all matching variables
-matching_summary <- capture.output(print(summary(matching_results)))
-
-writeLines(matching_summary, proc_path("demo_matching_summary.txt", TRUE))
-
+```{r}
 grDevices::png(
-    filename = fig_path("demo_matching_summary.png", TRUE),
+    filename = fig_path("matching_results_1_imp_1.png", TRUE),
     width = 1000,
     height = 500,
-    res = 120
+    res = 100
 )
-plot(summary(matching_results), position = "right")
+plot(
+    matching_results_1_imp_1,
+    type = "density",
+    interactive = FALSE
+)
 grDevices::dev.off()
 
-# Obtain the matched data
-matched_data <- match.data(matching_results)
+grDevices::png(
+    filename = fig_path("matching_results_2_imp_1.png", TRUE),
+    width = 1000,
+    height = 500,
+    res = 100
+)
+plot(
+    matching_results_2_imp_1,
+    type = "density",
+    interactive = FALSE
+)
+grDevices::dev.off()
 
-# Extract the control group from the matched data
-matched_uninj <- matched_data |>
-    dplyr::filter(mtbi == 0) |>
-    dplyr::select(subjectkey)
+grDevices::png(
+    filename = fig_path("matching_results_3_imp_1.png", TRUE),
+    width = 1000,
+    height = 500,
+    res = 100
+)
+plot(
+    matching_results_3_imp_1,
+    type = "density",
+    interactive = FALSE
+)
+grDevices::dev.off()
 
-write_csv(matched_uninj, sub_path("demo_matched_uninj.csv", TRUE))
+grDevices::png(
+    filename = fig_path("matching_results_4_imp_1.png", TRUE),
+    width = 1000,
+    height = 500,
+    res = 100
+)
+plot(
+    matching_results_4_imp_1,
+    type = "density",
+    interactive = FALSE
+)
+grDevices::dev.off()
 ```
+
+```{r}
+matched_data_1_imp_1 <- match.data(matching_results_1_imp_1)
+matched_data_2_imp_1 <- match.data(matching_results_2_imp_1)
+matched_data_3_imp_1 <- match.data(matching_results_3_imp_1)
+matched_data_4_imp_1 <- match.data(matching_results_4_imp_1)
+```
+
+```{r}
+# Extract the control group from the matched data
+matched_uninj_1_imp_1 <- dplyr::filter(matched_data_1_imp_1, mtbi == 0)$"subjectkey"
+matched_uninj_2_imp_1 <- dplyr::filter(matched_data_2_imp_1, mtbi == 0)$"subjectkey"
+matched_uninj_3_imp_1 <- dplyr::filter(matched_data_3_imp_1, mtbi == 0)$"subjectkey"
+matched_uninj_4_imp_1 <- dplyr::filter(matched_data_4_imp_1, mtbi == 0)$"subjectkey"
+
+write_csv(data.frame(subjectkey = matched_uninj_1_imp_1), sub_path("matched_uninj_1_imp_1.csv", TRUE))
+write_csv(data.frame(subjectkey = matched_uninj_2_imp_1), sub_path("matched_uninj_2_imp_1.csv", TRUE))
+write_csv(data.frame(subjectkey = matched_uninj_3_imp_1), sub_path("matched_uninj_3_imp_1.csv", TRUE))
+write_csv(data.frame(subjectkey = matched_uninj_4_imp_1), sub_path("matched_uninj_4_imp_1.csv", TRUE))
+```
+
+```{r}
+matched_uninj_1_imp_1 <- read_subjects(sub_path("2024_08_23_matched_uninj_1_imp_1.csv"))
+matched_uninj_2_imp_1 <- read_subjects(sub_path("2024_08_23_matched_uninj_2_imp_1.csv"))
+matched_uninj_3_imp_1 <- read_subjects(sub_path("2024_08_23_matched_uninj_3_imp_1.csv"))
+matched_uninj_4_imp_1 <- read_subjects(sub_path("2024_08_23_matched_uninj_4_imp_1.csv"))
+```
+
+For the sake of simplicity, we did our matching off of just 1 of the imputed uninjured datasets.
 
 ## Loading data and out of model lists
 
 ```{r}
-
-matched_uninj <- read_csv(sub_path("2024_06_13_demo_matched_uninj.csv"))
-
 all_dls |> names()
 
 uninj_dls <- all_dls[
@@ -191,20 +290,310 @@ subject_filter_dl <- function(data_list, subject_vector) {
     return(data_list)
 }
 
-demo_matched_uninj_dls <- lapply(
-    uninj_dls,
-    function(x) {
-        lapply(
-            x,
-            function(y) {
-                subject_filter_dl(y, matched_uninj$"subjectkey")
-            }
-        )
-    }
+dl_matcher <- function(list_of_dls, matching_subs) {
+    matched_list_of_dls <- lapply(
+        list_of_dls,
+        function(x) {
+            lapply(
+                x,
+                function(y) {
+                    subject_filter_dl(y, matching_subs)
+                }
+            )
+        }
+    )
+    return(matched_list_of_dls)
+}
+
+matched_uninj_dls_1 <- dl_matcher(uninj_dls, matched_uninj_1_imp_1)
+matched_uninj_dls_2 <- dl_matcher(uninj_dls, matched_uninj_2_imp_1)
+matched_uninj_dls_3 <- dl_matcher(uninj_dls, matched_uninj_3_imp_1)
+matched_uninj_dls_4 <- dl_matcher(uninj_dls, matched_uninj_4_imp_1)
+
+list.save(matched_uninj_dls_1, input_path("matched_uninj_dls_1.rds", TRUE))
+list.save(matched_uninj_dls_2, input_path("matched_uninj_dls_2.rds", TRUE))
+list.save(matched_uninj_dls_3, input_path("matched_uninj_dls_3.rds", TRUE))
+list.save(matched_uninj_dls_4, input_path("matched_uninj_dls_4.rds", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+matched_uninj_dls_1 <- list.load(input_path("2024_08_23_matched_uninj_dls_1.rds"))
+matched_uninj_dls_2 <- list.load(input_path("2024_08_23_matched_uninj_dls_2.rds"))
+matched_uninj_dls_3 <- list.load(input_path("2024_08_23_matched_uninj_dls_3.rds"))
+matched_uninj_dls_4 <- list.load(input_path("2024_08_23_matched_uninj_dls_4.rds"))
+```
+
+## metaSNF
+
+```{r}
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
 )
 
-list.save(
-    demo_matched_uninj_dls,
-    input_path("demo_matched_uninj_dls.rds", TRUE)
+names(matched_uninj_dls_1[[1]])
+
+matched_settings_matrix <- generate_settings_matrix(
+    matched_uninj_dls_1$"uninj_data_lists"$"imp_1",
+    nrow = 200,
+    seed = 42,
+    distance_metrics_list = my_distance_metrics
 )
+
+write_csv(matched_settings_matrix, proc_path("matched_settings_matrix.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+matched_settings_matrix <- read_csv(proc_path("2024_08_23_matched_settings_matrix.csv"))
+```
+
+The goal now is to actually run the SNF.
+
+I have 4 different "sets" of data list / oom list combinations.
+
+Consider just the first set.
+
+This covers 10 different imputed datasets (right?) the 5 pooled and 5 solo uninjured.
+So, I'll create 2000 SNF solutions using all of those 10 sets.
+
+Then, repeat that process 4x.
+
+```{r}
+bulk_batch_snf <- function(dls, sm, dml) {
+    solutions_matrices <- lapply(
+        dls,
+        function(dl) {
+            solutions_matrix <- batch_snf(
+                data_list = dl,
+                settings_matrix = sm,
+                distance_metrics_list = dml,
+                processes = "max"
+            ) 
+        }
+    )
+    names(solutions_matrices) <- c("s1", "s2", "s3", "s4", "s5", "p1", "p2", "p3", "p4", "p5")
+    return(solutions_matrices)
+}
+```
+
+```{r}
+matched_uninj_solutions_matrix_1 <- bulk_batch_snf(
+    dls = c(matched_uninj_dls_1$"uninj_data_lists", matched_uninj_dls_1$"uninj_data_lists"),
+    sm = matched_settings_matrix,
+    dml = my_distance_metrics 
+)
+list.save(matched_uninj_solutions_matrix_1, input_path("matched_uninj_solutions_matrix_1.rds", TRUE))
+
+matched_uninj_solutions_matrix_2 <- bulk_batch_snf(
+    dls = c(matched_uninj_dls_2$"uninj_data_lists", matched_uninj_dls_2$"uninj_data_lists"),
+    sm = matched_settings_matrix,
+    dml = my_distance_metrics 
+)
+list.save(matched_uninj_solutions_matrix_2, input_path("matched_uninj_solutions_matrix_2.rds", TRUE))
+
+matched_uninj_solutions_matrix_3 <- bulk_batch_snf(
+    dls = c(matched_uninj_dls_3$"uninj_data_lists", matched_uninj_dls_3$"uninj_data_lists"),
+    sm = matched_settings_matrix,
+    dml = my_distance_metrics 
+)
+list.save(matched_uninj_solutions_matrix_3, input_path("matched_uninj_solutions_matrix_3.rds", TRUE))
+
+matched_uninj_solutions_matrix_4 <- bulk_batch_snf(
+    dls = c(matched_uninj_dls_4$"uninj_data_lists", matched_uninj_dls_4$"uninj_data_lists"),
+    sm = matched_settings_matrix,
+    dml = my_distance_metrics 
+)
+list.save(matched_uninj_solutions_matrix_4, input_path("matched_uninj_solutions_matrix_4.rds", TRUE))
+```
+
+```{r}
+matched_uninj_solutions_matrix_1 <- list.load(input_path("2024_08_25_matched_uninj_solutions_matrix_1.rds"))
+matched_uninj_solutions_matrix_2 <- list.load(input_path("2024_08_25_matched_uninj_solutions_matrix_2.rds"))
+matched_uninj_solutions_matrix_3 <- list.load(input_path("2024_08_26_matched_uninj_solutions_matrix_3.rds"))
+matched_uninj_solutions_matrix_4 <- list.load(input_path("2024_08_26_matched_uninj_solutions_matrix_4.rds"))
+```
+
+```{r}
+matched_uninj_sm_1 <- do.call("rbind", matched_uninj_solutions_matrix_1)
+matched_uninj_sm_2 <- do.call("rbind", matched_uninj_solutions_matrix_2)
+matched_uninj_sm_3 <- do.call("rbind", matched_uninj_solutions_matrix_3)
+matched_uninj_sm_4 <- do.call("rbind", matched_uninj_solutions_matrix_4)
+
+write_csv(data.frame(matched_uninj_sm_1), proc_path("matched_uninj_sm_1.csv", TRUE))
+write_csv(data.frame(matched_uninj_sm_2), proc_path("matched_uninj_sm_2.csv", TRUE))
+write_csv(data.frame(matched_uninj_sm_3), proc_path("matched_uninj_sm_3.csv", TRUE))
+write_csv(data.frame(matched_uninj_sm_4), proc_path("matched_uninj_sm_4.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+matched_uninj_sm_1 <- read_csv(proc_path("2024_08_26_matched_uninj_sm_1.csv"))
+matched_uninj_sm_2 <- read_csv(proc_path("2024_08_26_matched_uninj_sm_2.csv"))
+matched_uninj_sm_3 <- read_csv(proc_path("2024_08_26_matched_uninj_sm_3.csv"))
+matched_uninj_sm_4 <- read_csv(proc_path("2024_08_26_matched_uninj_sm_4.csv"))
+```
+
+```{r}
+matched_uninj_ari_1 <- calc_aris(matched_uninj_sm_1, processes = "max")
+write_csv(data.frame(matched_uninj_ari_1), proc_path("matched_uninj_ari_1.csv", TRUE))
+matched_uninj_ari_2 <- calc_aris(matched_uninj_sm_2, processes = "max")
+write_csv(data.frame(matched_uninj_ari_2), proc_path("matched_uninj_ari_2.csv", TRUE))
+matched_uninj_ari_3 <- calc_aris(matched_uninj_sm_3, processes = "max")
+write_csv(data.frame(matched_uninj_ari_3), proc_path("matched_uninj_ari_3.csv", TRUE))
+matched_uninj_ari_4 <- calc_aris(matched_uninj_sm_4, processes = "max")
+write_csv(data.frame(matched_uninj_ari_4), proc_path("matched_uninj_ari_4.csv", TRUE))
+```
+
+```{r}
+matched_uninj_ari_order_1 <- get_matrix_order(matched_uninj_ari_1)
+matched_uninj_ari_order_2 <- get_matrix_order(matched_uninj_ari_2)
+matched_uninj_ari_order_3 <- get_matrix_order(matched_uninj_ari_3)
+matched_uninj_ari_order_4 <- get_matrix_order(matched_uninj_ari_4)
+
+write_csv(data.frame(matched_uninj_ari_order_1), proc_path("matched_uninj_ari_order_1.csv", TRUE))
+write_csv(data.frame(matched_uninj_ari_order_2), proc_path("matched_uninj_ari_order_2.csv", TRUE))
+write_csv(data.frame(matched_uninj_ari_order_3), proc_path("matched_uninj_ari_order_3.csv", TRUE))
+write_csv(data.frame(matched_uninj_ari_order_4), proc_path("matched_uninj_ari_order_4.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+matched_uninj_ari_1 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_1.csv"))
+matched_uninj_ari_2 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_2.csv"))
+matched_uninj_ari_3 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_3.csv"))
+matched_uninj_ari_4 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_4.csv"))
+
+matched_uninj_ari_order_1 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_order_1.csv"))
+matched_uninj_ari_order_2 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_order_2.csv"))
+matched_uninj_ari_order_3 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_order_3.csv"))
+matched_uninj_ari_order_4 <- read_csv(proc_path("2024_08_26_matched_uninj_ari_order_4.csv"))
+```
+
+```{r}
+uninj_dl_s1 <- all_dls$"uninj_data_lists"$"imp_1"
+uninj_dl_s2 <- all_dls$"uninj_data_lists"$"imp_2"
+uninj_dl_s3 <- all_dls$"uninj_data_lists"$"imp_3"
+uninj_dl_s4 <- all_dls$"uninj_data_lists"$"imp_4"
+uninj_dl_s5 <- all_dls$"uninj_data_lists"$"imp_5"
+uninj_dl_p1 <- all_dls$"uninj_pooled_data_lists"$"imp_1"
+uninj_dl_p2 <- all_dls$"uninj_pooled_data_lists"$"imp_2"
+uninj_dl_p3 <- all_dls$"uninj_pooled_data_lists"$"imp_3"
+uninj_dl_p4 <- all_dls$"uninj_pooled_data_lists"$"imp_4"
+uninj_dl_p5 <- all_dls$"uninj_pooled_data_lists"$"imp_5"
+
+uninj_ol_s1 <- all_dls$"uninj_oom_lists"$"imp_1"
+uninj_ol_s2 <- all_dls$"uninj_oom_lists"$"imp_2"
+uninj_ol_s3 <- all_dls$"uninj_oom_lists"$"imp_3"
+uninj_ol_s4 <- all_dls$"uninj_oom_lists"$"imp_4"
+uninj_ol_s5 <- all_dls$"uninj_oom_lists"$"imp_5"
+uninj_ol_p1 <- all_dls$"uninj_pooled_oom_lists"$"imp_1"
+uninj_ol_p2 <- all_dls$"uninj_pooled_oom_lists"$"imp_2"
+uninj_ol_p3 <- all_dls$"uninj_pooled_oom_lists"$"imp_3"
+uninj_ol_p4 <- all_dls$"uninj_pooled_oom_lists"$"imp_4"
+uninj_ol_p5 <- all_dls$"uninj_pooled_oom_lists"$"imp_5"
+
+```
+
+```{r}
+
+matched_uninj_esm_1_s1 <- extend_solutions(matched_uninj_solutions_matrix_1$"s1", data_list = uninj_dl_s1, target_list = uninj_ol_s1, min_pval = 1e-10, processes = "max")
+
+names(matched_uninj_dls_1[[1]])
+
+
+
+
+
+
+write_csv(proc_path("matched_uninj_esm_1_s1.csv", TRUE))
+matched_uninj_esm_1_s2 <- extend_solutions(matched_uninj_solutions_matrix_1$"s2", data_list = uninj_dl_s2, target_list = uninj_ol_s2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_s2.csv", TRUE))
+matched_uninj_esm_1_s3 <- extend_solutions(matched_uninj_solutions_matrix_1$"s3", data_list = uninj_dl_s3, target_list = uninj_ol_s3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_s3.csv", TRUE))
+matched_uninj_esm_1_s4 <- extend_solutions(matched_uninj_solutions_matrix_1$"s4", data_list = uninj_dl_s4, target_list = uninj_ol_s4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_s4.csv", TRUE))
+matched_uninj_esm_1_s5 <- extend_solutions(matched_uninj_solutions_matrix_1$"s5", data_list = uninj_dl_s5, target_list = uninj_ol_s5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_s5.csv", TRUE))
+matched_uninj_esm_1_p1 <- extend_solutions(matched_uninj_solutions_matrix_1$"p1", data_list = uninj_dl_p1, target_list = uninj_ol_p1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_p1.csv", TRUE))
+matched_uninj_esm_1_p2 <- extend_solutions(matched_uninj_solutions_matrix_1$"p2", data_list = uninj_dl_p2, target_list = uninj_ol_p2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_p2.csv", TRUE))
+matched_uninj_esm_1_p3 <- extend_solutions(matched_uninj_solutions_matrix_1$"p3", data_list = uninj_dl_p3, target_list = uninj_ol_p3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_p3.csv", TRUE))
+matched_uninj_esm_1_p4 <- extend_solutions(matched_uninj_solutions_matrix_1$"p4", data_list = uninj_dl_p4, target_list = uninj_ol_p4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_p4.csv", TRUE))
+matched_uninj_esm_1_p5 <- extend_solutions(matched_uninj_solutions_matrix_1$"p5", data_list = uninj_dl_p5, target_list = uninj_ol_p5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_1_p5.csv", TRUE))
+
+matched_uninj_esm_2_s1 <- extend_solutions(matched_uninj_solutions_matrix_2$"s1", data_list = uninj_dl_s1, target_list = uninj_ol_s1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_s2.csv", TRUE))
+matched_uninj_esm_2_s2 <- extend_solutions(matched_uninj_solutions_matrix_2$"s2", data_list = uninj_dl_s2, target_list = uninj_ol_s2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_s2.csv", TRUE))
+matched_uninj_esm_2_s3 <- extend_solutions(matched_uninj_solutions_matrix_2$"s3", data_list = uninj_dl_s3, target_list = uninj_ol_s3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_s3.csv", TRUE))
+matched_uninj_esm_2_s4 <- extend_solutions(matched_uninj_solutions_matrix_2$"s4", data_list = uninj_dl_s4, target_list = uninj_ol_s4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_s4.csv", TRUE))
+matched_uninj_esm_2_s5 <- extend_solutions(matched_uninj_solutions_matrix_2$"s5", data_list = uninj_dl_s5, target_list = uninj_ol_s5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_s5.csv", TRUE))
+matched_uninj_esm_2_p1 <- extend_solutions(matched_uninj_solutions_matrix_2$"p1", data_list = uninj_dl_p1, target_list = uninj_ol_p1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_p1.csv", TRUE))
+matched_uninj_esm_2_p2 <- extend_solutions(matched_uninj_solutions_matrix_2$"p2", data_list = uninj_dl_p2, target_list = uninj_ol_p2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_p2.csv", TRUE))
+matched_uninj_esm_2_p3 <- extend_solutions(matched_uninj_solutions_matrix_2$"p3", data_list = uninj_dl_p3, target_list = uninj_ol_p3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_p3.csv", TRUE))
+matched_uninj_esm_2_p4 <- extend_solutions(matched_uninj_solutions_matrix_2$"p4", data_list = uninj_dl_p4, target_list = uninj_ol_p4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_p4.csv", TRUE))
+matched_uninj_esm_2_p5 <- extend_solutions(matched_uninj_solutions_matrix_2$"p5", data_list = uninj_dl_p5, target_list = uninj_ol_p5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_2_p5.csv", TRUE))
+
+matched_uninj_esm_3_s1 <- extend_solutions(matched_uninj_solutions_matrix_3$"s1", data_list = uninj_dl_s1, target_list = uninj_ol_s1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_s1.csv", TRUE))
+matched_uninj_esm_3_s2 <- extend_solutions(matched_uninj_solutions_matrix_3$"s2", data_list = uninj_dl_s2, target_list = uninj_ol_s2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_s2.csv", TRUE))
+matched_uninj_esm_3_s3 <- extend_solutions(matched_uninj_solutions_matrix_3$"s3", data_list = uninj_dl_s3, target_list = uninj_ol_s3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_s3.csv", TRUE))
+matched_uninj_esm_3_s4 <- extend_solutions(matched_uninj_solutions_matrix_3$"s4", data_list = uninj_dl_s4, target_list = uninj_ol_s4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_s4.csv", TRUE))
+matched_uninj_esm_3_s5 <- extend_solutions(matched_uninj_solutions_matrix_3$"s5", data_list = uninj_dl_s5, target_list = uninj_ol_s5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_s5.csv", TRUE))
+matched_uninj_esm_3_p1 <- extend_solutions(matched_uninj_solutions_matrix_3$"p1", data_list = uninj_dl_p1, target_list = uninj_ol_p1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_p1.csv", TRUE))
+matched_uninj_esm_3_p2 <- extend_solutions(matched_uninj_solutions_matrix_3$"p2", data_list = uninj_dl_p2, target_list = uninj_ol_p2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_p2.csv", TRUE))
+matched_uninj_esm_3_p3 <- extend_solutions(matched_uninj_solutions_matrix_3$"p3", data_list = uninj_dl_p3, target_list = uninj_ol_p3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_p3.csv", TRUE))
+matched_uninj_esm_3_p4 <- extend_solutions(matched_uninj_solutions_matrix_3$"p4", data_list = uninj_dl_p4, target_list = uninj_ol_p4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_p4.csv", TRUE))
+matched_uninj_esm_3_p5 <- extend_solutions(matched_uninj_solutions_matrix_3$"p5", data_list = uninj_dl_p5, target_list = uninj_ol_p5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_3_p5.csv", TRUE))
+
+matched_uninj_esm_4_s1 <- extend_solutions(matched_uninj_solutions_matrix_4$"s1", data_list = uninj_dl_s1, target_list = uninj_ol_s1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_s1.csv", TRUE))
+matched_uninj_esm_4_s2 <- extend_solutions(matched_uninj_solutions_matrix_4$"s2", data_list = uninj_dl_s2, target_list = uninj_ol_s2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_s2.csv", TRUE))
+matched_uninj_esm_4_s3 <- extend_solutions(matched_uninj_solutions_matrix_4$"s3", data_list = uninj_dl_s3, target_list = uninj_ol_s3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_s3.csv", TRUE))
+matched_uninj_esm_4_s4 <- extend_solutions(matched_uninj_solutions_matrix_4$"s4", data_list = uninj_dl_s4, target_list = uninj_ol_s4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_s4.csv", TRUE))
+matched_uninj_esm_4_s5 <- extend_solutions(matched_uninj_solutions_matrix_4$"s5", data_list = uninj_dl_s5, target_list = uninj_ol_s5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_s5.csv", TRUE))
+matched_uninj_esm_4_p1 <- extend_solutions(matched_uninj_solutions_matrix_4$"p1", data_list = uninj_dl_p1, target_list = uninj_ol_p1, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_p1.csv", TRUE))
+matched_uninj_esm_4_p2 <- extend_solutions(matched_uninj_solutions_matrix_4$"p2", data_list = uninj_dl_p2, target_list = uninj_ol_p2, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_p2.csv", TRUE))
+matched_uninj_esm_4_p3 <- extend_solutions(matched_uninj_solutions_matrix_4$"p3", data_list = uninj_dl_p3, target_list = uninj_ol_p3, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_p3.csv", TRUE))
+matched_uninj_esm_4_p4 <- extend_solutions(matched_uninj_solutions_matrix_4$"p4", data_list = uninj_dl_p4, target_list = uninj_ol_p4, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_p4.csv", TRUE))
+matched_uninj_esm_4_p5 <- extend_solutions(matched_uninj_solutions_matrix_4$"p5", data_list = uninj_dl_p5, target_list = uninj_ol_p5, min_pval = 1e-10, processes = "max")
+write_csv(proc_path("matched_uninj_esm_4_p5.csv", TRUE))
 ```
