@@ -1,5 +1,44 @@
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+import pandas as pd
+import os
+
+"""
+The plan will be:
+
+1. Load in the input data (~60 features) & the cluster labels
+2. Train/test split
+3. Try to assign clusters based on the features as goodly as possible
+
+"""
+
+# mtbi_mc_d_full_plot_df = pd.read_csv("data/abcd/results/processed/2024_08_29_mtbi_mc_d_full_plot_df.csv")
+# mtbi_mc_d_full_plot_df.to_csv("mtbi_mc_d_full_plot_df_local.csv", index=False)
+
+# Working entirely locally for this stage
+mtbi_mc_d_full_plot_df = pd.read_csv("mtbi_mc_d_full_plot_df_local.csv")
+
+mtbi_mc_d_full_plot_df.columns
+
+X = mtbi_mc_d_full_plot_df[['household_income', 'race', 'parent_anxdep']].copy()
+X['race'] = X['race'].apply(lambda x: 'white' if x == 'white' else 'non-white')
+X = pd.get_dummies(X, columns = ['race'], drop_first = True)
+
+y = mtbi_mc_d_full_plot_df[['cluster']].values.flatten()
+
+model = LogisticRegression(max_iter=200)
+
+model.fit(X, y)
+y_pred = model.predict(X)
+accuracy_score(y_pred, y)
+
+
+
+mtbi_mc_d_full_plot_df['cluster'].unique()
+
+
 
 # from sklearn.model_selection import train_test_split, GridSearchCV
 # from sklearn.ensemble import RandomForestClassifier
@@ -7,6 +46,12 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 # import matplotlib.pyplot as plt
 
 wine = load_wine()
+
+wine.target
+
+wine.data
+
+wine.feature_names
 
 x_train, x_test, y_train, y_test = train_test_split(
     wine.data, wine.target, test_size=0.3, random_state=42

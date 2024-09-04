@@ -15,6 +15,7 @@ library(rlist)
 library(ggplot2)
 library(patchwork)
 library(xtable)
+library(compute.es)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -842,6 +843,14 @@ mtbi_mc_d_esm_plot_df <- auto_plot(
     return_plots = FALSE
 )
 
+write_csv(mtbi_mc_d_esm_plot_df, proc_path("mtbi_mc_d_esm_plot_df", TRUE))
+```
+
+```{r}
+mtbi_mc_d_esm_plot_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df"))
+```
+
+```{r}
 mtbi_mc_d_ranked_all_plots[[2]]
 
 outcome_plot_list <- auto_plot(
@@ -883,19 +892,7 @@ ggsave(
 
 Can come back to this later.
 
-```{r}# <!-- {{{ -->
-
-proptable <- function(df, ft) {
-    tab <- prop.table(
-        table(df[, ft], df$"cluster"),
-        margin = 2
-    ) * 100
-    return(tab)
-}
-
-proptable(mtbi_mc_e_esm_plot_df, "sex")
-
-proptable(mtbi_mc_e_esm_plot_df, "sex")
+```{r}
 
 tstat <- function(d, n1, n2) {
     t <- d * sqrt((n1 * n2) / (n1 + n2))
@@ -912,7 +909,7 @@ cohens_d <- function(mean1, mean2, pooled_sd) {
     return(d)
 }
 
-calc_es <- function(x1, x2) {
+calc_des <- function(x1, x2) {
     n1 <- length(x1)
     n2 <- length(x2)
     s1 <- sd(x1)
@@ -921,14 +918,189 @@ calc_es <- function(x1, x2) {
     mean1 <- mean(x1)
     mean2 <- mean(x2)
     d <- cohens_d(mean1, mean2, s)
-    d_full <- des(d, n1, n2, verbose = FALSE)
+    d_full <- compute.es::des(
+        d,
+        n1,
+        n2,
+        verbose = FALSE
+    )
     return(
         list(
             "d" = d_full$"d",
-            
+            "lower" = d_full$"l.d",
+            "upper" = d_full$"u.d"
         )
     )
 }
+
+calc_propes <- function(x1, x2) {
+    d_full <- compute.es::propes(
+        prop(x1),
+        prop(x2),
+        length(x1),
+        length(x2),
+        verbose = FALSE
+    )
+    report <- paste0(
+        signif(prop(x1)*100, 2), "% vs. ",
+        signif(prop(x2)*100, 2), "%; OR: ",
+        d_full$OR, " [",
+        d_full$l.or, ", ",
+        d_full$u.or, "]"
+    )
+    return(report)
+    #return(
+    #    list(
+    #        "prop1" = signif(prop(x1)*100, 2),
+    #        "prop2" = signif(prop(x2)*100, 2),
+    #        "d" = d_full$"d",
+    #        "lower" = d_full$"l.d",
+    #        "upper" = d_full$"u.d",
+    #        "or" = d_full$"OR",
+    #        "lor" = d_full$"l.or",
+    #        "uor" = d_full$"u.or",
+    #    )
+    #)
+}
+
+dummy_non_numeric <- function(df) {
+    to_dummy <- colnames(df)[!sapply(df, is.numeric)]
+    dummied_df <- dummy_cols(
+        df,
+        select_columns = to_dummy,
+        remove_selected_columns = TRUE
+    )
+    return(dummied_df)
+}
+
+is_binary <- function(x) {
+    return(isTRUE(all.equal(sort(unique(x)), c(0, 1))))
+}
+
+prop <- function(x) {
+    return(sum(x == 1)/length(x))
+}
+
+```
+
+
+```{r}
+library(fastDummies)
+
+d_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df"))
+
+topologizer <- function(df) {
+    df <- data.frame(df)
+    df <- dummy_non_numeric(dplyr::select(df, -"subjectkey"))
+    summary_df <- data.frame(
+        "feature" = as.character(),
+        "summary" = as.character(),
+        "1 v 2" = as.character(),
+        "1 v 3" = as.character(),
+        "2 v 3" = as.character()
+    )
+    c1 <- df[df$"cluster" == 1, ]
+    c2 <- df[df$"cluster" == 2, ]
+    c3 <- df[df$"cluster" == 3, ]
+    features <- df |>
+        dplyr::select(-"cluster") |>
+        colnames()
+    ###########################################################################
+    # Check if features are binary (unique values are 0 and 1) or not
+    ###########################################################################
+    for (feature in features) {
+        f1 <- c1[, feature]
+        f2 <- c2[, feature]
+        f3 <- c3[, feature]
+        if (is_binary(df[, feature])) {
+            props <- c("1" = prop(f1), "2" = prop(f2), "3" = prop(f3))
+            full_summary <- paste(names(sort(props)), collapse = " > ")
+            sum_1_v_2 <- calc_propes(f1, f2)
+            sum_1_v_3 <- calc_propes(f1, f3)
+            sum_2_v_3 <- calc_propes(f2, f3)
+            summary_df <- rbind(
+                summary_df,
+                data.frame(
+                    "feature" = feature,
+                    "summary" = full_summary,
+                    "C1vC2" = sum_1_v_2,
+                    "C1vC3" = sum_1_v_3,
+                    "C2vC3" = sum_2_v_3
+                )
+            )
+            #print(paste(summary, collapse = " > "))
+        } else {
+            means <- c("1" = mean(f1), "2" = mean(f2), "3" = mean(f3)) 
+            summary <- names(sort(means))
+            #print(paste(summary, collapse = " > "))
+        }
+    }
+    return(summary_df)
+}
+head(topologizer(d_df))
+
+calc_es(c1$"age", c3$"age")
+
+calc_es(c1$"family_yell_p", c2$"family_yell_p")
+
+c1$"race_black"
+
+c2$"helpful_y"
+
+c1$"cbcl_aggressive"
+
+c2$"cbcl_aggressive"
+
+
+identical(sort(unique(c1$"family_yell_p")), c(0, 1))
+
+sort(unique(c2$"family_yell_p"))
+
+ggplot(
+    d_df,
+    aes(x = cluster, y = cbcl_aggressive)
+) + geom_point()
+
+
+
+jitter_plot(d_df, "cbcl_aggressive")
+
+z <- calc_propes(c1$"family_yell_p", c2$'family_yell_p')
+
+
+z <- propes(
+    20/50,
+    10/50,
+    50,
+    50
+)
+
+z$"d"
+z$"l.d"
+z$"u.d"
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+proptable <- function(df, ft) {
+    tab <- prop.table(
+        table(df[, ft], df$"cluster"),
+        margin = 2
+    ) * 100
+    return(tab)
+}
+
+proptable(mtbi_mc_e_esm_plot_df, "sex")
+
+proptable(mtbi_mc_e_esm_plot_df, "sex")
 
 mc_e_c1 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 1)
 mc_e_c2 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 2)
@@ -1542,6 +1714,20 @@ ggsave(
 Now we've seen that the label propagated solutions are broadly quite similar.
 Good to focus more on the things that are prevalent in both solutions.
 
+
+An export of the full data lists as csv form for python supervised learning downstream:
+
+```{r}
+
+mtbi_mc_d_full_plot_df <- auto_plot(
+    cluster_df = mtbi_mc_d_full_1,
+    data_list = full_data_list_1,
+    target_list = full_oom_list_1,
+    return_plots = FALSE
+)
+
+write_csv(mtbi_mc_d_full_plot_df, proc_path("mtbi_mc_d_full_plot_df.csv", TRUE))
+```
 
 ```{r}
 #top_lp_plots <- wrap_plots(mtbi_mc_d_lp_plot_list_1[names(mc_d_top_pl)]) &
