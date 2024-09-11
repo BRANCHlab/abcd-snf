@@ -4,7 +4,6 @@ In this chapter, I use the metaSNF package to generate and characterize meta clu
 
 ## Importing packages and establishing file paths
 
-
 ```{r}
 library(readr)
 library(abcdutils)
@@ -16,6 +15,8 @@ library(ggplot2)
 library(patchwork)
 library(xtable)
 library(compute.es)
+library(dplyr)
+library(fastDummies)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -843,11 +844,11 @@ mtbi_mc_d_esm_plot_df <- auto_plot(
     return_plots = FALSE
 )
 
-write_csv(mtbi_mc_d_esm_plot_df, proc_path("mtbi_mc_d_esm_plot_df", TRUE))
+write_csv(mtbi_mc_d_esm_plot_df, proc_path("mtbi_mc_d_esm_plot_df.csv", TRUE))
 ```
 
 ```{r}
-mtbi_mc_d_esm_plot_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df"))
+mtbi_mc_d_esm_plot_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df.csv"))
 ```
 
 ```{r}
@@ -893,7 +894,6 @@ ggsave(
 Can come back to this later.
 
 ```{r}
-
 tstat <- function(d, n1, n2) {
     t <- d * sqrt((n1 * n2) / (n1 + n2))
     return(t)
@@ -926,41 +926,28 @@ calc_des <- function(x1, x2) {
     )
     return(
         list(
-            "d" = d_full$"d",
-            "lower" = d_full$"l.d",
-            "upper" = d_full$"u.d"
+            "es" = d_full$"d",
+            "l" = d_full$"l.d",
+            "u" = d_full$"u.d"
         )
     )
 }
 
 calc_propes <- function(x1, x2) {
     d_full <- compute.es::propes(
-        prop(x1),
-        prop(x2),
+        mean(x1),
+        mean(x2),
         length(x1),
         length(x2),
         verbose = FALSE
     )
-    report <- paste0(
-        signif(prop(x1)*100, 2), "% vs. ",
-        signif(prop(x2)*100, 2), "%; OR: ",
-        d_full$OR, " [",
-        d_full$l.or, ", ",
-        d_full$u.or, "]"
+    return(
+        list(
+            "es" = d_full$"OR",
+            "l" = d_full$"l.or",
+            "u" = d_full$"u.or"
+        )
     )
-    return(report)
-    #return(
-    #    list(
-    #        "prop1" = signif(prop(x1)*100, 2),
-    #        "prop2" = signif(prop(x2)*100, 2),
-    #        "d" = d_full$"d",
-    #        "lower" = d_full$"l.d",
-    #        "upper" = d_full$"u.d",
-    #        "or" = d_full$"OR",
-    #        "lor" = d_full$"l.or",
-    #        "uor" = d_full$"u.or",
-    #    )
-    #)
 }
 
 dummy_non_numeric <- function(df) {
@@ -977,27 +964,25 @@ is_binary <- function(x) {
     return(isTRUE(all.equal(sort(unique(x)), c(0, 1))))
 }
 
-prop <- function(x) {
-    return(sum(x == 1)/length(x))
-}
-
-```
-
-
-```{r}
-library(fastDummies)
-
-d_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df"))
-
 topologizer <- function(df) {
     df <- data.frame(df)
     df <- dummy_non_numeric(dplyr::select(df, -"subjectkey"))
     summary_df <- data.frame(
         "feature" = as.character(),
+        "type" = as.character(),
         "summary" = as.character(),
-        "1 v 2" = as.character(),
-        "1 v 3" = as.character(),
-        "2 v 3" = as.character()
+        "c1_mean" = as.numeric(),
+        "c2_mean" = as.numeric(),
+        "c3_mean" = as.numeric(),
+        "c1_c2_es" = as.numeric(),
+        "c1_c2_l" = as.numeric(),
+        "c1_c2_u" = as.numeric(),
+        "c1_c3_es" = as.numeric(),
+        "c1_c3_l" = as.numeric(),
+        "c1_c3_u" = as.numeric(),
+        "c2_c3_es" = as.numeric(),
+        "c2_c3_l" = as.numeric(),
+        "c2_c3_u" = as.numeric()
     )
     c1 <- df[df$"cluster" == 1, ]
     c2 <- df[df$"cluster" == 2, ]
@@ -1012,293 +997,99 @@ topologizer <- function(df) {
         f1 <- c1[, feature]
         f2 <- c2[, feature]
         f3 <- c3[, feature]
+        means <- c("1" = mean(f1), "2" = mean(f2), "3" = mean(f3))
+        full_summary <- paste(
+            names(sort(means, decreasing = TRUE)),
+            collapse = " > "
+        )
         if (is_binary(df[, feature])) {
-            props <- c("1" = prop(f1), "2" = prop(f2), "3" = prop(f3))
-            full_summary <- paste(names(sort(props)), collapse = " > ")
             sum_1_v_2 <- calc_propes(f1, f2)
             sum_1_v_3 <- calc_propes(f1, f3)
             sum_2_v_3 <- calc_propes(f2, f3)
-            summary_df <- rbind(
-                summary_df,
-                data.frame(
-                    "feature" = feature,
-                    "summary" = full_summary,
-                    "C1vC2" = sum_1_v_2,
-                    "C1vC3" = sum_1_v_3,
-                    "C2vC3" = sum_2_v_3
-                )
-            )
-            #print(paste(summary, collapse = " > "))
+            type <- "or"
         } else {
-            means <- c("1" = mean(f1), "2" = mean(f2), "3" = mean(f3)) 
-            summary <- names(sort(means))
-            #print(paste(summary, collapse = " > "))
+            sum_1_v_2 <- calc_des(f1, f2)
+            sum_1_v_3 <- calc_des(f1, f3)
+            sum_2_v_3 <- calc_des(f2, f3)
+            type <- "d"
         }
+        summary_df <- rbind(
+            summary_df,
+            data.frame(
+                "feature" = feature,
+                "summary" = full_summary,
+                "c1" = signif(mean(f1), 2),
+                "c2" = signif(mean(f2), 2),
+                "c3" = signif(mean(f3), 2),
+                "es" = type,
+                "c12_es" = sum_1_v_2$"es",
+                "c12_l" = sum_1_v_2$"l",
+                "c12_u" = sum_1_v_2$"u",
+                "c13_es" = sum_1_v_3$"es",
+                "c13_l" = sum_1_v_3$"l",
+                "c13_u" = sum_1_v_3$"u",
+                "c23_es" = sum_2_v_3$"es",
+                "c23_l" = sum_2_v_3$"l",
+                "c23_u" = sum_2_v_3$"u"
+            )
+        )
     }
     return(summary_df)
 }
-head(topologizer(d_df))
-
-calc_es(c1$"age", c3$"age")
-
-calc_es(c1$"family_yell_p", c2$"family_yell_p")
-
-c1$"race_black"
-
-c2$"helpful_y"
-
-c1$"cbcl_aggressive"
-
-c2$"cbcl_aggressive"
-
-
-identical(sort(unique(c1$"family_yell_p")), c(0, 1))
-
-sort(unique(c2$"family_yell_p"))
-
-ggplot(
-    d_df,
-    aes(x = cluster, y = cbcl_aggressive)
-) + geom_point()
-
-
-
-jitter_plot(d_df, "cbcl_aggressive")
-
-z <- calc_propes(c1$"family_yell_p", c2$'family_yell_p')
-
-
-z <- propes(
-    20/50,
-    10/50,
-    50,
-    50
-)
-
-z$"d"
-z$"l.d"
-z$"u.d"
-
 ```
-
-
-
-
-
-
 
 
 ```{r}
+d_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df.csv"))
 
-proptable <- function(df, ft) {
-    tab <- prop.table(
-        table(df[, ft], df$"cluster"),
-        margin = 2
-    ) * 100
-    return(tab)
-}
+topology_df <- topologizer(d_df)
 
-proptable(mtbi_mc_e_esm_plot_df, "sex")
+mtbi_mc_d_outcome_tops <- topology_df |> dplyr::filter(grepl("cbcl|sds", feature))
+mtbi_mc_d_input_tops <- topology_df |> dplyr::filter(!grepl("cbcl|sds", feature))
 
-proptable(mtbi_mc_e_esm_plot_df, "sex")
-
-mc_e_c1 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 1)
-mc_e_c2 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 2)
-mc_e_c3 <- mtbi_mc_e_esm_plot_df |> dplyr::filter(cluster == 3)
-
-n1 <- nrow(mc_e_c1)
-n2 <- nrow(mc_e_c2)
-n3 <- nrow(mc_e_c3)
-
-d <- calc_es(
-    mc_e_c1$"brain_volume",
-    mc_e_c2$"brain_volume"
+joint_ranks <- mtbi_mc_d_nmi_v_pval_rank |>
+    dplyr::select(feature, joint_rank)
+joint_ranks <- rbind(
+    joint_ranks,
+    data.frame(
+        feature = c(
+            "race_black",
+            "race_white",
+            "race_hispanic",
+            "race_other"
+        ),
+        joint_rank = joint_ranks[joint_ranks$"feature" == "race", "joint_rank"]
+    )
 )
-
-d
-
-z2 <- des(d, n1, n2, verbose = FALSE)
-
-z2
-
-library(compute.es)
-
-table(mc_e_c1$"sex")
-table(mc_e_c3$"sex")
-
-
-
-
-z <- propes(
-    0.1214953,
-    0.8225806,
-    nrow(mc_e_c1),
-    nrow(mc_e_c3)
+joint_ranks <- rbind(
+    joint_ranks,
+    data.frame(
+        feature = c(
+            "mtbi_mechanism_fall_hit",
+            "mtbi_mechanism_hosp_er",
+            "mtbi_mechanism_multi",
+            "mtbi_mechanism_other_loc",
+            "mtbi_mechanism_vehicle",
+            "mtbi_mechanism_violent"
+        ),
+        joint_rank = joint_ranks[joint_ranks$"feature" == "mtbi_mechanism", "joint_rank"]
+    )
 )
+joint_ranks <- dplyr::filter(joint_ranks, !feature %in% c("mtbi_mechanism", "race"))
 
-z$"OR"
+mtbi_mc_d_input_tops <- dplyr::inner_join(mtbi_mc_d_input_tops, joint_ranks, by = "feature")
 
-es_bound(d, nrow(mc_e_c1), nrow(mc_e_c2))
+mtbi_mc_d_input_tops <- dplyr::arrange(mtbi_mc_d_input_tops, joint_rank)
 
-
+write_csv(mtbi_mc_d_input_tops, proc_path("mtbi_mc_d_input_tops.csv", TRUE))
+write_csv(mtbi_mc_d_outcome_tops, proc_path("mtbi_mc_d_outcome_tops.csv", TRUE))
 ```
-
-
-sex:  Cluster 1 and 2 were primarily male (87.9% and 83.9% male respectively), while cluster 3 was primarily female (82.3%). 
-
-
-brain_volume
-cortical_sa
-household_income
-pubertal_status_p
-programs_this_year
-non_school_programs
-parent_somatic
-weekday_screentime
-race
-parent_thought
-private_instruction
-parent_anxdep
-fmri_cort_subcort_cors
-parent_depress
-fmri_cort_cors
-parent_aggressive
-parent_antisocial
-weekend_screentime
-parent_anxdisord
-considerate
-headache_history
-family_outdo
-helps_hurt
-parent_hyperactive
-major_wm_ndi
-parent_withdrawn
-parent_avoidant
-parent_perstr
-parent_attention
-cortical_thickness
-exercise_time
-family_fight
-family_temper
-family_criticize
-family_angry
-family_peaceful
-family_throw
-parent_intrusive
-helpful
-same_sex_close_friend
-pubertal_status_y
-pericortical_wm_ndi
-age
-school_programs
-same_sex_friend
-family_yell
-mtbi_age
-mtbi_mechanism
-family_hit
-mtbi_loc
-previous_mtbis
-mtbi_mem_daze
-opp_sex_friend
-opp_sex_close_friend
-
 
 ```{r}
-
-
-
-binary_or <- function(df, feature, ca, cb) {
-    ca_values <- df[df$"cluster" == ca, feature]
-    cb_values <- df[df$"cluster" == cb, feature]
-    print(ca_values)
-    print(".")
-    print(cb_values)
-}
-binary_or(
-    mtbi_mc_e_esm_plot_df,
-    feature = "sex",
-    ca = 1,
-    cb = 2
-)
-
-sorted_features
-
-# OR calculations
-or_from_table <- function(table, exposed_c, ctrl_c, outcome_cat, nothing_cat) {
-    df <- data.frame(table)
-    colnames(df) <- c("cluster", "event", "freq")
-    exposed_outcome <- dplyr::filter(
-        df,
-        cluster == exposed_c & event == outcome_cat
-    )$"freq"
-    ctrl_outcome <- dplyr::filter( df,
-        cluster == ctrl_c & event == outcome_cat
-    )$"freq"
-    exposed_nothing <- dplyr::filter(
-        df,
-        cluster == exposed_c & event == nothing_cat
-    )$"freq"
-    ctrl_nothing <- dplyr::filter( df,
-        cluster == ctrl_c & event == nothing_cat
-    )$"freq"
-    or_num <- exposed_outcome / ctrl_outcome
-    or_den <- exposed_nothing / ctrl_nothing
-    or <- or_num / or_den
-    d <- ln()
-    return(or_num / or_den)
-}
-
-# Race
-race_df <- mtbi_mc_e_esm_plot_df |>
-    dplyr::select(cluster, race)
-
-race_df$"race"[race_df$"race" != "white"] <- "minority"
-
-race_tab <- table(race_df)
-
-for (i in 1:3) {
-    for (j in 1:3) {
-        if (i != j) {
-            or <- or_from_table(race_tab, i, j, "minority", "white")
-            print(paste0("Cluster ", i, " vs. ", j, ": ", round(or, 2)))
-            d <- 
-            cat("\n")
-        }
-    }
-}
-
-or_from_table(race_tab, 1, 2, "minority", "white")
-
-or_from_table(race_tab, 1, 3, "minority", "white")
-
-or_from_table(race_tab, 1, 3, "minority", "white")
-
-race_tab
-
-
-metadata_df
-
-sorted_features
-
-mtbi_mc_e_esm_plot_df |> head()
-
-odds_ratio <- function(de, he, dn, hn) {
-    numerator <- de / he
-    denominator <- dn / hn
-    return(numerator / denominator)
-}
-
-
-
+# CHECKPOINT
+mtbi_mc_d_input_tops <- read_csv(proc_path("2024_09_11_mtbi_mc_d_input_tops.csv"))
+mtbi_mc_d_outcome_tops <- read_csv(proc_path("2024_09_11_mtbi_mc_d_outcome_tops.csv"))
 ```
-
-ordinal variable -> cohen's d
-continuous variable -> cohen's d
-discrete variable -> cohen's d
-categorical variable -> odd's ratio -> cohen's d
-binary variable -> odd's ratio -> cohen's d
-
-log odds * sqrt(3)/pi}}}
 
 # Label propagation
 
@@ -1313,7 +1104,6 @@ mtbi_mc_d_esm$"imputation"
 # The data list that generated the top solution
 train_data_list_m2 <- all_dls$"mtbi_train_data_lists"$"imp_2"
 train_oom_list_m2 <- all_dls$"mtbi_train_oom_lists"$"imp_2"
-
 
 # The first test data set, for example
 test_data_list_m1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
@@ -1380,6 +1170,8 @@ colnames(mtbi_mc_d_fdl_lp_1) <- c("subjectkey", "group", "cluster")
 mtbi_mc_d_fdl_lp_only_1 <- mtbi_mc_d_fdl_lp_1 |>
     dplyr::filter(group == "test") |>
     dplyr::select(-group)
+
+mtbi_mc_d_fdl_lp_only_1$"cluster"
 
 mtbi_mc_d_fdl_lp_plot_list_1 <- auto_plot(
     cluster_df = mtbi_mc_d_fdl_lp_only_1,
@@ -2239,70 +2031,156 @@ write_csv(mtbi_mc_d_full_plot_df, proc_path("mtbi_mc_d_full_plot_df.csv", TRUE))
 #head(long_outcomes)
 ```
 
-
-## A deeper dive at feature separation
+## Side question, can I recover the subtypes in the full-dl?
 
 ```{r}
-#dl_df <- auto_plot(
-#    solutions_matrix_row = mtbi_mc_d_esm,
-#    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-#    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
-#    return_plots = FALSE
-#)
-#
-#dl_df |>
-#    dplyr::filter(sex == 0) |>
-#    ggplot(
-#        aes(
-#            x = race,
-#            y = brain_volume,
-#            colour = race,
-#            group = race
-#        )
-#    ) +
-#    geom_point() +
-#    theme_bw() +
-#    facet_grid(household_income ~ .)
-#
-#dl_df$"household_income" <- factor(dl_df$"household_income")
-#dl_df$"sex" <- factor(dl_df$"sex")
-#
-#dl_df |>
-#    ggplot(
-#        aes(
-#            x = household_income,
-#            y = cbcl_aggressive,
-#            colour = race,
-#            group = interaction(race, household_income)
-#        )
-#    ) +
-#    geom_violin(position = position_dodge(width = 0.75)) +
-#    geom_jitter(
-#        position = position_jitterdodge(
-#            jitter.width = 0,
-#            jitter.height = 0.5
-#        ),
-#    ) +
-#    theme_bw()
-#
-#dl_df |>
-#    ggplot(
-#        aes(
-#            x = sex,
-#            y = cbcl_aggressive,
-#            colour = race,
-#            group = interaction(race, sex)
-#        )
-#    ) +
-#    geom_boxplot(position = position_dodge(width = 0.75), width = 0.4) +
-#    geom_jitter(
-#        position = position_jitterdodge(
-#            jitter.width = 0,
-#            jitter.height = 0.5
-#        ),
-#    ) +
-#    theme_bw()
+
+full_data_list_1
+
+my_distance_metrics <- generate_distance_metrics_list(
+    continuous_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    discrete_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ordinal_distances = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+)
+
+mtbi_settings_matrix <- read_csv(
+    proc_path("2024_08_17_mtbi_settings_matrix.csv")
+)
+
+mtbi_full_sm <- batch_snf(
+    data_list = full_data_list_1,
+    settings_matrix = mtbi_settings_matrix,
+    distance_metrics_list = my_distance_metrics,
+    processes = "max"
+)
+write_csv(mtbi_full_sm, proc_path("mtbi_full_sm.csv", TRUE))
+
+
+mtbi_full_sm <- read_csv(proc_path("2024_08_30_mtbi_full_sm.csv"))
+
+mtbi_full_esm <- extend_solutions(
+    mtbi_full_sm,
+    data_list = mtbi_full_data_list_1,
+    target_list = mtbi_full_oom_list_1,
+    min_pval = 1e-10,
+    processes = "max"
+)
+write_csv(mtbi_full_esm, proc_path("mtbi_full_esm.csv", TRUE))
+
+mtbi_full_ari <- calc_aris(mtbi_full_esm, processes = "max")
+mtbi_full_order <- get_matrix_order(mtbi_full_ari)
+
+write_csv(data.frame(mtbi_full_ari), proc_path("mtbi_full_ari.csv", TRUE))
+write_csv(data.frame(mtbi_full_order), proc_path("mtbi_full_order.csv", TRUE))
 ```
 
+```{r}
+mtbi_full_esm <- read_csv(proc_path("2024_08_30_mtbi_full_esm.csv"))
+mtbi_full_ari <- read_csv(proc_path("2024_09_03_mtbi_full_ari.csv"))
+mtbi_full_order <- unlist(read_csv(proc_path("2024_09_03_mtbi_full_order.csv")))
+```
 
+What does the full 3-cluster solution look like?
 
+```{r}
+mtbi_full_esm$"impairment_separation" <- -log10(mtbi_full_esm$"mean_pval")
+
+# The full solutions that have 3 clusters
+mtbi_full_esm$"three_c" <- mtbi_full_esm$"nclust" == 3
+
+adjusted_rand_index_heatmap(
+    mtbi_full_ari,
+    order = mtbi_full_order,
+    data = mtbi_full_esm,
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation",
+        "3 Clusters" = "three_c"
+    )
+)
+
+# The full solutions with 3 clusters that have outcome separation
+mtbi_full_3c <- mtbi_full_esm |>
+    dplyr::filter(nclust == 3, impairment_separation > 2)
+
+mtbi_full_3c
+
+mc_manhattan_plot(mtbi_full_3c,
+    data_list = full_data_list_1,
+    target_list = full_oom_list_1,
+    domain_colours = c(
+        "AS" = "#85929e",
+        "D" = "#bb8fce",
+        "N" = "#e59866",
+        "MH" = "#7fb3d5",
+        "P" = "#52be80",
+        "S" = "#d98880",
+        "B" = "#ff3131"
+    )
+)
+
+mtbi_full_3c_aris <- calc_aris(mtbi_full_3c)
+
+mtbi_full_3c_order <- get_matrix_order(mtbi_full_3c)
+
+mtbi_full_3c_aris
+
+adjusted_rand_index_heatmap(
+    mtbi_full_3c_aris,
+    order = mtbi_full_3c_order,
+    data = mtbi_full_3c,
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation",
+        "3 Clusters" = "three_c"
+    )
+)
+
+solns <- get_cluster_solutions(mtbi_full_3c)
+
+mtbi_full_3c
+
+test_subs <- mtbi_mc_d_fdl_lp_only_1$"subjectkey"
+
+dplyr::filter(solns, subjectkey %in% test_subs)$`9` |> table()
+
+eg_soln <- mtbi_full_3c[1, ]
+eg_soln <- mutate(
+    eg_soln,
+    across(
+        starts_with( "subject"),
+        ~ ifelse(. == 2, 1, ifelse( . == 1, 2, .))
+    )
+)
+
+colnames(subs(eg_soln))
+
+train_subs <- mtbi_mc_d_esm |>
+    dplyr::select(dplyr::starts_with("subject")) |>
+    colnames()
+
+mtbi_train_subjects <- read_csv(sub_path("2024_08_17_mtbi_train_subjects.csv"))
+
+train_subs <- paste0("subject_", mtbi_train_subjects$"subjectkey")
+
+test_soln <- eg_soln[, !colnames(eg_soln) %in% train_subs]
+
+mtbi_3c_plot_df <- auto_plot(
+    test_soln,
+    data_list = test_data_list_m1,
+    target_list = test_oom_list_m1
+)
+
+mtbi_3c_plot_df$"sex"
+
+```
