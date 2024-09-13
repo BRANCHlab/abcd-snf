@@ -25,6 +25,7 @@ sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 mtbi_subjects <- read_csv(sub_path("2024_08_17_mtbi_subjects.csv"))
 mtbi_train_subjects <- read_csv(sub_path("2024_08_17_mtbi_train_subjects.csv"))
+mtbi_test_subjects <- read_csv(sub_path("2024_08_17_mtbi_test_subjects.csv"))
 uninjured_subjects <- read_csv(sub_path("2024_08_17_uninjured_subjects.csv"))
 ```
 
@@ -133,9 +134,7 @@ mtbi_ari_order <- get_matrix_order(mtbi_ari)
 write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 ```
 
-
 ## Re-importing data
-
 
 ```{r}
 # CHECKPOINT
@@ -147,10 +146,7 @@ mtbi_ari_order <- unlist(read_csv(proc_path("2024_08_17_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
-
-
 ## Calculating associations between cluster solutions and features
-
 
 ```{r}
 imputation_labels <- data.frame(
@@ -469,8 +465,6 @@ mtbi_mc_d_esm <- read_csv(proc_path("2024_08_18_mtbi_mc_d_esm.csv"))
 ```
 
 ```{r}
-mtbi_mc_d_esm$"imputation"
-
 # Feature plot generation
 plot_list <- auto_plot(
     solutions_matrix_row = mtbi_mc_d_esm,
@@ -1099,8 +1093,6 @@ A label propagation attempt using the full data list.
 
 ```{r}
 # CHECKPOINT
-mtbi_mc_d_esm$"imputation"
-
 # The data list that generated the top solution
 train_data_list_m2 <- all_dls$"mtbi_train_data_lists"$"imp_2"
 train_oom_list_m2 <- all_dls$"mtbi_train_oom_lists"$"imp_2"
@@ -1117,7 +1109,9 @@ test_oom_list_m2 <- all_dls$"mtbi_test_oom_lists"$"imp_2"
 test_oom_list_m3 <- all_dls$"mtbi_test_oom_lists"$"imp_3"
 test_oom_list_m4 <- all_dls$"mtbi_test_oom_lists"$"imp_4"
 test_oom_list_m5 <- all_dls$"mtbi_test_oom_lists"$"imp_5"
+```
 
+```{r}
 full_data_list_1 <- merge_data_lists(train_data_list_m2, test_data_list_m1)
 full_data_list_2 <- merge_data_lists(train_data_list_m2, test_data_list_m2)
 full_data_list_3 <- merge_data_lists(train_data_list_m2, test_data_list_m3)
@@ -1158,885 +1152,9 @@ full_oom_list_4 <- list.load(input_path("2024_08_22_mtbi_full_oom_list_4.rds"))
 full_oom_list_5 <- list.load(input_path("2024_08_22_mtbi_full_oom_list_5.rds"))
 ```
 
-```{r}
-mtbi_mc_d_fdl_lp_1 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    full_data_list_1,
-    distance_metrics_list = my_distance_metrics
-)
-
-colnames(mtbi_mc_d_fdl_lp_1) <- c("subjectkey", "group", "cluster")
-
-mtbi_mc_d_fdl_lp_only_1 <- mtbi_mc_d_fdl_lp_1 |>
-    dplyr::filter(group == "test") |>
-    dplyr::select(-group)
-
-mtbi_mc_d_fdl_lp_only_1$"cluster"
-
-mtbi_mc_d_fdl_lp_plot_list_1 <- auto_plot(
-    cluster_df = mtbi_mc_d_fdl_lp_only_1,
-    data_list = test_data_list_m1,
-    target_list = test_oom_list_m1
-)
-
-fdl_lp_plots_1 <- wrap_plots(mtbi_mc_d_fdl_lp_plot_list_1)
-
-ggsave(
-    fig_path("mtbi_mc_d_fdl_lp_plots_1.png", TRUE),
-    fdl_lp_plots_1,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-```
-
-That attempt leads to 2 cluster propagation driven almost exclusively by sex.
-
-## Attempt 2: Top features, no reliance on sex
+## Mixing in the Validation Set
 
 ```{r}
-names(mc_d_top_pl)
-
-top_features <- c(
-    "d_income",
-    "p_parent_psych",
-    "d_race"
-)
-
-# Trim down the data list to just those top features
-get_top_full_dl <- function(full_data_list, top_list) {
-    return(full_data_list[top_list])
-}
-```
-
-```{r}
-top_full_dl_1 <- get_top_full_dl(full_data_list_1, top_features)
-top_full_dl_2 <- get_top_full_dl(full_data_list_2, top_features)
-top_full_dl_3 <- get_top_full_dl(full_data_list_3, top_features)
-top_full_dl_4 <- get_top_full_dl(full_data_list_4, top_features)
-top_full_dl_5 <- get_top_full_dl(full_data_list_5, top_features)
-
-summarize_dl(top_full_dl_1, scope = "feature")
-
-collapse_dl(top_full_dl_1)
-
-mtbi_mc_d_lp_1 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    top_full_dl_1,
-    distance_metrics_list = my_distance_metrics
-)
-#
-mtbi_mc_d_lp_2 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    top_full_dl_2,
-    distance_metrics_list = my_distance_metrics
-)
-#
-mtbi_mc_d_lp_3 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    top_full_dl_3,
-    distance_metrics_list = my_distance_metrics
-)
-#
-mtbi_mc_d_lp_4 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    top_full_dl_4,
-    distance_metrics_list = my_distance_metrics
-)
-#
-mtbi_mc_d_lp_5 <- lp_solutions_matrix(
-    mtbi_mc_d_esm,
-    top_full_dl_5,
-    distance_metrics_list = my_distance_metrics
-)
-
-sum(mtbi_mc_d_lp_1$"81" != mtbi_mc_d_lp_2$"81") #2
-sum(mtbi_mc_d_lp_1$"81" != mtbi_mc_d_lp_3$"81") #2
-sum(mtbi_mc_d_lp_1$"81" != mtbi_mc_d_lp_4$"81") #1
-sum(mtbi_mc_d_lp_1$"81" != mtbi_mc_d_lp_5$"81") #2
-sum(mtbi_mc_d_lp_2$"81" != mtbi_mc_d_lp_3$"81") #2
-sum(mtbi_mc_d_lp_2$"81" != mtbi_mc_d_lp_4$"81") #3
-sum(mtbi_mc_d_lp_2$"81" != mtbi_mc_d_lp_5$"81") #2
-sum(mtbi_mc_d_lp_3$"81" != mtbi_mc_d_lp_4$"81") #1
-sum(mtbi_mc_d_lp_3$"81" != mtbi_mc_d_lp_5$"81") #2
-sum(mtbi_mc_d_lp_4$"81" != mtbi_mc_d_lp_5$"81") #1
-
-colnames(mtbi_mc_d_lp_1) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_2) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_3) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_4) <- c("subjectkey", "group", "cluster")
-colnames(mtbi_mc_d_lp_5) <- c("subjectkey", "group", "cluster")
-
-table(dplyr::filter(mtbi_mc_d_lp_1, group == "test")$"cluster")
-# 13 in 1, 63 in 2, 9 in 3
-
-
-write_csv(mtbi_mc_d_lp_1, proc_path("mtbi_mc_d_lp_1.csv", TRUE))
-write_csv(mtbi_mc_d_lp_2, proc_path("mtbi_mc_d_lp_2.csv", TRUE))
-write_csv(mtbi_mc_d_lp_3, proc_path("mtbi_mc_d_lp_3.csv", TRUE))
-write_csv(mtbi_mc_d_lp_4, proc_path("mtbi_mc_d_lp_4.csv", TRUE))
-write_csv(mtbi_mc_d_lp_5, proc_path("mtbi_mc_d_lp_5.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-mtbi_mc_d_lp_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_1.csv"))
-mtbi_mc_d_lp_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_2.csv"))
-mtbi_mc_d_lp_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_3.csv"))
-mtbi_mc_d_lp_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_4.csv"))
-mtbi_mc_d_lp_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_5.csv"))
-```
-
-```{r}
-mtbi_mc_d_full_1 <- dplyr::select(mtbi_mc_d_lp_1, -group)
-mtbi_mc_d_full_2 <- dplyr::select(mtbi_mc_d_lp_2, -group)
-mtbi_mc_d_full_3 <- dplyr::select(mtbi_mc_d_lp_3, -group)
-mtbi_mc_d_full_4 <- dplyr::select(mtbi_mc_d_lp_4, -group)
-mtbi_mc_d_full_5 <- dplyr::select(mtbi_mc_d_lp_5, -group)
-
-mtbi_mc_d_lp_only_1 <- dplyr::filter(mtbi_mc_d_lp_1, group == "test") |> dplyr::select(-group)
-mtbi_mc_d_lp_only_2 <- dplyr::filter(mtbi_mc_d_lp_2, group == "test") |> dplyr::select(-group)
-mtbi_mc_d_lp_only_3 <- dplyr::filter(mtbi_mc_d_lp_3, group == "test") |> dplyr::select(-group)
-mtbi_mc_d_lp_only_4 <- dplyr::filter(mtbi_mc_d_lp_4, group == "test") |> dplyr::select(-group)
-mtbi_mc_d_lp_only_5 <- dplyr::filter(mtbi_mc_d_lp_5, group == "test") |> dplyr::select(-group)
-
-write_csv(mtbi_mc_d_full_1, proc_path("mtbi_mc_d_full_1.csv", TRUE))
-write_csv(mtbi_mc_d_full_2, proc_path("mtbi_mc_d_full_2.csv", TRUE))
-write_csv(mtbi_mc_d_full_3, proc_path("mtbi_mc_d_full_3.csv", TRUE))
-write_csv(mtbi_mc_d_full_4, proc_path("mtbi_mc_d_full_4.csv", TRUE))
-write_csv(mtbi_mc_d_full_5, proc_path("mtbi_mc_d_full_5.csv", TRUE))
-
-write_csv(mtbi_mc_d_lp_only_1, proc_path("mtbi_mc_d_lp_only_1.csv", TRUE))
-write_csv(mtbi_mc_d_lp_only_2, proc_path("mtbi_mc_d_lp_only_2.csv", TRUE))
-write_csv(mtbi_mc_d_lp_only_3, proc_path("mtbi_mc_d_lp_only_3.csv", TRUE))
-write_csv(mtbi_mc_d_lp_only_4, proc_path("mtbi_mc_d_lp_only_4.csv", TRUE))
-write_csv(mtbi_mc_d_lp_only_5, proc_path("mtbi_mc_d_lp_only_5.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-mtbi_mc_d_full_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_1.csv"))
-mtbi_mc_d_full_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_2.csv"))
-mtbi_mc_d_full_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_3.csv"))
-mtbi_mc_d_full_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_4.csv"))
-mtbi_mc_d_full_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_full_5.csv"))
-
-mtbi_mc_d_lp_only_1 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_1.csv"))
-mtbi_mc_d_lp_only_2 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_2.csv"))
-mtbi_mc_d_lp_only_3 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_3.csv"))
-mtbi_mc_d_lp_only_4 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_4.csv"))
-mtbi_mc_d_lp_only_5 <- read_csv(proc_path("2024_08_21_mtbi_mc_d_lp_only_5.csv"))
-```
-
-```{r}
-mtbi_mc_d_lp_only_plot_list_1 <- auto_plot(
-    cluster_df = mtbi_mc_d_lp_only_1,
-    data_list = test_data_list_m1,
-    target_list = test_oom_list_m1
-)
-
-mtbi_mc_d_lp_only_plot_list_2 <- auto_plot(
-    cluster_df = mtbi_mc_d_lp_only_2,
-    data_list = test_data_list_m2,
-    target_list = test_oom_list_m2
-)
-
-mtbi_mc_d_lp_only_plot_list_3 <- auto_plot(
-    cluster_df = mtbi_mc_d_lp_only_3,
-    data_list = test_data_list_m3,
-    target_list = test_oom_list_m3
-)
-
-mtbi_mc_d_lp_only_plot_list_4 <- auto_plot(
-    cluster_df = mtbi_mc_d_lp_only_4,
-    data_list = test_data_list_m4,
-    target_list = test_oom_list_m4
-)
-
-mtbi_mc_d_lp_only_plot_list_5 <- auto_plot(
-    cluster_df = mtbi_mc_d_lp_only_5,
-    data_list = test_data_list_m5,
-    target_list = test_oom_list_m5
-)
-
-mtbi_mc_d_lp_only_all_plots_1 <- wrap_plots(mtbi_mc_d_lp_only_plot_list_1)
-mtbi_mc_d_lp_only_all_plots_2 <- wrap_plots(mtbi_mc_d_lp_only_plot_list_2)
-mtbi_mc_d_lp_only_all_plots_3 <- wrap_plots(mtbi_mc_d_lp_only_plot_list_3)
-mtbi_mc_d_lp_only_all_plots_4 <- wrap_plots(mtbi_mc_d_lp_only_plot_list_4)
-mtbi_mc_d_lp_only_all_plots_5 <- wrap_plots(mtbi_mc_d_lp_only_plot_list_5)
-
-# It isn't quite a perfect match.
-ggsave(
-    fig_path("mtbi_mc_d_lp_only_all_plots_1.png", TRUE),
-    mtbi_mc_d_lp_only_all_plots_1,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_lp_only_all_plots_2.png", TRUE),
-    mtbi_mc_d_lp_only_all_plots_2,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_lp_only_all_plots_3.png", TRUE),
-    mtbi_mc_d_lp_only_all_plots_3,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_lp_only_all_plots_4.png", TRUE),
-    mtbi_mc_d_lp_only_all_plots_4,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_lp_only_all_plots_5.png", TRUE),
-    mtbi_mc_d_lp_only_all_plots_5,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-```
-
-Below are the derivation + validation set solutions:
-
-```{r}
-mtbi_mc_d_full_plot_list_1 <- auto_plot(
-    cluster_df = mtbi_mc_d_full_1,
-    data_list = full_data_list_1,
-    target_list = full_oom_list_1
-)
-
-mtbi_mc_d_full_plot_list_2 <- auto_plot(
-    cluster_df = mtbi_mc_d_full_2,
-    data_list = full_data_list_2,
-    target_list = full_oom_list_2
-)
-
-mtbi_mc_d_full_plot_list_3 <- auto_plot(
-    cluster_df = mtbi_mc_d_full_3,
-    data_list = full_data_list_3,
-    target_list = full_oom_list_3
-)
-
-mtbi_mc_d_full_plot_list_4 <- auto_plot(
-    cluster_df = mtbi_mc_d_full_4,
-    data_list = full_data_list_4,
-    target_list = full_oom_list_4
-)
-
-mtbi_mc_d_full_plot_list_5 <- auto_plot(
-    cluster_df = mtbi_mc_d_full_5,
-    data_list = full_data_list_5,
-    target_list = full_oom_list_5
-)
-
-
-mtbi_mc_d_full_5
-
-sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_2$"cluster")
-sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_3$"cluster")
-sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_4$"cluster")
-sum(mtbi_mc_d_lp_1$"cluster" != mtbi_mc_d_lp_5$"cluster")
-sum(mtbi_mc_d_lp_2$"cluster" != mtbi_mc_d_lp_3$"cluster")
-sum(mtbi_mc_d_lp_2$"cluster" != mtbi_mc_d_lp_4$"cluster")
-sum(mtbi_mc_d_lp_2$"cluster" != mtbi_mc_d_lp_5$"cluster")
-sum(mtbi_mc_d_lp_3$"cluster" != mtbi_mc_d_lp_4$"cluster")
-sum(mtbi_mc_d_lp_3$"cluster" != mtbi_mc_d_lp_5$"cluster")
-sum(mtbi_mc_d_lp_4$"cluster" != mtbi_mc_d_lp_5$"cluster")
-
-names(mtbi_mc_d_full_plot_list_1)[!names(mtbi_mc_d_full_plot_list_1) %in% sorted_features]
-
-mtbi_mc_d_full_all_plots_1 <- wrap_plots(mtbi_mc_d_full_plot_list_1)
-mtbi_mc_d_full_all_plots_2 <- wrap_plots(mtbi_mc_d_full_plot_list_2)
-mtbi_mc_d_full_all_plots_3 <- wrap_plots(mtbi_mc_d_full_plot_list_3)
-mtbi_mc_d_full_all_plots_4 <- wrap_plots(mtbi_mc_d_full_plot_list_4)
-mtbi_mc_d_full_all_plots_5 <- wrap_plots(mtbi_mc_d_full_plot_list_5)
-
-ggsave(
-    fig_path("mtbi_mc_d_full_all_plots_1.png", TRUE),
-    mtbi_mc_d_full_all_plots_1,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_full_all_plots_2.png", TRUE),
-    mtbi_mc_d_full_all_plots_2,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_full_all_plots_3.png", TRUE),
-    mtbi_mc_d_full_all_plots_3,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_full_all_plots_4.png", TRUE),
-    mtbi_mc_d_full_all_plots_4,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-#
-ggsave(
-    fig_path("mtbi_mc_d_full_all_plots_5.png", TRUE),
-    mtbi_mc_d_full_all_plots_5,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-```
-
-Now we've seen that the label propagated solutions are broadly quite similar.
-Good to focus more on the things that are prevalent in both solutions.
-
-
-An export of the full data lists as csv form for python supervised learning downstream:
-
-```{r}
-
-mtbi_mc_d_full_plot_df <- auto_plot(
-    cluster_df = mtbi_mc_d_full_1,
-    data_list = full_data_list_1,
-    target_list = full_oom_list_1,
-    return_plots = FALSE
-)
-
-write_csv(mtbi_mc_d_full_plot_df, proc_path("mtbi_mc_d_full_plot_df.csv", TRUE))
-```
-
-```{r}
-#top_lp_plots <- wrap_plots(mtbi_mc_d_lp_plot_list_1[names(mc_d_top_pl)]) &
-#    labs(x = "Cluster") &
-#    theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
-#
-#ggsave(
-#    fig_path("mtbi_mc_d_ranked_all_plots_lp_12_1.png", TRUE),
-#    top_lp_plots,
-#    width = 25,
-#    height = 15,
-#    dpi = 150
-#)
-#
-#mtbi_mc_d_full_plot_list <- auto_plot(
-#    cluster_df = mtbi_mc_d_full_1,
-#    data_list = full_data_list_1,
-#    target_list = full_oom_list_1
-#)
-#
-##mtbi_mc_d_full_plot_list <- auto_plot(
-##    cluster_df = mtbi_mc_d_full,
-##    data_list = mtbi_mc_d_full_data_list,
-##    target_list = mtbi_mc_d_full_oom_list,
-##    save = fig_path("mtbi_mc_d_full", TRUE)
-##)
-#
-#mtbi_mc_e_lp_only_plot_list <- auto_plot(
-#    cluster_df = mtbi_mc_e_lp_only,
-#    data_list = test_data_list_m1,
-#    target_list = test_oom_list_m1
-#)
-#
-#mtbi_mc_e_full_wrap <- wrap_plots(mtbi_mc_e_full_plot_list)
-#
-#mtbi_mc_e_lp_only_wrap <- wrap_plots(mtbi_mc_e_lp_only_plot_list)
-#
-#ggsave(
-#    fig_path("mtbi_mc_d_full_wrap.png", TRUE),
-#    mtbi_mc_d_full_wrap,
-#    width = 35,
-#    height = 30,
-#    dpi = 50
-#)
-#
-#ggsave(
-#    fig_path("mtbi_mc_e_lp_only_wrap.png", TRUE),
-#    mtbi_mc_e_lp_only_wrap,
-#    width = 35,
-#    height = 30,
-#    dpi = 50
-#)
-#
-## Creating ESM formatted full solution
-#mtbi_mc_d_full_sm <- mtbi_mc_d_esm |>
-#    dplyr::select(
-#        -dplyr::contains("pval"),
-#        -dplyr::contains("impairment"),
-#        -label,
-#        -imputation,
-#        -pooled
-#    )
-#mtbi_mc_d_lp_only_sm_row <- data.frame(
-#    t(mtbi_mc_d_lp_only$"cluster")
-#)
-#colnames(mtbi_mc_d_lp_only_sm_row) <- mtbi_mc_d_lp_only$"subjectkey"
-#mtbi_mc_d_full_sm <- cbind(
-#    mtbi_mc_d_full_sm,
-#    mtbi_mc_d_lp_only_sm_row
-#)
-#
-#mtbi_mc_d_full_esm <- extend_solutions(
-#    mtbi_mc_d_full_sm,
-#    data_list = mtbi_mc_d_full_data_list,
-#    target_list = mtbi_mc_d_full_oom_list,
-#    min_pval = 1e-10,
-#    processes = "max"
-#)
-#
-#write_csv(mtbi_mc_d_full_esm, proc_path("mtbi_mc_d_full_esm.csv", TRUE))
-#mtbi_mc_d_full_esm <- read_csv(proc_path("2024_07_22_mtbi_mc_d_full_esm.csv"))
-
-```
-
-(Leave below for later)
-
-# Longitudinal analyses
-
-```{r}
-#
-##mtbi_train <- read_csv(sub_path("2024_03_12_mtbi_train_subjects.csv"))
-#
-#core_path <- path_maker(here(paste0("data/abcd/core")))
-#
-#import <- function(path) {
-#    return(abcd_load(core_path(path)))
-#}
-#
-#mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
-#ph_p_sds <- import("physical-health/ph_p_sds.csv")
-#
-#mc_d_cluster_df <- get_cluster_df(mtbi_mc_d_esm)
-#
-#mc_d_subs <- gsub("subject_", "", mc_d_cluster_df$"subjectkey")
-#
-#syndromes <- c(
-#    "anxdep",
-#    #"withdep",
-#    #"somatic",
-#    #"social",
-#    #"thought",
-#    #"attention",
-#    #"rulebreak",
-#    "aggressive"
-#)
-#
-#tps <- c(0, 1, 2, 3)
-#
-#get_syndrome_long <- function(syndrome, timepoints, subs) {
-#    full_df <- NULL
-#    for (tp in timepoints) {
-#        outcomes <- get_cbcl_syndrome_scale(
-#            syndrome = syndrome,
-#            mh_p_cbcl,
-#            raw = FALSE,
-#            subjects = subs,
-#            t = tp
-#        )
-#        outcomes$"tp" <- tp
-#        if (is.null(full_df)) {
-#            full_df <- outcomes
-#        } else {
-#            full_df <- rbind(full_df, outcomes)
-#        }
-#    }
-#    return(full_df)
-#}
-#
-#
-#
-## make change score plots where you plot time on x-axis and visualize change
-## by absolute t-score differences for 2 year and 3 year follow up
-#
-## Option 1
-#z <- get_syndrome_long("anxdep", tps, mc_d_subs)
-#z$"subjectkey" <- paste0("subject_", z$"subjectkey")
-#z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
-#z_long$"cluster" <- factor(z_long$"cluster")
-#anxdep <- ggplot(
-#    na.omit(z_long),
-#    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#ggsave("anxdep.png", anxdep)
-#
-#z <- get_syndrome_long("withdep", tps, mc_d_subs)
-#z$"subjectkey" <- paste0("subject_", z$"subjectkey")
-#z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
-#z_long$"cluster" <- factor(z_long$"cluster")
-#withdep <- ggplot(
-#    na.omit(z_long),
-#    aes(x = tp, y = cbcl_scr_syn_withdep_t, colour = cluster, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#ggsave("withdep.png", withdep)
-#
-#z <- get_syndrome_long("aggressive", tps, mc_d_subs)
-#z$"subjectkey" <- paste0("subject_", z$"subjectkey")
-#z_long <- dplyr::full_join(z, mc_d_cluster_df, by = "subjectkey")
-#z_long$"cluster" <- factor(z_long$"cluster")
-#aggressive <- ggplot(
-#    na.omit(z_long),
-#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cluster, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#ggsave("aggressive.png", aggressive)
-#
-#
-#
-#qq <- get_syndrome_long("anxdep", tps, mc_d_subs)
-#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-#qq_long$"cluster" <- factor(qq_long$"cluster")
-#qq_long <- na.omit(qq_long)
-#for (subject in unique(qq_long$"subjectkey")) {
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_anxdep_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_anxdep_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_anxdep_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_anxdep_t"] <- 0
-#}
-#anxdep2 <- ggplot(
-#    na.omit(qq_long),
-#    aes(x = tp, y = cbcl_scr_syn_anxdep_t, colour = cluster, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#ggsave("anxdep2.png", anxdep2)
-#
-#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-#qq_long$"cluster" <- factor(qq_long$"cluster")
-#qq_long <- na.omit(qq_long)
-#for (subject in unique(qq_long$"subjectkey")) {
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-#}
-#aggressive2 <- ggplot(
-#    na.omit(qq_long),
-#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = cbcl_scr_syn_aggressive_t > 0, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#ggsave("aggressive3.png", aggressive2)
-#
-#
-#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-#qq_long$"cluster" <- factor(qq_long$"cluster")
-#for (subject in unique(qq_long$"subjectkey")) {
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-#}
-#unique(qq_long$"subjectkey")
-#parent <- all_dls$"mtbi_train_data_lists"$"imp_1"[[24]]$"data"
-#summarize_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
-#qq_long <- dplyr::full_join(qq_long, parent, by = "subjectkey")
-#aggressive4 <- ggplot(
-#    na.omit(qq_long),
-#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = parent_aggressive > 60, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#aggressive4
-#ggsave("aggressive4.png", aggressive4)
-#
-#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-#qq_long$"cluster" <- factor(qq_long$"cluster")
-#for (subject in unique(qq_long$"subjectkey")) {
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-#}
-#unique(qq_long$"subjectkey")
-#income <- all_dls$"mtbi_train_data_lists"$"imp_1"[[7]]$"data"
-#qq_long <- dplyr::full_join(qq_long, income, by = "subjectkey")
-#aggressive5 <- ggplot(
-#    na.omit(qq_long),
-#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = household_income, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#aggressive5
-#ggsave("aggressive5.png", aggressive5)
-#
-#
-#qq <- get_syndrome_long("aggressive", tps, mc_d_subs)
-#qq$"subjectkey" <- paste0("subject_", qq$"subjectkey")
-#qq_long <- dplyr::full_join(qq, mc_d_cluster_df, by = "subjectkey")
-#qq_long$"cluster" <- factor(qq_long$"cluster")
-#for (subject in unique(qq_long$"subjectkey")) {
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 3, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 2, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] <-
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 1, "cbcl_scr_syn_aggressive_t"] -
-#        qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"]
-#    qq_long[qq_long$"subjectkey" == subject & qq_long$"tp" == 0, "cbcl_scr_syn_aggressive_t"] <- 0
-#}
-#unique(qq_long$"subjectkey")
-#data <- collapse_dl(all_dls$"mtbi_train_data_lists"$"imp_1")
-#qq_long <- dplyr::full_join(qq_long, data, by = "subjectkey")
-#aggressive6 <- ggplot(
-#    na.omit(qq_long),
-#    aes(x = tp, y = cbcl_scr_syn_aggressive_t, colour = sex, group = subjectkey)
-#) +
-#    geom_point() +
-#    geom_line() +
-#    facet_grid(cluster ~ .) +
-#    theme_bw()
-#aggressive6
-#ggsave("aggressive6.png", aggressive6)
-#
-#for (tp in c(1, 2, 3)) {
-#    long_outcomes <- NULL
-#    for (syndrome in syndromes) {
-#        if (is.null(long_outcomes)) {
-#            long_outcomes <- get_cbcl_syndrome_scale(
-#                syndrome = syndrome,
-#                mh_p_cbcl,
-#                raw = FALSE,
-#                subjects = mtbi_train,
-#                t = tp
-#            )
-#        } else {
-#            long_outcomes <- dplyr::inner_join(
-#                long_outcomes,
-#                get_cbcl_syndrome_scale(
-#                    syndrome = syndrome,
-#                    mh_p_cbcl,
-#                    raw = FALSE,
-#                    subjects = mtbi_train,
-#                    t = tp
-#                ),
-#                by = "subjectkey"
-#            )
-#        }
-#    }
-#    long_outcomes <- dplyr::inner_join(
-#        long_outcomes,
-#        get_sds_total_probs(
-#            ph_p_sds,
-#            mtbi_train,
-#            t = tp
-#        ),
-#        by = "subjectkey"
-#    )
-#    long_outcomes$"subjectkey" <- paste0("subject_", long_outcomes$"subjectkey")
-#    colnames(long_outcomes) <- c(
-#        "subjectkey",
-#        paste0("cbcl_", syndromes),
-#        "sds_sleep"
-#    )
-#    baseline_outcomes <- collapse_dl(oom_list_m3)
-#    d_outcomes <- NULL
-#    for (outcome in colnames(baseline_outcomes[-1])) {
-#        t0 <- dplyr::select(baseline_outcomes, "subjectkey", outcome)
-#        tn <- dplyr::select(long_outcomes, "subjectkey", outcome)
-#        colnames(t0) <- c("subjectkey", paste0(outcome, "_0"))
-#        colnames(tn) <- c("subjectkey", paste0(outcome, "_", tp))
-#        both_t <- dplyr::inner_join(t0, tn, by = "subjectkey")
-#        both_t[, 4] <- both_t[, 3] - both_t[, 2]
-#        colnames(both_t)[4] <- paste0("d_", outcome)
-#        both_t <- both_t[, c(1, 4)]
-#        if (is.null(d_outcomes)) {
-#            d_outcomes <- both_t
-#        } else {
-#            d_outcomes <- dplyr::full_join(d_outcomes, both_t, by = "subjectkey")
-#        }
-#    }
-#    mtbi_mc_a <- mtbi_rep[1, ]
-#    mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
-#    mtbi_mc_a <- dplyr::full_join(
-#        mtbi_mc_a,
-#        d_outcomes,
-#        by = "subjectkey"
-#    )
-#    mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
-#    d_plots <- list()
-#    for (outcome in colnames(d_outcomes)[-1]) {
-#        plot <- mtbi_mc_a |>
-#            ggplot(
-#                aes(
-#                    x = cluster,
-#                    y = !!sym(outcome),
-#                    colour = cluster
-#                )
-#            ) +
-#            geom_violin(alpha = 0.4) +
-#            geom_jitter(width = 0.2, height = 0.2) +
-#            stat_summary(
-#                fun = "mean",
-#                geom = "point",
-#                colour = "black",
-#                size = 2
-#            ) +
-#            labs(
-#                x = "Cluster",
-#                y = gsub("d_", "Δ", outcome)
-#            ) +
-#            theme_bw() +
-#            theme(
-#                legend.position = "none"
-#            )
-#        d_plots[[length(d_plots) + 1]] <- plot
-#    }
-#    d_plots <- d_plots |>
-#        wrap_plots() +
-#        plot_annotation(
-#            paste0("CBCL/SDS Outcomes, ", tp, "-year Follow-Up Minus Baseline"),
-#            theme = theme(plot.title=element_text(hjust=0.5))
-#        )
-#    # Looks like cluster 1 has the higher variance, indicating potential for intervention?
-#    ggsave(
-#        plot = d_plots,
-#        filename = fig_path(
-#            paste0("mtbi_mc_a_outcomes_t", tp, "_plots.png"),
-#            TRUE
-#        ),
-#        width = 8,
-#        height = 8,
-#        dpi = 120
-#    )
-#}
-#
-#full_df <- NULL
-#for (tp in c(0, 1, 2, 3, 4)) {
-#    long_outcomes <- NULL
-#    for (syndrome in syndromes) {
-#        if (is.null(long_outcomes)) {
-#            long_outcomes <- get_cbcl_syndrome_scale(
-#                syndrome = syndrome,
-#                mh_p_cbcl,
-#                raw = FALSE,
-#                subjects = mtbi_train,
-#                t = tp
-#            )
-#            colnames(long_outcomes) <- c("subjectkey", syndrome)
-#        } else {
-#            new_df <- get_cbcl_syndrome_scale(
-#                syndrome = syndrome,
-#                mh_p_cbcl,
-#                raw = FALSE,
-#                subjects = mtbi_train,
-#                t = tp
-#            )
-#            colnames(new_df) <- c("subjectkey", syndrome)
-#            long_outcomes <- dplyr::full_join(
-#                long_outcomes,
-#                new_df,
-#                by = "subjectkey"
-#            )
-#        }
-#    }
-#    long_outcomes$"tp" <- tp
-#    if (is.null(full_df)) {
-#        full_df <- long_outcomes
-#    } else {
-#        full_df <- rbind(full_df, long_outcomes)
-#    }
-#}
-#full_df$"subjectkey" <- paste0("subject_", full_df$"subjectkey")
-#mtbi_mc_a <- mtbi_rep[1, ]
-#mtbi_mc_a <- get_cluster_df(mtbi_mc_a)
-#mtbi_mc_a$"cluster" <- factor(mtbi_mc_a$"cluster")
-#full_df <- dplyr::full_join(full_df, mtbi_mc_a, by = "subjectkey")
-#full_df$"tp" <- factor(full_df$"tp")
-#full_df |>
-#    dplyr::filter(cluster == 1) |>
-#    na.omit() |>
-#    ggplot(
-#        aes(
-#            x = tp,
-#            y = aggressive,
-#            group = subjectkey,
-#            colour = cluster
-#        )
-#    ) +
-#    geom_line() +
-#    geom_point() +
-#    theme_bw()
-#
-#nrow(mtbi_mc_a)
-#
-#head(mtbi_mc_a)
-#
-#head(long_outcomes)
-```
-
-## Side question, can I recover the subtypes in the full-dl?
-
-```{r}
-
-full_data_list_1
-
 my_distance_metrics <- generate_distance_metrics_list(
     continuous_distances = list(
         "standard_norm_euclidean" = sn_euclidean_distance
@@ -2061,7 +1179,6 @@ mtbi_full_sm <- batch_snf(
 )
 write_csv(mtbi_full_sm, proc_path("mtbi_full_sm.csv", TRUE))
 
-
 mtbi_full_sm <- read_csv(proc_path("2024_08_30_mtbi_full_sm.csv"))
 
 mtbi_full_esm <- extend_solutions(
@@ -2078,10 +1195,15 @@ mtbi_full_order <- get_matrix_order(mtbi_full_ari)
 
 write_csv(data.frame(mtbi_full_ari), proc_path("mtbi_full_ari.csv", TRUE))
 write_csv(data.frame(mtbi_full_order), proc_path("mtbi_full_order.csv", TRUE))
+
+mtbi_full_esm$"impairment_separation" <- -log10(mtbi_full_esm$"mean_pval")
+
+write_csv(mtbi_full_esm, proc_path("mtbi_full_esm.csv", TRUE))
+
 ```
 
 ```{r}
-mtbi_full_esm <- read_csv(proc_path("2024_08_30_mtbi_full_esm.csv"))
+mtbi_full_esm <- read_csv(proc_path("2024_09_12_mtbi_full_esm.csv"))
 mtbi_full_ari <- read_csv(proc_path("2024_09_03_mtbi_full_ari.csv"))
 mtbi_full_order <- unlist(read_csv(proc_path("2024_09_03_mtbi_full_order.csv")))
 ```
@@ -2089,31 +1211,51 @@ mtbi_full_order <- unlist(read_csv(proc_path("2024_09_03_mtbi_full_order.csv")))
 What does the full 3-cluster solution look like?
 
 ```{r}
-mtbi_full_esm$"impairment_separation" <- -log10(mtbi_full_esm$"mean_pval")
-
-# The full solutions that have 3 clusters
-mtbi_full_esm$"three_c" <- mtbi_full_esm$"nclust" == 3
-
-adjusted_rand_index_heatmap(
-    mtbi_full_ari,
-    order = mtbi_full_order,
-    data = mtbi_full_esm,
-    top_bar = list(
-        "Number of Clusters" = "nclust"
-    ),
-    top_hm = list(
-        "Impairment Separation" = "impairment_separation",
-        "3 Clusters" = "three_c"
-    )
-)
-
 # The full solutions with 3 clusters that have outcome separation
-mtbi_full_3c <- mtbi_full_esm |>
-    dplyr::filter(nclust == 3, impairment_separation > 2)
+mtbi_full_3c <- mtbi_full_esm |> dplyr::filter(nclust == 3)
 
-mtbi_full_3c
+max_sep <- max(mtbi_full_3c$"impairment_separation")
 
-mc_manhattan_plot(mtbi_full_3c,
+mtbi_full_top_3c <- mtbi_full_3c |>
+    dplyr::filter(impairment_separation == max_sep)
+
+mtbi_full_top_3c$"label" <- "Full Top 3C Solution"
+```
+
+```{r}
+cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
+    swapped_sm <- dplyr::mutate(
+        solutions_matrix,
+        across(
+            dplyr::starts_with("subject"),
+            ~ ifelse(
+                . == c_a,
+                c_b,
+                ifelse(
+                    . == c_b,
+                    c_a,
+                    .
+                )
+            )
+        )
+    )
+    return(swapped_sm)
+}
+```
+
+```{r}
+mtbi_full_top_3c <- cluster_label_swap(mtbi_full_top_3c, 1, 2)
+mtbi_full_top_3c <- cluster_label_swap(mtbi_full_top_3c, 2, 3)
+write_csv(mtbi_full_top_3c, proc_path("mtbi_full_top_3c.csv", TRUE))
+```
+
+```{r}
+mtbi_full_top_3c <- read_csv(proc_path("2024_09_12_mtbi_full_top_3c.csv"))
+```
+
+```{r}
+mtbi_full_top_3c_manhattan <- mc_manhattan_plot(
+    mtbi_full_top_3c,
     data_list = full_data_list_1,
     target_list = full_oom_list_1,
     domain_colours = c(
@@ -2127,60 +1269,538 @@ mc_manhattan_plot(mtbi_full_3c,
     )
 )
 
-mtbi_full_3c_aris <- calc_aris(mtbi_full_3c)
+mtbi_full_top_3c_manhattan
 
-mtbi_full_3c_order <- get_matrix_order(mtbi_full_3c)
+ggsave(
+    plot = mtbi_full_top_3c_manhattan,
+    filename = fig_path("mtbi_full_top_3c_manhattan.png", TRUE),
+    width = 18,
+    height = 6,
+    dpi = 120
+)
+```
 
-mtbi_full_3c_aris
+How are all the test features distributed?
+How are all the features distributed?
 
-adjusted_rand_index_heatmap(
-    mtbi_full_3c_aris,
-    order = mtbi_full_3c_order,
-    data = mtbi_full_3c,
-    top_bar = list(
-        "Number of Clusters" = "nclust"
-    ),
-    top_hm = list(
-        "Impairment Separation" = "impairment_separation",
-        "3 Clusters" = "three_c"
-    )
+I'd like to have a table along the lines of,
+
+| DERIVATION | IN DERIVATION + VALIDATION | IN VALIDATION |
+C1 max F | True | Almost  true|
+
+Something like that, which will require a side-by-side comparison of these features through visual inspection and through the topologizer function in the supplementary section for those who wish to look at the crunched numbers.
+
+So my objectives here are:
+
+1. [ ] The auto-plot of the full dataset.
+2. [ ] The auto-plot of the validation dataset.
+3. [ ] The qualitative table.
+4. [ ] The topologized table of the derivation dataset.
+5. [ ] The topologized table of the derivation + validation dataset.
+6. [ ] The topologized table of the validation dataset.
+
+Up to 3 should be sufficient for determining which attributes should play a key role in validating the subsequent investigations.
+
+```{r}
+
+mtbi_derivation_plot_list <- plot_list
+
+mtbi_full_plot_list <- auto_plot(
+    mtbi_full_top_3c,
+    data_list = full_data_list_1,
+    target_list = full_oom_list_1
 )
 
-solns <- get_cluster_solutions(mtbi_full_3c)
+outcome_idx <- !names(mtbi_full_plot_list) %in% sorted_features
+outcome_features <- names(mtbi_full_plot_list)[outcome_idx]
 
-mtbi_full_3c
-
-test_subs <- mtbi_mc_d_fdl_lp_only_1$"subjectkey"
-
-dplyr::filter(solns, subjectkey %in% test_subs)$`9` |> table()
-
-eg_soln <- mtbi_full_3c[1, ]
-eg_soln <- mutate(
-    eg_soln,
-    across(
-        starts_with( "subject"),
-        ~ ifelse(. == 2, 1, ifelse( . == 1, 2, .))
+val_cluster_df <- mtbi_full_top_3c |>
+    get_cluster_df() |>
+    dplyr::filter(
+        subjectkey %in% paste0("subject_", mtbi_test_subjects$"subjectkey")
     )
-)
 
-colnames(subs(eg_soln))
-
-train_subs <- mtbi_mc_d_esm |>
-    dplyr::select(dplyr::starts_with("subject")) |>
-    colnames()
-
-mtbi_train_subjects <- read_csv(sub_path("2024_08_17_mtbi_train_subjects.csv"))
-
-train_subs <- paste0("subject_", mtbi_train_subjects$"subjectkey")
-
-test_soln <- eg_soln[, !colnames(eg_soln) %in% train_subs]
-
-mtbi_3c_plot_df <- auto_plot(
-    test_soln,
+mtbi_val_plot_list <- auto_plot(
+    cluster_df = val_cluster_df,
     data_list = test_data_list_m1,
     target_list = test_oom_list_m1
 )
 
-mtbi_3c_plot_df$"sex"
+# Full input feature plots
+pli_sort_d <- mtbi_derivation_plot_list[sorted_features]
+pli_sort_v <- mtbi_val_plot_list[sorted_features]
+pli_sort_f <- mtbi_full_plot_list[sorted_features]
+
+plo_d <- mtbi_derivation_plot_list[outcome_features]
+plo_v <- mtbi_val_plot_list[outcome_features]
+plo_f <- mtbi_full_plot_list[outcome_features]
+
+# Let's manually assemble these puppies!
+
+input_plots <- list(pli_sort_d, pli_sort_v, pli_sort_f)
+outcome_plots <- list(plo_d, plo_v, plo_f)
+
+list.save(input_plots, proc_path("input_tri_plots.rds", TRUE))
+list.save(outcome_plots, proc_path("outcome_tri_plots.rds", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+input_plots <- list.load(proc_path("2024_09_13_input_tri_plots.rds"))
+outcome_plots <- list.load(proc_path("2024_09_13_outcome_tri_plots.rds"))
+```
+
+```{r}
+qs <- function(plot, path, w = 12, h = 4) {
+    path <- paste0("mtbi_dvf_", path, ".png")
+    ggsave(fig_path(path, TRUE), plot, width = w, height = h)
+}
+
+tri_plot <- function(pl,
+                     feature,
+                     ft_name,
+                     scale_fill_labels = NULL,
+                     ylims = NULL) {
+    ###########################################################################
+    p1 <- pl[[1]][[feature]] +
+        theme(
+            legend.position = "none",
+            axis.title.y = element_text(size = 16)
+        )
+    ###########################################################################
+    p2 <- pl[[2]][[feature]] +
+        theme(
+            legend.position = "none",
+            axis.title.y = element_blank()
+        ) 
+    ###########################################################################
+    p3 <- pl[[3]][[feature]] +
+        theme(
+            axis.title.y = element_blank()
+        )
+    ###########################################################################
+    if (class(pl[[3]][[feature]]$layers[[1]]$geom)[[1]] == "GeomBar") {
+        p3 <- p3 + labs(fill = ft_name)
+    } else {
+        p1 <- p1 + labs(y = ft_name)
+    }
+    if (!is.null(scale_fill_labels)) {
+        p3 <- p3 + scale_fill_discrete(labels = scale_fill_labels)
+    }
+    if (!is.null(ylims)) {
+        p1 <- p1 + ylim(ylims[[1]], ylims[[2]])
+        p2 <- p2 + ylim(ylims[[1]], ylims[[2]])
+        p3 <- p3 + ylim(ylims[[1]], ylims[[2]])
+    }
+    ###########################################################################
+    patch_plot <- list(p1, p2, p3)
+    patch_plot <- lapply(
+        patch_plot,
+        function(x) {
+            x <- x + labs(x = "Cluster") + theme(text = element_text(size = 16))
+        }
+    )
+    names(patch_plot) <- c("derivation", "validation", "full")
+    return(wrap_plots(patch_plot))
+}
+```
+
+```{r}
+# 1. Sex
+sorted_features[1]
+sex_plot <- tri_plot(input_plots, "sex", "Sex", c("F", "M"))
+qs(sex_plot, "sex")
+
+# 2. Brain volumes
+sorted_features[2]
+brain_volume_plot <- tri_plot(input_plots, "brain_volume", expression("Brain Volume "(mm^3)), ylims = c(900000, 1650000))
+qs(brain_volume_plot, "brain_volume")
+
+# 3. Surface Areas
+sorted_features[3]
+cort_sa_plot <- tri_plot(input_plots, "cortical_sa", expression("Cortical Surface Area "(mm^2)), ylims = c(140000, 260000))
+cort_sa_plot
+qs(cort_sa_plot, "cort_sa")
+
+# 4. Income
+sorted_features[4]
+household_income_plot <- tri_plot(input_plots, "household_income", "Household Income")
+household_income_plot
+qs(household_income_plot, "household_income")
+
+# 5. Pubertal Status - Parent Report
+sorted_features[5]
+pubertal_status_p_plot <- tri_plot(input_plots, "pubertal_status_p", "Pubertal Status (Parent)")
+pubertal_status_p_plot
+qs(pubertal_status_p_plot, "pubertal_status_p")
+
+# 6. Programs this year
+sorted_features[6]
+programs_this_year_plot <- tri_plot(input_plots, "programs_this_year", "Programs This Year")
+programs_this_year_plot
+qs(programs_this_year_plot, "programs_this_year")
+
+# 7. Non school programs
+sorted_features[7]
+non_school_programs_plot <- tri_plot(input_plots, "non_school_programs", "Non-School Programs This Year")
+non_school_programs_plot
+qs(non_school_programs_plot, "non_school_programs")
+
+# 8. Parent Somatic
+sorted_features[8]
+parent_somatic_plot <- tri_plot(input_plots, "parent_somatic", "Parent Somatic (T)", ylims = c(49, 95))
+parent_somatic_plot
+qs(parent_somatic_plot, "parent_somatic")
+
+# 9. Parent Somatic
+sorted_features[9]
+weekday_screentime_plot <- tri_plot(input_plots, "weekday_screentime", "Weekday Screentime (hours)", ylims = c(-0.5, 21))
+weekday_screentime_plot
+qs(weekday_screentime_plot, "weekday_screentime")
+
+# 10. Race
+sorted_features[10]
+race_plot <- tri_plot(input_plots, "race", "Race")
+race_plot
+qs(race_plot, "race")
+
+# 11. Parent depress
+sorted_features[11]
+parent_depress_plot <- tri_plot(input_plots, "parent_depress", "Parent Depress (T)", ylims = c(49, 95))
+parent_depress_plot
+qs(parent_depress_plot, "parent_depress")
+
+# parent_thought
+sorted_features[12]
+parent_thought_plot <- tri_plot(input_plots, "parent_thought", "Parent Thought (T)", ylims = c(49, 95))
+parent_thought_plot
+qs(parent_thought_plot, "parent_thought")
+
+# parent_anxdep
+sorted_features[13]
+parent_anxdep_plot <- tri_plot(input_plots, "parent_anxdep", "Parent Anxious-Depressed (T)", ylims = c(49, 95))
+parent_anxdep_plot
+qs(parent_anxdep_plot, "parent_anxdep")
+
+
+# private_instruction
+sorted_features[14]
+private_instruction_plot <- tri_plot(input_plots, "private_instruction", "Private Activities", ylims = c(-0.5, 9.5))
+private_instruction_plot
+qs(private_instruction_plot, "private_instruction")
+
+# parent_antisocial
+sorted_features[15]
+parent_antisocial_plot <- tri_plot(input_plots, "parent_antisocial", "Parent Antisocial (T)", ylims = c(49, 95))
+parent_antisocial_plot
+qs(parent_antisocial_plot, "parent_antisocial")
+
+
+# fmri_cort_cors
+sorted_features[16]
+fmri_cort_cors_plot <- tri_plot(input_plots, "fmri_cort_cors", "fMRI Cort-Cort Corrs", ylims = c(-0.1, 0.16))
+fmri_cort_cors_plot
+qs(fmri_cort_cors_plot, "fmri_cort_cors")
+
+
+# parent_aggressive
+sorted_features[17]
+parent_aggressive_plot <- tri_plot(input_plots, "parent_aggressive", "Parent Aggressive (T)", ylims = c(49, 95))
+parent_aggressive_plot
+qs(parent_aggressive_plot, "parent_aggressive")
+
+
+# weekend_screentime
+sorted_features[18]
+weekend_screentime_plot <- tri_plot(input_plots, "weekend_screentime", "Weekend Screentime (hours)", ylims = c(-0.5, 21))
+weekend_screentime_plot
+qs(weekend_screentime_plot, "weekend_screentime")
+
+# parent_anxdisord
+sorted_features[19]
+parent_anxdisord_plot <- tri_plot(input_plots, "parent_anxdisord", "Parent Anxious (T)", ylims = c(49, 95))
+parent_anxdisord_plot
+qs(parent_anxdisord_plot, "parent_anxdisord")
+
+# exercise_time
+sorted_features[20]
+exercise_time_plot <- tri_plot(input_plots, "exercise_time", "Exercise Score", ylims = c(0, 1))
+exercise_time_plot
+qs(exercise_time_plot, "exercise_time")
+
+# family_fight_p
+sorted_features[21]
+family_fight_p_plot <- tri_plot(input_plots, "family_fight_p", "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
+family_fight_p_plot
+qs(family_fight_p_plot, "family_fight_p")
+
+# cortical_thickness
+sorted_features[22]
+cortical_thickness_plot <- tri_plot(input_plots, "cortical_thickness", "Cortical Thickness (mm)", ylims = c(2.3, 3.1))
+cortical_thickness_plot
+qs(cortical_thickness_plot, "cortical_thickness")
+
+# fmri_cort_subcort_cors
+sorted_features[23]
+fmri_cort_subcort_cors_plot <- tri_plot(input_plots, "fmri_cort_subcort_cors", "fMRI Cort-Subcort Corrs", ylims = c(-0.15, 0.2))
+qs(fmri_cort_subcort_cors_plot, "fmri_cort_subcort_cors")
+
+# parent_avoidant
+sorted_features[24]
+parent_avoidant_plot <- tri_plot(input_plots, "parent_avoidant", "Parent Avoidant (T)", ylims = c(49, 95))
+parent_avoidant_plot
+qs(parent_avoidant_plot, "parent_avoidant")
+
+
+# parent_hyperactive
+sorted_features[25]
+parent_hyperactive_plot <- tri_plot(input_plots, "parent_hyperactive", "Parent Hyperactive (T)", ylims = c(49, 95))
+qs(parent_hyperactive_plot, "parent_hyperactive")
+
+
+# Parent attention
+sorted_features[26]
+parent_attention_plot <- tri_plot(input_plots, "parent_attention", "Parent Attention (T)", ylims = c(49, 95))
+parent_attention_plot
+qs(parent_attention_plot, "parent_attention")
+
+# parent_withdrawn
+sorted_features[27]
+parent_withdrawn_plot <- tri_plot(input_plots, "parent_withdrawn", "Parent Withdrawn (T)")
+parent_withdrawn_plot
+
+qs(parent_withdrawn_plot, "parent_withdrawn")
+
+# helps_hurt_p
+sorted_features[28]
+helps_hurt_p_plot <- tri_plot(input_plots, "helps_hurt_p", "Helps Hurt\n(Parent Report)", c("No", "Yes"))
+helps_hurt_p_plot
+
+qs(helps_hurt_p_plot, "helps_hurt_p")
+
+# considerate_y
+sorted_features[29]
+considerate_y_plot <- tri_plot(input_plots, "considerate_y", "Considerate\n(Youth Report)", c("No", "Yes"))
+considerate_y_plot
+qs(considerate_y_plot, "considerate_y")
+
+
+# major_wm_ndi
+sorted_features[30]
+major_wm_ndi_plot <- tri_plot(input_plots, "major_wm_ndi", "Major WM Neurite Density", ylims = c(0.45, 0.85))
+major_wm_ndi_plot
+qs(major_wm_ndi_plot, "major_wm_ndi")
+
+# helps_hurt_y
+sorted_features[31]
+helps_hurt_y_plot <- tri_plot(input_plots, "helps_hurt_y", "Helps Hurt\n(Youth Report)", c("No", "Yes"))
+helps_hurt_y_plot
+qs(helps_hurt_y_plot, "helps_hurt_y")
+
+# helpful_p
+sorted_features[32]
+helpful_p_plot <- tri_plot(input_plots, "helpful_p", "Helpful\n(Parent Report)", c("No", "Yes"))
+helpful_p_plot
+qs(helpful_p_plot, "helpful_p")
+
+# family_hit_p
+sorted_features[33]
+family_hit_p_plot <- tri_plot(input_plots, "family_hit_p", "Family Hitting\n(Parent Report)", c("No", "Yes"))
+family_hit_p_plot
+qs(family_hit_p_plot, "family_hit_p")
+
+# family_outdo_p
+sorted_features[34]
+family_outdo_p_plot <- tri_plot(input_plots, "family_outdo_p", "Family Outdo\n(Parent Report)", c("No", "Yes"))
+family_outdo_p_plot
+qs(family_outdo_p_plot, "family_outdo_p")
+
+# parent_intrusive
+sorted_features[35]
+parent_intrusive_plot <- tri_plot(input_plots, "parent_intrusive", "Parent Intrusive (T)", ylims = c(49, 95))
+parent_intrusive_plot
+qs(parent_intrusive_plot, "parent_intrusive")
+
+###############################################################################
+
+# parent_intrusive
+parent_intrusive_plot <- tri_plot(input_plots, "parent_intrusive", "parent_intrusive (T)", ylims = c(49, 95))
+parent_intrusive_plot
+qs(parent_intrusive_plot, "parent_intrusive")
+
+# headache_history
+headache_history_plot <- tri_plot(input_plots, "headache_history", "Headache\nHistory", c("No", "Yes"))
+headache_history_plot
+qs(headache_history_plot, "headache_history")
+
+# mtbi_loc
+mtbi_loc_plot <- tri_plot(input_plots, "mtbi_loc", "mTBI LOC", c("No", "Yes"))
+mtbi_loc_plot
+qs(mtbi_loc_plot, "mtbi_loc")
+
+# family_peaceful_y
+family_peaceful_y_plot <- tri_plot(input_plots, "family_peaceful_y", "Family Peaceful\n(Youth Report)", c("No", "Yes"))
+family_peaceful_y_plot
+qs(family_peaceful_y_plot, "family_peaceful_y")
+
+# family_peaceful_p
+family_peaceful_p_plot <- tri_plot(input_plots, "family_peaceful_p", "Family Peaceful\n(Parent Report)", c("No", "Yes"))
+family_peaceful_p_plot
+qs(family_peaceful_p_plot, "family_peaceful_p")
+
+# parent_perstr
+parent_perstr_plot <- tri_plot(input_plots, "parent_perstr", "parent_perstr")
+parent_perstr_plot
+qs(parent_perstr_plot, "parent_perstr")
+
+# considerate_p
+considerate_p_plot <- tri_plot(input_plots, "considerate_p", "considerate_p")
+considerate_p_plot
+qs(considerate_p_plot, "considerate_p")
+
+# pericortical_wm_ndi
+pericortical_wm_ndi_plot <- tri_plot(input_plots, "pericortical_wm_ndi", "pericortical_wm_ndi")
+pericortical_wm_ndi_plot
+qs(pericortical_wm_ndi_plot, "pericortical_wm_ndi")
+
+# family_temper_p
+family_temper_p_plot <- tri_plot(input_plots, "family_temper_p", "family_temper_p")
+family_temper_p_plot
+qs(family_temper_p_plot, "family_temper_p")
+
+# age
+age_plot <- tri_plot(input_plots, "age", "age")
+age_plot
+qs(age_plot, "age")
+
+# family_criticize_p
+family_criticize_p_plot <- tri_plot(input_plots, "family_criticize_p", "family_criticize_p")
+family_criticize_p_plot
+qs(family_criticize_p_plot, "family_criticize_p")
+
+# family_outdo_y
+family_outdo_y_plot <- tri_plot(input_plots, "family_outdo_y", "family_outdo_y")
+family_outdo_y_plot
+qs(family_outdo_y_plot, "family_outdo_y")
+
+# school_programs
+school_programs_plot <- tri_plot(input_plots, "school_programs", "school_programs")
+school_programs_plot
+qs(school_programs_plot, "school_programs")
+
+# mtbi_age
+mtbi_age_plot <- tri_plot(input_plots, "mtbi_age", "mtbi_age")
+mtbi_age_plot
+qs(mtbi_age_plot, "mtbi_age")
+
+# family_yell_y
+family_yell_y_plot <- tri_plot(input_plots, "family_yell_y", "family_yell_y")
+family_yell_y_plot
+qs(family_yell_y_plot, "family_yell_y")
+
+# same_sex_close_friend
+same_sex_close_friend_plot <- tri_plot(input_plots, "same_sex_close_friend", "same_sex_close_friend")
+same_sex_close_friend_plot
+qs(same_sex_close_friend_plot, "same_sex_close_friend")
+
+# family_criticize_y
+family_criticize_y_plot <- tri_plot(input_plots, "family_criticize_y", "family_criticize_y")
+family_criticize_y_plot
+qs(family_criticize_y_plot, "family_criticize_y")
+
+# family_angry_y
+family_angry_y_plot <- tri_plot(input_plots, "family_angry_y", "family_angry_y")
+family_angry_y_plot
+qs(family_angry_y_plot, "family_angry_y")
+
+# family_angry_p
+family_angry_p_plot <- tri_plot(input_plots, "family_angry_p", "family_angry_p")
+family_angry_p_plot
+qs(family_angry_p_plot, "family_angry_p")
+
+# family_throw_p
+family_throw_p_plot <- tri_plot(input_plots, "family_throw_p", "family_throw_p")
+family_throw_p_plot
+qs(family_throw_p_plot, "family_throw_p")
+
+# helpful_y
+helpful_y_plot <- tri_plot(input_plots, "helpful_y", "helpful_y")
+helpful_y_plot
+qs(helpful_y_plot, "helpful_y")
+
+# pubertal_status_y
+pubertal_status_y_plot <- tri_plot(input_plots, "pubertal_status_y", "pubertal_status_y")
+pubertal_status_y_plot
+qs(pubertal_status_y_plot, "pubertal_status_y")
+
+# mtbi_mem_daze
+mtbi_mem_daze_plot <- tri_plot(input_plots, "mtbi_mem_daze", "mtbi_mem_daze")
+mtbi_mem_daze_plot
+qs(mtbi_mem_daze_plot, "mtbi_mem_daze")
+
+# same_sex_friend
+same_sex_friend_plot <- tri_plot(input_plots, "same_sex_friend", "same_sex_friend")
+same_sex_friend_plot
+qs(same_sex_friend_plot, "same_sex_friend")
+
+# previous_mtbis
+previous_mtbis_plot <- tri_plot(input_plots, "previous_mtbis", "previous_mtbis")
+previous_mtbis_plot
+qs(previous_mtbis_plot, "previous_mtbis")
+
+# mtbi_mechanism
+mtbi_mechanism_plot <- tri_plot(input_plots, "mtbi_mechanism", "mtbi_mechanism")
+mtbi_mechanism_plot
+qs(mtbi_mechanism_plot, "mtbi_mechanism")
+
+# family_fight_y
+family_fight_y_plot <- tri_plot(input_plots, "family_fight_y", "family_fight_y")
+family_fight_y_plot
+qs(family_fight_y_plot, "family_fight_y")
+
+# opp_sex_friend
+opp_sex_friend_plot <- tri_plot(input_plots, "opp_sex_friend", "opp_sex_friend")
+opp_sex_friend_plot
+qs(opp_sex_friend_plot, "opp_sex_friend")
+
+# family_throw_y
+family_throw_y_plot <- tri_plot(input_plots, "family_throw_y", "family_throw_y")
+family_throw_y_plot
+qs(family_throw_y_plot, "family_throw_y")
+
+# family_temper_y
+family_temper_y_plot <- tri_plot(input_plots, "family_temper_y", "family_temper_y")
+family_temper_y_plot
+qs(family_temper_y_plot, "family_temper_y")
+
+# family_hit_y
+family_hit_y_plot <- tri_plot(input_plots, "family_hit_y", "family_hit_y")
+family_hit_y_plot
+qs(family_hit_y_plot, "family_hit_y")
+
+# opp_sex_close_friend
+opp_sex_close_friend_plot <- tri_plot(input_plots, "opp_sex_close_friend", "opp_sex_close_friend")
+opp_sex_close_friend_plot
+qs(opp_sex_close_friend_plot, "opp_sex_close_friend")
+
+# family_yell_p
+family_yell_p_plot <- tri_plot(input_plots, "family_yell_p", "family_yell_p")
+family_yell_p_plot
+qs(family_yell_p_plot, "family_yell_p")
+
+
+```
+
+```{r}
+
+
+
+
+
+
+
+
+
+
 
 ```
