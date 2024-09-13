@@ -140,8 +140,8 @@ write_csv(uninjured_subjects, sub_path("uninjured_subjects.csv", date = TRUE))
 
 # Note that the longitudinal subjects have not been filtered in any way based on
 #  whether or not they also had an mTBI at baseline or another timepoint
-mtbi_subjects <- read_subjects(sub_path("2024_08_17_mtbi_subjects.csv"))
-uninjured_subjects <- read_subjects(sub_path("2024_08_17_uninjured_subjects.csv"))
+mtbi_subjects <- read_subjects(sub_path("2024_09_13_mtbi_subjects.csv"))
+uninjured_subjects <- read_subjects(sub_path("2024_09_13_uninjured_subjects.csv"))
 
 length(mtbi_subjects)
 length(uninjured_subjects)
@@ -391,11 +391,6 @@ d_pubertal_status_mtbi <- dplyr::inner_join(
     d_pubertal_status_p_mtbi,
     d_pubertal_status_y_mtbi
 )
-
-# Add this in later?
-#library(ComplexUpset)
-#z <- dplyr::inner_join(d_pubertal_status_p_mtbi, d_pubertal_status_y_mtbi) |>
-#    na.omit()
 
 write_csv(
     d_pubertal_status_mtbi,
@@ -888,19 +883,9 @@ p_parent_psych_mtbi <- get_parent_psychopathology(
     mh_p_asr,
     mtbi_subjects,
     t = 0,
-    raw = FALSE
+    raw = TRUE
 )
 tibble(p_parent_psych_mtbi)
-
-p_parent_psych_mtbi |> colnames()
-
-mh_p_asr |> colnames()
-
-hist(mh_p_asr$"asr_scr_perstr_t")
-
-search_dd("asr_scr_perstr_t")$"var_label"
-
-hist(p_parent_psych_mtbi[, 3])
 
 write_csv(
     p_parent_psych_mtbi,
@@ -911,7 +896,7 @@ p_parent_psych_uninj <- get_parent_psychopathology(
     mh_p_asr,
     uninjured_subjects,
     t = 0,
-    raw = FALSE
+    raw = TRUE
 )
 tibble(p_parent_psych_uninj)
 
@@ -929,7 +914,7 @@ CBCL syndrom subscales include anxious-depressed withdrawn-depressed, somatic co
 ```{r}
 cbcl_mtbi <- get_cbcl_syndrome_scale(
     mh_p_cbcl,
-    raw = FALSE,
+    raw = TRUE,
     subjects = mtbi_subjects,
     t = 0
 )
@@ -942,7 +927,7 @@ write_csv(
 
 cbcl_uninj <- get_cbcl_syndrome_scale(
     mh_p_cbcl,
-    raw = FALSE,
+    raw = TRUE,
     subjects = uninjured_subjects,
     t = 0
 )
