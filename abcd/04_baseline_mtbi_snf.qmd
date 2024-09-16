@@ -1261,18 +1261,10 @@ mtbi_full_esm <- extend_solutions(
 )
 mtbi_full_esm$"impairment_separation" <- -log10(mtbi_full_esm$"mean_pval")
 write_csv(mtbi_full_esm, proc_path("mtbi_full_esm.csv", TRUE))
-
-#mtbi_full_ari <- calc_aris(mtbi_full_esm, processes = "max")
-#mtbi_full_order <- get_matrix_order(mtbi_full_ari)
-#
-#write_csv(data.frame(mtbi_full_ari), proc_path("mtbi_full_ari.csv", TRUE))
-#write_csv(data.frame(mtbi_full_order), proc_path("mtbi_full_order.csv", TRUE))
 ```
 
 ```{r}
 mtbi_full_esm <- read_csv(proc_path("2024_09_13_mtbi_full_esm.csv"))
-#mtbi_full_ari <- read_csv(proc_path("2024_09_13_mtbi_full_ari.csv"))
-#mtbi_full_order <- unlist(read_csv(proc_path("2024_09_13_mtbi_full_order.csv")))
 ```
 
 ```{r}
@@ -1371,6 +1363,18 @@ mtbi_val_plot_list <- auto_plot(
     data_list = test_data_list_s1,
     target_list = test_oom_list_s1
 )
+
+mtbi_val_plot_list$"mtbi_mechanism"[[1]]$"keycol" <- factor(
+    mtbi_val_plot_list$"mtbi_mechanism"[[1]]$"keycol",
+    levels = c("fall_hit", "hosp_er", "multi", "other_loc", "vehicle", "violent")
+)
+
+bar_colors <- scales::hue_pal()(6)
+names(bar_colors) <- c("fall_hit", "hosp_er", "multi", "other_loc", "vehicle", "violent")
+
+mtbi_val_plot_list$"mtbi_mechanism" <- mtbi_val_plot_list$"mtbi_mechanism" +
+    scale_fill_manual(values = bar_colors, drop = FALSE)
+
 ```
 
 How are all the test features distributed?
@@ -1418,7 +1422,7 @@ list.save(outcome_plots, proc_path("outcome_tri_plots.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-input_plots <- list.load(proc_path("2024_09_13_input_tri_plots.rds"))
+input_plots <- list.load(proc_path("2024_09_16_input_tri_plots.rds"))
 outcome_plots <- list.load(proc_path("2024_09_13_outcome_tri_plots.rds"))
 ```
 
@@ -1485,7 +1489,6 @@ for (f in sorted_features) {
 
 
 ```{r}
-
 # Brain volumes
 brain_volume_plot <- tri_plot(input_plots, "brain_volume", expression("Brain Volume "(mm^3)), ylims = c(900000, 1650000))
 brain_volume_plot
@@ -1522,16 +1525,12 @@ non_school_programs_plot
 qs(non_school_programs_plot, "non_school_programs")
 
 # parent_thought
-parent_thought_plot <- tri_plot(input_plots, "parent_thought", "Parent Thought (T)", ylims = c(-0.5, 13.5))
+parent_thought_plot <- tri_plot(input_plots, "parent_thought", "Parent Thought", ylims = c(-0.5, 13.5))
 parent_thought_plot
 qs(parent_thought_plot, "parent_thought")
 
-###############################################################################
-# Here i am!
-###############################################################################
-
 # Parent Somatic
-parent_somatic_plot <- tri_plot(input_plots, "parent_somatic", "Parent Somatic (T)", ylims = c(-0.5, 30))
+parent_somatic_plot <- tri_plot(input_plots, "parent_somatic", "Parent Somatic", ylims = c(-0.5, 25))
 parent_somatic_plot
 qs(parent_somatic_plot, "parent_somatic")
 
@@ -1541,32 +1540,32 @@ weekday_screentime_plot
 qs(weekday_screentime_plot, "weekday_screentime")
 
 # parent_antisocial
-parent_antisocial_plot <- tri_plot(input_plots, "parent_antisocial", "Parent Antisocial (T)", ylims = c(-0.5, 30))
+parent_antisocial_plot <- tri_plot(input_plots, "parent_antisocial", "Parent Antisocial", ylims = c(-0.5, 20))
 parent_antisocial_plot
 qs(parent_antisocial_plot, "parent_antisocial")
 
 # parent_aggressive
-parent_aggressive_plot <- tri_plot(input_plots, "parent_aggressive", "Parent Aggressive (T)", ylims = c(-0.5, 30))
+parent_aggressive_plot <- tri_plot(input_plots, "parent_aggressive", "Parent Aggressive", ylims = c(-0.5, 25))
 parent_aggressive_plot
 qs(parent_aggressive_plot, "parent_aggressive")
 
 # Parent depress
-parent_depress_plot <- tri_plot(input_plots, "parent_depress", "Parent Depress (T)", ylims = c(-0.5, 30))
+parent_depress_plot <- tri_plot(input_plots, "parent_depress", "Parent Depress", ylims = c(-0.5, 25))
 parent_depress_plot
 qs(parent_depress_plot, "parent_depress")
 
 # parent_anxdep
-parent_anxdep_plot <- tri_plot(input_plots, "parent_anxdep", "Parent Anxious-Depressed (T)", ylims = c(-0.5, 30))
+parent_anxdep_plot <- tri_plot(input_plots, "parent_anxdep", "Parent Anxious-Depressed", ylims = c(-0.5, 30))
 parent_anxdep_plot
 qs(parent_anxdep_plot, "parent_anxdep")
 
 # Race
-race_plot <- tri_plot(input_plots, "race", "Race")
+race_plot <- tri_plot(input_plots, "race", "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White"))
 race_plot
 qs(race_plot, "race")
 
 # parent_anxdisord
-parent_anxdisord_plot <- tri_plot(input_plots, "parent_anxdisord", "Parent Anxious (T)", ylims = c(-0.5, 23))
+parent_anxdisord_plot <- tri_plot(input_plots, "parent_anxdisord", "Parent Anxious", ylims = c(-0.5, 13))
 parent_anxdisord_plot
 qs(parent_anxdisord_plot, "parent_anxdisord")
 
@@ -1581,17 +1580,18 @@ weekend_screentime_plot
 qs(weekend_screentime_plot, "weekend_screentime")
 
 # parent_withdrawn
-parent_withdrawn_plot <- tri_plot(input_plots, "parent_withdrawn", "Parent Withdrawn (T)")
+parent_withdrawn_plot <- tri_plot(input_plots, "parent_withdrawn", "Parent Withdrawn", ylims = c(-0.5, 17))
 parent_withdrawn_plot
 qs(parent_withdrawn_plot, "parent_withdrawn")
 
 # parent_avoidant
-parent_avoidant_plot <- tri_plot(input_plots, "parent_avoidant", "Parent Avoidant (T)", ylims = c(-0.5, 23))
+parent_avoidant_plot <- tri_plot(input_plots, "parent_avoidant", "Parent Avoidant", ylims = c(-0.5, 13))
 parent_avoidant_plot
 qs(parent_avoidant_plot, "parent_avoidant")
 
 # parent_hyperactive
-parent_hyperactive_plot <- tri_plot(input_plots, "parent_hyperactive", "Parent Hyperactive (T)", ylims = c(-0.5, 23))
+parent_hyperactive_plot <- tri_plot(input_plots, "parent_hyperactive", "Parent Hyperactive", ylims = c(-0.5, 12))
+parent_hyperactive_plot
 qs(parent_hyperactive_plot, "parent_hyperactive")
 
 # fmri_cort_cors
@@ -1601,20 +1601,21 @@ qs(fmri_cort_cors_plot, "fmri_cort_cors")
 
 # fmri_cort_subcort_cors
 fmri_cort_subcort_cors_plot <- tri_plot(input_plots, "fmri_cort_subcort_cors", "fMRI Cort-Subcort Corrs", ylims = c(-0.15, 0.2))
+fmri_cort_subcort_cors_plot
 qs(fmri_cort_subcort_cors_plot, "fmri_cort_subcort_cors")
 
 # Parent attention
-parent_attention_plot <- tri_plot(input_plots, "parent_attention", "Parent Attention (T)", ylims = c(-0.5, 23))
+parent_attention_plot <- tri_plot(input_plots, "parent_attention", "Parent Attention", ylims = c(-0.5, 25))
 parent_attention_plot
 qs(parent_attention_plot, "parent_attention")
 
 # parent_perstr
-parent_perstr_plot <- tri_plot(input_plots, "parent_perstr", "parent_perstr")
+parent_perstr_plot <- tri_plot(input_plots, "parent_perstr", "Parent Personal Strength")
 parent_perstr_plot
 qs(parent_perstr_plot, "parent_perstr")
 
 # parent_intrusive
-parent_intrusive_plot <- tri_plot(input_plots, "parent_intrusive", "Parent Intrusive (T)", ylims = c(-0.5, 23))
+parent_intrusive_plot <- tri_plot(input_plots, "parent_intrusive", "Parent Intrusive", ylims = c(-0.5, 12))
 parent_intrusive_plot
 qs(parent_intrusive_plot, "parent_intrusive")
 
@@ -1634,7 +1635,7 @@ headache_history_plot
 qs(headache_history_plot, "headache_history")
 
 # exercise_time
-exercise_time_plot <- tri_plot(input_plots, "exercise_time", "Exercise Score", ylims = c(0, 1))
+exercise_time_plot <- tri_plot(input_plots, "exercise_time", "Exercise Score", ylims = c(0, 1.1))
 exercise_time_plot
 qs(exercise_time_plot, "exercise_time")
 
@@ -1644,7 +1645,7 @@ considerate_y_plot
 qs(considerate_y_plot, "considerate_y")
 
 # family_temper_p
-family_temper_p_plot <- tri_plot(input_plots, "family_temper_p", "family_temper_p")
+family_temper_p_plot <- tri_plot(input_plots, "family_temper_p", "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
 family_temper_p_plot
 qs(family_temper_p_plot, "family_temper_p")
 
@@ -1664,7 +1665,7 @@ helps_hurt_p_plot
 qs(helps_hurt_p_plot, "helps_hurt_p")
 
 # same_sex_close_friend
-same_sex_close_friend_plot <- tri_plot(input_plots, "same_sex_close_friend", "same_sex_close_friend")
+same_sex_close_friend_plot <- tri_plot(input_plots, "same_sex_close_friend", "Same-Sex Close Friends (Quartile)")
 same_sex_close_friend_plot
 qs(same_sex_close_friend_plot, "same_sex_close_friend")
 
@@ -1674,7 +1675,7 @@ family_peaceful_p_plot
 qs(family_peaceful_p_plot, "family_peaceful_p")
 
 # family_outdo_y
-family_outdo_y_plot <- tri_plot(input_plots, "family_outdo_y", "family_outdo_y")
+family_outdo_y_plot <- tri_plot(input_plots, "family_outdo_y", "Family Outdoing\n(Youth Report)", c("No", "Yes"))
 family_outdo_y_plot
 qs(family_outdo_y_plot, "family_outdo_y")
 
@@ -1684,12 +1685,12 @@ mtbi_loc_plot
 qs(mtbi_loc_plot, "mtbi_loc")
 
 # family_criticize_p
-family_criticize_p_plot <- tri_plot(input_plots, "family_criticize_p", "family_criticize_p")
+family_criticize_p_plot <- tri_plot(input_plots, "family_criticize_p", "Family Criticizes\n(Parent Report)", c("No", "Yes"))
 family_criticize_p_plot
 qs(family_criticize_p_plot, "family_criticize_p")
 
 # school_programs
-school_programs_plot <- tri_plot(input_plots, "school_programs", "school_programs")
+school_programs_plot <- tri_plot(input_plots, "school_programs", "School Programs", ylims = c(-0.5, 18))
 school_programs_plot
 qs(school_programs_plot, "school_programs")
 
@@ -1699,12 +1700,12 @@ family_hit_p_plot
 qs(family_hit_p_plot, "family_hit_p")
 
 # family_angry_p
-family_angry_p_plot <- tri_plot(input_plots, "family_angry_p", "family_angry_p")
+family_angry_p_plot <- tri_plot(input_plots, "family_angry_p", "Family Angry\n(Parent Report)", c("No", "Yes"))
 family_angry_p_plot
 qs(family_angry_p_plot, "family_angry_p")
 
 # helpful_y
-helpful_y_plot <- tri_plot(input_plots, "helpful_y", "helpful_y")
+helpful_y_plot <- tri_plot(input_plots, "helpful_y", "Helpful\n(Youth Report)", c("No", "Yes"))
 helpful_y_plot
 qs(helpful_y_plot, "helpful_y")
 
@@ -1714,22 +1715,22 @@ helpful_p_plot
 qs(helpful_p_plot, "helpful_p")
 
 # family_angry_y
-family_angry_y_plot <- tri_plot(input_plots, "family_angry_y", "family_angry_y")
+family_angry_y_plot <- tri_plot(input_plots, "family_angry_y", "Family Angry\n(Youth Report)", c("No", "Yes"))
 family_angry_y_plot
 qs(family_angry_y_plot, "family_angry_y")
 
 # pericortical_wm_ndi
-pericortical_wm_ndi_plot <- tri_plot(input_plots, "pericortical_wm_ndi", "pericortical_wm_ndi")
+pericortical_wm_ndi_plot <- tri_plot(input_plots, "pericortical_wm_ndi", "Pericortical WM Neurite Density", ylims = c(0.25, 0.6))
 pericortical_wm_ndi_plot
 qs(pericortical_wm_ndi_plot, "pericortical_wm_ndi")
 
 # family_yell_y
-family_yell_y_plot <- tri_plot(input_plots, "family_yell_y", "family_yell_y")
+family_yell_y_plot <- tri_plot(input_plots, "family_yell_y", "Family Yells\n(Youth Report)", c("No", "Yes"))
 family_yell_y_plot
 qs(family_yell_y_plot, "family_yell_y")
 
 # pubertal_status_y
-pubertal_status_y_plot <- tri_plot(input_plots, "pubertal_status_y", "pubertal_status_y")
+pubertal_status_y_plot <- tri_plot(input_plots, "pubertal_status_y", "Pubertal Status (Youth Report)")
 pubertal_status_y_plot
 qs(pubertal_status_y_plot, "pubertal_status_y")
 
@@ -1744,37 +1745,37 @@ age_plot
 qs(age_plot, "age")
 
 # family_criticize_y
-family_criticize_y_plot <- tri_plot(input_plots, "family_criticize_y", "family_criticize_y")
+family_criticize_y_plot <- tri_plot(input_plots, "family_criticize_y", "Family Criticizes\n(Youth Report)", c("No", "Yes"))
 family_criticize_y_plot
 qs(family_criticize_y_plot, "family_criticize_y")
 
 # family_throw_p
-family_throw_p_plot <- tri_plot(input_plots, "family_throw_p", "family_throw_p")
+family_throw_p_plot <- tri_plot(input_plots, "family_throw_p", "Family Throwing\n(Parent Report)", c("No", "Yes"))
 family_throw_p_plot
 qs(family_throw_p_plot, "family_throw_p")
 
 # mtbi_mem_daze
-mtbi_mem_daze_plot <- tri_plot(input_plots, "mtbi_mem_daze", "mtbi_mem_daze")
+mtbi_mem_daze_plot <- tri_plot(input_plots, "mtbi_mem_daze", "mTBI mem_daze", c("No", "Yes"))
 mtbi_mem_daze_plot
 qs(mtbi_mem_daze_plot, "mtbi_mem_daze")
 
 # same_sex_friend
-same_sex_friend_plot <- tri_plot(input_plots, "same_sex_friend", "same_sex_friend")
+same_sex_friend_plot <- tri_plot(input_plots, "same_sex_friend", "Same-Sex Friends\n(Quartile)")
 same_sex_friend_plot
 qs(same_sex_friend_plot, "same_sex_friend")
 
 # mtbi_age
-mtbi_age_plot <- tri_plot(input_plots, "mtbi_age", "mtbi_age")
+mtbi_age_plot <- tri_plot(input_plots, "mtbi_age", "mTBI Age (months)")
 mtbi_age_plot
 qs(mtbi_age_plot, "mtbi_age")
 
 # previous_mtbis
-previous_mtbis_plot <- tri_plot(input_plots, "previous_mtbis", "previous_mtbis")
+previous_mtbis_plot <- tri_plot(input_plots, "previous_mtbis", "Previous mTBIs")
 previous_mtbis_plot
 qs(previous_mtbis_plot, "previous_mtbis")
 
 # considerate_p
-considerate_p_plot <- tri_plot(input_plots, "considerate_p", "considerate_p")
+considerate_p_plot <- tri_plot(input_plots, "considerate_p", "Considerate\n(Parent Report)", c("No", "Yes"))
 considerate_p_plot
 qs(considerate_p_plot, "considerate_p")
 
@@ -1784,43 +1785,155 @@ family_peaceful_y_plot
 qs(family_peaceful_y_plot, "family_peaceful_y")
 
 # mtbi_mechanism
-mtbi_mechanism_plot <- tri_plot(input_plots, "mtbi_mechanism", "mtbi_mechanism")
+mtbi_mechanism_plot <- tri_plot(
+    input_plots,
+    "mtbi_mechanism",
+    "mTBI Mechanism",
+    c("Fall/Hit", "Hospital/ER", "Multiple Injuries", "Other", "Vehicle", "Violent")
+)
 mtbi_mechanism_plot
 qs(mtbi_mechanism_plot, "mtbi_mechanism")
 
 # family_fight_y
-family_fight_y_plot <- tri_plot(input_plots, "family_fight_y", "family_fight_y")
+family_fight_y_plot <- tri_plot(input_plots, "family_fight_y", "Family Fights\n(Youth Report)", c("No", "Yes"))
 family_fight_y_plot
 qs(family_fight_y_plot, "family_fight_y")
 
 # family_hit_y
-family_hit_y_plot <- tri_plot(input_plots, "family_hit_y", "family_hit_y")
+family_hit_y_plot <- tri_plot(input_plots, "family_hit_y", "Family Hitting\n(Youth Report)", c("No", "Yes"))
 family_hit_y_plot
 qs(family_hit_y_plot, "family_hit_y")
 
 # family_throw_y
-family_throw_y_plot <- tri_plot(input_plots, "family_throw_y", "family_throw_y")
+family_throw_y_plot <- tri_plot(input_plots, "family_throw_y", "Family Throwing\n(Youth Report)", c("No", "Yes"))
 family_throw_y_plot
 qs(family_throw_y_plot, "family_throw_y")
 
 # family_temper_y
-family_temper_y_plot <- tri_plot(input_plots, "family_temper_y", "family_temper_y")
+family_temper_y_plot <- tri_plot(input_plots, "family_temper_y", "Family Temper\n(Youth Report)", c("No", "Yes"))
 family_temper_y_plot
 qs(family_temper_y_plot, "family_temper_y")
 
 # opp_sex_close_friend
-opp_sex_close_friend_plot <- tri_plot(input_plots, "opp_sex_close_friend", "opp_sex_close_friend")
+opp_sex_close_friend_plot <- tri_plot(input_plots, "opp_sex_close_friend", "Opposite-Sex Close Friends\n(Quartile)")
 opp_sex_close_friend_plot
 qs(opp_sex_close_friend_plot, "opp_sex_close_friend")
 
 # opp_sex_friend
-opp_sex_friend_plot <- tri_plot(input_plots, "opp_sex_friend", "opp_sex_friend")
+opp_sex_friend_plot <- tri_plot(input_plots, "opp_sex_friend", "Opposite-Sex Friends (Quartile)")
 opp_sex_friend_plot
 qs(opp_sex_friend_plot, "opp_sex_friend")
 
 # family_yell_p
-family_yell_p_plot <- tri_plot(input_plots, "family_yell_p", "family_yell_p")
+family_yell_p_plot <- tri_plot(input_plots, "family_yell_p", "Family Yells\n(Parent Report)", c("No", "Yes"))
 family_yell_p_plot
 qs(family_yell_p_plot, "family_yell_p")
+```
+
+```{r}
+generalizing_plots <- list(
+    "brain_volume" = brain_volume_plot,
+    "sex" = sex_plot,
+    "cort_sa" = cort_sa_plot,
+    "household_income" = household_income_plot,
+    "pubertal_status_p" = pubertal_status_p_plot,
+    "programs_this_year" = programs_this_year_plot,
+    "non_school_programs" = non_school_programs_plot,
+    "parent_thought" = parent_thought_plot,
+    "parent_somatic" = parent_somatic_plot,
+    "weekday_screentime" = weekday_screentime_plot,
+    "parent_antisocial" = parent_antisocial_plot,
+    "parent_aggressive" = parent_aggressive_plot,
+    "parent_depress" = parent_depress_plot,
+    "parent_anxdep" = parent_anxdep_plot,
+    "race" = race_plot,
+    "parent_anxdisord" = parent_anxdisord_plot,
+    "private_instruction" = private_instruction_plot,
+    "weekend_screentime" = weekend_screentime_plot,
+    "parent_withdrawn" = parent_withdrawn_plot,
+    "parent_avoidant" = parent_avoidant_plot,
+    "parent_hyperactive" = parent_hyperactive_plot,
+    "fmri_cort_cors" = fmri_cort_cors_plot,
+    "fmri_cort_subcort_cors" = fmri_cort_subcort_cors_plot,
+    "parent_attention" = parent_attention_plot,
+    "parent_perstr" = parent_perstr_plot,
+    "parent_intrusive" = parent_intrusive_plot,
+    "family_fight_p" = family_fight_p_plot,
+    "major_wm_ndi" = major_wm_ndi_plot,
+    "headache_history" = headache_history_plot,
+    "exercise_time" = exercise_time_plot,
+    "considerate_y" = considerate_y_plot,
+    "family_temper_p" = family_temper_p_plot,
+    "family_outdo_p" = family_outdo_p_plot,
+    "cortical_thickness" = cortical_thickness_plot,
+    "helps_hurt_p" = helps_hurt_p_plot,
+    "same_sex_close_friend" = same_sex_close_friend_plot,
+    "family_peaceful_p" = family_peaceful_p_plot,
+    "family_outdo_y" = family_outdo_y_plot,
+    "mtbi_loc" = mtbi_loc_plot,
+    "family_criticize_p" = family_criticize_p_plot,
+    "school_programs" = school_programs_plot,
+    "family_hit_p" = family_hit_p_plot,
+    "family_angry_p" = family_angry_p_plot,
+    "helpful_y" = helpful_y_plot,
+    "helpful_p" = helpful_p_plot,
+    "family_angry_y" = family_angry_y_plot,
+    "pericortical_wm_ndi" = pericortical_wm_ndi_plot,
+    "family_yell_y" = family_yell_y_plot,
+    "pubertal_status_y" = pubertal_status_y_plot,
+    "helps_hurt_y" = helps_hurt_y_plot,
+    "age" = age_plot,
+    "family_criticize_y" = family_criticize_y_plot,
+    "family_throw_p" = family_throw_p_plot,
+    "mtbi_mem_daze" = mtbi_mem_daze_plot,
+    "same_sex_friend" = same_sex_friend_plot,
+    "mtbi_age" = mtbi_age_plot,
+    "previous_mtbis" = previous_mtbis_plot,
+    "considerate_p" = considerate_p_plot,
+    "family_peaceful_y" = family_peaceful_y_plot,
+    "mtbi_mechanism" = mtbi_mechanism_plot,
+    "family_fight_y" = family_fight_y_plot,
+    "family_hit_y" = family_hit_y_plot,
+    "family_throw_y" = family_throw_y_plot,
+    "family_temper_y" = family_temper_y_plot,
+    "opp_sex_close_friend" = opp_sex_close_friend_plot,
+    "opp_sex_friend" = opp_sex_friend_plot,
+    "family_yell_p" = family_yell_p_plot
+)
+
+generalizing_plots <- lapply(
+    generalizing_plots,
+    function(x) {
+        x[[1]] <- x[[1]] + theme(axis.title.x = element_blank()) 
+        x[[2]] <- x[[2]] + theme(axis.title.x = element_blank()) 
+        x[[3]] <- x[[3]] + theme(axis.title.x = element_blank()) 
+        return(x)
+    }
+)
 
 ```
+
+```{r}
+wp_1 <- wrap_plots(generalizing_plots[1:10], ncol = 1)
+qs(wp_1, "wp_1", w = 10, h = 30)
+
+wp_2 <- wrap_plots(generalizing_plots[11:20], ncol = 1)
+qs(wp_2, "wp_2", w = 10, h = 30)
+
+wp_3 <- wrap_plots(generalizing_plots[21:30], ncol = 1)
+qs(wp_3, "wp_3", w = 10, h = 30)
+
+wp_4 <- wrap_plots(generalizing_plots[31:40], ncol = 1)
+qs(wp_4, "wp_4", w = 10, h = 30)
+
+wp_5 <- wrap_plots(generalizing_plots[41:50], ncol = 1)
+qs(wp_5, "wp_5", w = 10, h = 30)
+
+wp_6 <- wrap_plots(generalizing_plots[51:60], ncol = 1)
+qs(wp_6, "wp_6", w = 10, h = 30)
+
+wp_7 <- wrap_plots(generalizing_plots[61:67], ncol = 1)
+qs(wp_7, "wp_7", w = 10, h = 21)
+```
+
+# Topologies go here, save actually for later.
