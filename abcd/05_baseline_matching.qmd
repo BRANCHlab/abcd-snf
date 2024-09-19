@@ -578,11 +578,7 @@ qs2(matched_uninj_manhattan_plots$"d_s1", "d_s1", h = 5)
 qs2(matched_uninj_manhattan_plots$"d_p1", "d_p1", h = 7)
 ```
 
-
-
-
 ```{r}
-
 matched_uninj_dls <- list(
     "a_s1" = matched_uninj_dl_a_s1,
     "a_p1" = matched_uninj_dl_a_p1,
@@ -678,73 +674,4 @@ uninj_ol_p2 <- all_dls$"uninj_pooled_oom_lists"$"imp_2"
 uninj_ol_p3 <- all_dls$"uninj_pooled_oom_lists"$"imp_3"
 uninj_ol_p4 <- all_dls$"uninj_pooled_oom_lists"$"imp_4"
 uninj_ol_p5 <- all_dls$"uninj_pooled_oom_lists"$"imp_5"
-```
-
-
-```{r}
-
-matched_uninj_esm_list <- lapply(
-    matched_uninj_esm_list,
-    function(x) {
-        x$"impairment_separation" <- -log10(x$"mean_pval")
-        return(x)
-    }
-)
-
-
-
-
-my_ari_hm <- function(a, o, e) {
-    plot <- adjusted_rand_index_heatmap(
-        aris = a,
-        order = o,
-        data = e,
-        min_colour = "black",
-        top_hm = list(
-            "Impairment Separation" = "impairment_separation"
-        ),
-        top_bar = list(
-            "Number of Clusters" = "nclust"
-        ),
-        annotation_colours = list(
-            "Impairment Separation" = colour_scale(
-                e$"impairment_separation",
-                min_colour = "gray7",
-                max_colour = "limegreen"
-            )
-        )
-    )
-    return(plot)
-}
-
-my_ari_hm(
-    a = matched_uninj_aris$"a_s1",
-    e = matched_uninj_esm_list$"a_s1",
-    o = matched_uninj_ari_orders$"a_s1"
-)
-
-my_ari_hm(
-    a = matched_uninj_aris$"b_s1",
-    e = matched_uninj_esm_list$"b_s1",
-    o = matched_uninj_ari_orders$"b_s1"
-)
-
-# Define the lists
-a <- list(1, 2, 3)
-b <- list(2, 1, 2)
-c <- list(10, 100, 1000)
-
-# Define a function that uses elements from each list
-combine_function <- function(a, o, e) {
-    return(my_ari_hm(a, o, e))
-}
-
-# Use mapply to apply the function element-wise across the three lists
-d <- mapply(combine_function, matched_uninj_aris, matched_uninj_ari_orders, matched_uninj_esm_list)
-
-d[[2]]
-
-d
-
-
 ```

@@ -677,7 +677,6 @@ write_csv(
 )
 
 data.frame(mtbi_mc_d_nmi_v_pval_rank)
-
 options(width=200)
 
 # Latex table
@@ -1090,9 +1089,9 @@ topologizer <- function(df) {
             data.frame(
                 "feature" = feature,
                 "summary" = full_summary,
-                "c1" = signif(mean(f1), 2),
-                "c2" = signif(mean(f2), 2),
-                "c3" = signif(mean(f3), 2),
+                "c1" = signif(mean(f1), 3),
+                "c2" = signif(mean(f2), 3),
+                "c3" = signif(mean(f3), 3),
                 "es" = type,
                 "c12_es" = sum_1_v_2$"es",
                 "c12_l" = sum_1_v_2$"l",
@@ -1108,58 +1107,7 @@ topologizer <- function(df) {
     }
     return(summary_df)
 }
-```
 
-```{r}
-d_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df.csv"))
-
-topology_df <- topologizer(d_df)
-
-mtbi_mc_d_outcome_tops <- topology_df |> dplyr::filter(grepl("cbcl|sds", feature))
-mtbi_mc_d_input_tops <- topology_df |> dplyr::filter(!grepl("cbcl|sds", feature))
-
-joint_ranks <- mtbi_mc_d_nmi_v_pval_rank |>
-    dplyr::select(feature, joint_rank)
-joint_ranks <- rbind(
-    joint_ranks,
-    data.frame(
-        feature = c(
-            "race_black",
-            "race_white",
-            "race_hispanic",
-            "race_other"
-        ),
-        joint_rank = joint_ranks[joint_ranks$"feature" == "race", "joint_rank"]
-    )
-)
-joint_ranks <- rbind(
-    joint_ranks,
-    data.frame(
-        feature = c(
-            "mtbi_mechanism_fall_hit",
-            "mtbi_mechanism_hosp_er",
-            "mtbi_mechanism_multi",
-            "mtbi_mechanism_other_loc",
-            "mtbi_mechanism_vehicle",
-            "mtbi_mechanism_violent"
-        ),
-        joint_rank = joint_ranks[joint_ranks$"feature" == "mtbi_mechanism", "joint_rank"]
-    )
-)
-joint_ranks <- dplyr::filter(joint_ranks, !feature %in% c("mtbi_mechanism", "race"))
-
-mtbi_mc_d_input_tops <- dplyr::inner_join(mtbi_mc_d_input_tops, joint_ranks, by = "feature")
-
-mtbi_mc_d_input_tops <- dplyr::arrange(mtbi_mc_d_input_tops, joint_rank)
-
-write_csv(mtbi_mc_d_input_tops, proc_path("mtbi_mc_d_input_tops.csv", TRUE))
-write_csv(mtbi_mc_d_outcome_tops, proc_path("mtbi_mc_d_outcome_tops.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-mtbi_mc_d_input_tops <- read_csv(proc_path("2024_09_11_mtbi_mc_d_input_tops.csv"))
-mtbi_mc_d_outcome_tops <- read_csv(proc_path("2024_09_11_mtbi_mc_d_outcome_tops.csv"))
 ```
 
 # Validation
@@ -1387,15 +1335,6 @@ C1 max F | True | Almost  true|
 
 Something like that, which will require a side-by-side comparison of these features through visual inspection and through the topologizer function in the supplementary section for those who wish to look at the crunched numbers.
 
-So my objectives here are:
-
-1. [ ] The auto-plot of the full dataset.
-2. [ ] The auto-plot of the validation dataset.
-3. [ ] The qualitative table.
-4. [ ] The topologized table of the derivation dataset.
-5. [ ] The topologized table of the derivation + validation dataset.
-6. [ ] The topologized table of the validation dataset.
-
 Up to 3 should be sufficient for determining which attributes should play a key role in validating the subsequent investigations.
 
 ```{r}
@@ -1406,7 +1345,6 @@ outcome_features <- names(mtbi_full_plot_list)[outcome_idx]
 pli_sort_d <- mtbi_derivation_plot_list[sorted_features]
 pli_sort_v <- mtbi_val_plot_list[sorted_features]
 pli_sort_f <- mtbi_full_plot_list[sorted_features]
-
 plo_d <- mtbi_derivation_plot_list[outcome_features]
 plo_v <- mtbi_val_plot_list[outcome_features]
 plo_f <- mtbi_full_plot_list[outcome_features]
@@ -1427,11 +1365,14 @@ outcome_plots <- list.load(proc_path("2024_09_13_outcome_tri_plots.rds"))
 ```
 
 ```{r}
+# qs image export helper function# {{{
 qs <- function(plot, path, w = 12, h = 4) {
     path <- paste0("mtbi_dvf_", path, ".png")
     ggsave(fig_path(path, TRUE), plot, width = w, height = h)
 }
+# }}}
 
+# tri-plot helper function# {{{
 tri_plot <- function(pl,
                      feature,
                      ft_name,
@@ -1479,15 +1420,12 @@ tri_plot <- function(pl,
     names(patch_plot) <- c("derivation", "validation", "full")
     return(wrap_plots(patch_plot))
 }
+# }}}
+
 ```
 
 ```{r}
-for (f in sorted_features) {
-    print(f)
-}
-```
-
-```{r}
+# Input tri-plots# {{{
 # Brain volumes
 brain_volume_plot <- tri_plot(input_plots, "brain_volume", expression("Brain Volume "(mm^3)), ylims = c(900000, 1650000))
 brain_volume_plot
@@ -1827,33 +1765,19 @@ qs(opp_sex_friend_plot, "opp_sex_friend")
 family_yell_p_plot <- tri_plot(input_plots, "family_yell_p", "Family Yells\n(Parent Report)", c("No", "Yes"))
 family_yell_p_plot
 qs(family_yell_p_plot, "family_yell_p")
+# }}}
 
-###############################################################################
-# OUTCOME PLOTS
-###############################################################################
-
+# Outcome trip-plots# {{{
 cbcl_anxdep_plot <- tri_plot(outcome_plots, "cbcl_anxdep", "Anxious-Depressed", ylims = c(-0.5, 30))
-
 cbcl_withdep_plot <- tri_plot(outcome_plots, "cbcl_withdep", "Withdrawn-Depressed", ylims = c(-0.5, 15))
-
 cbcl_somatic_plot <- tri_plot(outcome_plots, "cbcl_somatic", "Somatic Problems", ylims = c(-0.5, 17))
-
 cbcl_social_plot <- tri_plot(outcome_plots, "cbcl_social", "Social Problems", ylims = c(-0.5, 20))
-
 cbcl_thought_plot <- tri_plot(outcome_plots, "cbcl_thought", "Thought Problems", ylims = c(-0.5, 20))
-cbcl_thought_plot
-
 cbcl_attention_plot <- tri_plot(outcome_plots, "cbcl_attention", "Attention Problems", ylims = c(-0.5, 22))
-cbcl_attention_plot
-
 cbcl_rulebreak_plot <- tri_plot(outcome_plots, "cbcl_rulebreak", "Rule-Breaking Problems", ylims = c(-0.5, 22))
-cbcl_rulebreak_plot
-
 cbcl_aggressive_plot <- tri_plot(outcome_plots, "cbcl_aggressive", "Aggression Problems", ylims = c(-0.5, 32))
-cbcl_aggressive_plot
-
 sds_sleep_plot <- tri_plot(outcome_plots, "sds_sleep", "Total Sleep Problems", ylims = c(20, 100))
-sds_sleep_plot
+# }}}
 ```
 
 ```{r}
@@ -1928,31 +1852,29 @@ generalizing_plots <- list(
 )
 
 generalizing_outcome_plots <- list(
-    # HERE I AM
-    cbcl_anxdep_plot <- tri_plot(outcome_plots, "cbcl_anxdep", "Anxious-Depressed", ylims = c(-0.5, 30))
-    cbcl_withdep_plot <- tri_plot(outcome_plots, "cbcl_withdep", "Withdrawn-Depressed", ylims = c(-0.5, 15))
-    cbcl_somatic_plot <- tri_plot(outcome_plots, "cbcl_somatic", "Somatic Problems", ylims = c(-0.5, 17))
-    cbcl_social_plot <- tri_plot(outcome_plots, "cbcl_social", "Social Problems", ylims = c(-0.5, 20))
-    cbcl_thought_plot <- tri_plot(outcome_plots, "cbcl_thought", "Thought Problems", ylims = c(-0.5, 20))
-    cbcl_thought_plot
-
-    cbcl_attention_plot <- tri_plot(outcome_plots, "cbcl_attention", "Attention Problems", ylims = c(-0.5, 22))
-    cbcl_attention_plot
-
-    cbcl_rulebreak_plot <- tri_plot(outcome_plots, "cbcl_rulebreak", "Rule-Breaking Problems", ylims = c(-0.5, 22))
-    cbcl_rulebreak_plot
-
-    cbcl_aggressive_plot <- tri_plot(outcome_plots, "cbcl_aggressive", "Aggression Problems", ylims = c(-0.5, 32))
-    cbcl_aggressive_plot
-
-    sds_sleep_plot <- tri_plot(outcome_plots, "sds_sleep", "Total Sleep Problems", ylims = c(20, 100))
-    sds_sleep_plot
-
+    "cbcl_anxdep" = cbcl_anxdep_plot,
+    "cbcl_withdep" = cbcl_withdep_plot,
+    "cbcl_somatic" = cbcl_somatic_plot,
+    "cbcl_social" = cbcl_social_plot,
+    "cbcl_thought" = cbcl_thought_plot,
+    "cbcl_attention" = cbcl_attention_plot,
+    "cbcl_rulebreak" = cbcl_rulebreak_plot,
+    "cbcl_aggressive" = cbcl_aggressive_plot,
+    "sds_sleep" = sds_sleep_plot
 )
-
 
 generalizing_plots <- lapply(
     generalizing_plots,
+    function(x) {
+        x[[1]] <- x[[1]] + theme(axis.title.x = element_blank()) 
+        x[[2]] <- x[[2]] + theme(axis.title.x = element_blank()) 
+        x[[3]] <- x[[3]] + theme(axis.title.x = element_blank()) 
+        return(x)
+    }
+)
+
+generalizing_outcome_plots <- lapply(
+    generalizing_outcome_plots,
     function(x) {
         x[[1]] <- x[[1]] + theme(axis.title.x = element_blank()) 
         x[[2]] <- x[[2]] + theme(axis.title.x = element_blank()) 
@@ -1987,13 +1909,220 @@ qs(wp_7, "wp_7", w = 10, h = 21)
 ```
 
 ```{r}
+wpo <- wrap_plots(generalizing_outcome_plots, ncol = 1)
 
-input_plots[[1]]$"household_income"
-
+qs(wpo, "wpo", w = 7, h = 22)
 ```
 
 # Summary of the validation (table)
 
-
-
 # Topologies go here, save actually for later.
+
+```{r}
+mtbi_derivation_df <- auto_plot(
+    solutions_matrix_row = mtbi_mc_d_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_2",
+    return_plots = FALSE
+)
+
+mtbi_full_df <- auto_plot(
+    mtbi_full_top_3c,
+    data_list = full_data_list_1,
+    target_list = full_oom_list_1,
+    return_plots = FALSE
+)
+
+mtbi_val_df <- auto_plot(
+    cluster_df = val_cluster_df,
+    data_list = test_data_list_s1,
+    target_list = test_oom_list_s1,
+    return_plots = FALSE
+) 
+
+write_csv(mtbi_derivation_df, proc_path("mtbi_derivation_df.csv", TRUE))
+write_csv(mtbi_full_df, proc_path("mtbi_full_df.csv", TRUE))
+write_csv(mtbi_val_df, proc_path("mtbi_val_df.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+mtbi_derivation_df <- read_csv(proc_path("2024_09_18_mtbi_derivation_df.csv"))
+mtbi_full_df <- read_csv(proc_path("2024_09_18_mtbi_full_df.csv"))
+mtbi_val_df <- read_csv(proc_path("2024_09_18_mtbi_val_df.csv"))
+```
+
+```{r}
+mtbi_derivation_tops <- topologizer(mtbi_derivation_df)
+mtbi_full_tops <- topologizer(mtbi_full_df)
+mtbi_val_tops <- topologizer(mtbi_val_df)
+
+write_csv(mtbi_derivation_tops, proc_path("mtbi_derivation_tops.csv", TRUE))
+write_csv(mtbi_full_tops, proc_path("mtbi_full_tops.csv", TRUE))
+write_csv(mtbi_val_tops, proc_path("mtbi_val_tops.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+mtbi_derivation_tops <- read_csv(proc_path("2024_09_19_mtbi_derivation_tops.csv"))
+mtbi_full_tops <- read_csv(proc_path("2024_09_19_mtbi_full_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2024_09_19_mtbi_val_tops.csv"))
+```
+
+```{r}
+significant_es <- function(type, l, u) {
+    thresh <- as.numeric(type %in% c("or", "OR"))
+    return(as.numeric(thresh < l | thresh > u))
+}
+
+format_tops <- function(tops) {
+    tops <- data.frame(tops) |> mutate(
+        c12_sig = significant_es(es, c12_l, c12_u),
+        c13_sig = significant_es(es, c13_l, c13_u),
+        c23_sig = significant_es(es, c23_l, c23_u)
+    )
+    # Strips whitespace by converting number columns to numeric format
+    tops <- numcol_to_numeric(tops)
+    tops <- tops |> mutate(
+        "C1 vs. C2" = paste0(c12_es, " [", c12_l, ", ", c12_u, "]"),
+        "C1 vs. C3" = paste0(c13_es, " [", c13_l, ", ", c13_u, "]"),
+        "C2 vs. C3" = paste0(c23_es, " [", c23_l, ", ", c23_u, "]"),
+        .keep = "unused"
+    )
+    tops <- tops |> mutate(
+        "C1 vs. C2" = ifelse(c12_sig == 1, paste0("textbf{", `C1 vs. C2`, "}"), `C1 vs. C2`),
+        "C1 vs. C3" = ifelse(c13_sig == 1, paste0("textbf{", `C1 vs. C3`, "}"), `C1 vs. C3`),
+        "C2 vs. C3" = ifelse(c23_sig == 1, paste0("textbf{", `C2 vs. C3`, "}"), `C2 vs. C3`),
+        .keep = "unused"
+    )
+    # Remove scientific notation and trailing zeros
+    tops <- format(data.frame(tops), scientific = FALSE, drop0trailing = TRUE)
+    colnames(tops) <- c("Feature", "Summary", "C1", "C2", "C3", "ES", "C1 vs. C2", "C1 vs. C3", "C2 vs. C3")
+    return(tops)
+}
+```
+
+```{r}
+# Prepping the ordering of the tops features
+mtbi_mc_d_nmi_v_pval_rank <- read_csv(
+    proc_path("2024_09_13_mtbi_mc_d_nmi_v_pval_rank.csv")
+)
+
+joint_ranks <- mtbi_mc_d_nmi_v_pval_rank |>
+    data.frame() |>
+    dplyr::select(feature, joint_rank)
+joint_ranks <- rbind(
+    joint_ranks,
+    data.frame(
+        feature = c(
+            "race_black",
+            "race_white",
+            "race_hispanic",
+            "race_other"
+        ),
+        joint_rank = joint_ranks[joint_ranks$"feature" == "race", "joint_rank"]
+    )
+)
+joint_ranks <- rbind(
+    joint_ranks,
+    data.frame(
+        feature = c(
+            "mtbi_mechanism_fall_hit",
+            "mtbi_mechanism_hosp_er",
+            "mtbi_mechanism_multi",
+            "mtbi_mechanism_other_loc",
+            "mtbi_mechanism_vehicle",
+            "mtbi_mechanism_violent"
+        ),
+        joint_rank = joint_ranks[joint_ranks$"feature" == "mtbi_mechanism", "joint_rank"]
+    )
+)
+joint_ranks <- dplyr::filter(joint_ranks, !feature %in% c("mtbi_mechanism", "race"))
+
+joint_ranks <- arrange(joint_ranks, joint_rank)
+
+write_csv(joint_ranks, proc_path("joint_ranks.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+joint_ranks <- read_csv(proc_path("2024_09_19_joint_ranks.csv"))
+```
+
+
+```{r}
+outcomes <- summarize_dl(test_oom_list_s1, scope = "feature")$"name"
+
+joint_ranks_with_out <- rbind(
+    data.frame(
+        feature = outcomes,
+        joint_rank = nrow(joint_ranks) + 1
+    ),
+    joint_ranks
+) |> data.frame()
+
+
+f_derivation_tops <- format_tops(mtbi_derivation_tops)
+f_val_tops <- format_tops(mtbi_val_tops)
+f_full_tops <- format_tops(mtbi_full_tops)
+
+all_der_tops <- dplyr::full_join(
+    joint_ranks_with_out,
+    f_derivation_tops,
+    by = join_by("feature" == "Feature")
+) |>
+    dplyr::select(-joint_rank) |>
+    dplyr::rename("Feature" = "feature")
+
+all_val_tops <- dplyr::full_join(
+    joint_ranks_with_out,
+    f_val_tops,
+    by = join_by("feature" == "Feature")
+) |>
+    dplyr::select(-joint_rank) |>
+    dplyr::rename("Feature" = "feature")
+
+all_full_tops <- dplyr::full_join(
+    joint_ranks_with_out,
+    f_full_tops,
+    by = join_by("feature" == "Feature")
+) |>
+    dplyr::select(-joint_rank) |>
+    dplyr::rename("Feature" = "feature")
+
+write_csv(all_der_tops, proc_path("mtbi_all_der_tops.csv", TRUE))
+write_csv(all_val_tops, proc_path("mtbi_all_val_tops.csv", TRUE))
+write_csv(all_full_tops, proc_path("mtbi_all_full_tops.csv", TRUE))
+
+```
+
+```{r}
+# CHECKPOINT
+all_der_tops <- read_csv(proc_path("2024_09_19_mtbi_all_der_tops.csv"))
+all_val_tops <- read_csv(proc_path("2024_09_19_mtbi_all_val_tops.csv"))
+all_full_tops <- read_csv(proc_path("2024_09_19_mtbi_all_full_tops.csv"))
+
+all_der_tops$"Set" <- "D"
+all_val_tops$"Set" <- "V"
+all_full_tops$"Set" <- "F"
+
+all_der_tops$rank <- seq_len(nrow(all_der_tops))
+all_val_tops$rank <- seq_len(nrow(all_val_tops))
+all_full_tops$rank <- seq_len(nrow(all_full_tops))
+
+all_tops <- do.call(rbind, list(all_der_tops, all_val_tops, all_full_tops))
+
+all_tops <- arrange(all_tops, rank) |>
+    relocate(Set, .after = "Feature") |>
+    dplyr::select(-rank)
+
+write_csv(all_tops, proc_path("all_tops.csv", TRUE))
+
+all_tops <- read_csv(proc_path("2024_09_19_all_tops.csv"))
+
+all_tops |>
+    dplyr::filter(Feature == "headache_history")
+
+xtable(all_tops)
+```
+
