@@ -2126,3 +2126,128 @@ all_tops |>
 xtable(all_tops)
 ```
 
+```{r}
+
+
+mtbi_derivation_tops$"set" <- "D"
+mtbi_full_tops$"set" <- "V"
+mtbi_val_tops$"set" <- "F"
+
+
+all_der_tops_raw <- dplyr::full_join(
+    joint_ranks_with_out,
+    mtbi_derivation_tops,
+    by = "feature"
+) |>
+    dplyr::select(-joint_rank)
+
+all_val_tops_raw <- dplyr::full_join(
+    joint_ranks_with_out,
+    mtbi_val_tops,
+    by = "feature"
+) |>
+    dplyr::select(-joint_rank)
+
+all_full_tops_raw <- dplyr::full_join(
+    joint_ranks_with_out,
+    mtbi_full_tops,
+    by = "feature"
+) |>
+    dplyr::select(-joint_rank)
+
+all_der_tops_raw$rank <- seq_len(nrow(all_der_tops_raw))
+all_val_tops_raw$rank <- seq_len(nrow(all_val_tops_raw))
+all_full_tops_raw$rank <- seq_len(nrow(all_full_tops_raw))
+
+all_tops_raw <- do.call(
+    rbind,
+    list(all_der_tops_raw, all_val_tops_raw, all_full_tops_raw)
+)
+
+all_tops_raw$"set" <- factor(all_tops_raw$"set", levels = c("D", "V", "F"))
+
+options(width = 200)
+
+all_tops_raw <- all_tops_raw |>
+    arrange(rank, set)
+
+d_thresh <- 0.2
+
+###############################################################################
+
+generalizable_features <- function(tops_df) {
+    tops_df <- tops_df |>
+        dplyr::select(
+            -rank,
+            -summary
+        )
+    features <- unique(tops_df$"feature")
+    ft <- features[[1]]
+    feature_df <- dplyr::filter(tops_df, feature == ft)
+    der_row <- feature_df |> dplyr::filter(set == "D")
+    val_row <- feature_df |> dplyr::filter(set == "V")
+    full_row <- feature_df |> dplyr::filter(set == "F")
+    ###########################################################################
+    c1_c2_der_order <- der_row$c1 > der_row$c2
+    c1_c2_val_order <- val_row$c1 > val_row$c2
+    c1_c2_full_order <- full_row$c1 > full_row$c2
+    ###########################################################################
+    c1_c3_der_order <- der_row$c1 > der_row$c3
+    c1_c3_val_order <- val_row$c1 > val_row$c3
+    c1_c3_full_order <- full_row$c1 > full_row$c3
+    ###########################################################################
+    c2_c3_der_order <- der_row$c2 > der_row$c3
+    c2_c3_val_order <- val_row$c2 > val_row$c3
+    c2_c3_full_order <- full_row$c2 > full_row$c3
+    ###########################################################################
+    head(tops_df)
+    tops_df <- tops_df |>
+        dplyr::mutate(
+            c12_d = dplyr::case_when(
+                es == "d" ~ c12_es,
+                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
+            ),
+            c13_d = dplyr::case_when(
+                es == "d" ~ c13_es,
+                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
+            ),
+            c23_d = dplyr::case_when(
+                es == "d" ~ c23_es,
+                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
+            )
+        )
+    tops_df <- tops_df |>
+        mutate(
+            c12_sig = as.logical(significant_es(es, c12_l, c12_u)),
+            c13_sig = as.logical(significant_es(es, c13_l, c13_u)),
+            c23_sig = as.logical(significant_es(es, c23_l, c23_u))
+        )
+    tops_df <- tops_df |>
+        mutate(
+            c12_thresh = abs(c12_d) > 0.2,
+            c13_thresh = abs(c13_d) > 0.2,
+            c23_thresh = abs(c23_d) > 0.2
+        )
+    tops_df <- tops_df |>
+        mutate(
+            c12_valid = c12_sig | c12_thresh,
+            c13_valid = c13_sig | c13_thresh,
+            c23_valid = c23_sig | c23_thresh,
+            .keep = "unused"
+        )
+    tops_df <- tops_df |>
+        mutate(
+            c1_big_2 = c1 > c2,
+            c1_big_3 = c1 > c3,
+            c2_big_3 = c2 > c3,
+            .keep = "unused"
+        )
+    tops_df
+}
+generalizable_features(all_tops_raw)
+
+it should be a common pattern in all three cases, e.g 1 > 2 (D), 1 > 2 (V), 1 > 2 (F)
+it should be significant or exceeding the threshold in all three cases (120)
+
+```
+
