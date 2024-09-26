@@ -18,6 +18,7 @@ library(xtable)
 library(compute.es)
 library(dplyr)
 library(fastDummies)
+library(tidyr)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -1037,6 +1038,7 @@ is_binary <- function(x) {
 
 topologizer <- function(df) {
     df <- data.frame(df)
+    df <- numcol_to_numeric(df)
     df <- dummy_non_numeric(dplyr::select(df, -"subjectkey"))
     summary_df <- data.frame(
         "feature" = as.character(),
@@ -1107,7 +1109,6 @@ topologizer <- function(df) {
     }
     return(summary_df)
 }
-
 ```
 
 # Validation
@@ -1350,7 +1351,6 @@ plo_v <- mtbi_val_plot_list[outcome_features]
 plo_f <- mtbi_full_plot_list[outcome_features]
 
 # Let's manually assemble these puppies!
-
 input_plots <- list(pli_sort_d, pli_sort_v, pli_sort_f)
 outcome_plots <- list(plo_d, plo_v, plo_f)
 
@@ -1421,7 +1421,6 @@ tri_plot <- function(pl,
     return(wrap_plots(patch_plot))
 }
 # }}}
-
 ```
 
 ```{r}
@@ -1970,11 +1969,14 @@ mtbi_val_tops <- read_csv(proc_path("2024_09_19_mtbi_val_tops.csv"))
 ```
 
 ```{r}
+# FUNCTION: Calculate if an ES is significant# {{{
 significant_es <- function(type, l, u) {
     thresh <- as.numeric(type %in% c("or", "OR"))
     return(as.numeric(thresh < l | thresh > u))
 }
+# }}}
 
+# FUNCTION: Format topologies# {{{
 format_tops <- function(tops) {
     tops <- data.frame(tops) |> mutate(
         c12_sig = significant_es(es, c12_l, c12_u),
@@ -2000,6 +2002,7 @@ format_tops <- function(tops) {
     colnames(tops) <- c("Feature", "Summary", "C1", "C2", "C3", "ES", "C1 vs. C2", "C1 vs. C3", "C2 vs. C3")
     return(tops)
 }
+# }}}
 ```
 
 ```{r}
@@ -2061,10 +2064,9 @@ joint_ranks_with_out <- rbind(
     joint_ranks
 ) |> data.frame()
 
-
-f_derivation_tops <- format_tops(mtbi_derivation_tops)
-f_val_tops <- format_tops(mtbi_val_tops)
-f_full_tops <- format_tops(mtbi_full_tops)
+f_derivation_tops <- data.frame(format_tops(mtbi_derivation_tops))
+f_val_tops <- data.frame(format_tops(mtbi_val_tops))
+f_full_tops <- data.frame(format_tops(mtbi_full_tops))
 
 all_der_tops <- dplyr::full_join(
     joint_ranks_with_out,
@@ -2093,7 +2095,6 @@ all_full_tops <- dplyr::full_join(
 write_csv(all_der_tops, proc_path("mtbi_all_der_tops.csv", TRUE))
 write_csv(all_val_tops, proc_path("mtbi_all_val_tops.csv", TRUE))
 write_csv(all_full_tops, proc_path("mtbi_all_full_tops.csv", TRUE))
-
 ```
 
 ```{r}
@@ -2101,7 +2102,9 @@ write_csv(all_full_tops, proc_path("mtbi_all_full_tops.csv", TRUE))
 all_der_tops <- read_csv(proc_path("2024_09_19_mtbi_all_der_tops.csv"))
 all_val_tops <- read_csv(proc_path("2024_09_19_mtbi_all_val_tops.csv"))
 all_full_tops <- read_csv(proc_path("2024_09_19_mtbi_all_full_tops.csv"))
+```
 
+```{r}
 all_der_tops$"Set" <- "D"
 all_val_tops$"Set" <- "V"
 all_full_tops$"Set" <- "F"
@@ -2120,15 +2123,10 @@ write_csv(all_tops, proc_path("all_tops.csv", TRUE))
 
 all_tops <- read_csv(proc_path("2024_09_19_all_tops.csv"))
 
-all_tops |>
-    dplyr::filter(Feature == "headache_history")
-
 xtable(all_tops)
 ```
 
 ```{r}
-
-
 mtbi_derivation_tops$"set" <- "D"
 mtbi_full_tops$"set" <- "V"
 mtbi_val_tops$"set" <- "F"
@@ -2171,36 +2169,51 @@ options(width = 200)
 all_tops_raw <- all_tops_raw |>
     arrange(rank, set)
 
-d_thresh <- 0.2
+write_csv(all_tops_raw, proc_path("all_tops_raw.csv", TRUE))
+```
 
-###############################################################################
+```{r}
+all_tops_raw <- read_csv(proc_path("2024_09_23_all_tops_raw.csv"))
 
-generalizable_features <- function(tops_df) {
+# Comparison based purely on effect size
+compare_fn_a <- function(d, sig, thresh = 0.2) {
+    order <- case_when(
+        d >= thresh ~ ">",
+        d <= -thresh ~ "<",
+        abs(d) < thresh ~ "=",
+        TRUE ~ NA
+    )
+    return(order)
+}
+
+# Comparison based on effect size and significance
+compare_fn_b <- function(d, sig, thresh = 0.2) {
+    order <- case_when(
+        d >= thresh ~ ">",
+        d <= -thresh ~ "<",
+        d > 0 & sig ~ ">",
+        d < 0 & sig ~ "<",
+        abs(d) < thresh & !sig ~ "=",
+        TRUE ~ NA
+    )
+}
+
+generalizable_features <- function(tops_df, comparison_fn, t = 0.2) {
+    # Remove unnecessary columns
+    if ("rank" %in% colnames(tops_df)) {
+        tops_df <- dplyr::select(tops_df, -rank)
+    }
+    if ("summary" %in% colnames(tops_df)) {
+        tops_df <- dplyr::select(tops_df, -summary)
+    }
+    # Calculate significance for every row
     tops_df <- tops_df |>
-        dplyr::select(
-            -rank,
-            -summary
+        mutate(
+            c12_sig = as.logical(significant_es(es, c12_l, c12_u)),
+            c13_sig = as.logical(significant_es(es, c13_l, c13_u)),
+            c23_sig = as.logical(significant_es(es, c23_l, c23_u))
         )
-    features <- unique(tops_df$"feature")
-    ft <- features[[1]]
-    feature_df <- dplyr::filter(tops_df, feature == ft)
-    der_row <- feature_df |> dplyr::filter(set == "D")
-    val_row <- feature_df |> dplyr::filter(set == "V")
-    full_row <- feature_df |> dplyr::filter(set == "F")
-    ###########################################################################
-    c1_c2_der_order <- der_row$c1 > der_row$c2
-    c1_c2_val_order <- val_row$c1 > val_row$c2
-    c1_c2_full_order <- full_row$c1 > full_row$c2
-    ###########################################################################
-    c1_c3_der_order <- der_row$c1 > der_row$c3
-    c1_c3_val_order <- val_row$c1 > val_row$c3
-    c1_c3_full_order <- full_row$c1 > full_row$c3
-    ###########################################################################
-    c2_c3_der_order <- der_row$c2 > der_row$c3
-    c2_c3_val_order <- val_row$c2 > val_row$c3
-    c2_c3_full_order <- full_row$c2 > full_row$c3
-    ###########################################################################
-    head(tops_df)
+    # Create d-values for every row
     tops_df <- tops_df |>
         dplyr::mutate(
             c12_d = dplyr::case_when(
@@ -2216,38 +2229,101 @@ generalizable_features <- function(tops_df) {
                 es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
             )
         )
+    # Calculate orderings
     tops_df <- tops_df |>
-        mutate(
-            c12_sig = as.logical(significant_es(es, c12_l, c12_u)),
-            c13_sig = as.logical(significant_es(es, c13_l, c13_u)),
-            c23_sig = as.logical(significant_es(es, c23_l, c23_u))
+        dplyr::mutate(
+            c12_order = comparison_fn(c12_d, c12_sig, thresh = t),
+            c13_order = comparison_fn(c13_d, c13_sig, thresh = t),
+            c23_order = comparison_fn(c23_d, c23_sig, thresh = t)
         )
-    tops_df <- tops_df |>
-        mutate(
-            c12_thresh = abs(c12_d) > 0.2,
-            c13_thresh = abs(c13_d) > 0.2,
-            c23_thresh = abs(c23_d) > 0.2
+    # Now find conistency across D, V, F for each feature
+    features <- unique(tops_df$"feature")
+    gen_df <- data.frame()
+    for (ft in features) {
+        feature_df <- dplyr::filter(tops_df, feature == ft)
+        c12 <- feature_df$"c12_order"
+        c13 <- feature_df$"c13_order"
+        c23 <- feature_df$"c23_order"
+        if (any(is.na(c12)) | length(unique(c12)) > 1) {
+            c12o <- NA
+        } else {
+            c12o <- unique(c12)
+        }
+        if (any(is.na(c13)) | length(unique(c13)) > 1) {
+            c13o <- NA
+        } else {
+            c13o <- unique(c13)
+        }
+        if (any(is.na(c23)) | length(unique(c23)) > 1) {
+            c23o <- NA
+        } else {
+            c23o <- unique(c23)
+        }
+        gen_df <- rbind(
+            gen_df,
+            data.frame(
+                feature = ft,
+                c1v2 = c12o,
+                c1v3 = c13o,
+                c2v3 = c23o
+            )
         )
-    tops_df <- tops_df |>
-        mutate(
-            c12_valid = c12_sig | c12_thresh,
-            c13_valid = c13_sig | c13_thresh,
-            c23_valid = c23_sig | c23_thresh,
-            .keep = "unused"
-        )
-    tops_df <- tops_df |>
-        mutate(
-            c1_big_2 = c1 > c2,
-            c1_big_3 = c1 > c3,
-            c2_big_3 = c2 > c3,
-            .keep = "unused"
-        )
-    tops_df
+    }
+    return(gen_df)
 }
-generalizable_features(all_tops_raw)
 
-it should be a common pattern in all three cases, e.g 1 > 2 (D), 1 > 2 (V), 1 > 2 (F)
-it should be significant or exceeding the threshold in all three cases (120)
+gen_df_a <- generalizable_features(all_tops_raw, compare_fn_a, 0.2)
+gen_df_b <- generalizable_features(all_tops_raw, compare_fn_b)
 
+# The generalizable features appear identical by both means
+identical(gen_df_a, gen_df_b)
+
+write_csv(gen_df_a, proc_path("mtbi_gen_fts.csv", TRUE))
+
+mtbi_gen_fts <- data.frame(read_csv(proc_path("2024_09_23_mtbi_gen_fts.csv")))
+
+mtbi_gen_fts_in <- mtbi_gen_fts |>
+    dplyr::filter(
+        c1v2 %in% c(">", "<") | c1v3 %in% c(">", "<") | c2v3 %in% c(">", "<")
+    ) |>
+    dplyr::filter(
+        !feature %in% outcomes
+    )
+
+mtbi_gen_fts_out <- mtbi_gen_fts |>
+    dplyr::filter(
+        c1v2 %in% c(">", "<") | c1v3 %in% c(">", "<") | c2v3 %in% c(">", "<")
+    ) |>
+    dplyr::filter(
+        feature %in% outcomes
+    )
+
+write_csv(mtbi_gen_fts_in, proc_path("mtbi_gen_fts_in.csv", TRUE))
+write_csv(mtbi_gen_fts_out, proc_path("mtbi_gen_fts_out.csv", TRUE))
+
+mtbi_gen_fts_in <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in.csv"))
+mtbi_gen_fts_out <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_out.csv"))
+
+mtbi_gen_fts_in_long <- mtbi_gen_fts_in |>
+    pivot_longer(
+        cols = -feature,
+        names_to = "comparison",
+        values_to = "order"
+    )
+
+mtbi_gen_fts_out_long <- mtbi_gen_fts_out |>
+    pivot_longer(
+        cols = -feature,
+        names_to = "comparison",
+        values_to = "order"
+    )
+
+write_csv(mtbi_gen_fts_in_long, proc_path("mtbi_gen_fts_in_long.csv", TRUE))
+write_csv(mtbi_gen_fts_out_long, proc_path("mtbi_gen_fts_out_long.csv", TRUE))
+
+mtbi_gen_fts_in_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in_long.csv"))
+mtbi_gen_fts_out_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_out_long.csv"))
+
+xtable(mtbi_gen_fts_out)
+xtable(mtbi_gen_fts_in)
 ```
-

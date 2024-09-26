@@ -1,0 +1,61 @@
+## Importing packages and establishing file paths
+
+```{r}
+library(readr)
+library(here)
+library(abcdutils)
+library(dplyr)
+#library(metasnf)
+#library(rlist)
+#library(tibble)
+#library(ggplot2)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+```
+
+```{r}
+mtbi_full_df <- read_csv(proc_path("2024_09_18_mtbi_full_df.csv"))
+```
+
+# Building a Classifier
+
+I'll ideally be able to create a classifier that doesn't rely on the mTBI-related subjects.
+So we'll only want to use features that were both considered generalizable and that are present in uninjured children.
+These features are the same as those that were characterized in the matched uninjured group.
+
+```{r}
+mtbi_gen_fts_in_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in_long.csv"))
+
+classifier_fts <- unique(mtbi_gen_fts_in_long$feature) 
+classifier_fts <- classifier_fts[!grepl("mtbi", classifier_fts)]
+classifier_fts[grepl("race_", classifier_fts)] <- "race"
+classifier_fts <- unique(classifier_fts)
+
+write_csv(data.frame(classifier_fts), proc_path("classifier_fts.csv", TRUE))
+```
+
+```{r}
+classifier_fts <- read_csv(proc_path("2024_09_25_classifier_fts.csv"))$"classifier_fts"
+
+colnames(mtbi_full_df)
+
+mtbi_classification_df <- dplyr::select(
+    mtbi_full_df,
+    subjectkey,
+    cluster,
+    all_of(classifier_fts)
+)
+
+mtbi_classification_df <- mtbi_classification_df |>
+    relocate(cluster, .after = last_col())
+
+write_csv(mtbi_classification_df, proc_path("mtbi_classification_df.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+mtbi_classification_df <- read_csv(proc_path("2024_09_25_mtbi_classification_df.csv"))
+```

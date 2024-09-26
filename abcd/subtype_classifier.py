@@ -17,6 +17,8 @@ The plan will be:
 # mtbi_mc_d_full_plot_df = pd.read_csv("data/abcd/results/processed/2024_08_29_mtbi_mc_d_full_plot_df.csv")
 # mtbi_mc_d_full_plot_df.to_csv("mtbi_mc_d_full_plot_df_local.csv", index=False)
 
+mtbi_full_df <- read_csv(proc_path("2024_09_18_mtbi_full_df.csv"))
+
 # Working entirely locally for this stage
 mtbi_mc_d_full_plot_df = pd.read_csv("mtbi_mc_d_full_plot_df_local.csv")
 

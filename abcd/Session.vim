@@ -13,17 +13,33 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +1123 04_baseline_mtbi_snf.qmd
-badd +272 ~/Documents/abcd-snf-article/abcd_snf_article.tex
-badd +508 05_baseline_matching.qmd
-badd +219 ~/Documents/dotfiles/sway/sway/config
-badd +643 ~/Documents/metasnf/R/data_list.R
+badd +18 06_02_subtype_classification.py
+badd +29 ~/Documents/research/abcd/05_longitudinal_extraction.qmd
+badd +0 ~/Documents/research/abcd/06_subtype_classifier.qmd
 argglobal
 %argdel
-$argadd 04_baseline_mtbi_snf.qmd
-edit 04_baseline_mtbi_snf.qmd
+$argadd 06_02_subtype_classification.py
+edit 06_02_subtype_classification.py
+let s:save_splitbelow = &splitbelow
+let s:save_splitright = &splitright
+set splitbelow splitright
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
+let &splitbelow = s:save_splitbelow
+let &splitright = s:save_splitright
+wincmd t
+let s:save_winminheight = &winminheight
+let s:save_winminwidth = &winminwidth
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe '1resize ' . ((&lines * 26 + 28) / 56)
+exe '2resize ' . ((&lines * 26 + 28) / 56)
 argglobal
-balt ~/Documents/dotfiles/sway/sway/config
+balt ~/Documents/research/abcd/05_longitudinal_extraction.qmd
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -32,13 +48,36 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 1154 - ((32 * winheight(0) + 22) / 44)
+let s:l = 19 - ((18 * winheight(0) + 13) / 26)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 1154
+keepjumps 19
 normal! 0
-lcd ~/Documents/research/abcd
+wincmd w
+argglobal
+if bufexists(fnamemodify("~/Documents/research/abcd/06_subtype_classifier.qmd", ":p")) | buffer ~/Documents/research/abcd/06_subtype_classifier.qmd | else | edit ~/Documents/research/abcd/06_subtype_classifier.qmd | endif
+if &buftype ==# 'terminal'
+  silent file ~/Documents/research/abcd/06_subtype_classifier.qmd
+endif
+balt ~/Documents/research/abcd/05_longitudinal_extraction.qmd
+setlocal fdm=marker
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+let s:l = 6 - ((5 * winheight(0) + 13) / 26)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 6
+normal! 014|
+wincmd w
+exe '1resize ' . ((&lines * 26 + 28) / 56)
+exe '2resize ' . ((&lines * 26 + 28) / 56)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
@@ -46,11 +85,14 @@ endif
 unlet! s:wipebuf
 set winheight=1 winwidth=20
 let &shortmess = s:shortmess_save
+let &winminheight = s:save_winminheight
+let &winminwidth = s:save_winminwidth
 let s:sx = expand("<sfile>:p:r")."x.vim"
 if filereadable(s:sx)
   exe "source " . fnameescape(s:sx)
 endif
 let &g:so = s:so_save | let &g:siso = s:siso_save
+nohlsearch
 doautoall SessionLoadPost
 unlet SessionLoad
 " vim: set ft=vim :

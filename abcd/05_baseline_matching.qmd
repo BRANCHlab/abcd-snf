@@ -39,7 +39,6 @@ uninj_ol_s1 <- all_dls$"uninj_oom_lists"$"imp_1"
 uninj_ol_p1 <- all_dls$"uninj_pooled_oom_lists"$"imp_1"
 ```
 
-
 ## Matching
 
 Finding matched uninjured controls for each mtbi subject based on a variety of variables.
@@ -601,9 +600,17 @@ matched_uninj_ols <- list(
     "d_p1" = matched_uninj_ol_d_p1
 )
 
+list.save(matched_uninj_dls, proc_path("matched_uninj_dls.rds", TRUE))
+list.save(matched_uninj_ols, proc_path("matched_uninj_ols.rds", TRUE))
+```
 
-a_s1_1_pl
+```{r}
+# CHECKPOINT
+matched_uninj_dls <- list.load(proc_path("2024_09_23_matched_uninj_dls.rds"))
+matched_uninj_ols <- list.load(proc_path("2024_09_23_matched_uninj_ols.rds"))
+```
 
+```{r}
 names(matched_uninj_esm_3c_list)[1]
 names(matched_uninj_esm_3c_list)[1:2]
 names(matched_uninj_esm_3c_list)[3]
@@ -631,104 +638,434 @@ names(matched_pls) <- names(matched_uninj_esm_3c_list)
 list.save(matched_pls, fig_path("matched_pls.rds", TRUE))
 ```
 
-
 ```{r}
 # CHECKPOINT
 matched_pls <- list.load(fig_path("2024_09_17_matched_pls.rds"))
 
-key_fts <- c(
-    "household_income",
-    "race",
-    "sex",
-    "brain_volume",
-    "cbcl_aggressive",
-    "parent_aggressive"
+mtbi_gen_fts_in_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in_long.csv"))
+mtbi_gen_fts_out_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_out_long.csv"))
+```
+
+```{r}
+matched_pl_dfs <- lapply(
+    names(matched_uninj_esm_3c_list),
+    function(match) {
+        pl <- list()
+        nrows <- nrow(matched_uninj_esm_3c_list[[match]])
+        for (row in seq_len(nrows)) {
+            p <- auto_plot(
+                matched_uninj_esm_3c_list[[match]][row, ],
+                data_list = matched_uninj_dls[[match]],
+                target_list = matched_uninj_ols[[match]],
+                return_plots = FALSE
+            )
+            pl[[length(pl) + 1]] <- p
+        }
+        names(pl) <- paste0("row_", seq_len(nrows))
+        return(pl)
+    }
+)
+names(matched_pl_dfs) <- names(matched_pls)
+matched_pl_dfs <- unlist(matched_pl_dfs, recursive = FALSE)
+
+matched_pl_tops <- lapply(
+    matched_pl_dfs,
+    function(x) {
+        topologizer(x)
+    }
 )
 
-key_ft_show <- function(plot, ft_list, time = 0.5) {
-    for (ft in ft_list) {
-        print(plot[[ft]])
-        Sys.sleep(time)
+matched_pl_gen_fts <- lapply(
+    matched_pl_tops,
+    function(x) {
+        generalizable_features(x, compare_fn_a)
     }
+)
+
+mtbi_gen_long <- rbind(
+    mtbi_gen_fts_in_long,
+    mtbi_gen_fts_out_long
+)
+mtbi_gen_long <- na.omit(mtbi_gen_long)
+
+matched_pl_gen_fts_long <- lapply(
+    matched_pl_gen_fts,
+    function(x) {
+        long_x <- pivot_longer(
+            x,
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "order_uninj"
+        )
+        long_gen_x <- dplyr::left_join(
+            mtbi_gen_long,
+            long_x,
+            by = c("feature", "comparison")
+        ) 
+        long_gen_x <- dplyr::mutate(
+            long_gen_x,
+            match = dplyr::case_when(
+                is.na(order_uninj) ~ 0,
+                order != order_uninj ~ 0, 
+                order == order_uninj ~ 1
+            )
+        )
+        return(long_gen_x)
+    }
+)
+
+matched_pl_gen_fts_long_fair <- lapply(
+    matched_pl_gen_fts_long,
+    function(x) {
+        dplyr::filter(x, !grepl("mtbi", feature))
+    }
+)
+
+concordance_list <- lapply(
+    matched_pl_gen_fts_long_fair,
+    function(x) {
+        100 * sum(x$"match") / nrow(x)
+    }
+)
+
+concordance_df <- data.frame(
+    uninj_set = names(concordance_list),
+    concordance = unlist(concordance_list)
+) |>
+    arrange(desc(concordance))
+rownames(concordance_df) <- NULL
+concordance_df
+
+xtable(concordance_df)
+```
+
+Matching by A seemed to be the best one.
+
+```{r}
+gen_in_fts <- unique(mtbi_gen_fts_in_long$"feature")
+gen_in_fts[startsWith(gen_in_fts, "race_")] <- "race"
+gen_in_fts[startsWith(gen_in_fts, "mtbi_mechanism_")] <- "mtbi_mechanism"
+gen_in_fts <- unique(gen_in_fts)
+gen_out_fts <- unique(mtbi_gen_fts_out_long$"feature")
+
+top_uninj_pl <- matched_pls$"a_s1"$"row_4"
+top_uninj_input_plots <- top_uninj_pl[gen_in_fts]
+top_uninj_outcome_plots <- top_uninj_pl[gen_out_fts]
+
+list.save(top_uninj_input_plots, proc_path("top_uninj_input_plots.rds", TRUE))
+list.save(top_uninj_outcome_plots, proc_path("top_uninj_outcome_plots.rds", TRUE))
+
+###############################################################################
+
+top_uninj_input_plots <- list.load(proc_path("2024_09_24_top_uninj_input_plots.rds"))
+top_uninj_outcome_plots <- list.load(proc_path("2024_09_24_top_uninj_outcome_plots.rds"))
+
+# qs2 image export helper function
+qs2 <- function(plot, path, w = 4, h = 4) {
+    path <- paste0("uninj_a_s4_", path, ".png")
+    ggsave(fig_path(path, TRUE), plot, width = w, height = h)
 }
 
-###############################################################################
-key_ft_show(matched_pls$"a_s1"$"row_1", key_fts, 1)
+# uni-plot helper function# {{{
+uni_plot <- function(plot,
+                     ft_name,
+                     scale_fill_labels = NULL,
+                     ylims = NULL) {
+    ###########################################################################
+    plot <- plot +
+        theme(axis.title.y = element_text(size = 16))
+    ###########################################################################
+    if (class(plot$layers[[1]]$geom)[[1]] == "GeomBar") {
+        plot <- plot + labs(fill = ft_name)
+    } else {
+        plot <- plot + labs(y = ft_name)
+    }
+    if (!is.null(scale_fill_labels)) {
+        plot <- plot + scale_fill_discrete(labels = scale_fill_labels)
+    }
+    if (!is.null(ylims)) {
+        plot <- plot + ylim(ylims[[1]], ylims[[2]])
+    }
+    ###########################################################################
+    plot <- plot + labs(x = "Cluster") + theme(text = element_text(size = 16))
+    return(plot)
+}
+# }}}
 
-key_ft_show(matched_pls$"a_s1"$"row_2", key_fts)
+# Matched Uninj Input Plots
+# Brain volumes
+brain_volume_plot <- uni_plot(top_uninj_input_plots$"brain_volume", expression("Brain Volume "(mm^3)))
+brain_volume_plot
+qs2(brain_volume_plot, "brain_volume")
 
-key_ft_show(matched_pls$"a_s1"$"row_3", key_fts)
+# Sex
+sex_plot <- uni_plot(top_uninj_input_plots$"sex", "Sex", c("F", "M"))
+sex_plot
+qs2(sex_plot, "sex")
 
-key_ft_show(matched_pls$"a_s1"$"row_4", key_fts)
+# cort sa
+cort_sa_plot <- uni_plot(top_uninj_input_plots$"cortical_sa", expression("Cortical Surface Area "(mm^2)))
+cort_sa_plot
+qs2(cort_sa_plot, "cort_sa")
 
-###############################################################################
-key_ft_show(matched_pls$"a_p1"$"row_1", key_fts)
+# Income
+household_income_plot <- uni_plot(top_uninj_input_plots$"household_income", "Household Income")
+household_income_plot
+qs2(household_income_plot, "household_income")
 
-key_ft_show(matched_pls$"a_p1"$"row_2", key_fts)
+# Pubertal Status - Parent Report
+pubertal_status_p_plot <- uni_plot(top_uninj_input_plots$"pubertal_status_p", "Pubertal Status\n(Parent Report)")
+pubertal_status_p_plot
+qs2(pubertal_status_p_plot, "pubertal_status_p")
 
-key_ft_show(matched_pls$"a_p1"$"row_3", key_fts)
+# Programs this year
+programs_this_year_plot <- uni_plot(top_uninj_input_plots$"programs_this_year", "Programs This Year")
+programs_this_year_plot
+qs2(programs_this_year_plot, "programs_this_year")
 
-key_ft_show(matched_pls$"a_p1"$"row_4", key_fts)
+# Non school programs
+non_school_programs_plot <- uni_plot(top_uninj_input_plots$"non_school_programs", "Non-School Programs This Year", ylims= c(-0.5, 12))
+non_school_programs_plot
+qs2(non_school_programs_plot, "non_school_programs")
 
-###############################################################################
-key_ft_show(matched_pls$"b_s1"$"row_1", key_fts)
+# parent_thought
+parent_thought_plot <- uni_plot(top_uninj_input_plots$"parent_thought", "Parent Thought", ylims = c(-0.5, 13.5))
+parent_thought_plot
+qs2(parent_thought_plot, "parent_thought")
 
-key_ft_show(matched_pls$"b_p1"$"row_1", key_fts)
+# Parent Somatic
+parent_somatic_plot <- uni_plot(top_uninj_input_plots$"parent_somatic", "Parent Somatic", ylims = c(-0.5, 25))
+parent_somatic_plot
+qs2(parent_somatic_plot, "parent_somatic")
+
+# Weekday screentime
+weekday_screentime_plot <- uni_plot(top_uninj_input_plots$"weekday_screentime", "Weekday Screentime (hours)", ylims = c(-0.5, 21))
+weekday_screentime_plot
+qs2(weekday_screentime_plot, "weekday_screentime")
+
+# parent_antisocial
+parent_antisocial_plot <- uni_plot(top_uninj_input_plots$"parent_antisocial", "Parent Antisocial")
+parent_antisocial_plot
+qs2(parent_antisocial_plot, "parent_antisocial")
+
+# parent_aggressive
+parent_aggressive_plot <- uni_plot(top_uninj_input_plots$"parent_aggressive", "Parent Aggressive")
+parent_aggressive_plot
+qs2(parent_aggressive_plot, "parent_aggressive")
+
+# Parent depress
+parent_depress_plot <- uni_plot(top_uninj_input_plots$"parent_depress", "Parent Depress", ylims = c(-0.5, 25))
+parent_depress_plot
+qs2(parent_depress_plot, "parent_depress")
+
+# parent_anxdep
+parent_anxdep_plot <- uni_plot(top_uninj_input_plots$"parent_anxdep", "Parent Anxious-Depressed")
+parent_anxdep_plot
+qs2(parent_anxdep_plot, "parent_anxdep")
+
+# Race
+race_plot <- uni_plot(top_uninj_input_plots$"race", "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White"))
+race_plot
+qs2(race_plot, "race")
+
+# parent_anxdisord
+parent_anxdisord_plot <- uni_plot(top_uninj_input_plots$"parent_anxdisord", "Parent Anxious", ylims = c(-0.5, 13))
+parent_anxdisord_plot
+qs2(parent_anxdisord_plot, "parent_anxdisord")
+
+# private_instruction
+private_instruction_plot <- uni_plot(top_uninj_input_plots$"private_instruction", "Private Activities", ylims = c(-0.5, 9.5))
+private_instruction_plot
+qs2(private_instruction_plot, "private_instruction")
+
+# weekend_screentime
+weekend_screentime_plot <- uni_plot(top_uninj_input_plots$"weekend_screentime", "Weekend Screentime (hours)", ylims = c(-0.5, 21))
+weekend_screentime_plot
+qs2(weekend_screentime_plot, "weekend_screentime")
+
+# parent_withdrawn
+parent_withdrawn_plot <- uni_plot(top_uninj_input_plots$"parent_withdrawn", "Parent Withdrawn", ylims = c(-0.5, 17))
+parent_withdrawn_plot
+qs2(parent_withdrawn_plot, "parent_withdrawn")
+
+# parent_avoidant
+parent_avoidant_plot <- uni_plot(top_uninj_input_plots$"parent_avoidant", "Parent Avoidant", ylims = c(-0.5, 13))
+parent_avoidant_plot
+qs2(parent_avoidant_plot, "parent_avoidant")
+
+# parent_hyperactive
+parent_hyperactive_plot <- uni_plot(top_uninj_input_plots$"parent_hyperactive", "Parent Hyperactive", ylims = c(-0.5, 12))
+parent_hyperactive_plot
+qs2(parent_hyperactive_plot, "parent_hyperactive")
+
+# fmri_cort_subcort_cors
+fmri_cort_subcort_cors_plot <- uni_plot(top_uninj_input_plots$"fmri_cort_subcort_cors", "fMRI Cort-Subcort Corrs", ylims = c(-0.15, 0.2))
+fmri_cort_subcort_cors_plot
+qs2(fmri_cort_subcort_cors_plot, "fmri_cort_subcort_cors")
+
+# Parent attention
+parent_attention_plot <- uni_plot(top_uninj_input_plots$"parent_attention", "Parent Attention")
+parent_attention_plot
+qs2(parent_attention_plot, "parent_attention")
+
+# parent_perstr
+parent_perstr_plot <- uni_plot(top_uninj_input_plots$"parent_perstr", "Parent Personal Strength")
+parent_perstr_plot
+qs2(parent_perstr_plot, "parent_perstr")
+
+# parent_intrusive
+parent_intrusive_plot <- uni_plot(top_uninj_input_plots$"parent_intrusive", "Parent Intrusive", ylims = c(-0.5, 12))
+parent_intrusive_plot
+qs2(parent_intrusive_plot, "parent_intrusive")
+
+# family_fight_p
+family_fight_p_plot <- uni_plot(top_uninj_input_plots$"family_fight_p", "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
+family_fight_p_plot
+qs2(family_fight_p_plot, "family_fight_p")
+
+# headache_history
+headache_history_plot <- uni_plot(top_uninj_input_plots$"headache_history", "Headache\nHistory", c("No", "Yes"))
+headache_history_plot
+qs2(headache_history_plot, "headache_history")
+
+# exercise_time
+exercise_time_plot <- uni_plot(top_uninj_input_plots$"exercise_time", "Exercise Score", ylims = c(0, 1.1))
+exercise_time_plot
+qs2(exercise_time_plot, "exercise_time")
+
+# considerate_y
+considerate_y_plot <- uni_plot(top_uninj_input_plots$"considerate_y", "Considerate\n(Youth Report)", c("No", "Yes"))
+considerate_y_plot
+qs2(considerate_y_plot, "considerate_y")
+
+# family_temper_p
+family_temper_p_plot <- uni_plot(top_uninj_input_plots$"family_temper_p", "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
+family_temper_p_plot
+qs2(family_temper_p_plot, "family_temper_p")
+
+# family_outdo_p
+family_outdo_p_plot <- uni_plot(top_uninj_input_plots$"family_outdo_p", "Family Outdo\n(Parent Report)", c("No", "Yes"))
+family_outdo_p_plot
+qs2(family_outdo_p_plot, "family_outdo_p")
+
+# cortical_thickness
+cortical_thickness_plot <- uni_plot(top_uninj_input_plots$"cortical_thickness", "Cortical Thickness (mm)", ylims = c(2.3, 3.1))
+cortical_thickness_plot
+qs2(cortical_thickness_plot, "cortical_thickness")
+
+# helps_hurt_p
+helps_hurt_p_plot <- uni_plot(top_uninj_input_plots$"helps_hurt_p", "Helps Hurt\n(Parent Report)", c("No", "Yes"))
+helps_hurt_p_plot
+qs2(helps_hurt_p_plot, "helps_hurt_p")
+
+# family_peaceful_p
+family_peaceful_p_plot <- uni_plot(top_uninj_input_plots$"family_peaceful_p", "Family Peaceful\n(Parent Report)", c("No", "Yes"))
+family_peaceful_p_plot
+qs2(family_peaceful_p_plot, "family_peaceful_p")
+
+# family_hit_p
+family_hit_p_plot <- uni_plot(top_uninj_input_plots$"family_hit_p", "Family Hitting\n(Parent Report)", c("No", "Yes"))
+family_hit_p_plot
+qs2(family_hit_p_plot, "family_hit_p")
+
+# family_angry_p
+family_angry_p_plot <- uni_plot(top_uninj_input_plots$"family_angry_p", "Family Angry\n(Parent Report)", c("No", "Yes"))
+family_angry_p_plot
+qs2(family_angry_p_plot, "family_angry_p")
+
+# family_yell_y
+family_yell_y_plot <- uni_plot(top_uninj_input_plots$"family_yell_y", "Family Yells\n(Youth Report)", c("No", "Yes"))
+family_yell_y_plot
+qs2(family_yell_y_plot, "family_yell_y")
+
+# pubertal_status_y
+pubertal_status_y_plot <- uni_plot(top_uninj_input_plots$"pubertal_status_y", "Pubertal Status (Youth Report)")
+pubertal_status_y_plot
+qs2(pubertal_status_y_plot, "pubertal_status_y")
+
+# helps_hurt_y
+helps_hurt_y_plot <- uni_plot(top_uninj_input_plots$"helps_hurt_y", "Helps Hurt\n(Youth Report)", c("No", "Yes"))
+helps_hurt_y_plot
+qs2(helps_hurt_y_plot, "helps_hurt_y")
+
+# family_throw_p
+family_throw_p_plot <- uni_plot(top_uninj_input_plots$"family_throw_p", "Family Throwing\n(Parent Report)", c("No", "Yes"))
+family_throw_p_plot
+qs2(family_throw_p_plot, "family_throw_p")
 
 
-###############################################################################
-key_ft_show(matched_pls$"c_s1"$"row_1", key_fts)
+cbcl_anxdep_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_anxdep", "Anxious-Depressed", ylims = c(-0.5, 30))
+cbcl_withdep_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_withdep", "Withdrawn-Depressed", ylims = c(-0.5, 15))
+cbcl_somatic_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_somatic", "Somatic Problems", ylims = c(-0.5, 17))
+cbcl_social_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_social", "Social Problems", ylims = c(-0.5, 20))
+cbcl_thought_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_thought", "Thought Problems", ylims = c(-0.5, 20))
+cbcl_attention_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_attention", "Attention Problems", ylims = c(-0.5, 22))
+cbcl_rulebreak_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_rulebreak", "Rule-Breaking Problems", ylims = c(-0.5, 22))
+cbcl_aggressive_plot <- uni_plot(top_uninj_outcome_plots$"cbcl_aggressive", "Aggression Problems", ylims = c(-0.5, 32))
+sds_sleep_plot <- uni_plot(top_uninj_outcome_plots$"sds_sleep", "Total Sleep Problems", ylims = c(20, 100))
 
-key_ft_show(matched_pls$"c_s1"$"row_2", key_fts)
+matched_gen_in_plots <- list(
+    "brain_volume" = brain_volume_plot,
+    "sex" = sex_plot,
+    "cort_sa" = cort_sa_plot,
+    "household_income" = household_income_plot,
+    "pubertal_status_p" = pubertal_status_p_plot,
+    "programs_this_year" = programs_this_year_plot,
+    "non_school_programs" = non_school_programs_plot,
+    "parent_thought" = parent_thought_plot,
+    "parent_somatic" = parent_somatic_plot,
+    "weekday_screentime" = weekday_screentime_plot,
+    "parent_antisocial" = parent_antisocial_plot,
+    "parent_aggressive" = parent_aggressive_plot,
+    "parent_depress" = parent_depress_plot,
+    "parent_anxdep" = parent_anxdep_plot,
+    "race" = race_plot,
+    "parent_anxdisord" = parent_anxdisord_plot,
+    "private_instruction" = private_instruction_plot,
+    "weekend_screentime" = weekend_screentime_plot,
+    "parent_withdrawn" = parent_withdrawn_plot,
+    "parent_avoidant" = parent_avoidant_plot,
+    "parent_hyperactive" = parent_hyperactive_plot,
+    "fmri_cort_subcort_cors" = fmri_cort_subcort_cors_plot,
+    "parent_attention" = parent_attention_plot,
+    "parent_perstr" = parent_perstr_plot,
+    "parent_intrusive" = parent_intrusive_plot,
+    "family_fight_p" = family_fight_p_plot,
+    "headache_history" = headache_history_plot,
+    "exercise_time" = exercise_time_plot,
+    "considerate_y" = considerate_y_plot,
+    "family_temper_p" = family_temper_p_plot,
+    "family_outdo_p" = family_outdo_p_plot,
+    "cortical_thickness" = cortical_thickness_plot,
+    "helps_hurt_p" = helps_hurt_p_plot,
+    "family_peaceful_p" = family_peaceful_p_plot,
+    "family_hit_p" = family_hit_p_plot,
+    "family_angry_p" = family_angry_p_plot,
+    "family_yell_y" = family_yell_y_plot,
+    "pubertal_status_y" = pubertal_status_y_plot,
+    "helps_hurt_y" = helps_hurt_y_plot,
+    "family_throw_p" = family_throw_p_plot
+)
 
-key_ft_show(matched_pls$"c_s1"$"row_3", key_fts)
+matched_gen_out_plots <- list(
+    "cbcl_anxdep" = cbcl_anxdep_plot,
+    "cbcl_withdep" = cbcl_withdep_plot,
+    "cbcl_somatic" = cbcl_somatic_plot,
+    "cbcl_social" = cbcl_social_plot,
+    "cbcl_thought" = cbcl_thought_plot,
+    "cbcl_attention" = cbcl_attention_plot,
+    "cbcl_rulebreak" = cbcl_rulebreak_plot,
+    "cbcl_aggressive" = cbcl_aggressive_plot,
+    "sds_sleep" = sds_sleep_plot
+)
 
-key_ft_show(matched_pls$"c_s1"$"row_4", key_fts)
-
-key_ft_show(matched_pls$"c_p1"$"row_1", key_fts)
-
-###############################################################################
-
-key_ft_show(matched_pls$"d_s1"$"row_1", key_fts)
-
-key_ft_show(matched_pls$"d_p1"$"row_1", key_fts)
-
-key_ft_show(matched_pls$"d_p1"$"row_2", key_fts)
-
-lapply(matched_pls, names)
+list.save(matched_gen_in_plots, proc_path("matched_gen_in_plots.rds", TRUE))
+list.save(matched_gen_out_plots, proc_path("matched_gen_out_plots.rds", TRUE))
 ```
 
-
-
-
-```{r}
-## CHECKPOINT
-#matched_uninj_esm_list <- list.load(proc_path("2024_09_13_matched_uninj_esm_list.rds"))
-#matched_uninj_aris <- list.load(proc_path("2024_09_13_matched_uninj_aris.rds"))
-#matched_uninj_ari_orders <- list.load(proc_path("2024_09_13_matched_uninj_ari_orders.rds"))
-```
-
+# Export them then can move on to supervised learning for goodness sake!
 
 ```{r}
-uninj_dl_s1 <- all_dls$"uninj_data_lists"$"imp_1"
-uninj_dl_s2 <- all_dls$"uninj_data_lists"$"imp_2"
-uninj_dl_s3 <- all_dls$"uninj_data_lists"$"imp_3"
-uninj_dl_s4 <- all_dls$"uninj_data_lists"$"imp_4"
-uninj_dl_s5 <- all_dls$"uninj_data_lists"$"imp_5"
-uninj_dl_p1 <- all_dls$"uninj_pooled_data_lists"$"imp_1"
-uninj_dl_p2 <- all_dls$"uninj_pooled_data_lists"$"imp_2"
-uninj_dl_p3 <- all_dls$"uninj_pooled_data_lists"$"imp_3"
-uninj_dl_p4 <- all_dls$"uninj_pooled_data_lists"$"imp_4"
-uninj_dl_p5 <- all_dls$"uninj_pooled_data_lists"$"imp_5"
-
-uninj_ol_s1 <- all_dls$"uninj_oom_lists"$"imp_1"
-uninj_ol_s2 <- all_dls$"uninj_oom_lists"$"imp_2"
-uninj_ol_s3 <- all_dls$"uninj_oom_lists"$"imp_3"
-uninj_ol_s4 <- all_dls$"uninj_oom_lists"$"imp_4"
-uninj_ol_s5 <- all_dls$"uninj_oom_lists"$"imp_5"
-uninj_ol_p1 <- all_dls$"uninj_pooled_oom_lists"$"imp_1"
-uninj_ol_p2 <- all_dls$"uninj_pooled_oom_lists"$"imp_2"
-uninj_ol_p3 <- all_dls$"uninj_pooled_oom_lists"$"imp_3"
-uninj_ol_p4 <- all_dls$"uninj_pooled_oom_lists"$"imp_4"
-uninj_ol_p5 <- all_dls$"uninj_pooled_oom_lists"$"imp_5"
+matched_gen_in_plots <- list.load(proc_path("2024_09_24_matched_gen_in_plots.rds"))
+matched_gen_out_plots <- list.load(proc_path("2024_09_24_matched_gen_out_plots.rds"))
 ```
