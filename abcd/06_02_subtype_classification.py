@@ -3,7 +3,7 @@ The purpose of this section is to construct a classifier that can be used to
 assign subtype labels to new patients without needing to re-cluster the data.
 
 Reference papers that have done this or a similar procedure are listed below:
-- https://jamanetwork.com/journals/jamanetworkopen/article-abstract/2814991
+https://jamanetwork.com/journals/jamanetworkopen/article-abstract/2814991
 
 The methods in the paper are described as:
 
@@ -21,19 +21,19 @@ feature subset with highest classification accuracy.
 - This classifier logistic regression + L2-norm regularization and balanced
 class learning through adjusting weights inversely proportional to class
 frequencies in the data.
-
 """
 
-import pandas as pd
-import numpy as np
-import datetime
-from sklearn import svm, linear_model as lm
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.tree import DecisionTreeClassifier
 from matplotlib import pyplot as plt
-
+from sklearn import svm, linear_model as lm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import RFECV
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import GridSearchCV, train_test_split, StratifiedKFold
+from sklearn.tree import DecisionTreeClassifier
+import datetime
+import numpy as np
+import pandas as pd
 
 # Helper functions{{{
 # FUNCTION: path_maker{{{
@@ -52,7 +52,6 @@ def path_maker(
         - full_path (str): An absolute path pointing for that file in the
         processed data directory.
     """
-
     def path_fn(filename, date=False):
         if date:
             current_date = datetime.datetime.now().strftime("%Y_%m_%d")
@@ -98,57 +97,82 @@ print("Test Subjects:", test_subjects)
 
 # Exporting split subjects
 train_subjects.to_csv(sub_path("classifier_train_subs.csv", True), index=False)
-val_subjects.to_csv(sub_path("classifier_val_subs.csv", True), index=False)
 test_subjects.to_csv(sub_path("classifier_test_subs.csv", True), index=False)
 
 # Re-importing split subjects
-train_subjects = pd.read_csv(sub_path("2024_09_25_classifier_train_subs.csv"))
-val_subjects = pd.read_csv(sub_path("2024_09_25_classifier_val_subs.csv"))
-test_subjects = pd.read_csv(sub_path("2024_09_25_classifier_test_subs.csv"))
+train_subjects = pd.read_csv(sub_path("2024_09_26_classifier_train_subs.csv"))
+test_subjects = pd.read_csv(sub_path("2024_09_26_classifier_test_subs.csv"))
 # }}}
 
 # Cleaning (dummying & splitting) data
 data_clean = pd.get_dummies(data, columns=["race"], drop_first=True)
 
 train_idx = data_clean["subjectkey"].isin(train_subjects["subjectkey"])
-val_idx = data_clean["subjectkey"].isin(val_subjects["subjectkey"])
 test_idx = data_clean["subjectkey"].isin(test_subjects["subjectkey"])
 
 train_data = data_clean[train_idx]
-val_data = data_clean[val_idx]
 test_data = data_clean[test_idx]
 
 train_data.to_csv(proc_path("classifier_train_data.csv", True), index=False)
-val_data.to_csv(proc_path("classifier_val_data.csv", True), index=False)
 test_data.to_csv(proc_path("classifier_test_data.csv", True), index=False)
 
-train_data = pd.read_csv(proc_path("2024_09_25_classifier_train_data.csv"))
-val_data = pd.read_csv(proc_path("2024_09_25_classifier_val_data.csv"))
-test_data = pd.read_csv(proc_path("2024_09_25_classifier_test_data.csv"))
+train_data = pd.read_csv(proc_path("2024_09_26_classifier_train_data.csv"))
+test_data = pd.read_csv(proc_path("2024_09_26_classifier_test_data.csv"))
 
 train_X = train_data.drop(columns=["subjectkey", "cluster"])
 train_y = train_data["cluster"]
 
-val_X = val_data.drop(columns=["subjectkey", "cluster"])
-val_y = val_data["cluster"]
-
 # test_X = test_data.drop(columns = ['subjectkey', 'cluster'])
 # test_y = test_data['cluster']
 
-type(train_X)
-
+mdl_lr = LogisticRegression(multi_class='multinomial')
 mdl_svm = svm.SVC()
 mdl_rf = RandomForestClassifier()
 mdl_dt = DecisionTreeClassifier()
 
+mdl_lr.fit(train_X, train_y)
 mdl_svm.fit(train_X, train_y)
 mdl_rf.fit(train_X, train_y)
 mdl_dt.fit(train_X, train_y)
 
-svm_pred_y = mdl_svm.predict(val_X)
-rf_pred_y = mdl_rf.predict(val_X)
-dt_pred_y = mdl_dt.predict(val_X)
+pred_lr_y = mdl_lr.predict()
+pred_svm_y = mdl_svm.predict(val_X)
+pred_rf_y = mdl_rf.predict(val_X)
+pred_dt_y = mdl_dt.predict(val_X)
 
+param_grid_svm = {
+    'C': [0.1, 1, 10, 100],
+    'kernel': ['linear', 'rbf', 'poly'],
+    'gamma': ['scale', 'auto', 0.001, 0.01, 0.1, 1],
+    'degree': [2, 3, 4]  # Only relevant for 'poly' kernel
+}
+
+param_grid_rf = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [10, 20, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'bootstrap': [True, False]
+}
+
+param_grid_dt = {
+    'max_depth': [5, 10, 20, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'criterion': ['gini', 'entropy']
+}
+
+# SVM
+grid_svm = GridSearchCV(estimator=mdl_svm, param_grid=param_grid_svm, cv=5, scoring='accuracy')
+grid_svm.fit(train_X, train_y)
+
+# Random Forest
+grid_rf = GridSearchCV(estimator=mdl_rf, param_grid=param_grid_rf, cv=5, scoring='accuracy')
+grid_rf.fit(train_X, train_y)
+
+# Decision Tree
+grid_dt = GridSearchCV(estimator=mdl_dt, param_grid=param_grid_dt, cv=5, scoring='accuracy')
+grid_dt.fit(train_X, train_y)
 
 # param_grid = {'C': [0.1, 1, 10, 100], 'gamma': [1, 0.1, 0.01, 0.001], 'kernel': ['rbf']}
 # grid = GridSearchCV(svm.SVC(), param_grid, refit=True, verbose=2)
@@ -158,9 +182,7 @@ dt_pred_y = mdl_dt.predict(val_X)
 
 
 print(classification_report(val_y, svm_pred_y))
-
 print(classification_report(val_y, dt_pred_y))
-
 print(classification_report(val_y, rf_pred_y))
 
 
@@ -176,11 +198,6 @@ print(confusion_matrix(val_y, rf_pred_y))
 # plt.show()
 
 
-from sklearn.svm import SVC
-from sklearn.model_selection import StratifiedKFold
-from sklearn.feature_selection import RFECV
-
-svc = SVC(kernel="linear")
 rfecv = RFECV(
     estimator=mdl_rf, step=1, cv=StratifiedKFold(5), scoring="accuracy"
 )
