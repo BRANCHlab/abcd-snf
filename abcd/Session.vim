@@ -13,19 +13,18 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +18 06_02_subtype_classification.py
-badd +29 ~/Documents/research/abcd/05_longitudinal_extraction.qmd
-badd +0 ~/Documents/research/abcd/06_subtype_classifier.qmd
+badd +536 06_longitudinal_extraction.qmd
+badd +3 ~/Documents/prash/time/time.csv
 argglobal
 %argdel
-$argadd 06_02_subtype_classification.py
-edit 06_02_subtype_classification.py
+$argadd 06_longitudinal_extraction.qmd
+edit 06_longitudinal_extraction.qmd
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
 wincmd _ | wincmd |
-split
-1wincmd k
+vsplit
+1wincmd h
 wincmd w
 let &splitbelow = s:save_splitbelow
 let &splitright = s:save_splitright
@@ -36,10 +35,10 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe '1resize ' . ((&lines * 26 + 28) / 56)
-exe '2resize ' . ((&lines * 26 + 28) / 56)
+exe 'vert 1resize ' . ((&columns * 89 + 89) / 178)
+exe 'vert 2resize ' . ((&columns * 88 + 89) / 178)
 argglobal
-balt ~/Documents/research/abcd/05_longitudinal_extraction.qmd
+balt ~/Documents/prash/time/time.csv
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -48,19 +47,19 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 19 - ((18 * winheight(0) + 13) / 26)
+let s:l = 531 - ((29 * winheight(0) + 28) / 56)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 19
+keepjumps 531
 normal! 0
 wincmd w
 argglobal
-if bufexists(fnamemodify("~/Documents/research/abcd/06_subtype_classifier.qmd", ":p")) | buffer ~/Documents/research/abcd/06_subtype_classifier.qmd | else | edit ~/Documents/research/abcd/06_subtype_classifier.qmd | endif
+if bufexists(fnamemodify("06_longitudinal_extraction.qmd", ":p")) | buffer 06_longitudinal_extraction.qmd | else | edit 06_longitudinal_extraction.qmd | endif
 if &buftype ==# 'terminal'
-  silent file ~/Documents/research/abcd/06_subtype_classifier.qmd
+  silent file 06_longitudinal_extraction.qmd
 endif
-balt ~/Documents/research/abcd/05_longitudinal_extraction.qmd
+balt ~/Documents/prash/time/time.csv
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -69,15 +68,15 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 6 - ((5 * winheight(0) + 13) / 26)
+let s:l = 440 - ((24 * winheight(0) + 28) / 56)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 6
-normal! 014|
+keepjumps 440
+normal! 0
 wincmd w
-exe '1resize ' . ((&lines * 26 + 28) / 56)
-exe '2resize ' . ((&lines * 26 + 28) / 56)
+exe 'vert 1resize ' . ((&columns * 89 + 89) / 178)
+exe 'vert 2resize ' . ((&columns * 88 + 89) / 178)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
@@ -92,7 +91,6 @@ if filereadable(s:sx)
   exe "source " . fnameescape(s:sx)
 endif
 let &g:so = s:so_save | let &g:siso = s:siso_save
-nohlsearch
 doautoall SessionLoadPost
 unlet SessionLoad
 " vim: set ft=vim :
