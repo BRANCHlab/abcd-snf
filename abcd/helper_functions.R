@@ -1,33 +1,5 @@
 library(metasnf)
 
-###############################################################################
-# Functions to parse imputed data
-###############################################################################
-extract_imputed <- function(original_df, imputed_df, partition) {
-    return(imputed_df[imputed_df$".imp" == partition, colnames(original_df)])
-}
-
-parse_imputations <- function(original_df_list, complete_imputed_df, imps) {
-    parsed_imputations <- original_df_list |>
-        lapply(
-            function(x) {
-                imputations <- list()
-                for (i in seq_len(imps)) {
-                    imputations[[i]] <- extract_imputed(
-                        x,
-                        complete_imputed_df,
-                        i - 1
-                    )
-                }
-                names(imputations) <- paste0("imp_", seq_len(imps) - 1)
-                return(imputations)
-            }
-        )
-    names(parsed_imputations) <- gsub("_mtbi$", "", names(parsed_imputations))
-    names(parsed_imputations) <- gsub("_uninj$", "", names(parsed_imputations))
-    return(parsed_imputations)
-}
-
 build_dls <- function(parsed_imputations) {
     data_lists <- lapply(
         seq_len(5),
@@ -100,44 +72,44 @@ build_dls <- function(parsed_imputations) {
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"sm_subc_v"[[x + 1]],
+                    parsed_imputations$"sm_subc_v_qc"[[x + 1]],
                     "sm_subc_v",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"sm_cort_t"[[x + 1]],
+                    parsed_imputations$"sm_cort_t_qc"[[x + 1]],
                     "sm_cort_t",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"sm_cort_sa"[[x + 1]],
+                    parsed_imputations$"sm_cort_sa_qc"[[x + 1]],
                     "sm_cort_sa",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"dm_all_wmnd"[[x + 1]],
+                    parsed_imputations$"dm_all_wmnd_qc"[[x + 1]],
                     "dm_all_wmnd",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"rm_gord_cor"[[x + 1]],
+                    parsed_imputations$"rm_gord_cor_qc"[[x + 1]],
                     "rm_gord_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"rm_subc_cor"[[x + 1]],
+                    parsed_imputations$"rm_subc_cor_qc"[[x + 1]],
                     "rm_subc_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"p_loneliness"[[x + 1]],
-                    "p_loneliness",
+                    parsed_imputations$"p_friends"[[x + 1]],
+                    "p_friends",
                     "P",
                     "discrete"
                 ),
@@ -197,8 +169,8 @@ build_ols <- function(parsed_imputations) {
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"sds_total_probs"[[x + 1]],
-                    "sds_total_probs",
+                    parsed_imputations$"sds"[[x + 1]],
+                    "sds",
                     "B",
                     "discrete"
                 ),

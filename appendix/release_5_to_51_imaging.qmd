@@ -1,0 +1,293 @@
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(abcdutils)
+library(visdat)
+
+path_51 <- path_maker(here(paste0("data/abcd/core")))
+path_5 <- path_maker(here(paste0("data/abcd/core-5")))
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+
+import <- function(path) {
+    return(abcd_load(path))
+}
+
+mtbi_subs <- read_subjects(sub_path("2024_10_29_mtbi_subs.csv"))
+uninj_subs <- read_subjects(sub_path("2024_10_29_uninj_subs.csv"))
+```
+
+## Import raw data
+
+```{r}
+# Subcortical volumes (ASEG)
+mri_y_smr_vol_aseg_5 <- import(path_5("imaging/mri_y_smr_vol_aseg.csv"))
+# Desikan cortical thicknesses
+mri_y_smr_thk_dsk_5 <- import(path_5("imaging/mri_y_smr_thk_dsk.csv"))
+# Desikan cortical surface areas
+mri_y_smr_area_dsk_5 <- import(path_5("imaging/mri_y_smr_area_dsk.csv"))
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at_5 <- import(path_5("imaging/mri_y_rsi_rnd_at.csv"))
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk_5 <- import(path_5("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst_5 <- import(path_5("imaging/mri_y_rsi_rnd_wm_dst.csv"))
+# rs-fMRI cortical-cortical correlations
+mri_y_rsfmr_cor_gp_gp_5 <- import(path_5("imaging/mri_y_rsfmr_cor_gp_gp.csv"))
+# rs-fMRI cortical-subcortical correlations
+mri_y_rsfmr_cor_gp_aseg_5 <- import(path_5("imaging/mri_y_rsfmr_cor_gp_aseg.csv"))
+
+# Subcortical volumes (ASEG)
+mri_y_smr_vol_aseg_51 <- import(path_51("imaging/mri_y_smr_vol_aseg.csv"))
+# Desikan cortical thicknesses
+mri_y_smr_thk_dsk_51 <- import(path_51("imaging/mri_y_smr_thk_dsk.csv"))
+# Desikan cortical surface areas
+mri_y_smr_area_dsk_51 <- import(path_51("imaging/mri_y_smr_area_dsk.csv"))
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at_51 <- import(path_51("imaging/mri_y_rsi_rnd_at.csv"))
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk_51 <- import(path_51("imaging/mri_y_rsi_rnd_wm_dsk.csv"))
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst_51 <- import(path_51("imaging/mri_y_rsi_rnd_wm_dst.csv"))
+# rs-fMRI cortical-cortical correlations
+mri_y_rsfmr_cor_gp_gp_51 <- import(path_51("imaging/mri_y_rsfmr_cor_gp_gp.csv"))
+# rs-fMRI cortical-subcortical correlations
+mri_y_rsfmr_cor_gp_aseg_51 <- import(path_51("imaging/mri_y_rsfmr_cor_gp_aseg.csv"))
+
+
+###############################################################################
+
+mri_y_qc_raw_smr_t1_5 <- import(path_5("imaging/mri_y_qc_raw_smr_t1.csv"))
+mri_y_qc_raw_smr_t2_5 <- import(path_5("imaging/mri_y_qc_raw_smr_t2.csv"))
+mri_y_qc_raw_rsfmr_5 <- import(path_5("imaging/mri_y_qc_raw_rsfmr.csv"))
+mri_y_qc_raw_dmr_5 <- import(path_5("imaging/mri_y_qc_raw_dmr.csv"))
+
+mri_y_qc_raw_smr_t1_51 <- import(path_51("imaging/mri_y_qc_raw_smr_t1.csv"))
+mri_y_qc_raw_smr_t2_51 <- import(path_51("imaging/mri_y_qc_raw_smr_t2.csv"))
+mri_y_qc_raw_rsfmr_51 <- import(path_51("imaging/mri_y_qc_raw_rsfmr.csv"))
+mri_y_qc_raw_dmr_51 <- import(path_51("imaging/mri_y_qc_raw_dmr.csv"))
+
+
+
+```
+
+
+```{r}
+identical(mri_y_smr_vol_aseg_5, mri_y_smr_vol_aseg_51)
+identical(mri_y_smr_thk_dsk_5, mri_y_smr_thk_dsk_51)
+identical(mri_y_smr_area_dsk_5, mri_y_smr_area_dsk_51)
+identical(mri_y_rsi_rnd_at_5, mri_y_rsi_rnd_at_51)
+identical(mri_y_rsi_rnd_wm_dsk_5, mri_y_rsi_rnd_wm_dsk_51)
+identical(mri_y_rsi_rnd_wm_dst_5, mri_y_rsi_rnd_wm_dst_51)
+identical(mri_y_rsfmr_cor_gp_gp_5, mri_y_rsfmr_cor_gp_gp_51)
+identical(mri_y_rsfmr_cor_gp_aseg_5, mri_y_rsfmr_cor_gp_aseg_51)
+
+mtbi_5_0 <- mri_y_qc_raw_smr_t1_5 |>
+    filter_timepoint(0) |>
+    filter_subjects(mtbi_subs)
+mtbi_51_0 <- mri_y_qc_raw_smr_t1_51 |>
+    filter_timepoint(0) |>
+    filter_subjects(mtbi_subs)
+
+all.equal(mtbi_5_0, mtbi_51_0)
+
+
+mri_y_qc_raw_smr_t1_51
+
+mri_y_qc_raw_smr_t2_5
+
+mri_y_qc_raw_smr_t2_51
+
+mri_y_qc_raw_rsfmr_5
+
+mri_y_qc_raw_rsfmr_51
+
+mri_y_qc_raw_dmr_5
+
+mri_y_qc_raw_dmr_51
+
+all_subs <- c(mtbi_subs, uninj_subs)
+
+smri_qc_mtbi_5 <- abcdutils::qc_smri(mri_y_qc_raw_smr_t1_5, t = 0, subjects = all_subs, metric = "qc")
+smri_qc_mtbi_51 <- abcdutils::qc_smri(mri_y_qc_raw_smr_t1_51, t = 0, subjects = all_subs, metric = "qc")
+smri_qc_mtbi_5$"missing" |> length()
+smri_qc_mtbi_51$"missing" |> length()
+
+smri_qc_mtbi_5 <- abcdutils::qc_smri(mri_y_qc_raw_smr_t1_5, t = 0, subjects = mtbi_subs, metric = "qc")
+smri_qc_mtbi_51 <- abcdutils::qc_smri(mri_y_qc_raw_smr_t1_51, t = 0, subjects = mtbi_subs, metric = "qc")
+smri_qc_mtbi_5$"missing" |> length()
+smri_qc_mtbi_51$"missing" |> length()
+
+smri_qc_mtbi_5$"fail" |> length()
+smri_qc_mtbi_51$"fail" |> length()
+
+smri_qc_mtbi_5 <- abcdutils::qc_smri(mri_y_qc_raw_smr_t1_5, t = 0, subjects = uninj_subs, metric = "qc")
+smri_qc_mtbi_51 <- abcdutils::qc_smri(mri_y_qc_raw_smr_t1_51, t = 0, subjects = uninj_subs, metric = "qc")
+smri_qc_mtbi_5$"missing" |> length()
+smri_qc_mtbi_51$"missing" |> length()
+
+smri_qc_mtbi_5$"fail" |> length()
+smri_qc_mtbi_51$"fail" |> length()
+
+
+identical(smri_qc_mtbi_5, smri_qc_mtbi_51)
+
+
+mri_y_smr_vol_aseg # subcort volume
+mri_y_smr_thk_dsk # cort thickness
+mri_y_smr_area_dsk #cort area
+mri_y_rsi_rnd_at # Neurite density
+mri_y_rsi_rnd_wm_dsk # Neurite density
+mri_y_rsi_rnd_wm_dst # Neurite density
+mri_y_rsfmr_cor_gp_gp # rsfmri (cort-cort)
+mri_y_rsfmr_cor_gp_aseg #rsfmri (cort-subcort)
+
+
+vis_miss(filter_timepoint(mri_y_smr_vol_aseg_5, 0))
+
+vis_miss(filter_timepoint(mri_y_smr_thk_dsk_5, 0))
+
+vis_miss(filter_timepoint(mri_y_smr_area_dsk_5, 0))
+
+vis_miss(filter_timepoint(mri_y_rsi_rnd_at_5, 0))
+
+vis_miss(filter_timepoint(mri_y_rsi_rnd_wm_dsk_5, 0))
+
+vis_miss(filter_timepoint(mri_y_rsi_rnd_wm_dst_5, 0), warn_large_data = FALSE)
+
+# Some missingness
+vis_miss(filter_timepoint(mri_y_rsfmr_cor_gp_gp_5, 0), warn_large_data = FALSE)
+vis_miss(filter_timepoint(mri_y_rsfmr_cor_gp_aseg_5, 0), warn_large_data = FALSE)
+```
+
+
+
+## Neuroimaging quality control
+
+Subset neuroimaging data to those subjects who pass neuroimaging QC and PC.
+
+```{r}
+# sMRI
+smri_qc_mtbi <- abcdutils::qc_smri(
+    mri_y_qc_raw_smr_t1,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "qc"
+)
+smri_pc_mtbi <- abcdutils::qc_smri(
+    mri_y_qc_raw_smr_t1,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
+smri_qc_uninj <- abcdutils::qc_smri(
+    mri_y_qc_raw_smr_t1,
+    t = 0,
+    subjects = uninj_subjects,
+    metric = "qc"
+)
+smri_pc_uninj <- abcdutils::qc_smri(
+    mri_y_qc_raw_smr_t1,
+    t = 0,
+    subjects = uninj_subjects,
+    metric = "pc"
+)
+
+# dMRI
+dmri_qc_mtbi <- abcdutils::qc_dmri(
+    mri_y_qc_raw_dmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "qc"
+)
+dmri_pc_mtbi <- abcdutils::qc_dmri(
+    mri_y_qc_raw_dmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
+dmri_qc_uninj <- abcdutils::qc_dmri(
+    mri_y_qc_raw_dmr,
+    t = 0,
+    subjects = uninj_subjects,
+    metric = "qc"
+)
+dmri_pc_uninj <- abcdutils::qc_dmri(
+    mri_y_qc_raw_dmr,
+    t = 0,
+    subjects = uninj_subjects,
+    metric = "pc"
+)
+
+# rs-fMRI
+rsfmri_qc_mtbi <- qc_rsfmri(
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "qc"
+)
+rsfmri_pc_mtbi <- qc_rsfmri(
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    subjects = mtbi_subjects,
+    metric = "pc"
+)
+rsfmri_qc_uninj <- qc_rsfmri(
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    subjects = uninj_subjects,
+    metric = "qc"
+)
+rsfmri_pc_uninj <- qc_rsfmri(
+    mri_y_qc_raw_rsfmr,
+    t = 0,
+    subjects = uninj_subjects,
+    metric = "pc"
+)
+
+smri_pass <- c(
+    intersect(smri_qc_mtbi$"pass", smri_pc_mtbi$"pass"),
+    intersect(smri_qc_uninj$"pass", smri_pc_uninj$"pass")
+)
+
+dmri_pass <- c(
+    intersect(dmri_qc_mtbi$"pass", dmri_pc_mtbi$"pass"),
+    intersect(dmri_qc_uninj$"pass", dmri_pc_uninj$"pass")
+)
+
+rsfmri_pass <- c(
+    intersect(rsfmri_qc_mtbi$"pass", rsfmri_pc_mtbi$"pass"),
+    intersect(rsfmri_qc_uninj$"pass", rsfmri_pc_uninj$"pass")
+)
+
+sm_subc_v_qc_mtbi <- filter(sm_subc_v_mtbi, subjectkey %in% smri_pass)
+sm_cort_t_qc_mtbi <- filter(sm_cort_t_mtbi, subjectkey %in% smri_pass)
+sm_cort_sa_qc_mtbi <- filter(sm_cort_sa_mtbi, subjectkey %in% smri_pass)
+sm_subc_v_qc_uninj <- filter(sm_subc_v_uninj, subjectkey %in% smri_pass)
+sm_cort_t_qc_uninj <- filter(sm_cort_t_uninj, subjectkey %in% smri_pass)
+sm_cort_sa_qc_uninj <- filter(sm_cort_sa_uninj, subjectkey %in% smri_pass)
+dm_all_wmnd_qc_mtbi <- filter(dm_all_wmnd_mtbi, subjectkey %in% dmri_pass)
+dm_all_wmnd_qc_uninj <- filter(dm_all_wmnd_uninj, subjectkey %in% dmri_pass)
+rm_gord_cor_qc_mtbi <- filter(rm_gord_cor_mtbi, subjectkey %in% rsfmri_pass)
+rm_subc_cor_qc_mtbi <- filter(rm_subc_cor_mtbi, subjectkey %in% rsfmri_pass)
+rm_gord_cor_qc_uninj <- filter(rm_gord_cor_uninj, subjectkey %in% rsfmri_pass)
+rm_subc_cor_qc_uninj <- filter(rm_subc_cor_uninj, subjectkey %in% rsfmri_pass)
+
+write_csv(sm_cort_sa_qc_mtbi, input_path("sm_cort_sa_qc_mtbi.csv", TRUE))
+write_csv(sm_cort_t_qc_mtbi, input_path("sm_cort_t_qc_mtbi.csv", TRUE))
+write_csv(sm_subc_v_qc_mtbi, input_path("sm_subc_v_qc_mtbi.csv", TRUE))
+write_csv(sm_cort_sa_qc_uninj, input_path("sm_cort_sa_qc_uninj.csv", TRUE))
+write_csv(sm_cort_t_qc_uninj, input_path("sm_cort_t_qc_uninj.csv", TRUE))
+write_csv(sm_subc_v_qc_uninj, input_path("sm_subc_v_qc_uninj.csv", TRUE))
+write_csv(dm_all_wmnd_qc_mtbi, input_path("dm_all_wmnd_qc_mtbi.csv", TRUE))
+write_csv(dm_all_wmnd_qc_uninj, input_path("dm_all_wmnd_qc_uninj.csv", TRUE))
+write_csv(rm_gord_cor_qc_mtbi, input_path("rm_gord_cor_qc_mtbi.csv", TRUE))
+write_csv(rm_subc_cor_qc_mtbi, input_path("rm_subc_cor_qc_mtbi.csv", TRUE))
+write_csv(rm_gord_cor_qc_uninj, input_path("rm_gord_cor_qc_uninj.csv", TRUE))
+write_csv(rm_subc_cor_qc_uninj, input_path("rm_subc_cor_qc_uninj.csv", TRUE))
+```
+

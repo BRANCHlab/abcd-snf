@@ -28,10 +28,10 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subjects <- read_csv(sub_path("2024_09_13_mtbi_subjects.csv"))
-mtbi_train_subjects <- read_csv(sub_path("2024_09_13_mtbi_train_subjects.csv"))
-mtbi_test_subjects <- read_csv(sub_path("2024_09_13_mtbi_test_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_09_13_uninjured_subjects.csv"))
+mtbi_subs <- read_csv(sub_path("2024_10_29_mtbi_subs.csv"))
+mtbi_train_subs <- read_csv(sub_path("2024_10_29_mtbi_train_subs.csv"))
+mtbi_test_subs <- read_csv(sub_path("2024_10_29_mtbi_test_subs.csv"))
+uninj_subs <- read_csv(sub_path("2024_10_29_uninj_subs.csv"))
 ```
 
 
@@ -40,12 +40,10 @@ uninjured_subjects <- read_csv(sub_path("2024_09_13_uninjured_subjects.csv"))
 
 ```{r}
 # CHECKPOINT
-all_dls <- list.load(input_path("2024_09_13_all_dls.rds"))
+all_dls <- list.load(input_path("2024_10_29_all_dls.rds"))
 ```
 
-
 ## Generating custom distance measures
-
 
 ```{r}
 # CHECKPOINT
@@ -74,18 +72,18 @@ summarize_dml(my_distance_metrics)
 
 
 ```{r}
+set.seed(42)
 mtbi_settings_matrix <- generate_settings_matrix(
     all_dls$"mtbi_train_data_lists"$"imp_1",
     nrow = 200,
-    seed = 42,
     distance_metrics_list = my_distance_metrics
 )
-
 write_csv(mtbi_settings_matrix, proc_path("mtbi_settings_matrix.csv", TRUE))
+```
 
-mtbi_settings_matrix <- read_csv(
-    proc_path("2024_09_13_mtbi_settings_matrix.csv")
-)
+```{r}
+# CHECKPOINT
+mtbi_settings_matrix <- read_csv(proc_path("2024_10_29_mtbi_settings_matrix.csv"))
 ```
 
 
@@ -175,17 +173,16 @@ write_csv(mtbi_solutions_matrix_p5, proc_path("mtbi_solutions_matrix_p5.csv", TR
 ```
 
 ```{r}
-# CHECKPOINT
-mtbi_solutions_matrix_s1 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_s1.csv"))
-mtbi_solutions_matrix_s2 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_s2.csv"))
-mtbi_solutions_matrix_s3 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_s3.csv"))
-mtbi_solutions_matrix_s4 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_s4.csv"))
-mtbi_solutions_matrix_s5 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_s5.csv"))
-mtbi_solutions_matrix_p1 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_p1.csv"))
-mtbi_solutions_matrix_p2 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_p2.csv"))
-mtbi_solutions_matrix_p3 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_p3.csv"))
-mtbi_solutions_matrix_p4 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_p4.csv"))
-mtbi_solutions_matrix_p5 <- read_csv(proc_path("2024_09_13_mtbi_solutions_matrix_p5.csv"))
+mtbi_solutions_matrix_s1 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s1.csv"))
+mtbi_solutions_matrix_s2 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s2.csv"))
+mtbi_solutions_matrix_s3 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s3.csv"))
+mtbi_solutions_matrix_s4 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s4.csv"))
+mtbi_solutions_matrix_s5 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s5.csv"))
+mtbi_solutions_matrix_p1 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p1.csv"))
+mtbi_solutions_matrix_p2 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p2.csv"))
+mtbi_solutions_matrix_p3 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p3.csv"))
+mtbi_solutions_matrix_p4 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p4.csv"))
+mtbi_solutions_matrix_p5 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p5.csv"))
 
 mtbi_sm <- do.call(
     "rbind",
@@ -203,7 +200,7 @@ mtbi_sm <- do.call(
     )
 )
 write_csv(data.frame(mtbi_sm), proc_path("mtbi_sm.csv", TRUE))
-
+#
 mtbi_ari <- calc_aris(mtbi_sm, processes = "max")
 #
 write_csv(data.frame(mtbi_ari), proc_path("mtbi_ari.csv", TRUE))
@@ -217,9 +214,9 @@ write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_sm <- read_csv(proc_path("2024_09_13_mtbi_sm.csv"))
-mtbi_ari <- as.matrix(read_csv(proc_path("2024_09_13_mtbi_ari.csv")))
-mtbi_ari_order <- unlist(read_csv(proc_path("2024_09_13_mtbi_ari_order.csv")))
+mtbi_sm <- read_csv(proc_path("2024_10_29_mtbi_sm.csv"))
+mtbi_ari <- as.matrix(read_csv(proc_path("2024_10_29_mtbi_ari.csv")))
+mtbi_ari_order <- unlist(read_csv(proc_path("2024_10_29_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
@@ -300,7 +297,7 @@ mtbi_esm_p2 <- extend_solutions(
     data_list = all_dls$"mtbi_pooled_data_lists"$"imp_2",
     target_list = all_dls$"mtbi_pooled_oom_lists"$"imp_2",
     min_pval = 1e-10,
-    processes = 1
+    processes = "max"
 )
 
 mtbi_esm_p3 <- extend_solutions(
@@ -348,9 +345,8 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_esm <- read_csv(proc_path("2024_09_13_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_10_29_mtbi_esm.csv"))
 ```
-
 
 ## Identifying and visualizing meta clusters
 
@@ -364,14 +360,14 @@ base_ari_hm <- adjusted_rand_index_heatmap(
 shiny_annotator(base_ari_hm)
 
 mtbi_split_vec <- c(
-    178,
-    324,
-    397,
-    570,
-    681,
-    1652,
-    1861,
-    1961
+    174,
+    430,
+    644,
+    790,
+    823,
+    967,
+    1224,
+    1450
 )
 
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
@@ -379,7 +375,7 @@ write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_split_vec <- read_csv(proc_path("2024_09_13_mtbi_split_vec.csv")) |>
+mtbi_split_vec <- read_csv(proc_path("2024_10_31_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 ```
@@ -391,6 +387,8 @@ divergent_colours <- function(column)  {
     names(colours) <- values
     return(colours)
 }
+
+# HERE I AM
 
 full_mtbi_ari_hm <- adjusted_rand_index_heatmap(
     aris = mtbi_ari,
@@ -452,6 +450,7 @@ lite_mtbi_ari_hm <- adjusted_rand_index_heatmap(
         )
     )
 )
+lite_mtbi_ari_hm
 
 save_heatmap(
     heatmap = lite_mtbi_ari_hm,
@@ -492,7 +491,7 @@ mtbi_rep_solutions <- get_representative_solutions(
 # Based on the heatmap, we'll remove B, E, H, K (unstable meta clusters)
 mtbi_rep_solutions <- dplyr::filter(
     mtbi_rep_solutions,
-    !label %in% c("B", "F", "I")
+    !label %in% c("F", "I")
 )
 
 write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
@@ -500,11 +499,15 @@ write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_rep_solutions <- read_csv(proc_path("2024_09_13_mtbi_rep_solutions.csv"))
+mtbi_rep_solutions <- read_csv(proc_path("2024_10_29_mtbi_rep_solutions.csv"))
+
+mtbi_rep_solutions |>
+    dplyr::filter(label == "E") |>
+    dplyr::select(imputation)
 ```
 
 ```{r}
-# D (s3) is the top looking solution
+# E (s3) is the top looking solution
 mtbi_rep_solutions$"imputation"
 mtbi_rep_solutions$"label"
 
@@ -533,43 +536,43 @@ ggsave(
 )
 
 # The most robust solution
-mtbi_mc_d_esm <- mtbi_rep_solutions |>
-    dplyr::filter(label == "D")
+mtbi_mc_e_esm <- mtbi_rep_solutions |>
+    dplyr::filter(label == "E")
 
-write_csv(mtbi_mc_d_esm, proc_path("mtbi_mc_d_esm.csv", TRUE))
+write_csv(mtbi_mc_e_esm, proc_path("mtbi_mc_e_esm.csv", TRUE))
 ```
 
 ```{r}
 # CHECKPOINT
-mtbi_mc_d_esm <- read_csv(proc_path("2024_09_13_mtbi_mc_d_esm.csv"))
+mtbi_mc_e_esm <- read_csv(proc_path("2024_10_29_mtbi_mc_e_esm.csv"))
 ```
 
 ```{r}
 # Feature plot generation
 plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_2",
-    save = fig_path("mtbi_mc_d", TRUE)
+    solutions_matrix_row = mtbi_mc_e_esm,
+    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+    save = fig_path("mtbi_mc_e", TRUE)
 )
 
-# No save version:
-plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_2"
-)
-
-#all_plots <- wrap_plots(plot_list)
-#
-## Good enough as a snapshot
-#ggsave(
-#    fig_path("mtbi_mc_d_all_plots.png", TRUE),
-#    all_plots,
-#    width = 45,
-#    height = 30,
-#    dpi = 50
+## No save version:
+#plot_list <- auto_plot(
+#    solutions_matrix_row = mtbi_mc_e_esm,
+#    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
+#    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
 #)
+
+all_plots <- wrap_plots(plot_list)
+
+# Good enough as a snapshot
+ggsave(
+    fig_path("mtbi_mc_e_all_plots.png", TRUE),
+    all_plots,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
 ```
 
 
@@ -581,12 +584,12 @@ plot_list <- auto_plot(
 ```{r}
 nmis <- batch_nmi(
     all_dls$"mtbi_train_data_lists"$"imp_3",
-    mtbi_mc_d_esm,
+    mtbi_mc_e_esm,
     distance_metrics_list = my_distance_metrics
 )
 
 nmi_order <- sort(
-    nmis$"row_id_16",
+    nmis$"row_id_183",
     decreasing = TRUE,
     index.return = TRUE
 )
@@ -594,7 +597,7 @@ nmi_order <- sort(
 ordered_nmis <- nmis[nmi_order$ix, ]
 
 ordered_nmis$"nmi_rank" <- rank(
-    -ordered_nmis$"row_id_16",
+    -ordered_nmis$"row_id_183",
     ties.method = "min"
 )
 ```
@@ -605,7 +608,7 @@ ordered_nmis$"nmi_rank" <- rank(
 
 ```{r}
 pvals <- get_pvals(
-    mtbi_mc_d_esm,
+    mtbi_mc_e_esm,
     keep_summaries = FALSE
 )
 pvals <- data.frame(
@@ -635,7 +638,7 @@ ordered_pvals$"pval_rank" <- rank(
 
 
 ```{r}
-mtbi_mc_d_nmi_v_pval <- dplyr::full_join(
+mtbi_mc_e_nmi_v_pval <- dplyr::full_join(
     ordered_nmis,
     ordered_pvals,
     by = "feature"
@@ -645,26 +648,26 @@ domain_df <- dl_variable_summary(all_dls$"mtbi_train_data_lists"$"imp_3") |>
     dplyr::select(name, domain) |>
     dplyr::rename("feature" = "name")
 
-mtbi_mc_d_nmi_v_pval <- mtbi_mc_d_nmi_v_pval |>
+mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval |>
     dplyr::inner_join(domain_df, by = "feature")
 
-mtbi_mc_d_nmi_v_pval$"joint_rank" <- rank(
-    mtbi_mc_d_nmi_v_pval$"nmi_rank" + mtbi_mc_d_nmi_v_pval$"pval_rank",
+mtbi_mc_e_nmi_v_pval$"joint_rank" <- rank(
+    mtbi_mc_e_nmi_v_pval$"nmi_rank" + mtbi_mc_e_nmi_v_pval$"pval_rank",
     ties.method = "min"
 )
 
 joint_order <- sort(
-    mtbi_mc_d_nmi_v_pval$"joint_rank",
+    mtbi_mc_e_nmi_v_pval$"joint_rank",
     decreasing = FALSE,
     index.return = TRUE
 )
 
-mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval[joint_order$ix, ]
+mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval[joint_order$ix, ]
 
-mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval_rank |>
-    dplyr::rename("nmi" = "row_id_16")
+mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
+    dplyr::rename("nmi" = "row_id_183")
 
-mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval_rank |>
+mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
     dplyr::select(
         feature,
         domain,
@@ -676,15 +679,15 @@ mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval_rank |>
     )
 
 write_csv(
-    mtbi_mc_d_nmi_v_pval_rank,
-    proc_path("mtbi_mc_d_nmi_v_pval_rank.csv", TRUE)
+    mtbi_mc_e_nmi_v_pval_rank,
+    proc_path("mtbi_mc_e_nmi_v_pval_rank.csv", TRUE)
 )
 
-data.frame(mtbi_mc_d_nmi_v_pval_rank)
+data.frame(mtbi_mc_e_nmi_v_pval_rank)
 options(width=200)
 
 # Latex table
-xtable(data.frame(mtbi_mc_d_nmi_v_pval_rank))
+xtable(data.frame(mtbi_mc_e_nmi_v_pval_rank))
 ```
                   feature domain          nmi nmi_rank neg_log_pval pval_rank joint_rank
 1            brain_volume      N 0.2776266197        1   10.0000000         1          1
@@ -756,13 +759,173 @@ xtable(data.frame(mtbi_mc_d_nmi_v_pval_rank))
 67          family_yell_p      P 0.0007776271       67    0.1036635        67         67
 
 
+
+
+
+
+```{r}
+
+q <- all_dls$"mtbi_train_data_lists"$"imp_3" |> summarize_dl(scope = "feature")
+
+"brain_volume" %in% q$name
+
+"sex" %in% q$name
+
+
+"cortical_sa" %in% q$name
+
+"household_income" %in% q$name
+
+"pubertal_status_p" %in% q$name
+
+"activities_last_year" %in% q$name
+
+"extracurriculars" %in% q$name
+
+"parent_thought" %in% q$name
+
+"parent_somatic" %in% q$name
+
+"weekday_screentime" %in% q$name
+
+"parent_antisocial" %in% q$name
+
+"parent_aggressive" %in% q$name
+
+"parent_depress" %in% q$name
+
+"parent_anxdep" %in% q$name
+
+"race" %in% q$name
+
+"parent_anxdisord" %in% q$name
+
+"private_instruction" %in% q$name
+
+"weekend_screentime" %in% q$name
+
+"parent_withdrawn" %in% q$name
+
+"parent_avoidant" %in% q$name
+
+"parent_hyperactive" %in% q$name
+
+"fmri_cort_cors" %in% q$name
+
+"fmri_cort_subcort_cors" %in% q$name
+
+"parent_attention" %in% q$name
+
+"parent_perstr" %in% q$name
+
+"parent_intrusive" %in% q$name
+
+"family_fight_p" %in% q$name
+
+"major_wm_ndi" %in% q$name
+
+"headache_history" %in% q$name
+
+"physical_activity" %in% q$name
+
+"considerate_y" %in% q$name
+
+"family_temper_p" %in% q$name
+
+"family_outdo_p" %in% q$name
+
+"cortical_thickness" %in% q$name
+
+"helps_hurt_p" %in% q$name
+
+"same_sex_close_friend" %in% q$name
+
+"family_peaceful_p" %in% q$name
+
+"family_outdo_y" %in% q$name
+
+"mtbi_loc" %in% q$name
+
+"family_criticize_p" %in% q$name
+
+"school_programs" %in% q$name
+
+"family_hit_p" %in% q$name
+
+"family_angry_p" %in% q$name
+
+"helpful_y" %in% q$name
+
+"helpful_p" %in% q$name
+
+"family_angry_y" %in% q$name
+
+"pericortical_wm_ndi" %in% q$name
+
+"family_yell_y" %in% q$name
+
+"pubertal_status_y" %in% q$name
+
+"helps_hurt_y" %in% q$name
+
+"age" %in% q$name
+
+"family_criticize_y" %in% q$name
+
+"family_throw_p" %in% q$name
+
+"mtbi_mem_daze" %in% q$name
+
+"same_sex_friend" %in% q$name
+
+"mtbi_age" %in% q$name
+
+"previous_mtbis" %in% q$name
+
+"considerate_p" %in% q$name
+
+"family_peaceful_y" %in% q$name
+
+"mtbi_mechanism" %in% q$name
+
+"family_fight_y" %in% q$name
+
+"family_hit_y" %in% q$name
+
+"family_throw_y" %in% q$name
+
+"family_temper_y" %in% q$name
+
+"opp_sex_close_friend" %in% q$name
+
+"opp_sex_friend" %in% q$name
+
+"family_yell_p" %in% q$name
+
+
+data_list
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r}
 # CHECKPOINT
-mtbi_mc_d_nmi_v_pval_rank <- read_csv(
-    proc_path("2024_09_13_mtbi_mc_d_nmi_v_pval_rank.csv")
+mtbi_mc_e_nmi_v_pval_rank <- read_csv(
+    proc_path("2024_10_29_mtbi_mc_e_nmi_v_pval_rank.csv")
 )
 
-sorted_features <- mtbi_mc_d_nmi_v_pval_rank$"feature"
+sorted_features <- mtbi_mc_e_nmi_v_pval_rank$"feature"
 ```
 
 
@@ -771,12 +934,12 @@ sorted_features <- mtbi_mc_d_nmi_v_pval_rank$"feature"
 
 ```{r}
 nmi_v_p_rho <- cor(
-    mtbi_mc_d_nmi_v_pval_rank$"nmi_rank",
-    mtbi_mc_d_nmi_v_pval_rank$"pval_rank",
+    mtbi_mc_e_nmi_v_pval_rank$"nmi_rank",
+    mtbi_mc_e_nmi_v_pval_rank$"pval_rank",
     method = "spearman"
 )
 
-nmi_v_pval_plot <- mtbi_mc_d_nmi_v_pval_rank |>
+nmi_v_pval_plot <- mtbi_mc_e_nmi_v_pval_rank |>
     ggplot(
         aes(x = nmi_rank, y = pval_rank, label = feature, colour = domain)
     ) +
@@ -829,7 +992,7 @@ ggsave(
 #ranked_all_plots <- wrap_plots(ranked_plot_list)
 #
 #ggsave(
-#    fig_path("mtbi_mc_d_ranked_all_plots.png", TRUE),
+#    fig_path("mtbi_mc_e_ranked_all_plots.png", TRUE),
 #    ranked_all_plots,
 #    width = 45,
 #    height = 30,
@@ -838,11 +1001,11 @@ ggsave(
 #
 #saveRDS(
 #    ranked_all_plots,
-#    file = fig_path("mtbi_mc_d_ranked_all_plots.rds", TRUE)
+#    file = fig_path("mtbi_mc_e_ranked_all_plots.rds", TRUE)
 #)
 #
 #mtbi_mc_e_ranked_all_plots <- readRDS(
-#    fig_path("2024_09_13_mtbi_mc_d_ranked_all_plots.rds")
+#    fig_path("2024_10_29_mtbi_mc_e_ranked_all_plots.rds")
 #)
 #
 ################################################################################
@@ -899,7 +1062,7 @@ ggsave(
 #    mc_d_top_pl,
 #) & labs(x = "Cluster") & theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
 #ggsave(
-#    fig_path("mtbi_mc_d_ranked_all_plots_12.png", TRUE),
+#    fig_path("mtbi_mc_e_ranked_all_plots_12.png", TRUE),
 #    mc_d_top_p,
 #    width = 25,
 #    height = 15,
@@ -911,25 +1074,25 @@ ggsave(
 ## Outcomes
 ################################################################################
 #
-#mtbi_mc_d_esm_plot_df <- auto_plot(
-#    solutions_matrix_row = mtbi_mc_d_esm,
+#mtbi_mc_e_esm_plot_df <- auto_plot(
+#    solutions_matrix_row = mtbi_mc_e_esm,
 #    data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
 #    target_list = all_dls$"mtbi_train_oom_lists"$"imp_2",
 #    return_plots = FALSE
 #)
 #
-#write_csv(mtbi_mc_d_esm_plot_df, proc_path("mtbi_mc_d_esm_plot_df.csv", TRUE))
+#write_csv(mtbi_mc_e_esm_plot_df, proc_path("mtbi_mc_e_esm_plot_df.csv", TRUE))
 ```
 
 ```{r}
-#mtbi_mc_d_esm_plot_df <- read_csv(proc_path("2024_09_03_mtbi_mc_d_esm_plot_df.csv"))
+#mtbi_mc_e_esm_plot_df <- read_csv(proc_path("2024_10_29_mtbi_mc_e_esm_plot_df.csv"))
 ```
 
 ```{r}
-#mtbi_mc_d_ranked_all_plots[[2]]
+#mtbi_mc_e_ranked_all_plots[[2]]
 #
 #outcome_plot_list <- auto_plot(
-#    solutions_matrix_row = mtbi_mc_d_esm,
+#    solutions_matrix_row = mtbi_mc_e_esm,
 #    target_list = all_dls$"mtbi_train_oom_lists"$"imp_2"
 #)
 #
@@ -955,7 +1118,7 @@ ggsave(
 #    theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 #
 #ggsave(
-#    fig_path("mtbi_mc_d_outcome_plot_wrap.png", TRUE),
+#    fig_path("mtbi_mc_e_outcome_plot_wrap.png", TRUE),
 #    outcome_plot_wrap,
 #    width = 14,
 #    height = 14,
@@ -1164,17 +1327,17 @@ list.save(full_oom_list_5, input_path("mtbi_full_oom_list_5.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-full_data_list_1 <- list.load(input_path("2024_09_13_mtbi_full_data_list_1.rds"))
-full_data_list_2 <- list.load(input_path("2024_09_13_mtbi_full_data_list_2.rds"))
-full_data_list_3 <- list.load(input_path("2024_09_13_mtbi_full_data_list_3.rds"))
-full_data_list_4 <- list.load(input_path("2024_09_13_mtbi_full_data_list_4.rds"))
-full_data_list_5 <- list.load(input_path("2024_09_13_mtbi_full_data_list_5.rds"))
+full_data_list_1 <- list.load(input_path("2024_10_29_mtbi_full_data_list_1.rds"))
+full_data_list_2 <- list.load(input_path("2024_10_29_mtbi_full_data_list_2.rds"))
+full_data_list_3 <- list.load(input_path("2024_10_29_mtbi_full_data_list_3.rds"))
+full_data_list_4 <- list.load(input_path("2024_10_29_mtbi_full_data_list_4.rds"))
+full_data_list_5 <- list.load(input_path("2024_10_29_mtbi_full_data_list_5.rds"))
 
-full_oom_list_1 <- list.load(input_path("2024_09_13_mtbi_full_oom_list_1.rds"))
-full_oom_list_2 <- list.load(input_path("2024_09_13_mtbi_full_oom_list_2.rds"))
-full_oom_list_3 <- list.load(input_path("2024_09_13_mtbi_full_oom_list_3.rds"))
-full_oom_list_4 <- list.load(input_path("2024_09_13_mtbi_full_oom_list_4.rds"))
-full_oom_list_5 <- list.load(input_path("2024_09_13_mtbi_full_oom_list_5.rds"))
+full_oom_list_1 <- list.load(input_path("2024_10_29_mtbi_full_oom_list_1.rds"))
+full_oom_list_2 <- list.load(input_path("2024_10_29_mtbi_full_oom_list_2.rds"))
+full_oom_list_3 <- list.load(input_path("2024_10_29_mtbi_full_oom_list_3.rds"))
+full_oom_list_4 <- list.load(input_path("2024_10_29_mtbi_full_oom_list_4.rds"))
+full_oom_list_5 <- list.load(input_path("2024_10_29_mtbi_full_oom_list_5.rds"))
 ```
 
 ```{r}
@@ -1191,7 +1354,7 @@ my_distance_metrics <- generate_distance_metrics_list(
 )
 
 mtbi_settings_matrix <- read_csv(
-    proc_path("2024_09_13_mtbi_settings_matrix.csv")
+    proc_path("2024_10_29_mtbi_settings_matrix.csv")
 )
 
 mtbi_full_sm <- batch_snf(
@@ -1202,7 +1365,7 @@ mtbi_full_sm <- batch_snf(
 )
 write_csv(mtbi_full_sm, proc_path("mtbi_full_sm.csv", TRUE))
 
-mtbi_full_sm <- read_csv(proc_path("2024_09_13_mtbi_full_sm.csv"))
+mtbi_full_sm <- read_csv(proc_path("2024_10_29_mtbi_full_sm.csv"))
 
 mtbi_full_esm <- extend_solutions(
     mtbi_full_sm,
@@ -1216,7 +1379,7 @@ write_csv(mtbi_full_esm, proc_path("mtbi_full_esm.csv", TRUE))
 ```
 
 ```{r}
-mtbi_full_esm <- read_csv(proc_path("2024_09_13_mtbi_full_esm.csv"))
+mtbi_full_esm <- read_csv(proc_path("2024_10_29_mtbi_full_esm.csv"))
 ```
 
 ```{r}
@@ -1288,12 +1451,12 @@ write_csv(mtbi_full_top_3c, proc_path("mtbi_full_top_3c.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_full_top_3c <- read_csv(proc_path("2024_09_13_mtbi_full_top_3c.csv"))
+mtbi_full_top_3c <- read_csv(proc_path("2024_10_29_mtbi_full_top_3c.csv"))
 ```
 
 ```{r}
 mtbi_derivation_plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
+    solutions_matrix_row = mtbi_mc_e_esm,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_2"
 )
@@ -1307,7 +1470,7 @@ mtbi_full_plot_list <- auto_plot(
 val_cluster_df <- mtbi_full_top_3c |>
     get_cluster_df() |>
     dplyr::filter(
-        subjectkey %in% paste0("subject_", mtbi_test_subjects$"subjectkey")
+        subjectkey %in% paste0("subject_", mtbi_test_subs$"subjectkey")
     )
 
 mtbi_val_plot_list <- auto_plot(
@@ -1363,8 +1526,8 @@ list.save(outcome_plots, proc_path("outcome_tri_plots.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-input_plots <- list.load(proc_path("2024_09_16_input_tri_plots.rds"))
-outcome_plots <- list.load(proc_path("2024_09_13_outcome_tri_plots.rds"))
+input_plots <- list.load(proc_path("2024_10_29_input_tri_plots.rds"))
+outcome_plots <- list.load(proc_path("2024_10_29_outcome_tri_plots.rds"))
 ```
 
 ```{r}
@@ -1922,7 +2085,7 @@ qs(wpo, "wpo", w = 7, h = 22)
 
 ```{r}
 mtbi_derivation_df <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm,
+    solutions_matrix_row = mtbi_mc_e_esm,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_2",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_2",
     return_plots = FALSE
@@ -1949,9 +2112,9 @@ write_csv(mtbi_val_df, proc_path("mtbi_val_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_derivation_df <- read_csv(proc_path("2024_09_18_mtbi_derivation_df.csv"))
-mtbi_full_df <- read_csv(proc_path("2024_09_18_mtbi_full_df.csv"))
-mtbi_val_df <- read_csv(proc_path("2024_09_18_mtbi_val_df.csv"))
+mtbi_derivation_df <- read_csv(proc_path("2024_10_29_mtbi_derivation_df.csv"))
+mtbi_full_df <- read_csv(proc_path("2024_10_29_mtbi_full_df.csv"))
+mtbi_val_df <- read_csv(proc_path("2024_10_29_mtbi_val_df.csv"))
 ```
 
 ```{r}
@@ -1966,9 +2129,9 @@ write_csv(mtbi_val_tops, proc_path("mtbi_val_tops.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_derivation_tops <- read_csv(proc_path("2024_09_19_mtbi_derivation_tops.csv"))
-mtbi_full_tops <- read_csv(proc_path("2024_09_19_mtbi_full_tops.csv"))
-mtbi_val_tops <- read_csv(proc_path("2024_09_19_mtbi_val_tops.csv"))
+mtbi_derivation_tops <- read_csv(proc_path("2024_10_29_mtbi_derivation_tops.csv"))
+mtbi_full_tops <- read_csv(proc_path("2024_10_29_mtbi_full_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2024_10_29_mtbi_val_tops.csv"))
 ```
 
 ```{r}
@@ -2010,11 +2173,11 @@ format_tops <- function(tops) {
 
 ```{r}
 # Prepping the ordering of the tops features
-mtbi_mc_d_nmi_v_pval_rank <- read_csv(
-    proc_path("2024_09_13_mtbi_mc_d_nmi_v_pval_rank.csv")
+mtbi_mc_e_nmi_v_pval_rank <- read_csv(
+    proc_path("2024_10_29_mtbi_mc_e_nmi_v_pval_rank.csv")
 )
 
-joint_ranks <- mtbi_mc_d_nmi_v_pval_rank |>
+joint_ranks <- mtbi_mc_e_nmi_v_pval_rank |>
     data.frame() |>
     dplyr::select(feature, joint_rank)
 joint_ranks <- rbind(
@@ -2052,7 +2215,7 @@ write_csv(joint_ranks, proc_path("joint_ranks.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-joint_ranks <- read_csv(proc_path("2024_09_19_joint_ranks.csv"))
+joint_ranks <- read_csv(proc_path("2024_10_29_joint_ranks.csv"))
 ```
 
 
@@ -2102,9 +2265,9 @@ write_csv(all_full_tops, proc_path("mtbi_all_full_tops.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-all_der_tops <- read_csv(proc_path("2024_09_19_mtbi_all_der_tops.csv"))
-all_val_tops <- read_csv(proc_path("2024_09_19_mtbi_all_val_tops.csv"))
-all_full_tops <- read_csv(proc_path("2024_09_19_mtbi_all_full_tops.csv"))
+all_der_tops <- read_csv(proc_path("2024_10_29_mtbi_all_der_tops.csv"))
+all_val_tops <- read_csv(proc_path("2024_10_29_mtbi_all_val_tops.csv"))
+all_full_tops <- read_csv(proc_path("2024_10_29_mtbi_all_full_tops.csv"))
 ```
 
 ```{r}
@@ -2124,7 +2287,7 @@ all_tops <- arrange(all_tops, rank) |>
 
 write_csv(all_tops, proc_path("all_tops.csv", TRUE))
 
-all_tops <- read_csv(proc_path("2024_09_19_all_tops.csv"))
+all_tops <- read_csv(proc_path("2024_10_29_all_tops.csv"))
 
 xtable(all_tops)
 ```
@@ -2176,7 +2339,7 @@ write_csv(all_tops_raw, proc_path("all_tops_raw.csv", TRUE))
 ```
 
 ```{r}
-all_tops_raw <- read_csv(proc_path("2024_09_23_all_tops_raw.csv"))
+all_tops_raw <- read_csv(proc_path("2024_10_29_all_tops_raw.csv"))
 
 # Comparison based purely on effect size
 compare_fn_a <- function(d, sig, thresh = 0.2) {
@@ -2283,7 +2446,7 @@ identical(gen_df_a, gen_df_b)
 
 write_csv(gen_df_a, proc_path("mtbi_gen_fts.csv", TRUE))
 
-mtbi_gen_fts <- data.frame(read_csv(proc_path("2024_09_23_mtbi_gen_fts.csv")))
+mtbi_gen_fts <- data.frame(read_csv(proc_path("2024_10_29_mtbi_gen_fts.csv")))
 
 mtbi_gen_fts_in <- mtbi_gen_fts |>
     dplyr::filter(
@@ -2304,8 +2467,8 @@ mtbi_gen_fts_out <- mtbi_gen_fts |>
 write_csv(mtbi_gen_fts_in, proc_path("mtbi_gen_fts_in.csv", TRUE))
 write_csv(mtbi_gen_fts_out, proc_path("mtbi_gen_fts_out.csv", TRUE))
 
-mtbi_gen_fts_in <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in.csv"))
-mtbi_gen_fts_out <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_out.csv"))
+mtbi_gen_fts_in <- read_csv(proc_path("2024_10_29_mtbi_gen_fts_in.csv"))
+mtbi_gen_fts_out <- read_csv(proc_path("2024_10_29_mtbi_gen_fts_out.csv"))
 
 mtbi_gen_fts_in_long <- mtbi_gen_fts_in |>
     pivot_longer(
@@ -2324,8 +2487,8 @@ mtbi_gen_fts_out_long <- mtbi_gen_fts_out |>
 write_csv(mtbi_gen_fts_in_long, proc_path("mtbi_gen_fts_in_long.csv", TRUE))
 write_csv(mtbi_gen_fts_out_long, proc_path("mtbi_gen_fts_out_long.csv", TRUE))
 
-mtbi_gen_fts_in_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in_long.csv"))
-mtbi_gen_fts_out_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_out_long.csv"))
+mtbi_gen_fts_in_long <- read_csv(proc_path("2024_10_29_mtbi_gen_fts_in_long.csv"))
+mtbi_gen_fts_out_long <- read_csv(proc_path("2024_10_29_mtbi_gen_fts_out_long.csv"))
 
 xtable(mtbi_gen_fts_out)
 xtable(mtbi_gen_fts_in)
