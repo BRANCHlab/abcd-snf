@@ -41,9 +41,7 @@ mri_y_rsfmr_cor_gp_gp <- read("imaging/mri_y_rsfmr_cor_gp_gp.csv")
 mri_y_rsfmr_cor_gp_aseg <- read("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
 mh_y_or <- read("mental-health/mh_y_or.csv")
 nt_p_stq <- read("novel-technologies/nt_p_stq.csv")
-
 ph_p_saiq <- read("physical-health/ph_p_saiq.csv")
-
 ph_y_yrb <- read("physical-health/ph_y_yrb.csv")
 ce_y_psb <- read("culture-environment/ce_y_psb.csv")
 ce_p_psb <- read("culture-environment/ce_p_psb.csv")
@@ -204,28 +202,25 @@ write_subjects(
 ```{r}
 # CHECKPOINT
 mtbi_subjects_t1 <- read_subjects(
-    sub_path("2024_10_15_mtbi_subjects_t1.csv")
+    sub_path("2024_11_04_mtbi_subjects_t1.csv")
 )
 
 mtbi_subjects_t2 <- read_subjects(
-    sub_path("2024_10_15_mtbi_subjects_t2.csv")
+    sub_path("2024_11_04_mtbi_subjects_t2.csv")
 )
 
 long_mtbi_subs <- read_subjects(
-    sub_path("2024_10_15_mtbi_subjects_0_to_2.csv")
+    sub_path("2024_11_04_mtbi_subjects_0_to_2.csv")
 )
 
 long_uninj_subs <- read_subjects(
-    sub_path("2024_10_15_uninjured_subjects_0_to_2.csv")
+    sub_path("2024_11_04_uninjured_subjects_0_to_2.csv")
 )
 
 # The original baseline sample:
-base_mtbi_subs <- read_subjects(
-    sub_path("2024_09_13_mtbi_subjects.csv")
-)
-base_uninj_subs <- read_subjects(
-    sub_path("2024_09_13_uninjured_subjects.csv")
-)
+
+base_mtbi_subs <- read_subjects(sub_path("2024_10_29_mtbi_subs.csv"))
+base_uninj_subs <- read_subjects(sub_path("2024_10_29_uninj_subs.csv"))
 ```
 
 Checking when each injured subject should have their injury info collected:
@@ -674,21 +669,21 @@ Psychosocial factors of interest include:
 #### Loneliness
 
 ```{r}
-p_loneliness_long_mtbi_0 <- get_loneliness(mh_y_or, gish_p_gi, long_mtbi_subs, discretize = TRUE, t = 0)
-tibble(p_loneliness_long_mtbi_0)
-write_csv(p_loneliness_long_mtbi_0, input_path("p_loneliness_long_mtbi_0.csv", TRUE))
+p_friends_long_mtbi_0 <- get_friends(mh_y_or, gish_p_gi, long_mtbi_subs, discretize = TRUE, t = 0)
+tibble(p_friends_long_mtbi_0)
+write_csv(p_friends_long_mtbi_0, input_path("p_friends_long_mtbi_0.csv", TRUE))
 
-p_loneliness_long_mtbi_l <- get_loneliness(mh_y_or, gish_p_gi, long_mtbi_subs, discretize = TRUE, t = 2)
-tibble(p_loneliness_long_mtbi_l)
-write_csv(p_loneliness_long_mtbi_l, input_path("p_loneliness_long_mtbi_l.csv", TRUE))
+p_friends_long_mtbi_l <- get_friends(mh_y_or, gish_p_gi, long_mtbi_subs, discretize = TRUE, t = 2)
+tibble(p_friends_long_mtbi_l)
+write_csv(p_friends_long_mtbi_l, input_path("p_friends_long_mtbi_l.csv", TRUE))
 
-p_loneliness_base_mtbi_l <- get_loneliness(mh_y_or, gish_p_gi, base_mtbi_subs, discretize = TRUE, t = 2)
-tibble(p_loneliness_base_mtbi_l)
-write_csv(p_loneliness_base_mtbi_l, input_path("p_loneliness_base_mtbi_l.csv", TRUE))
+p_friends_base_mtbi_l <- get_friends(mh_y_or, gish_p_gi, base_mtbi_subs, discretize = TRUE, t = 2)
+tibble(p_friends_base_mtbi_l)
+write_csv(p_friends_base_mtbi_l, input_path("p_friends_base_mtbi_l.csv", TRUE))
 
-p_loneliness_base_uninj_l <- get_loneliness(mh_y_or, gish_p_gi, base_uninj_subs, discretize = TRUE, t = 2)
-tibble(p_loneliness_base_uninj_l)
-write_csv(p_loneliness_base_uninj_l, input_path("p_loneliness_base_uninj_l.csv", TRUE))
+p_friends_base_uninj_l <- get_friends(mh_y_or, gish_p_gi, base_uninj_subs, discretize = TRUE, t = 2)
+tibble(p_friends_base_uninj_l)
+write_csv(p_friends_base_uninj_l, input_path("p_friends_base_uninj_l.csv", TRUE))
 ```
 
 #### Healthy behaviours
@@ -716,92 +711,21 @@ write_csv(p_screen_time_base_uninj_l, input_path("p_screen_time_base_uninj_l.csv
 ##### Sports and activities participation
 
 ```{r}
-
-
-z <- ph_p_saiq
-
-z[, colnames(z)[endsWith(colnames(z), c("school", "school_l"))]] |>
-    apply(2, unique)
-
-z[, colnames(z)[endsWith(colnames(z), c("outside", "outside_l"))]] |>
-    apply(2, unique)
-
-z[, colnames(z)[endsWith(colnames(z), c("p12", "p12_l"))]] |>
-    apply(2, unique)
-
-colnames(z)[200]
-
-
-z[, colnames(z)[endsWith(colnames(z), "private")]] |> colnames()
-
-z[, colnames(z)[endsWith(colnames(z), "private_l")]] |> colnames()
-
-q1 <- z[, colnames(z)[endsWith(colnames(z), c("private", "private_l"))]] |> colnames()
-
-q2
-
-q3
-
-z1 <- get_sports_and_activities(
-    ph_p_saiq,
-    subjects = base_mtbi_subs,
-    t = 0,
-    discretize = TRUE
-)
-
-z1
-
-z2 <- get_sports_and_activities(
-    ph_p_saiq,
-    subjects = base_mtbi_subs,
-    t = 0,
-    discretize = FALSE
-)
-
-rowSums(is.na(z2))
-
-
-# There's no missingness in the SAIQ
-ph_p_saiq |>
-    filter_timepoint(1) |>
-    dplyr::select(dplyr::starts_with("sai_p_activities")) |>
-    vis_miss()
-
-
-# HERE I AM, working on discretization of this darned variable
-
-stats::quantile(z$"organized_school_activities", na.rm = TRUE, probs = c(0.25, 0.5, 0.75))
-stats::quantile(z$"organized_school_activities", na.rm = TRUE, probs = c(0.25, 0.5, 0.75))
-
-
-p_sports_mtbi <- tibble(read_csv(input_path("2024_09_13_p_sports_mtbi.csv")))
-
-all.equal(z, p_sports_mtbi, check.attributes = FALSE)
-
-z$"p12_activities" |> hist()
-
-z$"private_instruction_activities" |> hist()
-
-z$"organized_outside_activities" |> hist()
-
-
-p_sports_long_mtbi_0 |> skimr::skim()
-
-identical(colnames(p_sports_long_mtbi_0), colnames(ph_p_saiq))
-
-p_sports_long_mtbi_0 <- get_sports_and_activities(ph_p_saiq, base_uninj_subs, t = 0)
-
-apply(p_sports_long_mtbi_0, 2, unique)
-
+p_sports_long_mtbi_0 <- get_sports_and_activities(ph_p_saiq, long_mtbi_subs, t = 0, discretize = TRUE)
+tibble(p_sports_long_mtbi_0)
 write_csv(p_sports_long_mtbi_0, input_path("p_sports_long_mtbi_0.csv", TRUE))
 
-p_sports_long_mtbi_l <- get_sports_and_activities(ph_p_saiq, long_mtbi_subs, t = 2)
+p_sports_long_mtbi_l <- get_sports_and_activities(ph_p_saiq, long_mtbi_subs, t = 2, discretize = TRUE)
 tibble(p_sports_long_mtbi_l)
 write_csv(p_sports_long_mtbi_l, input_path("p_sports_long_mtbi_l.csv", TRUE))
 
-p_sports_base_mtbi_l <- get_sports_and_activities(ph_p_saiq, base_mtbi_subs, t = 2)
+p_sports_base_mtbi_l <- get_sports_and_activities(ph_p_saiq, base_mtbi_subs, t = 2, discretize = TRUE)
 tibble(p_sports_base_mtbi_l)
 write_csv(p_sports_base_mtbi_l, input_path("p_sports_base_mtbi_l.csv", TRUE))
+
+p_sports_base_uninj_l <- get_sports_and_activities(ph_p_saiq, base_uninj_subs, t = 2, discretize = TRUE)
+tibble(p_sports_base_uninj_l)
+write_csv(p_sports_base_uninj_l, input_path("p_sports_base_uninj_l.csv", TRUE))
 ```
 
 ##### Exercise habits
@@ -875,20 +799,25 @@ write_csv(p_fam_fn_base_uninj_l, input_path("p_fam_fn_base_uninj_l.csv", date = 
 #### Parent psychopathology
 
 ```{r}
+
 p_parent_psych_long_mtbi_0 <- get_parent_psychopathology(mh_p_asr, long_mtbi_subs, t = 0, raw = TRUE)
 tibble(p_parent_psych_long_mtbi_0)
+
 write_csv(p_parent_psych_long_mtbi_0, input_path("p_parent_psych_long_mtbi_0.csv", date = TRUE))
 
 p_parent_psych_long_mtbi_l <- get_parent_psychopathology(mh_p_asr, long_mtbi_subs, t = 2, raw = TRUE)
 tibble(p_parent_psych_long_mtbi_l)
+
 write_csv(p_parent_psych_long_mtbi_l, input_path("p_parent_psych_long_mtbi_l.csv", date = TRUE))
 
 p_parent_psych_base_mtbi_l <- get_parent_psychopathology(mh_p_asr, base_mtbi_subs, t = 2, raw = TRUE)
 tibble(p_parent_psych_base_mtbi_l)
+
 write_csv(p_parent_psych_base_mtbi_l, input_path("p_parent_psych_base_mtbi_l.csv", date = TRUE))
 
 p_parent_psych_base_uninj_l <- get_parent_psychopathology(mh_p_asr, base_uninj_subs, t = 2, raw = TRUE)
 tibble(p_parent_psych_base_uninj_l)
+
 write_csv(p_parent_psych_base_uninj_l, input_path("p_parent_psych_base_uninj_l.csv", date = TRUE))
 ```
 
