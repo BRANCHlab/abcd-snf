@@ -1,3 +1,5 @@
+# Building a Classifier
+
 ## Importing packages and establishing file paths
 
 ```{r}
@@ -5,30 +7,35 @@ library(readr)
 library(here)
 library(abcdutils)
 library(dplyr)
-#library(metasnf)
-#library(rlist)
-#library(tibble)
-#library(ggplot2)
+library(caret)
+library(xgboost)
+library(randomForest)
+library(fastDummies)
+library(skimr)
+library(doParallel)
+library(future)
+library(future.apply)
+library(progressr)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+model_path <- path_maker(here(paste0("data/abcd/results/models")))
 ```
+
+## Preprocessing
 
 ```{r}
-mtbi_full_df <- read_csv(proc_path("2024_09_18_mtbi_full_df.csv"))
+# Data to build classifier from
+mtbi_ful_df <- read_csv(proc_path("2024_11_07_mtbi_ful_df.csv"))
 ```
 
-# Building a Classifier
-
-I'll ideally be able to create a classifier that doesn't rely on the mTBI-related subjects.
 So we'll only want to use features that were both considered generalizable and that are present in uninjured children.
 These features are the same as those that were characterized in the matched uninjured group.
 
 ```{r}
-mtbi_gen_fts_in_long <- read_csv(proc_path("2024_09_23_mtbi_gen_fts_in_long.csv"))
-
+mtbi_gen_fts_in <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_in.csv"))
 classifier_fts <- unique(mtbi_gen_fts_in_long$feature) 
 classifier_fts <- classifier_fts[!grepl("mtbi", classifier_fts)]
 classifier_fts[grepl("race_", classifier_fts)] <- "race"
@@ -38,12 +45,10 @@ write_csv(data.frame(classifier_fts), proc_path("classifier_fts.csv", TRUE))
 ```
 
 ```{r}
-classifier_fts <- read_csv(proc_path("2024_09_25_classifier_fts.csv"))$"classifier_fts"
-
-colnames(mtbi_full_df)
+classifier_fts <- read_csv(proc_path("2024_11_07_classifier_fts.csv"))$"classifier_fts"
 
 mtbi_classification_df <- dplyr::select(
-    mtbi_full_df,
+    mtbi_ful_df,
     subjectkey,
     cluster,
     all_of(classifier_fts)
@@ -56,6 +61,403 @@ write_csv(mtbi_classification_df, proc_path("mtbi_classification_df.csv", TRUE))
 ```
 
 ```{r}
-# CHECKPOINT
-mtbi_classification_df <- read_csv(proc_path("2024_09_25_mtbi_classification_df.csv"))
+mtbi_classification_df <- read_csv(proc_path("2024_11_07_mtbi_classification_df.csv"))
+```
+
+
+```{r}
+# Train/test split
+set.seed(1111)
+shuffled_df <- mtbi_classification_df[sample(nrow(mtbi_classification_df)), ]
+
+nrow(mtbi_classification_df) * 0.8
+
+train_classification_df <- shuffled_df[1:352, ]
+test_classification_df <- shuffled_df[352: 440, ]
+
+write_csv(train_classification_df, proc_path("train_classification_df.csv", TRUE))
+write_csv(test_classification_df, proc_path("test_classification_df.csv", TRUE))
+```
+
+```{r}
+# checkpoint
+train_classification_df <- read_csv(proc_path("2024_11_07_train_classification_df.csv"))
+test_classification_df <- read_csv(proc_path("2024_11_07_test_classification_df.csv"))
+```
+
+## Function to prep training data
+
+```{r}
+# checkpoint
+prep_data <- function(df, standardize = FALSE) {
+    df <- dplyr::select(df, -"subjectkey")
+    df <- dummy_cols(
+        df,
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+    ordered_factors <- c(
+        "sex",
+        "household_income",
+        "pubertal_status_p",
+        "family_fight_p",
+        "family_outdo_p",
+        "helps_hurt_p",
+        "helpful_y",
+        "considerate_y",
+        "helps_hurt_y",
+        "family_criticize_p",
+        "family_outdo_y",
+        "family_angry_p",
+        "helpful_p",
+        "family_throw_p",
+        "family_hit_p",
+        "family_peaceful_y",
+        "family_throw_y",
+        "race_black",
+        "race_hispanic",
+        "race_other" 
+    )
+    df[ordered_factors] <- lapply(df[ordered_factors], as.ordered)
+    if (standardize) {
+        df[] <- lapply(df, as.numeric)
+        df <- as.data.frame(scale(df))
+    }
+    df$"cluster" <- as.factor(df$"cluster")
+    return(df)
+}
+
+unregister_dopar <- function() {
+  env <- foreach:::.foreachGlobals
+  rm(list=ls(name=env), pos=env)
+}
+```
+
+## Caret CV
+
+```{r}
+# checkpoint
+train_control <- caret::trainControl(
+    method = "cv",             # Cross-validation
+    number = 5,                # 5-fold CV
+    search = "grid",           # Grid search
+    verboseIter = TRUE
+)
+```
+
+## Hyperparameter tuning
+
+### Random forest
+
+Each model is trained with a nested-CV like process:
+
+1. training subset of the data: hyperparameter grid search over CV to find the best hyperparameters
+2. full subset of the data: fixed hyperparameter CV to get an estimate of model performance
+3. full subset of the data again: fit the inner nested hyperparameters for final model
+
+For random forest, I vary the following hyperparameters:
+
+- Number of trees
+- number of attributes that are randomly selected for the split search when constructing each tree
+- limits on the tree depth (for each tree)
+
+```{r}
+set.seed(42)
+
+training_data <- prep_data(train_classification_df)
+
+# Hyperparameters
+tune_grid <- expand.grid(mtry = c(1:20))
+
+time <- Sys.time()
+cl <- makePSOCKcluster(64)
+registerDoParallel(cl)
+trained_models <- list()
+counter <- 0
+for (maxnodes in c(5, 10, 15)) {
+    for (nodesize in c(1:5)) {
+        for (ntree in c(100, 1000, 2000, 3000)) {
+            rf_model <- train(
+                cluster ~ .,
+                data = training_data,
+                method = "rf",
+                trControl = train_control,
+                tuneGrid = tune_grid,
+                ntree = ntree,
+                maxnodes = maxnodes,
+                nodesize = nodesize
+            )
+            trained_models[[length(trained_models) + 1]] <- rf_model
+            names(trained_models)[[length(trained_models)]] <- paste0(
+                "maxnodes_", maxnodes,
+                "nodesize_", nodesize,
+                "ntree_", ntree
+            )
+            counter <- counter + 1
+            print(paste0(round(counter / (3*5*4) * 100, 2), "% complete..."))
+        }
+    }
+}
+stopCluster(cl)
+
+unregister_dopar()
+
+print(Sys.time() - time)
+
+saveRDS(trained_models, model_path("rf_models.rds", TRUE))
+rf_models <- readRDS(model_path("2024_11_11_rf_models.rds"))
+
+
+rf_models[[1]]$results$"Accuracy" |> max()
+
+# About 77.85% max
+rf_accuracies <- lapply(
+    rf_models,
+    function(x) {
+        max(x$"results"$"Accuracy")
+    }
+)
+
+max(as.numeric(rf_accuracies))
+```
+
+### SVM
+
+
+```{r}
+set.seed(42)
+
+svm_tune_grid_1 <- expand.grid(
+    sigma = c(0.001, 0.01, 0.1, 0.5, 1),
+    C = c(0.1, 1, 10, 100, 1000)
+)
+
+svm_model <- train(
+  cluster ~ .,                # Formula for the model
+  data = prep_data(train_classification_df, TRUE),                # Your dataset
+  method = "svmRadial",       # Using radial kernel
+  trControl = train_control,  # Cross-validation settings
+  tuneGrid = svm_tune_grid_1        # Hyperparameter grid to tune
+)
+
+print(svm_model)
+
+svm_tune_grid_2 <- expand.grid(
+    sigma = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+    C = c(0.1, 0.5, 1, 2, 5, 10, 25, 50, 100, 200, 400, 600, 750, 1000)
+)
+
+svm_model2 <- train(
+  cluster ~ .,                # Formula for the model
+  data = prep_data(train_classification_df, TRUE),                # Your dataset
+  method = "svmRadial",       # Using radial kernel
+  trControl = train_control,  # Cross-validation settings
+  tuneGrid = svm_tune_grid_2        # Hyperparameter grid to tune
+)
+
+
+svm_tune_grid_2 <- expand.grid(
+    sigma = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+    C = c(0.1, 0.5, 1, 2, 5, 10, 25, 50, 100, 200, 400, 600, 750, 1000)
+)
+
+svm_model2 <- train(
+  cluster ~ .,                # Formula for the model
+  data = prep_data(train_classification_df, TRUE),                # Your dataset
+  method = "svmRadial",       # Using radial kernel
+  trControl = train_control,  # Cross-validation settings
+  tuneGrid = svm_tune_grid_2        # Hyperparameter grid to tune
+)
+
+saveRDS(svm_model2, model_path("svm_model.rds", TRUE))
+svm_model <- readRDS(model_path("2024_11_11_svm_model.rds"))
+```
+
+### XGBoost
+
+```{r}
+xgb_tune_grid <- expand.grid(
+  nrounds = c(50, 100, 200),
+  max_depth = c(4, 6, 8),
+  eta = c(0.01, 0.1, 0.2),
+  gamma = c(0, 0.25, 0.5),
+  colsample_bytree = c(0.6, 0.8, 1),
+  min_child_weight = c(1, 5),
+  subsample = c(0.5, 0.75, 1)
+)
+
+xgb_model <- train(
+    cluster ~ .,
+    data = prep_data(train_classification_df),
+    method = "xgbTree",
+    trControl = train_control,
+    tuneGrid = xgb_tune_grid
+)
+stopCluster(cl)
+unregister_dopar()
+
+
+
+
+xgb_model$results
+
+xgb_model
+
+training_data <- prep_data(train_classification_df)
+
+future::plan(future::multisession, workers = 64)
+
+xgboost_iter <- function(tune_grid) {
+    p <- progressor(nrow(tune_grid))
+    models <- future_apply(
+        tune_grid,
+        1,
+        function(x) {
+            p()
+            cnames <- names(x)
+            grid <- data.frame(t(x))
+            colnames(grid) <- cnames
+            xgb_model <- train(
+                cluster ~ .,
+                data = training_data,
+                method = "xgbTree",
+                trControl = train_control,
+                tuneGrid = grid
+            )
+            xgb_model
+        }
+    )
+    return(models)
+}
+
+xgb_models <- with_progress(xgboost_iter(mini_grid))
+
+q[[1]]$"results"
+
+z <- data.frame()
+
+do.call(rbind, lapply(q, function(x) x$"results"))
+
+###############################################################################
+prog <- progressr::progressor(steps = nrow(mini_grid))
+
+xgb_model <- future.apply::future_apply(
+    settings_and_weights_df,
+    1,
+    batch_row_function
+)
+
+
+###############################################################################
+
+time <- Sys.time()
+cl <- makePSOCKcluster(64)
+registerDoParallel(cl)
+
+xgb_model <- train(
+    cluster ~ .,
+    data = prep_data(train_classification_df),
+    method = "xgbTree",
+    trControl = train_control,
+    tuneGrid = xgb_tune_grid,
+    allowParallel = TRUE
+)
+
+
+print(Sys.time() - time)
+
+
+print(xgb_model$bestTune)
+
+saveRDS(xgb_model, model_path("xgb_subtype_classifier_1.rds", TRUE))
+xgb_model <- readRDS(model_path("2024_11_07_xgb_subtype_classifier_1.rds"))
+
+saveRDS(rf_model, model_path("rf_subtype_classifier_1.rds", TRUE))
+rf_model <- readRDS(model_path("2024_11_07_rf_subtype_classifier_1.rds"))
+```
+
+```{r}
+# Train the xgboost model with cross-validation
+xgb_model_2 <- train(
+  cluster ~ ., 
+  data = df_no_id, 
+  method = "xgbTree", 
+  trControl = train_control, 
+  tuneGrid = tune_grid
+)
+
+saveRDS(xgb_model_2, model_path("xgb_subtype_classifier_2.rds", TRUE))
+xgb_model_2 <- readRDS(model_path("2024_11_07_xgb_subtype_classifier_2.rds"))
+```
+
+
+```{r}
+# Train the KNN model
+knn_model <- train(
+  cluster ~ ., 
+  data = df_no_id, 
+  method = "knn", 
+  trControl = train_control, 
+  tuneLength = 130  # Tuning k (number of neighbors)
+)
+
+saveRDS(knn_model, model_path("knn_subtype_classifier_1.rds", TRUE))
+knn_model <- readRDS(model_path("2024_11_07_knn_subtype_classifier_1.rds"))
+```
+
+```{r}
+
+xgb_model_2 <- readRDS(model_path("2024_11_07_xgb_subtype_classifier_2.rds"))
+knn_model <- readRDS(model_path("2024_11_07_knn_subtype_classifier_1.rds"))
+xgb_model <- readRDS(model_path("2024_11_07_xgb_subtype_classifier_1.rds"))
+rf_model <- readRDS(model_path("2024_11_07_rf_subtype_classifier_1.rds"))
+
+xgb_model_2 |> head()
+
+resamples(
+    list(
+        "xgb" = xgb_model,
+        "xgb2" = xgb_model_2,
+        "rf" = rf_model,
+        "knn" = knn_model
+    )
+) |> dotplot()
+
+```
+
+Learning curves?
+
+
+```{r}
+
+# Load caret library
+library(caret)
+
+# Example dataset
+data(iris)
+
+# Set up training control with cross-validation
+fitControl <- trainControl(method = "cv", number = 5)
+
+# Define the grid for hyperparameters
+tuneGrid <- expand.grid(
+  mtry = c(1, 2, 3),             # Number of attributes randomly selected for each split
+  maxnodes = c(5, 10, 15),       # Max nodes (proxy for tree depth)
+  ntree = c(50, 100, 150)        # Number of trees
+)
+
+# Train model with caret
+model <- train(
+  Species ~ ., data = iris,
+  method = "rf",
+  trControl = fitControl,
+  tuneGrid = tuneGrid,
+  ntree = tuneGrid$ntree,          # Pass the number of trees directly
+  maxnodes = tuneGrid$maxnodes     # Pass maxnodes directly if supported
+)
+
+# View the results
+print(model)
+
 ```
