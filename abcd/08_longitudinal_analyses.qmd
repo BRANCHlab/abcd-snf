@@ -1,0 +1,339 @@
+# Longitudinal analyses
+
+1. Was the baseline clustering informative for long-term outcomes?
+
+2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
+
+3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
+
+4. Classifier built from baseline mTBI data: informative?
+
+## Data importing
+
+```{r}
+library(abcdutils)
+library(here)
+library(dplyr)
+library(readr)
+library(metasnf)
+library(rlist)
+library(visdat)
+library(ggplot2)
+library(mice)
+library(fastDummies)
+library(randomForest)
+library(patchwork)
+
+# The path_maker function helps with managing and date stamping long paths. The
+# functions are just used here to help with reading and writing data. See
+# ?path_maker for more information.
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+core_path <- path_maker(here(paste0("data/abcd/core")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+model_path <- path_maker(here(paste0("data/abcd/results/models")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+
+read <- function(path) {
+    return(read_csv(input_path(path)))
+}
+```
+
+## Q1: Was the baseline clustering informative for LT outcomes?
+
+```{r}
+# Import data
+mtbi_base_df <- read_csv(proc_path("2024_11_07_mtbi_ful_df.csv"))
+
+all_long_dls <- list.load(input_path("2024_11_13_all_long_dls.rds"))
+
+base_mtbi_l_ols <- all_long_dls$"base_mtbi_l_ols"
+
+# Convert list of data lists into list of data frames for plotting
+base_mtbi_l_ol_dfs <- lapply(base_mtbi_l_ols, collapse_dl)
+
+# Tag each data frame with its originating imputation
+base_mtbi_l_ol_dfs <- lapply(
+    1:5,
+    function(x) {
+        base_mtbi_l_ol_dfs[[x]]$"imputation" <- x
+        base_mtbi_l_ol_dfs[[x]]
+    }
+)
+
+# Horizontally merge list of data frames
+base_mtbi_l_ol_df <- do.call(rbind, base_mtbi_l_ol_dfs)
+
+# Keep track of baseline data before attaching to longitudinal data
+colnames(mtbi_base_df) <- paste0(colnames(mtbi_base_df), "_0")
+colnames(mtbi_base_df)[1:2] <- c("subjectkey", "cluster")
+
+mtbi_base_outcomes_l <- dplyr::full_join(mtbi_base_df, base_mtbi_l_ol_df, "subjectkey")
+
+mtbi_long_changes <- mtbi_base_outcomes_l |>
+    dplyr::rename(
+        "cbcl_anxdep_l" = "cbcl_anxdep",
+        "cbcl_withdep_l" = "cbcl_withdep",
+        "cbcl_somatic_l" = "cbcl_somatic",
+        "cbcl_social_l" = "cbcl_social",
+        "cbcl_thought_l" = "cbcl_thought",
+        "cbcl_attention_l" = "cbcl_attention",
+        "cbcl_rulebreak_l" = "cbcl_rulebreak",
+        "cbcl_aggressive_l" = "cbcl_aggressive",
+        "sds_sleep_l"  = "sds_sleep"
+    ) |>
+    dplyr::mutate(
+        cbcl_anxdep_d = cbcl_anxdep_l - cbcl_anxdep_0,
+        cbcl_withdep_d = cbcl_withdep_l - cbcl_withdep_0,
+        cbcl_somatic_d = cbcl_somatic_l - cbcl_somatic_0,
+        cbcl_social_d = cbcl_social_l - cbcl_social_0,
+        cbcl_thought_d = cbcl_thought_l - cbcl_thought_0,
+        cbcl_attention_d = cbcl_attention_l - cbcl_attention_0,
+        cbcl_rulebreak_d = cbcl_rulebreak_l - cbcl_rulebreak_0,
+        cbcl_aggressive_d = cbcl_aggressive_l - cbcl_aggressive_0,
+        sds_sleep_d = sds_sleep_l - sds_sleep_0
+    )
+
+mtbi_long_changes
+
+gg_long_cor <- function(df, feature, long = TRUE) {
+    f1 <- paste0(feature, "_0")
+    if (long) {
+        f2 <- paste0(feature, "_l")
+    } else {
+        f2 <- paste0(feature, "_d")
+    }
+    plot <- ggplot(
+        df,
+        aes(x = .data[[f1]], y = .data[[f2]])
+    ) +
+        geom_jitter(alpha = 0.2) +
+        facet_wrap(~ imputation) +
+        theme_bw()
+    return(plot)
+}
+
+mtbi_long_changes$"cluster" <- as.factor(mtbi_long_changes$"cluster")
+
+lm_long_fit <- function(df, feature) {
+    models <- list(
+      lm(as.formula(paste0(feature, "_l ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 1)),
+      lm(as.formula(paste0(feature, "_l ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 2)),
+      lm(as.formula(paste0(feature, "_l ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 3)),
+      lm(as.formula(paste0(feature, "_l ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 4)),
+      lm(as.formula(paste0(feature, "_l ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 5))
+    )
+    pooled_results <- pool(as.mira(models))
+    return(summary(pooled_results))
+}
+
+gg_long_cor(mtbi_long_changes, "cbcl_anxdep", 0)
+
+gg_long_cor(mtbi_long_changes, "cbcl_withdep")
+
+gg_long_cor(mtbi_long_changes, "cbcl_somatic")
+
+# None are significant
+lm_long_fit(mtbi_long_changes, "cbcl_anxdep")
+lm_long_fit(mtbi_long_changes, "cbcl_withdep")
+lm_long_fit(mtbi_long_changes, "cbcl_somatic")
+lm_long_fit(mtbi_long_changes, "cbcl_social")
+lm_long_fit(mtbi_long_changes, "cbcl_thought")
+lm_long_fit(mtbi_long_changes, "cbcl_attention")
+lm_long_fit(mtbi_long_changes, "cbcl_rulebreak")
+lm_long_fit(mtbi_long_changes, "cbcl_aggressive")
+lm_long_fit(mtbi_long_changes, "sds_sleep")
+```
+
+Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
+
+### Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
+
+### Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
+
+### Q4. Classifier built from baseline mTBI data: informative?
+
+```{r}
+names(all_long_dls)
+
+# Classifying data using baseline as well as longitudinal features
+long_mtbi_0_dls <- all_long_dls$"long_mtbi_0_dls"
+long_mtbi_l_dls <- all_long_dls$"long_mtbi_l_dls"
+long_mtbi_0_ols <- all_long_dls$"long_mtbi_0_ols"
+long_mtbi_l_ols <- all_long_dls$"long_mtbi_l_ols"
+
+base_uninj_l_dls <- all_long_dls$"base_uninj_l_dls"
+base_uninj_l_ols <- all_long_dls$"base_uninj_l_ols"
+
+dls_to_dfs <- function(dls) {
+    lapply(
+        seq_along(dls),
+        function(x) {
+            collapse_dl(dls[[x]])
+        }
+    )
+}
+
+long_mtbi_0_dfs <- dls_to_dfs(long_mtbi_0_dls)
+long_mtbi_l_dfs <- dls_to_dfs(long_mtbi_l_dls)
+base_uninj_l_dfs <- dls_to_dfs(base_uninj_l_dls)
+
+#reduce_to_gen_fts <- function(df_list) {
+#    df_list <- lapply(
+#        df_list,
+#        function(df) {
+#            df <- df |> dplyr::select(
+#                any_of(
+#                    colnames(
+#                        train_classification_df
+#                    )
+#                )
+#            )
+#            return(df)
+#        }
+#    )
+#    return(df_list)
+#}
+#
+#long_mtbi_0_gen_dfs <- reduce_to_gen_fts(long_mtbi_0_dfs)
+#long_mtbi_l_gen_dfs <- reduce_to_gen_fts(long_mtbi_l_dfs)
+#base_uninj_l_gen_dfs <- reduce_to_gen_fts(base_uninj_l_dfs)
+
+subtype_classifier <- readRDS(model_path("2024_11_12_subtype_classifier.rds"))
+
+# Just FYI
+prep_data <- function(df, standardize = FALSE) {
+    df <- dplyr::select(df, -"subjectkey")
+    df <- dummy_cols(
+        df,
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+    ordered_factors <- c(
+        "sex",
+        "household_income",
+        "pubertal_status_p",
+        "family_fight_p",
+        "family_outdo_p",
+        "helps_hurt_p",
+        "helpful_y",
+        "considerate_y",
+        "helps_hurt_y",
+        "family_criticize_p",
+        "family_outdo_y",
+        "family_angry_p",
+        "helpful_p",
+        "family_throw_p",
+        "family_hit_p",
+        "family_peaceful_y",
+        "family_throw_y",
+        "race_black",
+        "race_hispanic",
+        "race_other" 
+    )
+    df[ordered_factors] <- lapply(df[ordered_factors], as.ordered)
+    if (standardize) {
+        df[] <- lapply(df, as.numeric)
+        df <- as.data.frame(scale(df))
+    }
+    if ("cluster" %in% colnames(df)) {
+        df$"cluster" <- as.factor(df$"cluster")
+    }
+    return(df)
+}
+
+long_mtbi_0_pred_dfs <- lapply(
+    long_mtbi_0_dfs,
+    function(x) {
+        clean_df <- prep_data(x)
+        predictions <- predict(
+            subtype_classifier,
+            newdata = clean_df
+        )
+        x$"cluster" <- predictions
+        x
+    }
+)
+
+long_mtbi_l_pred_dfs <- lapply(
+    long_mtbi_l_dfs,
+    function(x) {
+        clean_df <- prep_data(x)
+        predictions <- predict(
+            subtype_classifier,
+            newdata = clean_df
+        )
+        x$"cluster" <- predictions
+        x
+    }
+)
+
+base_uninj_l_pred_dfs <- lapply(
+    base_uninj_l_dfs,
+    function(x) {
+        clean_df <- prep_data(x)
+        predictions <- predict(
+            subtype_classifier,
+            newdata = clean_df
+        )
+        x$"cluster" <- predictions
+        x
+    }
+)
+
+list.save(long_mtbi_0_pred_dfs, proc_path("long_mtbi_0_pred_dfs.rds", TRUE))
+list.save(long_mtbi_l_pred_dfs, proc_path("long_mtbi_l_pred_dfs.rds", TRUE))
+list.save(base_uninj_l_pred_dfs, proc_path("base_uninj_l_pred_dfs.rds", TRUE))
+
+long_mtbi_0_pred_dfs <- list.load(proc_path("2024_11_15_long_mtbi_0_pred_dfs.rds"))
+long_mtbi_l_pred_dfs <- list.load(proc_path("2024_11_15_long_mtbi_l_pred_dfs.rds"))
+base_uninj_l_pred_dfs <- list.load(proc_path("2024_11_15_base_uninj_l_pred_dfs.rds"))
+
+long_mtbi_0_i1_cluster_df <- long_mtbi_0_pred_dfs[[1]] |> 
+    dplyr::select(subjectkey, cluster)
+long_mtbi_l_i1_cluster_df <- long_mtbi_l_pred_dfs[[1]] |> 
+    dplyr::select(subjectkey, cluster)
+base_uninj_l_i1_cluster_df <- base_uninj_l_pred_dfs[[1]] |> 
+    dplyr::select(subjectkey, cluster)
+
+long_mtbi_0_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+
+long_mtbi_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+
+base_uninj_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+
+
+long_mtbi_0_plot_list <- auto_plot(
+    cluster_df = long_mtbi_0_i1_cluster_df,
+    data_list = long_mtbi_0_dls[[1]],
+    target_list = long_mtbi_0_ols[[1]]
+)
+long_mtbi_0_all_plots <- wrap_plots(plot_list)
+
+long_mtbi_l_plot_list <- auto_plot(
+    cluster_df = long_mtbi_l_i1_cluster_df,
+    data_list = long_mtbi_l_dls[[1]],
+    target_list = long_mtbi_l_ols[[1]]
+)
+long_mtbi_l_all_plots <- wrap_plots(plot_list)
+
+ggsave(
+    fig_path("long_mtbi_0_predicted_plots.png", TRUE),
+    long_mtbi_0_all_plots,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+
+ggsave(
+    fig_path("long_mtbi_l_predicted_plots.png", TRUE),
+    long_mtbi_l_all_plots,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+
+# Looks very similar!
+```
+

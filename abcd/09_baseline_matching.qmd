@@ -22,22 +22,23 @@ input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+model_path <- path_maker(here(paste0("data/abcd/results/models")))
 
-mtbi_subjects <- read_csv(sub_path("2024_09_13_mtbi_subjects.csv"))
-uninjured_subjects <- read_csv(sub_path("2024_09_13_uninjured_subjects.csv"))
+mtbi_subs <- read_subjects(sub_path("2024_10_29_mtbi_subs.csv"))
+uninj_subs <- read_subjects(sub_path("2024_10_29_uninj_subs.csv"))
 ```
 
 ## Importing data
 
 ```{r}
-all_dls <- list.load(input_path("2024_09_13_all_dls.rds"))
+all_dls <- list.load(input_path("2024_10_29_all_dls.rds"))
 
-# Aye, this requires the validation set solution too...
-mtbi_full_data_list_1 <- list.load(input_path("2024_09_13_mtbi_full_data_list_1.rds"))
-mtbi_full_oom_list_1 <- list.load(input_path("2024_09_13_mtbi_full_oom_list_1.rds"))
+mtbi_full_data_list_1 <- list.load(input_path("2024_11_04_mtbi_full_data_list_1.rds"))
+mtbi_full_oom_list_1 <- list.load(input_path("2024_11_04_mtbi_full_oom_list_1.rds"))
 
-mtbi_full_top_3c <- read_csv(proc_path("2024_09_13_mtbi_full_top_3c.csv"))
+mtbi_full_top_3c <- read_csv(proc_path("2024_11_07_mtbi_full_top_3c.csv"))
 
+###############################################################################
 uninj_dl_s1 <- all_dls$"uninj_data_lists"$"imp_1"
 uninj_dl_p1 <- all_dls$"uninj_pooled_data_lists"$"imp_1"
 uninj_ol_s1 <- all_dls$"uninj_oom_lists"$"imp_1"
@@ -66,7 +67,103 @@ mtbi_matching_df <- dplyr::select(
 
 matching_df_s1 <- rbind(mtbi_matching_df, uninj_matching_df_s1)
 matching_df_p1 <- rbind(mtbi_matching_df, uninj_matching_df_p1)
+```
 
+## How does the classifier do?
+
+```{r}
+subtype_classifier <- readRDS(model_path("2024_11_12_subtype_classifier.rds"))
+
+# Just FYI
+prep_data <- function(df, standardize = FALSE) {
+    df <- dplyr::select(df, -"subjectkey")
+    df <- dummy_cols(
+        df,
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+    ordered_factors <- c(
+        "sex",
+        "household_income",
+        "pubertal_status_p",
+        "family_fight_p",
+        "family_outdo_p",
+        "helps_hurt_p",
+        "helpful_y",
+        "considerate_y",
+        "helps_hurt_y",
+        "family_criticize_p",
+        "family_outdo_y",
+        "family_angry_p",
+        "helpful_p",
+        "family_throw_p",
+        "family_hit_p",
+        "family_peaceful_y",
+        "family_throw_y",
+        "race_black",
+        "race_hispanic",
+        "race_other" 
+    )
+    df[ordered_factors] <- lapply(df[ordered_factors], as.ordered)
+    if (standardize) {
+        df[] <- lapply(df, as.numeric)
+        df <- as.data.frame(scale(df))
+    }
+    if ("cluster" %in% colnames(df)) {
+        df$"cluster" <- as.factor(df$"cluster")
+    }
+    return(df)
+}
+
+#mini_df <- uninj_matching_df_s1[1:200, ]
+
+library(randomForest)
+library(fastDummies)
+
+uninj_pred_df_s1 <- uninj_matching_df_s1 |> 
+    dplyr::mutate(
+        cluster = predict(
+            subtype_classifier,
+            newdata = prep_data(uninj_matching_df_s1)
+        )
+    )
+
+uninj_pred_df_s1$cluster |> table() |> prop.table()
+
+
+uninj_pred_cluster_df <- uninj_pred_df_s1 |> dplyr::select(subjectkey, cluster)
+
+uninj_pred_plot_list <- auto_plot(
+    cluster_df = uninj_pred_cluster_df,
+    data_list = uninj_dl_s1,
+    target_list = uninj_ol_s1 
+)
+
+uninj_pred_all_plots <- wrap_plots(uninj_pred_plot_list)
+
+ggsave(
+    fig_path("uninj_pred_all_plots.png", TRUE),
+    uninj_pred_all_plots,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
+
+uninj_pred_cluster_df$"cluster" |> table() |> prop.table()
+
+get_cluster_df(mtbi_full_top_3c)$"cluster" |> table() |> prop.table()
+
+rbind(
+    uninj_pred_cluster_df$"cluster" |> table(),
+    get_cluster_df(mtbi_full_top_3c)$"cluster" |> table()
+) |> chisq.test()
+
+```
+
+
+
+```{r}
 # Total parent psych
 matching_df_s1$"total_parent_psych" <- matching_df_s1 |> dplyr::select(dplyr::starts_with("parent")) |> rowSums()
 matching_df_p1$"total_parent_psych" <- matching_df_p1 |> dplyr::select(dplyr::starts_with("parent")) |> rowSums()
@@ -117,6 +214,15 @@ matching_summary_d_p1 <- capture.output(print(summary(matching_results_d_p1)))
 matched_data_d_s1 <- match.data(matching_results_d_s1)
 matched_data_d_p1 <- match.data(matching_results_d_p1)
 
+saveRDS(matching_results_a_s1, proc_path("matching_results_a_s1.rds", TRUE))
+saveRDS(matching_results_a_p1, proc_path("matching_results_a_p1.rds", TRUE))
+saveRDS(matching_results_b_s1, proc_path("matching_results_b_s1.rds", TRUE))
+saveRDS(matching_results_b_p1, proc_path("matching_results_b_p1.rds", TRUE))
+saveRDS(matching_results_c_s1, proc_path("matching_results_c_s1.rds", TRUE))
+saveRDS(matching_results_c_p1, proc_path("matching_results_c_p1.rds", TRUE))
+saveRDS(matching_results_d_s1, proc_path("matching_results_d_s1.rds", TRUE))
+saveRDS(matching_results_d_p1, proc_path("matching_results_d_p1.rds", TRUE))
+
 saveRDS(matching_summary_a_s1, proc_path("matching_summary_a_s1.rds", TRUE))
 saveRDS(matching_summary_a_p1, proc_path("matching_summary_a_p1.rds", TRUE))
 saveRDS(matching_summary_b_s1, proc_path("matching_summary_b_s1.rds", TRUE))
@@ -128,27 +234,65 @@ saveRDS(matching_summary_d_p1, proc_path("matching_summary_d_p1.rds", TRUE))
 ```
 
 ```{r}
-## CHECKPOINT
-#matching_summary_1_imp_1 <- readRDS(proc_path("2024_09_13_matching_summary_1_imp_1.rds"))
-#matching_summary_2_imp_1 <- readRDS(proc_path("2024_09_13_matching_summary_2_imp_1.rds"))
-#matching_summary_3_imp_1 <- readRDS(proc_path("2024_09_13_matching_summary_3_imp_1.rds"))
-#matching_summary_4_imp_1 <- readRDS(proc_path("2024_09_13_matching_summary_4_imp_1.rds"))
+# CHECKPOINT
+matching_summary_a_s1 <- readRDS(proc_path("2024_11_14_matching_summary_a_s1.rds"))
+matching_summary_a_p1 <- readRDS(proc_path("2024_11_14_matching_summary_a_p1.rds"))
+matching_summary_b_s1 <- readRDS(proc_path("2024_11_14_matching_summary_b_s1.rds"))
+matching_summary_b_p1 <- readRDS(proc_path("2024_11_14_matching_summary_b_p1.rds"))
+matching_summary_c_s1 <- readRDS(proc_path("2024_11_14_matching_summary_c_s1.rds"))
+matching_summary_c_p1 <- readRDS(proc_path("2024_11_14_matching_summary_c_p1.rds"))
+matching_summary_d_s1 <- readRDS(proc_path("2024_11_14_matching_summary_d_s1.rds"))
+matching_summary_d_p1 <- readRDS(proc_path("2024_11_14_matching_summary_d_p1.rds"))
+```
 
-#grDevices::png(filename = fig_path("matching_results_1_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
-#plot(matching_results_1_imp_1, type = "density", interactive = FALSE)
-#grDevices::dev.off()
-#
-#grDevices::png(filename = fig_path("matching_results_2_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
-#plot(matching_results_2_imp_1, type = "density", interactive = FALSE)
-#grDevices::dev.off()
-#
-#grDevices::png(filename = fig_path("matching_results_3_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
-#plot(matching_results_3_imp_1, type = "density", interactive = FALSE)
-#grDevices::dev.off()
-#
-#grDevices::png(filename = fig_path("matching_results_4_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
-#plot(matching_results_4_imp_1, type = "density", interactive = FALSE)
-#grDevices::dev.off()
+```{r}
+matching_results_a_s1 <- readRDS(proc_path("2024_11_14_matching_results_a_s1.rds"))
+matching_results_a_p1 <- readRDS(proc_path("2024_11_14_matching_results_a_p1.rds"))
+matching_results_b_s1 <- readRDS(proc_path("2024_11_14_matching_results_b_s1.rds"))
+matching_results_b_p1 <- readRDS(proc_path("2024_11_14_matching_results_b_p1.rds"))
+matching_results_c_s1 <- readRDS(proc_path("2024_11_14_matching_results_c_s1.rds"))
+matching_results_c_p1 <- readRDS(proc_path("2024_11_14_matching_results_c_p1.rds"))
+matching_results_d_s1 <- readRDS(proc_path("2024_11_14_matching_results_d_s1.rds"))
+matching_results_d_p1 <- readRDS(proc_path("2024_11_14_matching_results_d_p1.rds"))
+
+save_matching_plot <- function(matching_results, name) {
+    grDevices::png(filename = name, width = 1000, height = 500, res = 100)
+    plot(matching_results, type = "density", interactive = FALSE)
+    grDevices::dev.off()
+}
+
+save_matching_plot(matching_results_a_s1, fig_path("matching_results_a_s1.png", TRUE))
+
+# black line is mTBI, gray line is uninjured
+plot(matching_results_a_s1, type = "density", interactive = FALSE)
+
+matching_summary_a_p1 <- readRDS(proc_path("2024_11_14_matching_summary_a_p1.rds"))
+matching_summary_b_s1 <- readRDS(proc_path("2024_11_14_matching_summary_b_s1.rds"))
+matching_summary_b_p1 <- readRDS(proc_path("2024_11_14_matching_summary_b_p1.rds"))
+matching_summary_c_s1 <- readRDS(proc_path("2024_11_14_matching_summary_c_s1.rds"))
+matching_summary_c_p1 <- readRDS(proc_path("2024_11_14_matching_summary_c_p1.rds"))
+matching_summary_d_s1 <- readRDS(proc_path("2024_11_14_matching_summary_d_s1.rds"))
+matching_summary_d_p1 <- readRDS(proc_path("2024_11_14_matching_summary_d_p1.rds"))
+
+matching_summary_d_p1
+
+plot(matching_summary_d_p1)
+
+grDevices::png(filename = fig_path("matching_results_1_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
+plot(matching_results_1_imp_1, type = "density", interactive = FALSE)
+grDevices::dev.off()
+
+grDevices::png(filename = fig_path("matching_results_2_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
+plot(matching_results_2_imp_1, type = "density", interactive = FALSE)
+grDevices::dev.off()
+
+grDevices::png(filename = fig_path("matching_results_3_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
+plot(matching_results_3_imp_1, type = "density", interactive = FALSE)
+grDevices::dev.off()
+
+grDevices::png(filename = fig_path("matching_results_4_imp_1.png", TRUE), width = 1000, height = 500, res = 100)
+plot(matching_results_4_imp_1, type = "density", interactive = FALSE)
+grDevices::dev.off()
 ```
 
 ```{r}

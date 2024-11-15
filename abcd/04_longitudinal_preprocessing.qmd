@@ -1,35 +1,14 @@
 # Imputation, QCing, and CBCL thresholding
 
-Because the longitudinal data is in some sense a validation analysis, I keep the imputation separate from the baseline data.
+To keep things simple, I keep the longitudinal imputation separate from the baseline imputation.
+In some ways, the longitudinal analyses are validating steps to the clustering.
+That provides some further rationale for keeping them separate.
 
+Questions I'm trying to answer with the longitudinal data:
 
-Recall the questions I'm trying to ask with the longitudinal data:
-
-1. Was the baseline clustering informative for long-term outcomes? (Probably want to keep these information sources separate)
-- don't use the baseline data to help out
-
-2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
-
-3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
-
-4. Classifier built from baseline mTBI data: informative?
-
-Now, note that this is a longitudinal (and hence multilevel) imputation that will happen.
-I am following notes from https://stefvanbuuren.name/fimd/sec-missmult.html.
-
-We have:
-    - outcome variable: SDS/CBCL
-    - the level-1 predictors: All the input variables
-    - the level-2 predictors: Timepoint (0 missingness here!)
-    - the class variable: subjectkey (0 missngness here!)
-
-Again, we'll probably need at least the two imputation schemes:
-    - the pooled imputation, which uses the most information but ignores the mtbi data
-    - the solo imputations, which use less information but doesn't ignore the mtbi data
-
-And I may as well throw in some of the previously imputed data to help stabilize things.
-
-Actually, I don't really want that info to bias things.
+1. Was the baseline clustering informative for long-term outcomes?
+2. Do matched uninjured subjects to the mTBI group experience more mTBIs by T2 than the other uninjured subjects?
+3. Is the clustering of the longitudinal sample using their baseline (pre-injury) equally informative as using their longitudinal (post-injury) data?
 
 ## Loading in data
 
@@ -41,8 +20,6 @@ library(metasnf)
 library(mice)
 library(rlist)
 library(visdat)
-
-#source("abcd/helper_functions.R")
 
 # The path_maker function helps with managing and date stamping long paths. The
 # functions are just used here to help with reading and writing data. See
@@ -106,7 +83,6 @@ p_fam_fn_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_fam_fn_long_mtbi_0.csv
 p_parent_psych_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_parent_psych_long_mtbi_0.csv"))
 cbcl_long_mtbi_0 <- read_csv(input_path("2024_11_06_cbcl_long_mtbi_0.csv"))
 sds_long_mtbi_0 <- read_csv(input_path("2024_11_06_sds_long_mtbi_0.csv"))
-
 
 # LONG MTBI L
 as_mem_daze_long_mtbi_l <- read_csv(input_path("2024_11_06_as_mem_daze_long_mtbi_l.csv"))
@@ -230,7 +206,6 @@ smri_pc_base_uninj_l <- qc_smri(mri_y_qc_raw_smr_t1, t = 2, subjects = base_unin
 lapply(smri_pc_base_uninj_l, length) |> unlist()
 smri_base_uninj_l_pass <- intersect(smri_qc_base_uninj_l$"pass", smri_pc_base_uninj_l$"pass")
 length(smri_base_uninj_l_pass)
-
 
 # dMRI
 dmri_qc_long_mtbi_0 <- qc_dmri(mri_y_qc_raw_dmr, t = 0, subjects = long_mtbi_subs, metric = "qc")
@@ -857,7 +832,6 @@ base_uninj_l_pi <- list.load(input_path("2024_11_06_base_uninj_l_pi.rds"))
 ## Constructing data_lists
 
 ```{r}
-
 long_mtbi_0_dls <- build_dls(long_mtbi_0_pi)
 long_mtbi_l_dls <- build_dls(long_mtbi_l_pi)
 base_mtbi_l_dls <- build_dls(base_mtbi_l_pi)
@@ -946,262 +920,7 @@ name_changes <- c(
     "weekday_screentime" = "screentime_wkday_hrs"
 )
 
-all_dls[[1]][[1]] |> collapse_dl() |> colnames()
-
-all_dls <- all_dls |>
-    lapply(
-        function(data_lists_of_group) {
-            lapply(
-                data_lists_of_group,
-                function(data_list) {
-                    data_list <- rename_dl(data_list, name_changes)
-                }
-            )
-        }
-    )
-
-list.save(all_dls, input_path("all_dls.rds", TRUE))
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-five_imputed_mtbi_l0 <- read("2024_06_18_five_imputed_mtbi_l0.csv")
-five_imputed_mtbi_l2 <- read("2024_06_18_five_imputed_mtbi_l2.csv")
-five_imputed_uninj_l0 <- read("2024_06_18_five_imputed_uninj_l0.csv")
-five_imputed_uninj_l2 <- read("2024_06_18_five_imputed_uninj_l2.csv")
-```
-
-Formatting the imputed data:
-
-```{r}
-five_imputed_mtbi_l0$"subjectkey" <- rep(mtbi_l0_df$"subjectkey", 6)
-five_imputed_mtbi_l2$"subjectkey" <- rep(mtbi_l2_df$"subjectkey", 6)
-five_imputed_uninj_l0$"subjectkey" <- rep(uninj_l0_df$"subjectkey", 6)
-five_imputed_uninj_l2$"subjectkey" <- rep(uninj_l2_df$"subjectkey", 6)
-
-write_csv(
-    five_imputed_mtbi_l0, input_path("five_imputed_mtbi_l0_named.csv", TRUE)
-)
-write_csv(
-    five_imputed_mtbi_l2, input_path("five_imputed_mtbi_l2_named.csv", TRUE)
-)
-write_csv(
-    five_imputed_uninj_l0, input_path("five_imputed_uninj_l0_named.csv", TRUE)
-)
-write_csv(
-    five_imputed_uninj_l2, input_path("five_imputed_uninj_l2_named.csv", TRUE)
-)
-```
-
-```{r}
-five_imputed_mtbi_l0 <- read("2024_06_18_five_imputed_mtbi_l0_named.csv")
-five_imputed_mtbi_l2 <- read("2024_06_18_five_imputed_mtbi_l2_named.csv")
-five_imputed_uninj_l0 <- read("2024_06_18_five_imputed_uninj_l0_named.csv")
-five_imputed_uninj_l2 <- read("2024_06_18_five_imputed_uninj_l2_named.csv")
-```
-
-# mTBI subsetting
-
-```{r}
-mtbi_l0_parsed_imps <- parse_imputations(
-    mtbi_l0_dfs,
-    five_imputed_mtbi_l0,
-    6
-)
-
-mtbi_l2_dfs_no_zv <- mtbi_l2_dfs
-mtbi_l2_dfs_no_zv$"p_sports_mtbi_l2" <- NULL
-mtbi_l2_dfs_no_zv$"d_pubertal_status_mtbi_l2" <- NULL
-
-mtbi_l2_parsed_imps <- parse_imputations(
-    mtbi_l2_dfs_no_zv,
-    five_imputed_mtbi_l2,
-    6
-)
-
-uninj_l0_parsed_imps <- parse_imputations(
-    uninj_l0_dfs,
-    five_imputed_uninj_l0,
-    6
-)
-
-uninj_l2_dfs_no_zv <- uninj_l2_dfs
-uninj_l2_dfs_no_zv$"p_sports_uninj_l2" <- NULL
-uninj_l2_dfs_no_zv$"d_pubertal_status_uninj_l2" <- NULL
-
-uninj_l2_parsed_imps <- parse_imputations(
-    uninj_l2_dfs_no_zv,
-    five_imputed_uninj_l2,
-    6
-)
-
-list.save(
-    mtbi_l0_parsed_imps,
-    input_path("mtbi_l0_parsed_imps.rds", TRUE)
-)
-list.save(
-    mtbi_l2_parsed_imps,
-    input_path("mtbi_l2_parsed_imps.rds", TRUE)
-)
-list.save(
-    uninj_l0_parsed_imps,
-    input_path("uninj_l0_parsed_imps.rds", TRUE)
-)
-list.save(
-    uninj_l2_parsed_imps,
-    input_path("uninj_l2_parsed_imps.rds", TRUE)
-)
-```
-
-
-Re-reading:
-
-
-## Importing imputed data
-
-```{r}
-mtbi_l0_parsed_imps <- list.load(
-    input_path("2024_06_18_mtbi_l0_parsed_imps.rds")
-)
-mtbi_l2_parsed_imps <- list.load(
-    input_path("2024_06_18_mtbi_l2_parsed_imps.rds")
-)
-uninj_l0_parsed_imps <- list.load(
-    input_path("2024_06_18_uninj_l0_parsed_imps.rds")
-)
-uninj_l2_parsed_imps <- list.load(
-    input_path("2024_06_18_uninj_l2_parsed_imps.rds")
-)
-```
-
-## Constructing data_lists
-
-* m = mTBI
-* u = uninjured
-* p = pooled
-* 0 = original (unimputed)
-* 1-5 = imputed dataset number
-
-```{r}
-mtbi_l0_data_lists <- build_dls(mtbi_l0_parsed_imps)
-mtbi_l0_oom_lists <- build_ols(mtbi_l0_parsed_imps)
-mtbi_l2_data_lists <- build_dls(mtbi_l2_parsed_imps)
-mtbi_l2_oom_lists <- build_ols(mtbi_l2_parsed_imps)
-uninj_l0_data_lists <- build_dls(uninj_l0_parsed_imps)
-uninj_l0_oom_lists <- build_ols(uninj_l0_parsed_imps)
-uninj_l2_data_lists <- build_dls(uninj_l2_parsed_imps)
-uninj_l2_oom_lists <- build_ols(uninj_l2_parsed_imps)
-
-all_dls <- list(
-    "mtbi_l0_data_lists" = mtbi_l0_data_lists,
-    "mtbi_l0_oom_lists" = mtbi_l0_oom_lists,
-    "mtbi_l2_data_lists" = mtbi_l2_data_lists,
-    "mtbi_l2_oom_lists" = mtbi_l2_oom_lists,
-    "uninj_l0_data_lists" = uninj_l0_data_lists,
-    "uninj_l0_oom_lists" = uninj_l0_oom_lists,
-    "uninj_l2_data_lists" = uninj_l2_data_lists,
-    "uninj_l2_oom_lists" = uninj_l2_oom_lists
-)
-
-lapply(
-    all_dls,
-    function(x) {
-        lapply(
-            x,
-            function(y) {
-                unique(summarize_dl(y)$"length")
-            }
-        ) |> unlist() |> unique()
-    }
-) |> unlist() |> unique()
-
-```
-
-## Renaming the initial data
-
-```{r}
-name_changes <- c(
-    "mtbi_mechanism" = "latest_mtbi_mechanism",
-    "mtbi_mem_daze" = "latest_mtbi_mem_daze",
-    "mtbi_loc" = "latest_mtbi_loc",
-    "mtbi_age" = "latest_mtbi_age",
-    "age" = "interview_age",
-    "parent_thought" = "asr_scr_thought_t",
-    "parent_aggressive" = "asr_scr_aggressive_t",
-    "parent_antisocial" = "asr_scr_antisocial_t",
-    "parent_hyperactive" = "asr_scr_hyperactive_t",
-    "parent_attention" = "asr_scr_attention_t",
-    "parent_anxdep" = "asr_scr_anxdep_t",
-    "parent_depress" = "asr_scr_depress_t",
-    "parent_withdrawn" = "asr_scr_withdrawn_t",
-    "parent_avoidant" = "asr_scr_avoidant_t",
-    "parent_anxdisord" = "asr_scr_anxdisord_t",
-    "parent_somatic" = "asr_scr_somatic_t",
-    "parent_intrusive" = "asr_scr_intrusive_t",
-    "parent_perstr" = "asr_scr_perstr_t",
-    "sds_sleep" = "sds_p_ss_total",
-    "cbcl_somatic" = "cbcl_scr_syn_somatic_t",
-    "cbcl_social" = "cbcl_scr_syn_social_t",
-    "cbcl_anxdep" = "cbcl_scr_syn_anxdep_t",
-    "cbcl_thought" = "cbcl_scr_syn_thought_t",
-    "cbcl_attention" = "cbcl_scr_syn_attention_t",
-    "cbcl_withdep" = "cbcl_scr_syn_withdep_t",
-    "cbcl_aggressive" = "cbcl_scr_syn_aggressive_t",
-    "cbcl_rulebreak" = "cbcl_scr_syn_rulebreak_t",
-    "family_fight" = "q1_fight",
-    "family_angry" = "q2_angry",
-    "family_throw" = "q3_throw",
-    "family_temper" = "q4_temper",
-    "family_criticize" = "q5_criticize",
-    "family_hit" = "q6_hit",
-    "family_peaceful" = "q7_peaceful",
-    "family_outdo" = "q8_outdo",
-    "family_yell" = "q9_yell",
-    "prosocial_considerate" = "q1",
-    "prosocial_helps_hurt" = "q2",
-    "prosocial_helpful" = "q3",
-    "headache_history" = "headache",
-    "previous_mtbis" = "mtbi_count",
-    "brain_volume" = "smri_vol_scs_wholeb",
-    "cortical_thickness" = "smri_thick_cdk_mean",
-    "cortical_sa" = "smri_area_cdk_total",
-    "major_wm_ndi" = "dmri_rsirnd_fib_allfib",
-    "pericortical_wm_ndi" = "dmri_rsirndwm_cdk_mean",
-    "fmri_cort_cors" = "avg_gord_cor",
-    "fmri_cort_subcort_cors" = "avg_subc_cor",
-    "same_sex_friend" = "ss_friend",
-    "opp_sex_friend" = "os_friend",
-    "same_sex_close_friend" = "ss_close_friend",
-    "opp_sex_close_friend" = "os_close_friend",
-    "weekend_screentime" = "screentime_wknd_hrs",
-    "weekday_screentime" = "screentime_wkday_hrs",
-    "school_programs" = "organized_school_activities",
-    "non_school_programs" = "organized_outside_activities",
-    "private_instruction" = "private_instruction_activities",
-    "programs_this_year" = "p12_activities",
-    "exercise_time" = "physical_activity"
-)
+all_long_dls[[1]][[1]] |> collapse_dl() |> colnames()
 
 all_long_dls <- all_long_dls |>
     lapply(
@@ -1216,6 +935,4 @@ all_long_dls <- all_long_dls |>
     )
 
 list.save(all_long_dls, input_path("all_long_dls.rds", TRUE))
-
-all_long_dls <- list.load(input_path("2024_11_06_all_long_dls.rds"))
 ```
