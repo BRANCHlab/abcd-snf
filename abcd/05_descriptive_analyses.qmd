@@ -13,11 +13,14 @@ library(fastDummies)
 library(patchwork)
 library(visdat)
 library(mice)
+library(circlize)
+library(ComplexHeatmap)
 
 core_path <- path_maker(here(paste0("data/abcd/core")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
 long_mtbi_subs <- read_subjects(sub_path("2024_11_04_mtbi_subjects_0_to_2.csv"))
 long_uninj_subs <- read_subjects(sub_path("2024_11_04_uninjured_subjects_0_to_2.csv"))
@@ -33,7 +36,9 @@ mtbi_train_df <- read_csv(proc_path("2024_11_15_mtbi_train_df.csv"))
 mtbi_test_df <- read_csv(proc_path("2024_11_15_mtbi_test_df.csv"))
 mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
 uninj_df <- read_csv(proc_path("2024_11_15_uninj_df.csv"))
+```
 
+```{r}
 # Baseline-related pre-QC neuroimaging data
 sm_subc_v_mtbi <- read("2024_10_29_sm_subc_v_mtbi.csv")
 sm_cort_t_mtbi <- read("2024_10_29_sm_cort_t_mtbi.csv")
@@ -279,6 +284,8 @@ flag_missing <- function(df) {
 }
 ```
 
+## MAR/MCAR check
+
 ```{r}
 mtbi_df$"group" <- "base_mtbi"
 mtbi_df$"t" <- 0
@@ -354,22 +361,146 @@ pre_imputation_df <- read_csv(proc_path("2024_11_15_pre_imputation_df.csv"))
 
 
 ```{r}
-missing_corrs <- pre_imputation_df |>
+
+saiq_cols <- c("school_activities", "extracurriculars", "private_instruction", "activities_last_year")
+
+mtbi_train_df |> dplyr::select(all_of(saiq_cols))
+
+missing_mat <- pre_imputation_df |>
     dplyr::select(-subjectkey, -group, -t) |>
-    cor(use = "pairwise.complete.obs")
+    cor(use = "pairwise.complete.obs") |>
+    as.matrix()
 
-missing_corrs_mat <- as.matrix(missing_corrs)
+missing_indicator_cols <- grepl("X_", colnames(missing_mat))
 
-miss_col <- grepl("X_", colnames(missing_corrs_mat))
+# For checking MCAR vs. MAR
+missing_cor_mat_1 <- missing_mat[missing_indicator_cols, !missing_indicator_cols]
 
-missing_correlation_matrix <- missing_corrs_mat[miss_col, !miss_col]
+# For checking patterns of missingness
+missing_cor_mat_2 <- missing_mat[missing_indicator_cols, missing_indicator_cols]
 
-missing_correlation_matrix2 <- missing_corrs_mat[miss_col, miss_col]
+x_map <- matrix(
+    c(
+        "X_s_qc", "N (QC)",
+        "X_d_qc", "N (QC)",
+        "X_r_qc", "N (QC)",
+        "X_latest_mtbi_mem_daze", "AS",
+        "X_latest_mtbi_loc", "AS",
+        "X_interview_age", "D",
+        "X_latest_mtbi_age", "AS",
+        "X_sex", "D",
+        "X_household_income", "D",
+        "X_pubertal_status_p", "D",
+        "X_pubertal_status_y", "D",
+        "X_headache", "MH",
+        "X_mtbi_count", "MH",
+        "X_smri_vol_scs_wholeb", "N",
+        "X_smri_thick_cdk_mean", "N",
+        "X_smri_area_cdk_total", "N",
+        "X_dmri_rsirnd_fib_allfib", "N",
+        "X_dmri_rsirndwm_cdk_mean", "N",
+        "X_avg_gord_cor", "N",
+        "X_avg_subc_cor", "N",
+        "X_ss_friend", "P",
+        "X_os_friend", "P",
+        "X_ss_close_friend", "P",
+        "X_os_close_friend", "P",
+        "X_screentime_wknd_hrs", "P",
+        "X_screentime_wkday_hrs", "P",
+        "X_physical_activity", "P",
+        "X_considerate_y", "P",
+        "X_helps_hurt_y", "P",
+        "X_helpful_y", "P",
+        "X_considerate_p", "P",
+        "X_helps_hurt_p", "P",
+        "X_helpful_p", "P",
+        "X_q1_fight_y", "P (FE)",
+        "X_q2_angry_y", "P (FE)",
+        "X_q3_throw_y", "P (FE)",
+        "X_q4_temper_y", "P (FE)",
+        "X_q5_criticize_y", "P (FE)",
+        "X_q6_hit_y", "P (FE)",
+        "X_q7_peaceful_y", "P (FE)",
+        "X_q8_outdo_y", "P (FE)",
+        "X_q9_yell_y", "P (FE)",
+        "X_q1_fight_p", "P (FE)",
+        "X_q2_angry_p", "P (FE)",
+        "X_q3_throw_p", "P (FE)",
+        "X_q4_temper_p", "P (FE)",
+        "X_q5_criticize_p", "P (FE)",
+        "X_q6_hit_p", "P (FE)",
+        "X_q7_peaceful_p", "P (FE)",
+        "X_q8_outdo_p", "P (FE)",
+        "X_q9_yell_p", "P (FE)",
+        "X_asr_scr_perstr_r", "P (ASR)",
+        "X_asr_scr_anxdep_r", "P (ASR)",
+        "X_asr_scr_withdrawn_r", "P (ASR)",
+        "X_asr_scr_somatic_r", "P (ASR)",
+        "X_asr_scr_thought_r", "P (ASR)",
+        "X_asr_scr_attention_r", "P (ASR)",
+        "X_asr_scr_aggressive_r", "P (ASR)",
+        "X_asr_scr_intrusive_r", "P (ASR)",
+        "X_asr_scr_depress_r", "P (ASR)",
+        "X_asr_scr_anxdisord_r", "P (ASR)",
+        "X_asr_scr_avoidant_r", "P (ASR)",
+        "X_asr_scr_antisocial_r", "P (ASR)",
+        "X_asr_scr_hyperactive_r", "P (ASR)",
+        "X_cbcl_scr_syn_anxdep_r", "B",
+        "X_cbcl_scr_syn_withdep_r", "B",
+        "X_cbcl_scr_syn_somatic_r", "B",
+        "X_cbcl_scr_syn_social_r", "B",
+        "X_cbcl_scr_syn_thought_r", "B",
+        "X_cbcl_scr_syn_attention_r", "B",
+        "X_cbcl_scr_syn_rulebreak_r", "B",
+        "X_cbcl_scr_syn_aggressive_r", "B",
+        "X_sds_p_ss_total", "B (SDS)",
+        "X_latest_mtbi_mechanism_fall_hit", "AS",
+        "X_latest_mtbi_mechanism_multi", "AS",
+        "X_latest_mtbi_mechanism_other_loc", "AS",
+        "X_latest_mtbi_mechanism_vehicle", "AS",
+        "X_latest_mtbi_mechanism_violent", "AS",
+        "X_race_black", "D",
+        "X_race_hispanic", "D",
+        "X_race_other", "D"
+    ),
+    ncol = 2,
+    byrow = TRUE
+)
+
 
 # Here i am! - Interesting missingness plots
-ComplexHeatmap::Heatmap(missing_correlation_matrix)
+ComplexHeatmap::Heatmap(
+    missing_cor_mat_1,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE
+)
 
-ComplexHeatmap::Heatmap(missing_correlation_matrix2)
+nrow(missing_cor_mat_1)
+
+ncol(missing_cor_mat_1)
+
+z <- paste0("X_", colnames(missing_cor_mat_1)) %in% x_map[, 1]
+
+ncol(missing_cor_mat_2)
+
+ncol(missing_cor_mat_2)
+
+for (i in colnames(missing_cor_mat_2)) {
+    print(i)
+}
+
+ComplexHeatmap::Heatmap(
+    missing_cor_mat_2,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    col = circlize::colorRamp2(
+        c(-1, 0, 1),
+        c("blue", "white", "red")
+    ),
+    column_split = x_map[, 2]
+)
+
+ComplexHeatmap::Heatmap(missing_cor_mat_2)
 
 # Also need to do actual correlation structure plots across the imputations
 

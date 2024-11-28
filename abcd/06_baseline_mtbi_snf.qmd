@@ -28,10 +28,10 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subs <- read_csv(sub_path("2024_10_29_mtbi_subs.csv"))
-mtbi_train_subs <- read_csv(sub_path("2024_10_29_mtbi_train_subs.csv"))
-mtbi_test_subs <- read_csv(sub_path("2024_10_29_mtbi_test_subs.csv"))
-uninj_subs <- read_csv(sub_path("2024_10_29_uninj_subs.csv"))
+mtbi_subs <- read_csv(sub_path("2024_11_18_mtbi_subs.csv"))
+mtbi_train_subs <- read_csv(sub_path("2024_11_18_mtbi_train_subs.csv"))
+mtbi_test_subs <- read_csv(sub_path("2024_11_18_mtbi_test_subs.csv"))
+unij_subs <- read_csv(sub_path("2024_11_18_unij_subs.csv"))
 ```
 
 
@@ -40,7 +40,7 @@ uninj_subs <- read_csv(sub_path("2024_10_29_uninj_subs.csv"))
 
 ```{r}
 # CHECKPOINT
-all_dls <- list.load(input_path("2024_10_29_all_dls.rds"))
+all_dls <- list.load(input_path("2024_11_18_all_dls.rds"))
 ```
 
 ## Generating custom distance measures
@@ -83,12 +83,10 @@ write_csv(mtbi_settings_matrix, proc_path("mtbi_settings_matrix.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_settings_matrix <- read_csv(proc_path("2024_10_29_mtbi_settings_matrix.csv"))
+mtbi_settings_matrix <- read_csv(proc_path("2024_11_25_mtbi_settings_matrix.csv"))
 ```
 
-
 ## Running SNF for each of the imputations
-
 
 ```{r}
 mtbi_solutions_matrix_s1 <- batch_snf(
@@ -173,16 +171,16 @@ write_csv(mtbi_solutions_matrix_p5, proc_path("mtbi_solutions_matrix_p5.csv", TR
 ```
 
 ```{r}
-mtbi_solutions_matrix_s1 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s1.csv"))
-mtbi_solutions_matrix_s2 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s2.csv"))
-mtbi_solutions_matrix_s3 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s3.csv"))
-mtbi_solutions_matrix_s4 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s4.csv"))
-mtbi_solutions_matrix_s5 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_s5.csv"))
-mtbi_solutions_matrix_p1 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p1.csv"))
-mtbi_solutions_matrix_p2 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p2.csv"))
-mtbi_solutions_matrix_p3 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p3.csv"))
-mtbi_solutions_matrix_p4 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p4.csv"))
-mtbi_solutions_matrix_p5 <- read_csv(proc_path("2024_10_29_mtbi_solutions_matrix_p5.csv"))
+mtbi_solutions_matrix_s1 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_s1.csv"))
+mtbi_solutions_matrix_s2 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_s2.csv"))
+mtbi_solutions_matrix_s3 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_s3.csv"))
+mtbi_solutions_matrix_s4 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_s4.csv"))
+mtbi_solutions_matrix_s5 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_s5.csv"))
+mtbi_solutions_matrix_p1 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_p1.csv"))
+mtbi_solutions_matrix_p2 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_p2.csv"))
+mtbi_solutions_matrix_p3 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_p3.csv"))
+mtbi_solutions_matrix_p4 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_p4.csv"))
+mtbi_solutions_matrix_p5 <- read_csv(proc_path("2024_11_25_mtbi_solutions_matrix_p5.csv"))
 
 mtbi_sm <- do.call(
     "rbind",
@@ -214,9 +212,9 @@ write_csv(data.frame(mtbi_ari_order), proc_path("mtbi_ari_order.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_sm <- read_csv(proc_path("2024_10_29_mtbi_sm.csv"))
-mtbi_ari <- as.matrix(read_csv(proc_path("2024_10_29_mtbi_ari.csv")))
-mtbi_ari_order <- unlist(read_csv(proc_path("2024_10_29_mtbi_ari_order.csv")))
+mtbi_sm <- read_csv(proc_path("2024_11_25_mtbi_sm.csv"))
+mtbi_ari <- as.matrix(read_csv(proc_path("2024_11_25_mtbi_ari.csv")))
+mtbi_ari_order <- unlist(read_csv(proc_path("2024_11_25_mtbi_ari_order.csv")))
 names(mtbi_ari_order) <- NULL
 ```
 
@@ -345,7 +343,7 @@ write_csv(mtbi_esm, proc_path("mtbi_esm.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_esm <- read_csv(proc_path("2024_10_29_mtbi_esm.csv"))
+mtbi_esm <- read_csv(proc_path("2024_11_25_mtbi_esm.csv"))
 ```
 
 ## Identifying and visualizing meta clusters
@@ -360,15 +358,14 @@ base_ari_hm <- adjusted_rand_index_heatmap(
 shiny_annotator(base_ari_hm)
 
 mtbi_split_vec <- c(
-    170,
-    430,
-    580,
-    644,
-    790,
-    810,
-    963,
-    1220,
-    1450
+    28,
+    100,
+    246,
+    474,
+    603,
+    970,
+    1253,
+    1498
 )
 
 write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
@@ -376,7 +373,7 @@ write_csv(data.frame(mtbi_split_vec), proc_path("mtbi_split_vec.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_split_vec <- read_csv(proc_path("2024_11_04_mtbi_split_vec.csv")) |>
+mtbi_split_vec <- read_csv(proc_path("2024_11_25_mtbi_split_vec.csv")) |>
     unlist() |>
     as.numeric()
 ```
@@ -487,10 +484,10 @@ mtbi_rep_solutions <- get_representative_solutions(
     mtbi_esm
 )
 
-# Based on the heatmap, we'll remove B, E, H, K (unstable meta clusters)
+# Based on the heatmap, we'll remove A, E, I (unstable meta clusters)
 mtbi_rep_solutions <- dplyr::filter(
     mtbi_rep_solutions,
-    !label %in% c("C", "F", "J")
+    !label %in% c("A", "E", "I")
 )
 
 write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
@@ -498,15 +495,15 @@ write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_rep_solutions <- read_csv(proc_path("2024_11_04_mtbi_rep_solutions.csv"))
+mtbi_rep_solutions <- read_csv(proc_path("2024_11_26_mtbi_rep_solutions.csv"))
 
 mtbi_rep_solutions |>
-    dplyr::filter(label == "E") |>
+    dplyr::filter(label == "D") |>
     dplyr::select(imputation)
 ```
 
 ```{r}
-# E (s3) is the top looking solution
+# D (s3) is the top looking solution
 mtbi_rep_solutions$"imputation"
 mtbi_rep_solutions$"label"
 
@@ -535,60 +532,84 @@ ggsave(
 )
 
 # The most robust solution, best outcome p-values
-mtbi_mc_e_esm <- mtbi_rep_solutions |>
-    dplyr::filter(label == "E")
+mtbi_mc_d_esm <- mtbi_rep_solutions |>
+    dplyr::filter(label == "D")
 
-write_csv(mtbi_mc_e_esm, proc_path("mtbi_mc_e_esm.csv", TRUE))
+write_csv(mtbi_mc_d_esm, proc_path("mtbi_mc_d_esm.csv", TRUE))
+```
+
+```{r}
+# In anticipation of the upcoming cluster swaps
+cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
+    swapped_sm <- dplyr::mutate(
+        solutions_matrix,
+        across(
+            dplyr::starts_with("subject"),
+            ~ ifelse(
+                . == c_a,
+                c_b,
+                ifelse(
+                    . == c_b,
+                    c_a,
+                    .
+                )
+            )
+        )
+    )
+    return(swapped_sm)
+}
+```
+
+```{r}
+mtbi_mc_d_esm <- read_csv(proc_path("2024_11_26_mtbi_mc_d_esm.csv"))
+
+# Actually, swap the cluster labels to match prior runs
+mtbi_mc_d_esm_2 <- cluster_label_swap(mtbi_mc_d_esm, 2, 3)
+
+write_csv(mtbi_mc_d_esm_2, proc_path("mtbi_mc_d_esm_2.csv", TRUE))
 ```
 
 ```{r}
 # CHECKPOINT
-mtbi_mc_e_esm <- read_csv(proc_path("2024_11_04_mtbi_mc_e_esm.csv"))
+mtbi_mc_d_esm_2 <- read_csv(proc_path("2024_11_26_mtbi_mc_d_esm_2.csv"))
 ```
 
 ```{r}
 # Feature plot generation
 plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_e_esm,
+    solutions_matrix_row = mtbi_mc_d_esm_2,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
-    save = fig_path("mtbi_mc_e", TRUE)
+    save = fig_path("mtbi_mc_d", TRUE),
+    verbose = TRUE
 )
 
 # No save version:
 plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_e_esm,
+    solutions_matrix_row = mtbi_mc_d_esm_2,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
 )
 
-all_plots <- wrap_plots(plot_list)
+saveRDS(plot_list, fig_path("mtbi_mc_d_plot_list.rds", TRUE))
 
-# Good enough as a snapshot
-ggsave(
-    fig_path("mtbi_mc_e_all_plots.png", TRUE),
-    all_plots,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
+plot_list <- readRDS(fig_path("2024_11_26_mtbi_mc_d_plot_list.rds"))
 ```
-
 
 ## Characterization of meta cluster D representative solution
 
 ### NMI
 
-
 ```{r}
 nmis <- batch_nmi(
     all_dls$"mtbi_train_data_lists"$"imp_3",
-    mtbi_mc_e_esm,
-    distance_metrics_list = my_distance_metrics
+    mtbi_mc_d_esm_2,
+    distance_metrics_list = my_distance_metrics,
+    verbose = TRUE
 )
 
 nmi_order <- sort(
-    nmis$"row_id_176",
+    nmis$"row_id_72",
     decreasing = TRUE,
     index.return = TRUE
 )
@@ -596,7 +617,7 @@ nmi_order <- sort(
 ordered_nmis <- nmis[nmi_order$ix, ]
 
 ordered_nmis$"nmi_rank" <- rank(
-    -ordered_nmis$"row_id_176",
+    -ordered_nmis$"row_id_72",
     ties.method = "min"
 )
 ```
@@ -607,7 +628,7 @@ ordered_nmis$"nmi_rank" <- rank(
 
 ```{r}
 pvals <- get_pvals(
-    mtbi_mc_e_esm,
+    mtbi_mc_d_esm_2,
     keep_summaries = FALSE
 )
 pvals <- data.frame(
@@ -625,7 +646,6 @@ ordered_pvals <- dplyr::filter(
     ordered_pvals,
     !grepl("^cbcl|^sds", feature)
 )
-
 ordered_pvals$"pval_rank" <- rank(
     -ordered_pvals$"neg_log_pval",
     ties.method = "min"
@@ -637,7 +657,7 @@ ordered_pvals$"pval_rank" <- rank(
 
 
 ```{r}
-mtbi_mc_e_nmi_v_pval <- dplyr::full_join(
+mtbi_mc_d_nmi_v_pval <- dplyr::full_join(
     ordered_nmis,
     ordered_pvals,
     by = "feature"
@@ -647,26 +667,26 @@ domain_df <- dl_variable_summary(all_dls$"mtbi_train_data_lists"$"imp_3") |>
     dplyr::select(name, domain) |>
     dplyr::rename("feature" = "name")
 
-mtbi_mc_e_nmi_v_pval <- mtbi_mc_e_nmi_v_pval |>
+mtbi_mc_d_nmi_v_pval <- mtbi_mc_d_nmi_v_pval |>
     dplyr::inner_join(domain_df, by = "feature")
 
-mtbi_mc_e_nmi_v_pval$"joint_rank" <- rank(
-    mtbi_mc_e_nmi_v_pval$"nmi_rank" + mtbi_mc_e_nmi_v_pval$"pval_rank",
+mtbi_mc_d_nmi_v_pval$"joint_rank" <- rank(
+    mtbi_mc_d_nmi_v_pval$"nmi_rank" + mtbi_mc_d_nmi_v_pval$"pval_rank",
     ties.method = "min"
 )
 
 joint_order <- sort(
-    mtbi_mc_e_nmi_v_pval$"joint_rank",
+    mtbi_mc_d_nmi_v_pval$"joint_rank",
     decreasing = FALSE,
     index.return = TRUE
 )
 
-mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval[joint_order$ix, ]
+mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval[joint_order$ix, ]
 
-mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
-    dplyr::rename("nmi" = "row_id_176")
+mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval_rank |>
+    dplyr::rename("nmi" = "row_id_72")
 
-mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
+mtbi_mc_d_nmi_v_pval_rank <- mtbi_mc_d_nmi_v_pval_rank |>
     dplyr::select(
         feature,
         domain,
@@ -678,107 +698,51 @@ mtbi_mc_e_nmi_v_pval_rank <- mtbi_mc_e_nmi_v_pval_rank |>
     )
 
 write_csv(
-    mtbi_mc_e_nmi_v_pval_rank,
-    proc_path("mtbi_mc_e_nmi_v_pval_rank.csv", TRUE)
+    mtbi_mc_d_nmi_v_pval_rank,
+    proc_path("mtbi_mc_d_nmi_v_pval_rank.csv", TRUE)
 )
 
 options(width=200)
-data.frame(mtbi_mc_e_nmi_v_pval_rank)
-
+data.frame(mtbi_mc_d_nmi_v_pval_rank)
 
 # Latex table
-xtable(data.frame(mtbi_mc_e_nmi_v_pval_rank))
+xtable(data.frame(mtbi_mc_d_nmi_v_pval_rank))
 ```
-                  feature domain         nmi nmi_rank neg_log_pval pval_rank joint_rank
-1                     sex      D 0.266450388        1  10.00000000         1          1
-2        household_income      D 0.214062038        2  10.00000000         1          2
-3            brain_volume      N 0.208832026        3  10.00000000         1          3
-4             cortical_sa      N 0.195323534        4  10.00000000         1          4
-5       pubertal_status_p      D 0.126620804        5  10.00000000         1          5
-6                    race      D 0.111029667        6  10.00000000         1          6
-7        extracurriculars      P 0.089055592        7  10.00000000         1          7
-8    activities_last_year      P 0.084071266        8  10.00000000         1          8
-10         parent_somatic      P 0.063399374       10  10.00000000         1          9
-12         parent_thought      P 0.060204542       12  10.00000000         1         10
-15      parent_antisocial      P 0.049054017       15  10.00000000         1         11
-11     weekday_screentime      P 0.060229955       11   8.20541359        15         12
-14       parent_withdrawn      P 0.054934271       14   8.29206777        14         13
-16      parent_aggressive      P 0.042967817       16   8.78749168        12         13
-13    private_instruction      P 0.057833287       13   5.66299037        20         15
-18         parent_depress      P 0.042333377       18   7.82735788        16         16
-22          parent_anxdep      P 0.036900610       22   8.47611082        13         17
-19       parent_anxdisord      P 0.041512366       19   7.69198332        17         18
-9      weekend_screentime      P 0.067482408        9   3.08121259        29         19
-17 fmri_cort_subcort_cors      N 0.042338248       17   4.80224201        21         19
-20        parent_avoidant      P 0.041445998       20   6.91225993        18         19
-21     parent_hyperactive      P 0.039952441       21   6.79437106        19         22
-23  same_sex_close_friend      P 0.032744663       23   3.69042975        23         23
-26         family_fight_p      P 0.029311048       26   3.65345056        24         24
-24          parent_perstr      P 0.032334666       24   3.12387333        28         25
-27         fmri_cort_cors      N 0.027737173       27   3.35886427        27         26
-28         family_outdo_p      P 0.027715638       28   3.38952404        26         26
-32       parent_attention      P 0.025855623       32   4.58809828        22         26
-33       parent_intrusive      P 0.024595692       33   3.57556708        25         29
-25      physical_activity      P 0.031941455       25   2.36349599        34         30
-30       headache_history     MH 0.026443636       30   2.21442846        37         31
-34           helps_hurt_p      P 0.022131531       34   2.45500954        33         31
-36               mtbi_loc     AS 0.021362651       36   2.73112580        31         31
-37     cortical_thickness      N 0.020776206       37   2.94218855        30         31
-29      school_activities      P 0.027507930       29   1.84669951        42         35
-41              helpful_y      P 0.018687180       41   2.46508291        32         36
-35      family_peaceful_p      P 0.022128724       35   2.12534556        39         37
-39          mtbi_mem_daze     AS 0.019892887       39   2.21775376        36         38
-40          considerate_y      P 0.019296280       40   2.34253195        35         38
-31         mtbi_mechanism     AS 0.026159051       31   1.00569279        52         40
-43           helps_hurt_y      P 0.017319048       43   2.09970078        40         40
-45     family_criticize_p      P 0.016379109       45   2.18258927        38         40
-42           major_wm_ndi      N 0.017634538       42   1.68291444        44         43
-46        family_temper_p      P 0.014915158       46   1.98395716        41         44
-47         family_outdo_y      P 0.014032545       47   1.76792929        43         45
-48     family_criticize_y      P 0.013265709       48   1.62553381        45         46
-49                    age      D 0.012847040       49   1.56599180        46         47
-38    pericortical_wm_ndi      N 0.020170141       38   0.45520665        60         48
-51        same_sex_friend      P 0.011309740       51   1.44876735        47         48
-53         family_angry_p      P 0.009687300       53   1.29165475        48         50
-44               mtbi_age      D 0.016918706       44   0.52174893        58         51
-54              helpful_p      P 0.009475231       54   1.14117225        50         52
-52         previous_mtbis     MH 0.009939187       52   1.00059775        53         53
-56         family_angry_y      P 0.009178946       56   1.18416461        49         53
-55         family_throw_p      P 0.009417238       55   1.07085434        51         55
-50      pubertal_status_y      D 0.012826525       50   0.50607417        59         56
-57           family_hit_p      P 0.007505127       57   0.79393949        54         57
-58          family_yell_y      P 0.006111359       58   0.74064960        55         58
-59      family_peaceful_y      P 0.005606331       59   0.52515385        56         59
-60         family_throw_y      P 0.005434001       60   0.52309282        57         60
-61         opp_sex_friend      P 0.004067152       61   0.44119902        61         61
-63         family_fight_y      P 0.003431208       63   0.39960433        62         62
-62   opp_sex_close_friend      P 0.003677979       62   0.23120558        64         63
-64          considerate_p      P 0.002723307       64   0.33773181        63         64
-65        family_temper_y      P 0.001554551       65   0.19870410        65         65
-66          family_yell_p      P 0.001140392       66   0.15177144        66         66
-67           family_hit_y      P 0.000406684       67   0.04542819        67         67
 
 ```{r}
 # CHECKPOINT
-mtbi_mc_e_nmi_v_pval_rank <- read_csv(
-    proc_path("2024_11_04_mtbi_mc_e_nmi_v_pval_rank.csv")
+mtbi_mc_d_nmi_v_pval_rank <- read_csv(
+    proc_path("2024_11_26_mtbi_mc_d_nmi_v_pval_rank.csv")
 )
 
-sorted_features <- mtbi_mc_e_nmi_v_pval_rank$"feature"
-```
+outputs <- summarize_dl(
+    all_dls$"mtbi_train_oom_lists"$"imp_3",
+    scope = "feature"
+) |>
+    dplyr::select(name) |>
+    unlist() |>
+    as.character()
 
+sorted_inputs <- mtbi_mc_d_nmi_v_pval_rank$"feature"
+sorted_in_and_out <- c(sorted_inputs, outputs)
+
+saveRDS(sorted_inputs, proc_path("sorted_inputs.rds", TRUE))
+saveRDS(sorted_in_and_out, proc_path("sorted_in_and_out.rds", TRUE))
+
+sorted_inputs <- readRDS(proc_path("2024_11_26_sorted_inputs.rds"))
+sorted_in_and_out <- readRDS(proc_path("2024_11_26_sorted_in_and_out.rds"))
+```
 
 ### Correlation of NMI and p-value
 
-
 ```{r}
 nmi_v_p_rho <- cor(
-    mtbi_mc_e_nmi_v_pval_rank$"nmi_rank",
-    mtbi_mc_e_nmi_v_pval_rank$"pval_rank",
+    mtbi_mc_d_nmi_v_pval_rank$"nmi_rank",
+    mtbi_mc_d_nmi_v_pval_rank$"pval_rank",
     method = "spearman"
 )
 
-nmi_v_pval_plot <- mtbi_mc_e_nmi_v_pval_rank |>
+nmi_v_pval_plot <- mtbi_mc_d_nmi_v_pval_rank |>
     ggplot(
         aes(x = nmi_rank, y = pval_rank, label = feature, colour = domain)
     ) +
@@ -825,52 +789,15 @@ ggsave(
 Ranked plots
 
 ```{r}
-names(plot_list)
-
-input_plot_list <- plot_list[sorted_features]
-input_plots <- wrap_plots(input_plot_list)
-
-input_plot_list2 <- plot_list[c(sorted_features, outcomes)]
-input_plots2 <- wrap_plots(input_plot_list2)
+ranked_plot_list <- plot_list[sorted_in_and_out]
+ranked_plots <- wrap_plots(ranked_plot_list)
 
 ggsave(
-    fig_path("mtbi_mc_e_input_plots.png", TRUE),
-    input_plots,
+    fig_path("mtbi_mc_d_ranked_plots.png", TRUE),
+    ranked_plots,
     width = 45,
     height = 30,
     dpi = 50
-)
-
-saveRDS(
-    input_plots,
-    file = fig_path("mtbi_mc_e_input_plots.rds", TRUE)
-)
-
-mtbi_mc_e_input_plots <- readRDS(
-    fig_path("2024_11_07_mtbi_mc_e_input_plots.rds")
-)
-
-summary <- summarize_dl(c(full_data_list_1, full_oom_list_1), scope = "feature")
-outcomes <- summary$"name"[!summary$"name" %in% sorted_features]
-
-ranked_all_plot_list <- plot_list[c(sorted_features, outcomes)]
-ranked_all_plots <- wrap_plots(ranked_all_plot_list)
-
-ggsave(
-    fig_path("mtbi_mc_e_ranked_all_plots.png", TRUE),
-    ranked_all_plots,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
-
-saveRDS(
-    ranked_all_plots,
-    file = fig_path("mtbi_mc_e_ranked_all_plots.rds", TRUE)
-)
-
-mtbi_mc_e_ranked_all_plots <- readRDS(
-    fig_path("2024_11_07_mtbi_mc_e_ranked_all_plots.rds")
 )
 ```
 
@@ -878,56 +805,30 @@ mtbi_mc_e_ranked_all_plots <- readRDS(
 ################################################################################
 ## Building the top 12 plot list
 ################################################################################
-mc_e_top_pl <- ranked_plot_list[1:12]
+mc_d_top_pl <- ranked_plot_list[1:12]
 
-names(mc_e_top_pl) <- sorted_features[1:12]
-names(mc_e_top_pl)
+for (i in names(mc_d_top_pl)) {
+    print(i)
+}
 
-mc_e_top_pl$"sex" <- mc_e_top_pl$"sex" +
-    labs(fill = "Sex") +
-    scale_fill_discrete(labels = c("F", "M"))
+mc_d_top_pl$"brain_volume" <- mc_d_top_pl$"brain_volume" + labs(y = expression(paste("Brain Volume ", (mm^3))))
+mc_d_top_pl$"sex" <- mc_d_top_pl$"sex" + labs(fill = "Sex") + scale_fill_discrete(labels = c("F", "M"))
+mc_d_top_pl$"cortical_sa" <- mc_d_top_pl$"cortical_sa" + labs(y = expression(paste("Cortical Area ", (mm^2))))
+mc_d_top_pl$"household_income" <- mc_d_top_pl$"household_income" + labs(y = "Household Income")
+mc_d_top_pl$"pubertal_status_p" <- mc_d_top_pl$"pubertal_status_p" + labs(y = "Pubertal Status - P")
+mc_d_top_pl$"race" <- mc_d_top_pl$"race" + labs(fill = "Race") + scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
+mc_d_top_pl$"activities_last_year" <- mc_d_top_pl$"activities_last_year" + labs(y = "Total Activities this Year")
+mc_d_top_pl$"private_instruction" <- mc_d_top_pl$"private_instruction" + labs(y = "Private Activities")
+mc_d_top_pl$"extracurriculars" <- mc_d_top_pl$"extracurriculars" + labs(y = "Lifetime Extracurriculars")
+mc_d_top_pl$"weekday_screentime" <- mc_d_top_pl$"weekday_screentime" + labs(y = "Weekday Screentime")
+mc_d_top_pl$"parent_somatic" <- mc_d_top_pl$"parent_somatic" + labs(y = "Parent Somatic Problems")
+mc_d_top_pl$"parent_antisocial" <- mc_d_top_pl$"parent_antisocial" + labs(y = "Parent Antisocial Problems")
 
-mc_e_top_pl$"household_income" <- mc_e_top_pl$"household_income" +
-    labs(y = "Household Income")
-
-mc_e_top_pl$"brain_volume" <- mc_e_top_pl$"brain_volume" +
-    labs(y = expression(paste("Brain Volume ", (mm^3))))
-
-mc_e_top_pl$"cortical_sa" <- mc_e_top_pl$"cortical_sa" +
-    labs(y = expression(paste("Cortical Area ", (mm^2))))
-
-mc_e_top_pl$"pubertal_status_p" <- mc_e_top_pl$"pubertal_status_p" +
-    labs(y = "Pubertal Status - P")
-
-mc_e_top_pl$"race" <- mc_e_top_pl$"race" +
-    labs(fill = "Race") +
-    scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
-
-mc_e_top_pl$"extracurriculars" <- mc_e_top_pl$"extracurriculars" +
-    labs(y = "Lifetime Extracurriculars")
-
-mc_e_top_pl$"activities_last_year" <- mc_e_top_pl$"activities_last_year" +
-    labs(y = "Total Activities this Year")
-
-mc_e_top_pl$"parent_somatic" <- mc_e_top_pl$"parent_somatic" +
-    labs(y = "Parent Somatic Problems")
-
-mc_e_top_pl$"parent_thought" <- mc_e_top_pl$"parent_thought" +
-    labs(y = "Parent Thought Problems")
-
-mc_e_top_pl$"parent_antisocial" <- mc_e_top_pl$"parent_antisocial" +
-    labs(y = "Parent Antisocial Problems")
-
-mc_e_top_pl$"weekday_screentime" <- mc_e_top_pl$"weekday_screentime" +
-    labs(y = "Weekday Screentime")
-
-mc_e_top_p <- wrap_plots(
-    mc_e_top_pl,
-) & labs(x = "Cluster") & theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
+mc_d_top_p <- wrap_plots(mc_d_top_pl) & labs(x = "Cluster") & theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))
 
 ggsave(
-    fig_path("mtbi_mc_e_input_plots_12.png", TRUE),
-    mc_e_top_p,
+    fig_path("mtbi_mc_d_input_plots_12.png", TRUE),
+    mc_d_top_p,
     width = 25,
     height = 15,
     dpi = 150
@@ -938,23 +839,23 @@ ggsave(
 ################################################################################
 ## Outcomes
 ################################################################################
-mtbi_mc_e_esm_plot_df <- auto_plot(
-    solutions_matrix_row = mtbi_mc_e_esm,
+mtbi_mc_d_esm_plot_df <- auto_plot(
+    solutions_matrix_row = mtbi_mc_d_esm_2,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
     return_plots = FALSE
 )
 
-write_csv(mtbi_mc_e_esm_plot_df, proc_path("mtbi_mc_e_esm_plot_df.csv", TRUE))
+write_csv(mtbi_mc_d_esm_plot_df, proc_path("mtbi_mc_d_esm_plot_df.csv", TRUE))
 ```
 
 ```{r}
-mtbi_mc_e_esm_plot_df <- read_csv(proc_path("2024_11_07_mtbi_mc_e_esm_plot_df.csv"))
+mtbi_mc_d_esm_plot_df <- read_csv(proc_path("2024_11_26_mtbi_mc_d_esm_plot_df.csv"))
 ```
 
 ```{r}
 outcome_plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_e_esm,
+    solutions_matrix_row = mtbi_mc_d_esm_2,
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
 )
 names(outcome_plot_list)
@@ -980,7 +881,7 @@ outcome_plot_wrap <- wrap_plots(outcome_plot_list) &
     theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 
 ggsave(
-    fig_path("mtbi_mc_e_outcome_plots.png", TRUE),
+    fig_path("mtbi_mc_d_outcome_plots.png", TRUE),
     outcome_plot_wrap,
     width = 14,
     height = 14,
@@ -1188,17 +1089,17 @@ list.save(full_oom_list_5, input_path("mtbi_full_oom_list_5.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-full_data_list_1 <- list.load(input_path("2024_11_04_mtbi_full_data_list_1.rds"))
-full_data_list_2 <- list.load(input_path("2024_11_04_mtbi_full_data_list_2.rds"))
-full_data_list_3 <- list.load(input_path("2024_11_04_mtbi_full_data_list_3.rds"))
-full_data_list_4 <- list.load(input_path("2024_11_04_mtbi_full_data_list_4.rds"))
-full_data_list_5 <- list.load(input_path("2024_11_04_mtbi_full_data_list_5.rds"))
+full_data_list_1 <- list.load(input_path("2024_11_26_mtbi_full_data_list_1.rds"))
+full_data_list_2 <- list.load(input_path("2024_11_26_mtbi_full_data_list_2.rds"))
+full_data_list_3 <- list.load(input_path("2024_11_26_mtbi_full_data_list_3.rds"))
+full_data_list_4 <- list.load(input_path("2024_11_26_mtbi_full_data_list_4.rds"))
+full_data_list_5 <- list.load(input_path("2024_11_26_mtbi_full_data_list_5.rds"))
 
-full_oom_list_1 <- list.load(input_path("2024_11_04_mtbi_full_oom_list_1.rds"))
-full_oom_list_2 <- list.load(input_path("2024_11_04_mtbi_full_oom_list_2.rds"))
-full_oom_list_3 <- list.load(input_path("2024_11_04_mtbi_full_oom_list_3.rds"))
-full_oom_list_4 <- list.load(input_path("2024_11_04_mtbi_full_oom_list_4.rds"))
-full_oom_list_5 <- list.load(input_path("2024_11_04_mtbi_full_oom_list_5.rds"))
+full_oom_list_1 <- list.load(input_path("2024_11_26_mtbi_full_oom_list_1.rds"))
+full_oom_list_2 <- list.load(input_path("2024_11_26_mtbi_full_oom_list_2.rds"))
+full_oom_list_3 <- list.load(input_path("2024_11_26_mtbi_full_oom_list_3.rds"))
+full_oom_list_4 <- list.load(input_path("2024_11_26_mtbi_full_oom_list_4.rds"))
+full_oom_list_5 <- list.load(input_path("2024_11_26_mtbi_full_oom_list_5.rds"))
 ```
 
 ```{r}
@@ -1214,7 +1115,7 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
 )
 
-mtbi_settings_matrix <- read_csv(proc_path("2024_10_29_mtbi_settings_matrix.csv"))
+mtbi_settings_matrix <- read_csv(proc_path("2024_11_25_mtbi_settings_matrix.csv"))
 
 mtbi_full_sm <- batch_snf(
     data_list = full_data_list_1,
@@ -1224,7 +1125,7 @@ mtbi_full_sm <- batch_snf(
 )
 write_csv(mtbi_full_sm, proc_path("mtbi_full_sm.csv", TRUE))
 
-mtbi_full_sm <- read_csv(proc_path("2024_11_04_mtbi_full_sm.csv"))
+mtbi_full_sm <- read_csv(proc_path("2024_11_26_mtbi_full_sm.csv"))
 
 mtbi_full_esm <- extend_solutions(
     mtbi_full_sm,
@@ -1239,30 +1140,9 @@ write_csv(mtbi_full_esm, proc_path("mtbi_full_esm.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_full_esm <- read_csv(proc_path("2024_11_04_mtbi_full_esm.csv"))
+mtbi_full_esm <- read_csv(proc_path("2024_11_26_mtbi_full_esm.csv"))
 ```
 
-```{r}
-# In anticipation of the upcoming cluster swaps
-cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
-    swapped_sm <- dplyr::mutate(
-        solutions_matrix,
-        across(
-            dplyr::starts_with("subject"),
-            ~ ifelse(
-                . == c_a,
-                c_b,
-                ifelse(
-                    . == c_b,
-                    c_a,
-                    .
-                )
-            )
-        )
-    )
-    return(swapped_sm)
-}
-```
 
 What does the full 3-cluster solution look like?
 
@@ -1289,8 +1169,6 @@ mtbi_full_3c_manhattan <- mc_manhattan_plot(
     )
 )
 
-mtbi_full_3c_manhattan
-
 ggsave(
     plot = mtbi_full_3c_manhattan,
     filename = fig_path("mtbi_full_3c_manhattan.png", TRUE),
@@ -1301,14 +1179,16 @@ ggsave(
 
 mtbi_full_3c
 
-summary <- summarize_dl(c(full_data_list_1, full_oom_list_1), scope = "feature")
-outcome_features <- summary$"name"[!summary$"name" %in% sorted_features]
-summary$"name"
+sorted_inputs <- readRDS(proc_path("2024_11_26_sorted_inputs.rds"))
+sorted_in_and_out <- readRDS(proc_path("2024_11_26_sorted_in_and_out.rds"))
 
 for (i in seq_len(nrow(mtbi_full_3c))) {
     print(i)
     current_row <- mtbi_full_3c[i, ]
-    if (i %in% c(1, 2, 5)) {
+    if (i %in% c(1)) {
+        current_row <- cluster_label_swap(current_row, 1, 3)
+    }
+    if (i %in% c(2, 5, 9)) {
         current_row <- cluster_label_swap(current_row, 1, 3)
         current_row <- cluster_label_swap(current_row, 1, 2)
     }
@@ -1320,8 +1200,7 @@ for (i in seq_len(nrow(mtbi_full_3c))) {
         data_list = full_data_list_1,
         target_list = full_oom_list_1
     )
-    names(plot_list) <- summary$"name"
-    plot_list <- plot_list[c(sorted_features, outcome_features)]
+    plot_list <- plot_list[sorted_in_and_out]
     full_3c_plot <- wrap_plots(plot_list)
     ggsave(
         fig_path(paste0("mtbi_full_3c_all_plots_", i, ".png"), TRUE),
@@ -1332,8 +1211,8 @@ for (i in seq_len(nrow(mtbi_full_3c))) {
     )
 }
 
-# The second one is very similar to the derivation set version
-mtbi_full_top_3c <- mtbi_full_3c[5, ]
+# The ninth one is very similar to the derivation set version
+mtbi_full_top_3c <- mtbi_full_3c[9, ]
 mtbi_full_top_3c <- cluster_label_swap(mtbi_full_top_3c, 1, 3)
 mtbi_full_top_3c <- cluster_label_swap(mtbi_full_top_3c, 1, 2)
 mtbi_full_top_3c$"label" <- "Full Top 3C Solution"
@@ -1343,12 +1222,12 @@ write_csv(mtbi_full_top_3c, proc_path("mtbi_full_top_3c.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_full_top_3c <- read_csv(proc_path("2024_11_07_mtbi_full_top_3c.csv"))
+mtbi_full_top_3c <- read_csv(proc_path("2024_11_26_mtbi_full_top_3c.csv"))
 ```
 
 ```{r}
 mtbi_der_plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_e_esm,
+    solutions_matrix_row = mtbi_mc_d_esm_2,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
 )
@@ -1397,16 +1276,19 @@ Something like that, which will require a side-by-side comparison of these featu
 Up to 3 should be sufficient for determining which attributes should play a key role in validating the subsequent investigations.
 
 ```{r}
-outcome_idx <- !names(mtbi_full_plot_list) %in% sorted_features
-outcome_features <- names(mtbi_full_plot_list)[outcome_idx]
+
+#outcome_idx <- !names(mtbi_full_plot_list) %in% sorted_features
+#
+#outcome_features <- names(mtbi_full_plot_list)[outcome_idx]
 
 # Full input feature plots
-pli_sort_d <- mtbi_der_plot_list[sorted_features]
-pli_sort_v <- mtbi_val_plot_list[sorted_features]
-pli_sort_f <- mtbi_ful_plot_list[sorted_features]
-plo_d <- mtbi_der_plot_list[outcome_features]
-plo_v <- mtbi_val_plot_list[outcome_features]
-plo_f <- mtbi_ful_plot_list[outcome_features]
+pli_sort_d <- mtbi_der_plot_list[sorted_inputs]
+pli_sort_v <- mtbi_val_plot_list[sorted_inputs]
+pli_sort_f <- mtbi_ful_plot_list[sorted_inputs]
+
+plo_d <- mtbi_der_plot_list[outputs]
+plo_v <- mtbi_val_plot_list[outputs]
+plo_f <- mtbi_ful_plot_list[outputs]
 
 # Let's manually assemble these puppies!
 input_plots <- list(pli_sort_d, pli_sort_v, pli_sort_f)
@@ -1418,8 +1300,8 @@ list.save(outcome_plots, proc_path("outcome_tri_plots.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-input_plots <- list.load(proc_path("2024_11_07_input_tri_plots.rds"))
-outcome_plots <- list.load(proc_path("2024_11_07_outcome_tri_plots.rds"))
+input_plots <- list.load(proc_path("2024_11_26_input_tri_plots.rds"))
+outcome_plots <- list.load(proc_path("2024_11_26_outcome_tri_plots.rds"))
 ```
 
 ```{r}
@@ -1483,345 +1365,80 @@ tri_plot <- function(pl,
 ```{r}
 # Input tri-plots
 
-# 1. Sex
-sex_plot <- tri_plot(input_plots, "sex", "Sex", c("F", "M"))
-sex_plot
-quick_save(sex_plot, "sex")
+for (i in sorted_in_and_out) {
+    print(i)
+}
+
+# Not necessarily in ranked order:
+
+brain_volume_plot <- tri_plot(input_plots, "brain_volume", expression("Brain Volume "(mm^3)), ylims = c(900000, 1650000)); brain_volume_plot; quick_save(brain_volume_plot, "brain_volume"); Sys.sleep(1)
+sex_plot <- tri_plot(input_plots, "sex", "Sex", c("F", "M")); sex_plot; quick_save(sex_plot, "sex"); Sys.sleep(1)
+household_income_plot <- tri_plot(input_plots, "household_income", "Household Income"); household_income_plot; quick_save(household_income_plot, "household_income"); Sys.sleep(1)
+cort_sa_plot <- tri_plot(input_plots, "cortical_sa", expression("Cortical Surface Area "(mm^2)), ylims = c(140000, 260000)); cort_sa_plot; quick_save(cort_sa_plot, "cort_sa"); Sys.sleep(1)
+pubertal_status_p_plot <- tri_plot(input_plots, "pubertal_status_p", "Pubertal Status\n(Parent Report)"); pubertal_status_p_plot; quick_save(pubertal_status_p_plot, "pubertal_status_p"); Sys.sleep(1)
+race_plot <- tri_plot(input_plots, "race", "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White")); race_plot; quick_save(race_plot, "race"); Sys.sleep(1)
+extracurriculars_plot <- tri_plot(input_plots, "extracurriculars", "Extracurriculars (Quartile)"); extracurriculars_plot; quick_save(extracurriculars_plot, "extracurriculars"); Sys.sleep(1)
+activities_last_year_plot <- tri_plot(input_plots, "activities_last_year", "Programs Last Year (Quartile)"); activities_last_year_plot; quick_save(activities_last_year_plot, "activities_last_year"); Sys.sleep(1)
+parent_somatic_plot <- tri_plot(input_plots, "parent_somatic", "Parent Somatic", ylims = c(-0.5, 25)); parent_somatic_plot; quick_save(parent_somatic_plot, "parent_somatic"); Sys.sleep(1)
+parent_thought_plot <- tri_plot(input_plots, "parent_thought", "Parent Thought", ylims = c(-0.5, 13.5)); parent_thought_plot; quick_save(parent_thought_plot, "parent_thought"); Sys.sleep(1)
+parent_antisocial_plot <- tri_plot(input_plots, "parent_antisocial", "Parent Antisocial", ylims = c(-0.5, 20)); parent_antisocial_plot; quick_save(parent_antisocial_plot, "parent_antisocial"); Sys.sleep(1)
+weekday_screentime_plot <- tri_plot(input_plots, "weekday_screentime", "Weekday Screentime (hours)", ylims = c(-0.5, 21)); weekday_screentime_plot; quick_save(weekday_screentime_plot, "weekday_screentime"); Sys.sleep(1)
+parent_withdrawn_plot <- tri_plot(input_plots, "parent_withdrawn", "Parent Withdrawn", ylims = c(-0.5, 17)); parent_withdrawn_plot; quick_save(parent_withdrawn_plot, "parent_withdrawn"); Sys.sleep(1)
+parent_aggressive_plot <- tri_plot(input_plots, "parent_aggressive", "Parent Aggressive", ylims = c(-0.5, 25)); parent_aggressive_plot; quick_save(parent_aggressive_plot, "parent_aggressive"); Sys.sleep(1)
+private_instruction_plot <- tri_plot(input_plots, "private_instruction", "Private Activities (Quartile)"); private_instruction_plot; quick_save(private_instruction_plot, "private_instruction"); Sys.sleep(1)
+parent_depress_plot <- tri_plot(input_plots, "parent_depress", "Parent Depress", ylims = c(-0.5, 25)); parent_depress_plot; quick_save(parent_depress_plot, "parent_depress"); Sys.sleep(1)
+parent_anxdep_plot <- tri_plot(input_plots, "parent_anxdep", "Parent Anxious-Depressed", ylims = c(-0.5, 30)); parent_anxdep_plot; quick_save(parent_anxdep_plot, "parent_anxdep"); Sys.sleep(1)
+parent_anxdisord_plot <- tri_plot(input_plots, "parent_anxdisord", "Parent Anxious", ylims = c(-0.5, 13)); parent_anxdisord_plot; quick_save(parent_anxdisord_plot, "parent_anxdisord"); Sys.sleep(1)
+weekend_screentime_plot <- tri_plot(input_plots, "weekend_screentime", "Weekend Screentime (hours)", ylims = c(-0.5, 21)); weekend_screentime_plot; quick_save(weekend_screentime_plot, "weekend_screentime"); Sys.sleep(1)
+fmri_cort_subcort_cors_plot <- tri_plot(input_plots, "fmri_cort_subcort_cors", "fMRI Cort-Subcort Corrs", ylims = c(-0.15, 0.2)); fmri_cort_subcort_cors_plot; quick_save(fmri_cort_subcort_cors_plot, "fmri_cort_subcort_cors"); Sys.sleep(1)
+parent_avoidant_plot <- tri_plot(input_plots, "parent_avoidant", "Parent Avoidant", ylims = c(-0.5, 13)); parent_avoidant_plot; quick_save(parent_avoidant_plot, "parent_avoidant"); Sys.sleep(1)
+parent_hyperactive_plot <- tri_plot(input_plots, "parent_hyperactive", "Parent Hyperactive", ylims = c(-0.5, 12)); parent_hyperactive_plot; quick_save(parent_hyperactive_plot, "parent_hyperactive"); Sys.sleep(1)
+same_sex_close_friend_plot <- tri_plot(input_plots, "same_sex_close_friend", "Same-Sex Close Friends (Quartile)"); same_sex_close_friend_plot; quick_save(same_sex_close_friend_plot, "same_sex_close_friend"); Sys.sleep(1)
+family_fight_p_plot <- tri_plot(input_plots, "family_fight_p", "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes")); family_fight_p_plot; quick_save(family_fight_p_plot, "family_fight_p"); Sys.sleep(1)
+parent_perstr_plot <- tri_plot(input_plots, "parent_perstr", "Parent Personal Strength"); parent_perstr_plot; quick_save(parent_perstr_plot, "parent_perstr"); Sys.sleep(1)
+fmri_cort_cors_plot <- tri_plot(input_plots, "fmri_cort_cors", "fMRI Cort-Cort Corrs", ylims = c(-0.1, 0.16)); fmri_cort_cors_plot; quick_save(fmri_cort_cors_plot, "fmri_cort_cors"); Sys.sleep(1)
+family_outdo_p_plot <- tri_plot(input_plots, "family_outdo_p", "Family Outdo\n(Parent Report)", c("No", "Yes")); family_outdo_p_plot; quick_save(family_outdo_p_plot, "family_outdo_p"); Sys.sleep(1)
+parent_attention_plot <- tri_plot(input_plots, "parent_attention", "Parent Attention", ylims = c(-0.5, 25)); parent_attention_plot; quick_save(parent_attention_plot, "parent_attention"); Sys.sleep(1)
+parent_intrusive_plot <- tri_plot(input_plots, "parent_intrusive", "Parent Intrusive", ylims = c(-0.5, 12)); parent_intrusive_plot; quick_save(parent_intrusive_plot, "parent_intrusive"); Sys.sleep(1)
+physical_activity_plot <- tri_plot(input_plots, "physical_activity", "Physical Activity", ylims = c(0, 1.1)); physical_activity_plot; quick_save(physical_activity_plot, "physical_activity"); Sys.sleep(1)
+headache_history_plot <- tri_plot(input_plots, "headache_history", "Headache\nHistory", c("No", "Yes")); headache_history_plot; quick_save(headache_history_plot, "headache_history"); Sys.sleep(1)
+helps_hurt_p_plot <- tri_plot(input_plots, "helps_hurt_p", "Helps Hurt\n(Parent Report)", c("No", "Yes")); helps_hurt_p_plot; quick_save(helps_hurt_p_plot, "helps_hurt_p"); Sys.sleep(1)
+mtbi_loc_plot <- tri_plot(input_plots, "mtbi_loc", "mTBI LOC", c("No", "Yes")); mtbi_loc_plot; quick_save(mtbi_loc_plot, "mtbi_loc"); Sys.sleep(1)
+cortical_thickness_plot <- tri_plot(input_plots, "cortical_thickness", "Cortical Thickness (mm)", ylims = c(2.3, 3.1)); cortical_thickness_plot; quick_save(cortical_thickness_plot, "cortical_thickness"); Sys.sleep(1)
+school_activities_plot <- tri_plot(input_plots, "school_activities", "School Activities"); school_activities_plot; quick_save(school_activities_plot, "school_activities"); Sys.sleep(1)
+helpful_y_plot <- tri_plot(input_plots, "helpful_y", "Helpful\n(Youth Report)", c("No", "Yes")); helpful_y_plot; quick_save(helpful_y_plot, "helpful_y"); Sys.sleep(1)
+family_peaceful_p_plot <- tri_plot(input_plots, "family_peaceful_p", "Family Peaceful\n(Parent Report)", c("No", "Yes")); family_peaceful_p_plot; quick_save(family_peaceful_p_plot, "family_peaceful_p"); Sys.sleep(1)
+mtbi_mem_daze_plot <- tri_plot(input_plots, "mtbi_mem_daze", "mTBI mem_daze", c("No", "Yes")); mtbi_mem_daze_plot; quick_save(mtbi_mem_daze_plot, "mtbi_mem_daze"); Sys.sleep(1)
+considerate_y_plot <- tri_plot(input_plots, "considerate_y", "Considerate\n(Youth Report)", c("No", "Yes")); considerate_y_plot; quick_save(considerate_y_plot, "considerate_y"); Sys.sleep(1)
+mtbi_mechanism_plot <- tri_plot(input_plots, "mtbi_mechanism", "mTBI Mechanism", c("Fall/Hit", "Hospital/ER", "Multiple Injuries", "Other", "Vehicle", "Violent")); mtbi_mechanism_plot; quick_save(mtbi_mechanism_plot, "mtbi_mechanism"); Sys.sleep(1)
+helps_hurt_y_plot <- tri_plot(input_plots, "helps_hurt_y", "Helps Hurt\n(Youth Report)", c("No", "Yes")); helps_hurt_y_plot; quick_save(helps_hurt_y_plot, "helps_hurt_y"); Sys.sleep(1)
+family_criticize_p_plot <- tri_plot(input_plots, "family_criticize_p", "Family Criticizes\n(Parent Report)", c("No", "Yes")); family_criticize_p_plot; quick_save(family_criticize_p_plot, "family_criticize_p"); Sys.sleep(1)
+major_wm_ndi_plot <- tri_plot(input_plots, "major_wm_ndi", "Major WM Neurite Density", ylims = c(0.45, 0.85)); major_wm_ndi_plot; quick_save(major_wm_ndi_plot, "major_wm_ndi"); Sys.sleep(1)
+family_temper_p_plot <- tri_plot(input_plots, "family_temper_p", "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes")); family_temper_p_plot; quick_save(family_temper_p_plot, "family_temper_p"); Sys.sleep(1)
+family_outdo_y_plot <- tri_plot(input_plots, "family_outdo_y", "Family Outdoing\n(Youth Report)", c("No", "Yes")); family_outdo_y_plot; quick_save(family_outdo_y_plot, "family_outdo_y"); Sys.sleep(1)
+family_criticize_y_plot <- tri_plot(input_plots, "family_criticize_y", "Family Criticizes\n(Youth Report)", c("No", "Yes")); family_criticize_y_plot; quick_save(family_criticize_y_plot, "family_criticize_y"); Sys.sleep(1)
+age_plot <- tri_plot(input_plots, "age", "Age"); age_plot; quick_save(age_plot, "age"); Sys.sleep(1)
+pericortical_wm_ndi_plot <- tri_plot(input_plots, "pericortical_wm_ndi", "Pericortical WM Neurite Density", ylims = c(0.25, 0.6)); pericortical_wm_ndi_plot; quick_save(pericortical_wm_ndi_plot, "pericortical_wm_ndi"); Sys.sleep(1)
+same_sex_friend_plot <- tri_plot(input_plots, "same_sex_friend", "Same-Sex Friends\n(Quartile)"); same_sex_friend_plot; quick_save(same_sex_friend_plot, "same_sex_friend"); Sys.sleep(1)
+family_angry_p_plot <- tri_plot(input_plots, "family_angry_p", "Family Angry\n(Parent Report)", c("No", "Yes")); family_angry_p_plot; quick_save(family_angry_p_plot, "family_angry_p"); Sys.sleep(1)
+mtbi_age_plot <- tri_plot(input_plots, "mtbi_age", "mTBI Age (months)"); mtbi_age_plot; quick_save(mtbi_age_plot, "mtbi_age"); Sys.sleep(1)
+helpful_p_plot <- tri_plot(input_plots, "helpful_p", "Helpful\n(Parent Report)", c("No", "Yes")); helpful_p_plot; quick_save(helpful_p_plot, "helpful_p"); Sys.sleep(1)
+previous_mtbis_plot <- tri_plot(input_plots, "previous_mtbis", "Previous mTBIs"); previous_mtbis_plot; quick_save(previous_mtbis_plot, "previous_mtbis"); Sys.sleep(1)
+family_angry_y_plot <- tri_plot(input_plots, "family_angry_y", "Family Angry\n(Youth Report)", c("No", "Yes")); family_angry_y_plot; quick_save(family_angry_y_plot, "family_angry_y"); Sys.sleep(1)
+family_throw_p_plot <- tri_plot(input_plots, "family_throw_p", "Family Throwing\n(Parent Report)", c("No", "Yes")); family_throw_p_plot; quick_save(family_throw_p_plot, "family_throw_p"); Sys.sleep(1)
+pubertal_status_y_plot <- tri_plot(input_plots, "pubertal_status_y", "Pubertal Status (Youth Report)"); pubertal_status_y_plot; quick_save(pubertal_status_y_plot, "pubertal_status_y"); Sys.sleep(1)
+family_hit_p_plot <- tri_plot(input_plots, "family_hit_p", "Family Hitting\n(Parent Report)", c("No", "Yes")); family_hit_p_plot; quick_save(family_hit_p_plot, "family_hit_p"); Sys.sleep(1)
+family_yell_y_plot <- tri_plot(input_plots, "family_yell_y", "Family Yells\n(Youth Report)", c("No", "Yes")); family_yell_y_plot; quick_save(family_yell_y_plot, "family_yell_y"); Sys.sleep(1)
+family_peaceful_y_plot <- tri_plot(input_plots, "family_peaceful_y", "Family Peaceful\n(Youth Report)", c("No", "Yes")); family_peaceful_y_plot; quick_save(family_peaceful_y_plot, "family_peaceful_y"); Sys.sleep(1)
+family_throw_y_plot <- tri_plot(input_plots, "family_throw_y", "Family Throwing\n(Youth Report)", c("No", "Yes")); family_throw_y_plot; quick_save(family_throw_y_plot, "family_throw_y"); Sys.sleep(1)
+opp_sex_friend_plot <- tri_plot(input_plots, "opp_sex_friend", "Opposite-Sex Friends (Quartile)"); opp_sex_friend_plot; quick_save(opp_sex_friend_plot, "opp_sex_friend"); Sys.sleep(1)
+family_fight_y_plot <- tri_plot(input_plots, "family_fight_y", "Family Fights\n(Youth Report)", c("No", "Yes")); family_fight_y_plot; quick_save(family_fight_y_plot, "family_fight_y"); Sys.sleep(1)
+opp_sex_close_friend_plot <- tri_plot(input_plots, "opp_sex_close_friend", "Opposite-Sex Close Friends\n(Quartile)"); opp_sex_close_friend_plot; quick_save(opp_sex_close_friend_plot, "opp_sex_close_friend"); Sys.sleep(1)
+considerate_p_plot <- tri_plot(input_plots, "considerate_p", "Considerate\n(Parent Report)", c("No", "Yes")); considerate_p_plot; quick_save(considerate_p_plot, "considerate_p"); Sys.sleep(1)
+family_temper_y_plot <- tri_plot(input_plots, "family_temper_y", "Family Temper\n(Youth Report)", c("No", "Yes")); family_temper_y_plot; quick_save(family_temper_y_plot, "family_temper_y"); Sys.sleep(1)
+family_yell_p_plot <- tri_plot(input_plots, "family_yell_p", "Family Yells\n(Parent Report)", c("No", "Yes")); family_yell_p_plot; quick_save(family_yell_p_plot, "family_yell_p"); Sys.sleep(1)
+family_hit_y_plot <- tri_plot(input_plots, "family_hit_y", "Family Hitting\n(Youth Report)", c("No", "Yes")); family_hit_y_plot; quick_save(family_hit_y_plot, "family_hit_y"); Sys.sleep(1)
 
-# 2. Income
-household_income_plot <- tri_plot(input_plots, "household_income", "Household Income")
-household_income_plot
-quick_save(household_income_plot, "household_income")
-
-# 3. Brain volumes
-brain_volume_plot <- tri_plot(input_plots, "brain_volume", expression("Brain Volume "(mm^3)), ylims = c(900000, 1650000))
-brain_volume_plot
-quick_save(brain_volume_plot, "brain_volume")
-
-# 4. cort sa
-cort_sa_plot <- tri_plot(input_plots, "cortical_sa", expression("Cortical Surface Area "(mm^2)), ylims = c(140000, 260000))
-cort_sa_plot
-quick_save(cort_sa_plot, "cort_sa")
-
-# 5. Pubertal Status - Parent Report
-pubertal_status_p_plot <- tri_plot(input_plots, "pubertal_status_p", "Pubertal Status\n(Parent Report)")
-pubertal_status_p_plot
-quick_save(pubertal_status_p_plot, "pubertal_status_p")
-
-# 6. Race
-race_plot <- tri_plot(input_plots, "race", "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White"))
-race_plot
-quick_save(race_plot, "race")
-
-# 7. Extracurriculars
-extracurriculars_plot <- tri_plot(input_plots, "extracurriculars", "Extracurriculars", ylims= c(-0.5, 12))
-extracurriculars_plot
-quick_save(extracurriculars_plot, "extracurriculars")
-
-# 8. activities this year
-activities_last_year_plot <- tri_plot(input_plots, "activities_last_year", "Programs Last Year")
-activities_last_year_plot
-quick_save(activities_last_year_plot, "activities_last_year")
-
-# 9. Parent Somatic
-parent_somatic_plot <- tri_plot(input_plots, "parent_somatic", "Parent Somatic", ylims = c(-0.5, 25))
-parent_somatic_plot
-quick_save(parent_somatic_plot, "parent_somatic")
-
-# 10. parent_thought
-parent_thought_plot <- tri_plot(input_plots, "parent_thought", "Parent Thought", ylims = c(-0.5, 13.5))
-parent_thought_plot
-quick_save(parent_thought_plot, "parent_thought")
-
-# 11. parent_antisocial
-parent_antisocial_plot <- tri_plot(input_plots, "parent_antisocial", "Parent Antisocial", ylims = c(-0.5, 20))
-parent_antisocial_plot
-quick_save(parent_antisocial_plot, "parent_antisocial")
-
-# 12. Weekday screentime
-weekday_screentime_plot <- tri_plot(input_plots, "weekday_screentime", "Weekday Screentime (hours)", ylims = c(-0.5, 21))
-weekday_screentime_plot
-quick_save(weekday_screentime_plot, "weekday_screentime")
-
-# 13. parent_withdrawn
-parent_withdrawn_plot <- tri_plot(input_plots, "parent_withdrawn", "Parent Withdrawn", ylims = c(-0.5, 17))
-parent_withdrawn_plot
-quick_save(parent_withdrawn_plot, "parent_withdrawn")
-
-# 14. parent_aggressive
-parent_aggressive_plot <- tri_plot(input_plots, "parent_aggressive", "Parent Aggressive", ylims = c(-0.5, 25))
-parent_aggressive_plot
-quick_save(parent_aggressive_plot, "parent_aggressive")
-
-# 15. private_instruction
-private_instruction_plot <- tri_plot(input_plots, "private_instruction", "Private Activities", ylims = c(-0.5, 9.5))
-private_instruction_plot
-quick_save(private_instruction_plot, "private_instruction")
-
-# 16. Parent depress
-parent_depress_plot <- tri_plot(input_plots, "parent_depress", "Parent Depress", ylims = c(-0.5, 25))
-parent_depress_plot
-quick_save(parent_depress_plot, "parent_depress")
-
-# 17. parent_anxdep
-parent_anxdep_plot <- tri_plot(input_plots, "parent_anxdep", "Parent Anxious-Depressed", ylims = c(-0.5, 30))
-parent_anxdep_plot
-quick_save(parent_anxdep_plot, "parent_anxdep")
-
-# 18. parent_anxdisord
-parent_anxdisord_plot <- tri_plot(input_plots, "parent_anxdisord", "Parent Anxious", ylims = c(-0.5, 13))
-parent_anxdisord_plot
-quick_save(parent_anxdisord_plot, "parent_anxdisord")
-
-# 19. weekend_screentime
-weekend_screentime_plot <- tri_plot(input_plots, "weekend_screentime", "Weekend Screentime (hours)", ylims = c(-0.5, 21))
-weekend_screentime_plot
-quick_save(weekend_screentime_plot, "weekend_screentime")
-
-# 20. fmri_cort_subcort_cors
-fmri_cort_subcort_cors_plot <- tri_plot(input_plots, "fmri_cort_subcort_cors", "fMRI Cort-Subcort Corrs", ylims = c(-0.15, 0.2))
-fmri_cort_subcort_cors_plot
-quick_save(fmri_cort_subcort_cors_plot, "fmri_cort_subcort_cors")
-
-# 21. parent_avoidant
-parent_avoidant_plot <- tri_plot(input_plots, "parent_avoidant", "Parent Avoidant", ylims = c(-0.5, 13))
-parent_avoidant_plot
-quick_save(parent_avoidant_plot, "parent_avoidant")
-
-# 22. parent_hyperactive
-parent_hyperactive_plot <- tri_plot(input_plots, "parent_hyperactive", "Parent Hyperactive", ylims = c(-0.5, 12))
-parent_hyperactive_plot
-quick_save(parent_hyperactive_plot, "parent_hyperactive")
-
-# 23. same_sex_close_friend
-same_sex_close_friend_plot <- tri_plot(input_plots, "same_sex_close_friend", "Same-Sex Close Friends (Quartile)")
-same_sex_close_friend_plot
-quick_save(same_sex_close_friend_plot, "same_sex_close_friend")
-
-# 24. family_fight_p
-family_fight_p_plot <- tri_plot(input_plots, "family_fight_p", "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
-family_fight_p_plot
-quick_save(family_fight_p_plot, "family_fight_p")
-
-# 25. parent_perstr
-parent_perstr_plot <- tri_plot(input_plots, "parent_perstr", "Parent Personal Strength")
-parent_perstr_plot
-quick_save(parent_perstr_plot, "parent_perstr")
-
-# 26. fmri_cort_cors
-fmri_cort_cors_plot <- tri_plot(input_plots, "fmri_cort_cors", "fMRI Cort-Cort Corrs", ylims = c(-0.1, 0.16))
-fmri_cort_cors_plot
-quick_save(fmri_cort_cors_plot, "fmri_cort_cors")
-
-# 27. family_outdo_p
-family_outdo_p_plot <- tri_plot(input_plots, "family_outdo_p", "Family Outdo\n(Parent Report)", c("No", "Yes"))
-family_outdo_p_plot
-quick_save(family_outdo_p_plot, "family_outdo_p")
-
-# 28. Parent attention
-parent_attention_plot <- tri_plot(input_plots, "parent_attention", "Parent Attention", ylims = c(-0.5, 25))
-parent_attention_plot
-quick_save(parent_attention_plot, "parent_attention")
-
-# 29. parent_intrusive
-parent_intrusive_plot <- tri_plot(input_plots, "parent_intrusive", "Parent Intrusive", ylims = c(-0.5, 12))
-parent_intrusive_plot
-quick_save(parent_intrusive_plot, "parent_intrusive")
-
-# 30. physical_activity
-physical_activity_plot <- tri_plot(input_plots, "physical_activity", "Physical Activity", ylims = c(0, 1.1))
-physical_activity_plot
-quick_save(physical_activity_plot, "physical_activity")
-
-# 31. headache_history
-headache_history_plot <- tri_plot(input_plots, "headache_history", "Headache\nHistory", c("No", "Yes"))
-headache_history_plot
-quick_save(headache_history_plot, "headache_history")
-
-# 32. helps_hurt_p
-helps_hurt_p_plot <- tri_plot(input_plots, "helps_hurt_p", "Helps Hurt\n(Parent Report)", c("No", "Yes"))
-helps_hurt_p_plot
-quick_save(helps_hurt_p_plot, "helps_hurt_p")
-
-# 33. mtbi_loc
-mtbi_loc_plot <- tri_plot(input_plots, "mtbi_loc", "mTBI LOC", c("No", "Yes"))
-mtbi_loc_plot
-quick_save(mtbi_loc_plot, "mtbi_loc")
-
-# 34. cortical_thickness
-cortical_thickness_plot <- tri_plot(input_plots, "cortical_thickness", "Cortical Thickness (mm)", ylims = c(2.3, 3.1))
-cortical_thickness_plot
-quick_save(cortical_thickness_plot, "cortical_thickness")
-
-# 35. school_programs
-school_activities_plot <- tri_plot(input_plots, "school_activities", "School Activities", ylims = c(-0.5, 18))
-school_activities_plot
-quick_save(school_activities_plot, "school_activities")
-
-# 36. helpful_y
-helpful_y_plot <- tri_plot(input_plots, "helpful_y", "Helpful\n(Youth Report)", c("No", "Yes"))
-helpful_y_plot
-quick_save(helpful_y_plot, "helpful_y")
-
-# 37. family_peaceful_p
-family_peaceful_p_plot <- tri_plot(input_plots, "family_peaceful_p", "Family Peaceful\n(Parent Report)", c("No", "Yes"))
-family_peaceful_p_plot
-quick_save(family_peaceful_p_plot, "family_peaceful_p")
-
-# 38. mtbi_mem_daze
-mtbi_mem_daze_plot <- tri_plot(input_plots, "mtbi_mem_daze", "mTBI mem_daze", c("No", "Yes"))
-mtbi_mem_daze_plot
-quick_save(mtbi_mem_daze_plot, "mtbi_mem_daze")
-
-# 39. considerate_y
-considerate_y_plot <- tri_plot(input_plots, "considerate_y", "Considerate\n(Youth Report)", c("No", "Yes"))
-considerate_y_plot
-quick_save(considerate_y_plot, "considerate_y")
-
-# 40. mtbi_mechanism
-mtbi_mechanism_plot <- tri_plot(
-    input_plots,
-    "mtbi_mechanism",
-    "mTBI Mechanism",
-    c("Fall/Hit", "Hospital/ER", "Multiple Injuries", "Other", "Vehicle", "Violent")
-)
-mtbi_mechanism_plot
-quick_save(mtbi_mechanism_plot, "mtbi_mechanism")
-
-# 41. helps_hurt_y
-helps_hurt_y_plot <- tri_plot(input_plots, "helps_hurt_y", "Helps Hurt\n(Youth Report)", c("No", "Yes"))
-helps_hurt_y_plot
-quick_save(helps_hurt_y_plot, "helps_hurt_y")
-
-# 42. family_criticize_p
-family_criticize_p_plot <- tri_plot(input_plots, "family_criticize_p", "Family Criticizes\n(Parent Report)", c("No", "Yes"))
-family_criticize_p_plot
-quick_save(family_criticize_p_plot, "family_criticize_p")
-
-# 43. major_wm_ndi
-major_wm_ndi_plot <- tri_plot(input_plots, "major_wm_ndi", "Major WM Neurite Density", ylims = c(0.45, 0.85))
-major_wm_ndi_plot
-quick_save(major_wm_ndi_plot, "major_wm_ndi")
-
-# 44. family_temper_p
-family_temper_p_plot <- tri_plot(input_plots, "family_temper_p", "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
-family_temper_p_plot
-quick_save(family_temper_p_plot, "family_temper_p")
-
-# 45. family_outdo_y
-family_outdo_y_plot <- tri_plot(input_plots, "family_outdo_y", "Family Outdoing\n(Youth Report)", c("No", "Yes"))
-family_outdo_y_plot
-quick_save(family_outdo_y_plot, "family_outdo_y")
-
-# 46. family_criticize_y
-family_criticize_y_plot <- tri_plot(input_plots, "family_criticize_y", "Family Criticizes\n(Youth Report)", c("No", "Yes"))
-family_criticize_y_plot
-quick_save(family_criticize_y_plot, "family_criticize_y")
-
-# 47. age
-age_plot <- tri_plot(input_plots, "age", "age")
-age_plot
-quick_save(age_plot, "age")
-
-# 48. pericortical_wm_ndi
-pericortical_wm_ndi_plot <- tri_plot(input_plots, "pericortical_wm_ndi", "Pericortical WM Neurite Density", ylims = c(0.25, 0.6))
-pericortical_wm_ndi_plot
-quick_save(pericortical_wm_ndi_plot, "pericortical_wm_ndi")
-
-# 49. same_sex_friend
-same_sex_friend_plot <- tri_plot(input_plots, "same_sex_friend", "Same-Sex Friends\n(Quartile)")
-same_sex_friend_plot
-quick_save(same_sex_friend_plot, "same_sex_friend")
-
-# 50. family_angry_p
-family_angry_p_plot <- tri_plot(input_plots, "family_angry_p", "Family Angry\n(Parent Report)", c("No", "Yes"))
-family_angry_p_plot
-quick_save(family_angry_p_plot, "family_angry_p")
-
-# 51. mtbi_age
-mtbi_age_plot <- tri_plot(input_plots, "mtbi_age", "mTBI Age (months)")
-mtbi_age_plot
-quick_save(mtbi_age_plot, "mtbi_age")
-
-# 52. helpful_p
-helpful_p_plot <- tri_plot(input_plots, "helpful_p", "Helpful\n(Parent Report)", c("No", "Yes"))
-helpful_p_plot
-quick_save(helpful_p_plot, "helpful_p")
-
-# 53. previous_mtbis
-previous_mtbis_plot <- tri_plot(input_plots, "previous_mtbis", "Previous mTBIs")
-previous_mtbis_plot
-quick_save(previous_mtbis_plot, "previous_mtbis")
-
-# 54. family_angry_y
-family_angry_y_plot <- tri_plot(input_plots, "family_angry_y", "Family Angry\n(Youth Report)", c("No", "Yes"))
-family_angry_y_plot
-quick_save(family_angry_y_plot, "family_angry_y")
-
-# 55. family_throw_p
-family_throw_p_plot <- tri_plot(input_plots, "family_throw_p", "Family Throwing\n(Parent Report)", c("No", "Yes"))
-family_throw_p_plot
-quick_save(family_throw_p_plot, "family_throw_p")
-
-# 56. pubertal_status_y
-pubertal_status_y_plot <- tri_plot(input_plots, "pubertal_status_y", "Pubertal Status (Youth Report)")
-pubertal_status_y_plot
-quick_save(pubertal_status_y_plot, "pubertal_status_y")
-
-# 57. family_hit_p
-family_hit_p_plot <- tri_plot(input_plots, "family_hit_p", "Family Hitting\n(Parent Report)", c("No", "Yes"))
-family_hit_p_plot
-quick_save(family_hit_p_plot, "family_hit_p")
-
-# 58. family_yell_y
-family_yell_y_plot <- tri_plot(input_plots, "family_yell_y", "Family Yells\n(Youth Report)", c("No", "Yes"))
-family_yell_y_plot
-quick_save(family_yell_y_plot, "family_yell_y")
-
-# 59. family_peaceful_y
-family_peaceful_y_plot <- tri_plot(input_plots, "family_peaceful_y", "Family Peaceful\n(Youth Report)", c("No", "Yes"))
-family_peaceful_y_plot
-quick_save(family_peaceful_y_plot, "family_peaceful_y")
-
-# 60. family_throw_y
-family_throw_y_plot <- tri_plot(input_plots, "family_throw_y", "Family Throwing\n(Youth Report)", c("No", "Yes"))
-family_throw_y_plot
-quick_save(family_throw_y_plot, "family_throw_y")
-
-# 61. opp_sex_friend
-opp_sex_friend_plot <- tri_plot(input_plots, "opp_sex_friend", "Opposite-Sex Friends (Quartile)")
-opp_sex_friend_plot
-quick_save(opp_sex_friend_plot, "opp_sex_friend")
-
-# 62. family_fight_y
-family_fight_y_plot <- tri_plot(input_plots, "family_fight_y", "Family Fights\n(Youth Report)", c("No", "Yes"))
-family_fight_y_plot
-quick_save(family_fight_y_plot, "family_fight_y")
-
-# 63. opp_sex_close_friend
-opp_sex_close_friend_plot <- tri_plot(input_plots, "opp_sex_close_friend", "Opposite-Sex Close Friends\n(Quartile)")
-opp_sex_close_friend_plot
-quick_save(opp_sex_close_friend_plot, "opp_sex_close_friend")
-
-# 64. considerate_p
-considerate_p_plot <- tri_plot(input_plots, "considerate_p", "Considerate\n(Parent Report)", c("No", "Yes"))
-considerate_p_plot
-quick_save(considerate_p_plot, "considerate_p")
-
-# 65. family_temper_y
-family_temper_y_plot <- tri_plot(input_plots, "family_temper_y", "Family Temper\n(Youth Report)", c("No", "Yes"))
-family_temper_y_plot
-quick_save(family_temper_y_plot, "family_temper_y")
-
-# 66. family_yell_p
-family_yell_p_plot <- tri_plot(input_plots, "family_yell_p", "Family Yells\n(Parent Report)", c("No", "Yes"))
-family_yell_p_plot
-quick_save(family_yell_p_plot, "family_yell_p")
-
-# 67. family_hit_y
-family_hit_y_plot <- tri_plot(input_plots, "family_hit_y", "Family Hitting\n(Youth Report)", c("No", "Yes"))
-family_hit_y_plot
-quick_save(family_hit_y_plot, "family_hit_y")
 
 # Outcome trip-plots
 cbcl_anxdep_plot <- tri_plot(outcome_plots, "cbcl_anxdep", "Anxious-Depressed", ylims = c(-0.5, 30))
@@ -1833,6 +1450,7 @@ cbcl_attention_plot <- tri_plot(outcome_plots, "cbcl_attention", "Attention Prob
 cbcl_rulebreak_plot <- tri_plot(outcome_plots, "cbcl_rulebreak", "Rule-Breaking Problems", ylims = c(-0.5, 22))
 cbcl_aggressive_plot <- tri_plot(outcome_plots, "cbcl_aggressive", "Aggression Problems", ylims = c(-0.5, 32))
 sds_sleep_plot <- tri_plot(outcome_plots, "sds_sleep", "Total Sleep Problems", ylims = c(20, 100))
+
 ```
 
 ```{r}
@@ -1975,7 +1593,7 @@ quick_save(wpo, "wpo", w = 7, h = 22)
 
 ```{r}
 mtbi_der_df <- auto_plot(
-    solutions_matrix_row = mtbi_mc_e_esm,
+    solutions_matrix_row = mtbi_mc_d_esm_2,
     data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
     target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
     return_plots = FALSE
@@ -2002,9 +1620,9 @@ write_csv(mtbi_val_df, proc_path("mtbi_val_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_der_df <- read_csv(proc_path("2024_11_07_mtbi_der_df.csv"))
-mtbi_ful_df <- read_csv(proc_path("2024_11_07_mtbi_ful_df.csv"))
-mtbi_val_df <- read_csv(proc_path("2024_11_07_mtbi_val_df.csv"))
+mtbi_der_df <- read_csv(proc_path("2024_11_26_mtbi_der_df.csv"))
+mtbi_ful_df <- read_csv(proc_path("2024_11_26_mtbi_ful_df.csv"))
+mtbi_val_df <- read_csv(proc_path("2024_11_26_mtbi_val_df.csv"))
 ```
 
 ```{r}
@@ -2019,9 +1637,9 @@ write_csv(mtbi_val_tops, proc_path("mtbi_val_tops.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_der_tops <- read_csv(proc_path("2024_11_07_mtbi_der_tops.csv"))
-mtbi_ful_tops <- read_csv(proc_path("2024_11_07_mtbi_ful_tops.csv"))
-mtbi_val_tops <- read_csv(proc_path("2024_11_07_mtbi_val_tops.csv"))
+mtbi_der_tops <- read_csv(proc_path("2024_11_26_mtbi_der_tops.csv"))
+mtbi_ful_tops <- read_csv(proc_path("2024_11_26_mtbi_ful_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2024_11_26_mtbi_val_tops.csv"))
 ```
 
 ```{r}
@@ -2063,11 +1681,11 @@ format_tops <- function(tops) {
 
 ```{r}
 # Prepping the ordering of the tops features
-mtbi_mc_e_nmi_v_pval_rank <- read_csv(
-    proc_path("2024_11_04_mtbi_mc_e_nmi_v_pval_rank.csv")
+mtbi_mc_d_nmi_v_pval_rank <- read_csv(
+    proc_path("2024_11_26_mtbi_mc_d_nmi_v_pval_rank.csv")
 )
 
-joint_ranks <- mtbi_mc_e_nmi_v_pval_rank |>
+joint_ranks <- mtbi_mc_d_nmi_v_pval_rank |>
     data.frame() |>
     dplyr::select(feature, joint_rank)
 joint_ranks <- rbind(
@@ -2105,7 +1723,7 @@ write_csv(joint_ranks, proc_path("joint_ranks.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-joint_ranks <- read_csv(proc_path("2024_11_07_joint_ranks.csv"))
+joint_ranks <- read_csv(proc_path("2024_11_26_joint_ranks.csv"))
 ```
 
 
@@ -2155,9 +1773,9 @@ write_csv(all_ful_tops, proc_path("mtbi_all_ful_tops.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-all_der_tops <- read_csv(proc_path("2024_11_07_mtbi_all_der_tops.csv"))
-all_val_tops <- read_csv(proc_path("2024_11_07_mtbi_all_val_tops.csv"))
-all_ful_tops <- read_csv(proc_path("2024_11_07_mtbi_all_ful_tops.csv"))
+all_der_tops <- read_csv(proc_path("2024_11_26_mtbi_all_der_tops.csv"))
+all_val_tops <- read_csv(proc_path("2024_11_26_mtbi_all_val_tops.csv"))
+all_ful_tops <- read_csv(proc_path("2024_11_26_mtbi_all_ful_tops.csv"))
 ```
 
 ```{r}
@@ -2177,7 +1795,7 @@ all_tops <- arrange(all_tops, rank) |>
 
 write_csv(all_tops, proc_path("all_tops.csv", TRUE))
 
-all_tops <- read_csv(proc_path("2024_11_07_all_tops.csv"))
+all_tops <- read_csv(proc_path("2024_11_26_all_tops.csv"))
 
 xtable(all_tops)
 ```
@@ -2234,7 +1852,7 @@ write_csv(all_tops_raw, proc_path("all_tops_raw.csv", TRUE))
 ```
 
 ```{r}
-all_tops_raw <- read_csv(proc_path("2024_11_07_all_tops_raw.csv"))
+all_tops_raw <- read_csv(proc_path("2024_11_26_all_tops_raw.csv"))
 
 # Comparison based purely on effect size
 compare_fn_a <- function(d, sig, thresh = 0.2) {
@@ -2341,7 +1959,7 @@ identical(gen_df_a, gen_df_b)
 
 write_csv(gen_df_a, proc_path("mtbi_gen_fts.csv", TRUE))
 
-mtbi_gen_fts <- data.frame(read_csv(proc_path("2024_11_07_mtbi_gen_fts.csv")))
+mtbi_gen_fts <- data.frame(read_csv(proc_path("2024_11_26_mtbi_gen_fts.csv")))
 
 mtbi_gen_fts_in <- mtbi_gen_fts |>
     dplyr::filter(
@@ -2362,8 +1980,8 @@ mtbi_gen_fts_out <- mtbi_gen_fts |>
 write_csv(mtbi_gen_fts_in, proc_path("mtbi_gen_fts_in.csv", TRUE))
 write_csv(mtbi_gen_fts_out, proc_path("mtbi_gen_fts_out.csv", TRUE))
 
-mtbi_gen_fts_in <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_in.csv"))
-mtbi_gen_fts_out <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_out.csv"))
+mtbi_gen_fts_in <- read_csv(proc_path("2024_11_26_mtbi_gen_fts_in.csv"))
+mtbi_gen_fts_out <- read_csv(proc_path("2024_11_26_mtbi_gen_fts_out.csv"))
 
 mtbi_gen_fts_in_long <- mtbi_gen_fts_in |>
     pivot_longer(
@@ -2382,19 +2000,9 @@ mtbi_gen_fts_out_long <- mtbi_gen_fts_out |>
 write_csv(mtbi_gen_fts_in_long, proc_path("mtbi_gen_fts_in_long.csv", TRUE))
 write_csv(mtbi_gen_fts_out_long, proc_path("mtbi_gen_fts_out_long.csv", TRUE))
 
-mtbi_gen_fts_in_long <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_in_long.csv"))
-mtbi_gen_fts_out_long <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_out_long.csv"))
+mtbi_gen_fts_in_long <- read_csv(proc_path("2024_11_26_mtbi_gen_fts_in_long.csv"))
+mtbi_gen_fts_out_long <- read_csv(proc_path("2024_11_26_mtbi_gen_fts_out_long.csv"))
 
 xtable(mtbi_gen_fts_out)
-
 xtable(mtbi_gen_fts_in)
-
-
-mtbi_gen_fts_in_long
-
-mtbi_gen_fts_in
-
-
-
-
 ```

@@ -7,7 +7,7 @@ That provides some further rationale for keeping them separate.
 Questions I'm trying to answer with the longitudinal data:
 
 1. Was the baseline clustering informative for long-term outcomes?
-2. Do matched uninjured subjects to the mTBI group experience more mTBIs by T2 than the other uninjured subjects?
+2. Do matched unij subjects to the mTBI group experience more mTBIs by T2 than the other unij subjects?
 3. Is the clustering of the longitudinal sample using their baseline (pre-injury) equally informative as using their longitudinal (post-injury) data?
 
 ## Loading in data
@@ -37,17 +37,21 @@ read <- function(path) {
 
 ```{r}
 # CHECKPOINT
-long_mtbi_subs <- read_subjects(sub_path("2024_11_04_mtbi_subjects_0_to_2.csv"))
-long_uninj_subs <- read_subjects(sub_path("2024_11_04_uninjured_subjects_0_to_2.csv"))
-base_mtbi_subs <- read_subjects(sub_path("2024_10_29_mtbi_subs.csv"))
-base_uninj_subs <- read_subjects(sub_path("2024_10_29_uninj_subs.csv"))
+long_mtbi_subs <- read_subjects(sub_path("2024_11_18_mtbi_subs_0_to_2.csv"))
+long_unij_subs <- read_subjects(sub_path("2024_11_18_unij_subs_0_to_2.csv"))
+base_mtbi_subs <- read_subjects(sub_path("2024_11_18_mtbi_subs.csv"))
+base_unij_subs <- read_subjects(sub_path("2024_11_18_unij_subs.csv"))
 ```
 
 ```{r}
 # Just use 1st imputation.
-base_mtbi_dl <- list.load(input_path("2024_11_04_mtbi_full_data_list_1.rds"))
-all_dls <- list.load(input_path("2024_10_29_all_dls.rds"))
-base_uninj_dl <- all_dls$"uninj_data_lists"$"imp_1"
+all_dls <- list.load(input_path("2024_11_18_all_dls.rds"))
+
+base_unij_dl <- all_dls$"unij_data_lists"$"imp_1"
+base_mtbi_dl <- merge_data_lists(
+    all_dls$"mtbi_train_data_lists"$"imp_3",
+    all_dls$"mtbi_test_data_lists"$"imp_1"
+)
 ```
 
 ```{r}
@@ -60,113 +64,113 @@ strip_sub_prefix <- function(df) {
 # as_mem_daze not existent
 # as_mechanism not existent
 # as_loc not existent
-d_interview_age_long_mtbi_0 <- read_csv(input_path("2024_11_06_d_interview_age_long_mtbi_0.csv"))
+d_interview_age_long_mtbi_0 <- read_csv(input_path("2024_11_18_d_interview_age_long_mtbi_0.csv"))
 # mtbi_age not existent
-d_sex_long_mtbi_0 <- read_csv(input_path("2024_11_06_d_sex_long_mtbi_0.csv"))
-d_income_long_mtbi_0 <- read_csv(input_path("2024_11_06_d_income_long_mtbi_0.csv"))
-d_race_long_mtbi_0 <- read_csv(input_path("2024_11_06_d_race_long_mtbi_0.csv"))
-d_pubertal_status_long_mtbi_0 <- read_csv(input_path("2024_11_06_d_pubertal_status_long_mtbi_0.csv"))
-mh_headaches_long_mtbi_0 <- read_csv(input_path("2024_11_06_mh_headaches_long_mtbi_0.csv"))
+d_sex_long_mtbi_0 <- read_csv(input_path("2024_11_18_d_sex_long_mtbi_0.csv"))
+d_income_long_mtbi_0 <- read_csv(input_path("2024_11_18_d_income_long_mtbi_0.csv"))
+d_race_long_mtbi_0 <- read_csv(input_path("2024_11_18_d_race_long_mtbi_0.csv"))
+d_pubertal_status_long_mtbi_0 <- read_csv(input_path("2024_11_18_d_pubertal_status_long_mtbi_0.csv"))
+mh_headaches_long_mtbi_0 <- read_csv(input_path("2024_11_18_mh_headaches_long_mtbi_0.csv"))
 # mtbi_count not existent
-sm_subc_v_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_subc_v_long_mtbi_0.csv"))
-sm_cort_t_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_t_long_mtbi_0.csv"))
-sm_cort_sa_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_sa_long_mtbi_0.csv"))
-dm_all_wmnd_long_mtbi_0 <- read_csv(input_path("2024_11_06_dm_all_wmnd_long_mtbi_0.csv"))
-rm_gord_cor_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_gord_cor_long_mtbi_0.csv"))
-rm_subc_cor_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_subc_cor_long_mtbi_0.csv"))
-p_friends_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_friends_long_mtbi_0.csv"))
-p_screen_time_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_screen_time_long_mtbi_0.csv"))
-p_sports_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_sports_long_mtbi_0.csv"))
-p_exercise_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_exercise_long_mtbi_0.csv"))
-p_prosocial_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_prosocial_long_mtbi_0.csv"))
-p_fam_fn_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_fam_fn_long_mtbi_0.csv"))
-p_parent_psych_long_mtbi_0 <- read_csv(input_path("2024_11_06_p_parent_psych_long_mtbi_0.csv"))
-cbcl_long_mtbi_0 <- read_csv(input_path("2024_11_06_cbcl_long_mtbi_0.csv"))
-sds_long_mtbi_0 <- read_csv(input_path("2024_11_06_sds_long_mtbi_0.csv"))
+sm_subc_v_long_mtbi_0 <- read_csv(input_path("2024_11_18_sm_subc_v_long_mtbi_0.csv"))
+sm_cort_t_long_mtbi_0 <- read_csv(input_path("2024_11_18_sm_cort_t_long_mtbi_0.csv"))
+sm_cort_sa_long_mtbi_0 <- read_csv(input_path("2024_11_18_sm_cort_sa_long_mtbi_0.csv"))
+dm_all_wmnd_long_mtbi_0 <- read_csv(input_path("2024_11_18_dm_all_wmnd_long_mtbi_0.csv"))
+rm_gord_cor_long_mtbi_0 <- read_csv(input_path("2024_11_18_rm_gord_cor_long_mtbi_0.csv"))
+rm_subc_cor_long_mtbi_0 <- read_csv(input_path("2024_11_18_rm_subc_cor_long_mtbi_0.csv"))
+p_friends_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_friends_long_mtbi_0.csv"))
+p_screen_time_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_screen_time_long_mtbi_0.csv"))
+p_sports_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_sports_long_mtbi_0.csv"))
+p_exercise_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_exercise_long_mtbi_0.csv"))
+p_prosocial_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_prosocial_long_mtbi_0.csv"))
+p_fam_fn_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_fam_fn_long_mtbi_0.csv"))
+p_parent_psych_long_mtbi_0 <- read_csv(input_path("2024_11_18_p_parent_psych_long_mtbi_0.csv"))
+cbcl_long_mtbi_0 <- read_csv(input_path("2024_11_18_cbcl_long_mtbi_0.csv"))
+sds_long_mtbi_0 <- read_csv(input_path("2024_11_18_sds_long_mtbi_0.csv"))
 
 # LONG MTBI L
-as_mem_daze_long_mtbi_l <- read_csv(input_path("2024_11_06_as_mem_daze_long_mtbi_l.csv"))
-as_mechanism_long_mtbi_l <- read_csv(input_path("2024_11_06_as_mechanism_long_mtbi_l.csv"))
-as_loc_long_mtbi_l <- read_csv(input_path("2024_11_06_as_loc_long_mtbi_l.csv"))
-d_interview_age_long_mtbi_l <- read_csv(input_path("2024_11_06_d_interview_age_long_mtbi_l.csv"))
-d_mtbi_age_long_mtbi_l <- read_csv(input_path("2024_11_06_d_mtbi_age_long_mtbi_l.csv"))
-d_sex_long_mtbi_l <- read_csv(input_path("2024_11_06_d_sex_long_mtbi_0.csv"))
-d_income_long_mtbi_l <- read_csv(input_path("2024_11_06_d_income_long_mtbi_l.csv"))
-d_race_long_mtbi_l <- read_csv(input_path("2024_11_06_d_race_long_mtbi_0.csv"))
-d_pubertal_status_long_mtbi_l <- read_csv(input_path("2024_11_06_d_pubertal_status_long_mtbi_l.csv"))
-mh_headaches_long_mtbi_l <- read_csv(input_path("2024_11_06_mh_headaches_long_mtbi_l.csv"))
-mh_mtbi_count_long_mtbi_l <- read_csv(input_path("2024_11_06_mh_mtbi_count_long_mtbi_l.csv"))
-sm_subc_v_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_long_mtbi_l.csv"))
-sm_cort_t_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_long_mtbi_l.csv"))
-sm_cort_sa_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_long_mtbi_l.csv"))
-dm_all_wmnd_long_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_long_mtbi_l.csv"))
-rm_gord_cor_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_long_mtbi_l.csv"))
-rm_subc_cor_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_long_mtbi_l.csv"))
-p_friends_long_mtbi_l <- read_csv(input_path("2024_11_06_p_friends_long_mtbi_l.csv"))
-p_screen_time_long_mtbi_l <- read_csv(input_path("2024_11_06_p_screen_time_long_mtbi_l.csv"))
-p_sports_long_mtbi_l <- read_csv(input_path("2024_11_06_p_sports_long_mtbi_l.csv"))
-p_exercise_long_mtbi_l <- read_csv(input_path("2024_11_06_p_exercise_long_mtbi_l.csv"))
-p_prosocial_long_mtbi_l <- read_csv(input_path("2024_11_06_p_prosocial_long_mtbi_l.csv"))
-p_fam_fn_long_mtbi_l <- read_csv(input_path("2024_11_06_p_fam_fn_long_mtbi_l.csv"))
-p_parent_psych_long_mtbi_l <- read_csv(input_path("2024_11_06_p_parent_psych_long_mtbi_l.csv"))
-cbcl_long_mtbi_l <- read_csv(input_path("2024_11_06_cbcl_long_mtbi_l.csv"))
-sds_long_mtbi_l <- read_csv(input_path("2024_11_06_sds_long_mtbi_l.csv"))
+as_mem_daze_long_mtbi_l <- read_csv(input_path("2024_11_18_as_mem_daze_long_mtbi_l.csv"))
+as_mechanism_long_mtbi_l <- read_csv(input_path("2024_11_18_as_mechanism_long_mtbi_l.csv"))
+as_loc_long_mtbi_l <- read_csv(input_path("2024_11_18_as_loc_long_mtbi_l.csv"))
+d_interview_age_long_mtbi_l <- read_csv(input_path("2024_11_18_d_interview_age_long_mtbi_l.csv"))
+d_mtbi_age_long_mtbi_l <- read_csv(input_path("2024_11_18_d_mtbi_age_long_mtbi_l.csv"))
+d_sex_long_mtbi_l <- read_csv(input_path("2024_11_18_d_sex_long_mtbi_0.csv"))
+d_income_long_mtbi_l <- read_csv(input_path("2024_11_18_d_income_long_mtbi_l.csv"))
+d_race_long_mtbi_l <- read_csv(input_path("2024_11_18_d_race_long_mtbi_0.csv"))
+d_pubertal_status_long_mtbi_l <- read_csv(input_path("2024_11_18_d_pubertal_status_long_mtbi_l.csv"))
+mh_headaches_long_mtbi_l <- read_csv(input_path("2024_11_18_mh_headaches_long_mtbi_l.csv"))
+mh_mtbi_count_long_mtbi_l <- read_csv(input_path("2024_11_18_mh_mtbi_count_long_mtbi_l.csv"))
+sm_subc_v_long_mtbi_l <- read_csv(input_path("2024_11_18_sm_subc_v_long_mtbi_l.csv"))
+sm_cort_t_long_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_t_long_mtbi_l.csv"))
+sm_cort_sa_long_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_sa_long_mtbi_l.csv"))
+dm_all_wmnd_long_mtbi_l <- read_csv(input_path("2024_11_18_dm_all_wmnd_long_mtbi_l.csv"))
+rm_gord_cor_long_mtbi_l <- read_csv(input_path("2024_11_18_rm_gord_cor_long_mtbi_l.csv"))
+rm_subc_cor_long_mtbi_l <- read_csv(input_path("2024_11_18_rm_subc_cor_long_mtbi_l.csv"))
+p_friends_long_mtbi_l <- read_csv(input_path("2024_11_18_p_friends_long_mtbi_l.csv"))
+p_screen_time_long_mtbi_l <- read_csv(input_path("2024_11_18_p_screen_time_long_mtbi_l.csv"))
+p_sports_long_mtbi_l <- read_csv(input_path("2024_11_18_p_sports_long_mtbi_l.csv"))
+p_exercise_long_mtbi_l <- read_csv(input_path("2024_11_18_p_exercise_long_mtbi_l.csv"))
+p_prosocial_long_mtbi_l <- read_csv(input_path("2024_11_18_p_prosocial_long_mtbi_l.csv"))
+p_fam_fn_long_mtbi_l <- read_csv(input_path("2024_11_18_p_fam_fn_long_mtbi_l.csv"))
+p_parent_psych_long_mtbi_l <- read_csv(input_path("2024_11_18_p_parent_psych_long_mtbi_l.csv"))
+cbcl_long_mtbi_l <- read_csv(input_path("2024_11_18_cbcl_long_mtbi_l.csv"))
+sds_long_mtbi_l <- read_csv(input_path("2024_11_18_sds_long_mtbi_l.csv"))
 
 # BASE MTBI L
 # as_mem_daze not extracted
 # as_mechanism not extracted
 # as_loc not extracted
-d_interview_age_base_mtbi_l <- read_csv(input_path("2024_11_06_d_interview_age_mtbi_l.csv"))
+d_interview_age_base_mtbi_l <- read_csv(input_path("2024_11_18_d_interview_age_mtbi_l.csv"))
 # mtbi_age not extracted
 d_sex_base_mtbi_l <- strip_sub_prefix(base_mtbi_dl$"d_sex"$"data")
-d_income_base_mtbi_l <- read_csv(input_path("2024_11_06_d_income_mtbi_l.csv"))
+d_income_base_mtbi_l <- read_csv(input_path("2024_11_18_d_income_mtbi_l.csv"))
 d_race_base_mtbi_l <- strip_sub_prefix(base_mtbi_dl$"d_race"$"data")
-d_pubertal_status_base_mtbi_l <- read_csv(input_path("2024_11_06_d_pubertal_status_base_mtbi_l.csv"))
-mh_headaches_base_mtbi_l <- read_csv(input_path("2024_11_06_mh_headaches_base_mtbi_l.csv"))
+d_pubertal_status_base_mtbi_l <- read_csv(input_path("2024_11_18_d_pubertal_status_base_mtbi_l.csv"))
+mh_headaches_base_mtbi_l <- read_csv(input_path("2024_11_18_mh_headaches_base_mtbi_l.csv"))
 # mtbi_count not extracted
-sm_subc_v_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_base_mtbi_l.csv"))
-sm_cort_t_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_base_mtbi_l.csv"))
-sm_cort_sa_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_base_mtbi_l.csv"))
-dm_all_wmnd_base_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_base_mtbi_l.csv"))
-rm_gord_cor_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_base_mtbi_l.csv"))
-rm_subc_cor_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_base_mtbi_l.csv"))
-p_friends_base_mtbi_l <- read_csv(input_path("2024_11_06_p_friends_base_mtbi_l.csv"))
-p_screen_time_base_mtbi_l <- read_csv(input_path("2024_11_06_p_screen_time_base_mtbi_l.csv"))
-p_sports_base_mtbi_l <- read_csv(input_path("2024_11_06_p_sports_base_mtbi_l.csv"))
-p_exercise_base_mtbi_l <- read_csv(input_path("2024_11_06_p_exercise_base_mtbi_l.csv"))
-p_prosocial_base_mtbi_l <- read_csv(input_path("2024_11_06_p_prosocial_base_mtbi_l.csv"))
-p_fam_fn_base_mtbi_l <- read_csv(input_path("2024_11_06_p_fam_fn_base_mtbi_l.csv"))
-p_parent_psych_base_mtbi_l <- read_csv(input_path("2024_11_06_p_parent_psych_base_mtbi_l.csv"))
-cbcl_base_mtbi_l <- read_csv(input_path("2024_11_06_cbcl_base_mtbi_l.csv"))
-sds_base_mtbi_l <- read_csv(input_path("2024_11_06_sds_base_mtbi_l.csv"))
+sm_subc_v_base_mtbi_l <- read_csv(input_path("2024_11_18_sm_subc_v_base_mtbi_l.csv"))
+sm_cort_t_base_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_t_base_mtbi_l.csv"))
+sm_cort_sa_base_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_sa_base_mtbi_l.csv"))
+dm_all_wmnd_base_mtbi_l <- read_csv(input_path("2024_11_18_dm_all_wmnd_base_mtbi_l.csv"))
+rm_gord_cor_base_mtbi_l <- read_csv(input_path("2024_11_18_rm_gord_cor_base_mtbi_l.csv"))
+rm_subc_cor_base_mtbi_l <- read_csv(input_path("2024_11_18_rm_subc_cor_base_mtbi_l.csv"))
+p_friends_base_mtbi_l <- read_csv(input_path("2024_11_18_p_friends_base_mtbi_l.csv"))
+p_screen_time_base_mtbi_l <- read_csv(input_path("2024_11_18_p_screen_time_base_mtbi_l.csv"))
+p_sports_base_mtbi_l <- read_csv(input_path("2024_11_18_p_sports_base_mtbi_l.csv"))
+p_exercise_base_mtbi_l <- read_csv(input_path("2024_11_18_p_exercise_base_mtbi_l.csv"))
+p_prosocial_base_mtbi_l <- read_csv(input_path("2024_11_18_p_prosocial_base_mtbi_l.csv"))
+p_fam_fn_base_mtbi_l <- read_csv(input_path("2024_11_18_p_fam_fn_base_mtbi_l.csv"))
+p_parent_psych_base_mtbi_l <- read_csv(input_path("2024_11_18_p_parent_psych_base_mtbi_l.csv"))
+cbcl_base_mtbi_l <- read_csv(input_path("2024_11_18_cbcl_base_mtbi_l.csv"))
+sds_base_mtbi_l <- read_csv(input_path("2024_11_18_sds_base_mtbi_l.csv"))
 
-# BASE UNINJ L
+# BASE unij L
 # as_mem_daze not existent
 # as_mechanism not existent
 # as_loc not existent
-d_interview_age_base_uninj_l <- read_csv(input_path("2024_11_06_d_interview_age_base_uninj_l.csv"))
+d_interview_age_base_unij_l <- read_csv(input_path("2024_11_18_d_interview_age_base_unij_l.csv"))
 # mtbi_age not existent
-d_sex_base_uninj_l <- strip_sub_prefix(base_uninj_dl$"d_sex"$"data")
-d_income_base_uninj_l <- read_csv(input_path("2024_11_06_d_income_base_uninj_l.csv"))
-d_race_base_uninj_l <- strip_sub_prefix(base_uninj_dl$"d_race"$"data")
-d_pubertal_status_base_uninj_l <- read_csv(input_path("2024_11_06_d_pubertal_status_base_uninj_l.csv"))
-mh_headaches_base_uninj_l <- read_csv(input_path("2024_11_06_mh_headaches_base_uninj_l.csv"))
+d_sex_base_unij_l <- strip_sub_prefix(base_unij_dl$"d_sex"$"data")
+d_income_base_unij_l <- read_csv(input_path("2024_11_18_d_income_base_unij_l.csv"))
+d_race_base_unij_l <- strip_sub_prefix(base_unij_dl$"d_race"$"data")
+d_pubertal_status_base_unij_l <- read_csv(input_path("2024_11_18_d_pubertal_status_base_unij_l.csv"))
+mh_headaches_base_unij_l <- read_csv(input_path("2024_11_18_mh_headaches_base_unij_l.csv"))
 # mtbi_count not existent
-sm_subc_v_base_uninj_l <- read_csv(input_path("2024_11_06_sm_subc_v_base_uninj_l.csv"))
-sm_cort_t_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_t_base_uninj_l.csv"))
-sm_cort_sa_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_sa_base_uninj_l.csv"))
-dm_all_wmnd_base_uninj_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_base_uninj_l.csv"))
-rm_gord_cor_base_uninj_l <- read_csv(input_path("2024_11_06_rm_gord_cor_base_uninj_l.csv"))
-rm_subc_cor_base_uninj_l <- read_csv(input_path("2024_11_06_rm_subc_cor_base_uninj_l.csv"))
-p_friends_base_uninj_l <- read_csv(input_path("2024_11_06_p_friends_base_uninj_l.csv"))
-p_screen_time_base_uninj_l <- read_csv(input_path("2024_11_06_p_screen_time_base_uninj_l.csv"))
-p_sports_base_uninj_l <- read_csv(input_path("2024_11_06_p_sports_base_uninj_l.csv"))
-p_exercise_base_uninj_l <- read_csv(input_path("2024_11_06_p_exercise_base_uninj_l.csv"))
-p_prosocial_base_uninj_l <- read_csv(input_path("2024_11_06_p_prosocial_base_uninj_l.csv"))
-p_fam_fn_base_uninj_l <- read_csv(input_path("2024_11_06_p_fam_fn_base_uninj_l.csv"))
-p_parent_psych_base_uninj_l <- read_csv(input_path("2024_11_06_p_parent_psych_base_uninj_l.csv"))
-cbcl_base_uninj_l <- read_csv(input_path("2024_11_06_cbcl_base_uninj_l.csv"))
-sds_base_uninj_l <- read_csv(input_path("2024_11_06_sds_base_uninj_l.csv"))
+sm_subc_v_base_unij_l <- read_csv(input_path("2024_11_18_sm_subc_v_base_unij_l.csv"))
+sm_cort_t_base_unij_l <- read_csv(input_path("2024_11_18_sm_cort_t_base_unij_l.csv"))
+sm_cort_sa_base_unij_l <- read_csv(input_path("2024_11_18_sm_cort_sa_base_unij_l.csv"))
+dm_all_wmnd_base_unij_l <- read_csv(input_path("2024_11_18_dm_all_wmnd_base_unij_l.csv"))
+rm_gord_cor_base_unij_l <- read_csv(input_path("2024_11_18_rm_gord_cor_base_unij_l.csv"))
+rm_subc_cor_base_unij_l <- read_csv(input_path("2024_11_18_rm_subc_cor_base_unij_l.csv"))
+p_friends_base_unij_l <- read_csv(input_path("2024_11_18_p_friends_base_unij_l.csv"))
+p_screen_time_base_unij_l <- read_csv(input_path("2024_11_18_p_screen_time_base_unij_l.csv"))
+p_sports_base_unij_l <- read_csv(input_path("2024_11_18_p_sports_base_unij_l.csv"))
+p_exercise_base_unij_l <- read_csv(input_path("2024_11_18_p_exercise_base_unij_l.csv"))
+p_prosocial_base_unij_l <- read_csv(input_path("2024_11_18_p_prosocial_base_unij_l.csv"))
+p_fam_fn_base_unij_l <- read_csv(input_path("2024_11_18_p_fam_fn_base_unij_l.csv"))
+p_parent_psych_base_unij_l <- read_csv(input_path("2024_11_18_p_parent_psych_base_unij_l.csv"))
+cbcl_base_unij_l <- read_csv(input_path("2024_11_18_cbcl_base_unij_l.csv"))
+sds_base_unij_l <- read_csv(input_path("2024_11_18_sds_base_unij_l.csv"))
 ```
 
 # QC
@@ -200,12 +204,12 @@ lapply(smri_pc_base_mtbi_l, length) |> unlist()
 smri_base_mtbi_l_pass <- intersect(smri_qc_base_mtbi_l$"pass", smri_pc_base_mtbi_l$"pass")
 length(smri_base_mtbi_l_pass)
 
-smri_qc_base_uninj_l <- qc_smri(mri_y_qc_raw_smr_t1, t = 2, subjects = base_uninj_subs, metric = "qc")
-lapply(smri_qc_base_uninj_l, length) |> unlist()
-smri_pc_base_uninj_l <- qc_smri(mri_y_qc_raw_smr_t1, t = 2, subjects = base_uninj_subs, metric = "pc")
-lapply(smri_pc_base_uninj_l, length) |> unlist()
-smri_base_uninj_l_pass <- intersect(smri_qc_base_uninj_l$"pass", smri_pc_base_uninj_l$"pass")
-length(smri_base_uninj_l_pass)
+smri_qc_base_unij_l <- qc_smri(mri_y_qc_raw_smr_t1, t = 2, subjects = base_unij_subs, metric = "qc")
+lapply(smri_qc_base_unij_l, length) |> unlist()
+smri_pc_base_unij_l <- qc_smri(mri_y_qc_raw_smr_t1, t = 2, subjects = base_unij_subs, metric = "pc")
+lapply(smri_pc_base_unij_l, length) |> unlist()
+smri_base_unij_l_pass <- intersect(smri_qc_base_unij_l$"pass", smri_pc_base_unij_l$"pass")
+length(smri_base_unij_l_pass)
 
 # dMRI
 dmri_qc_long_mtbi_0 <- qc_dmri(mri_y_qc_raw_dmr, t = 0, subjects = long_mtbi_subs, metric = "qc")
@@ -229,12 +233,12 @@ lapply(dmri_pc_base_mtbi_l, length) |> unlist()
 dmri_base_mtbi_l_pass <- intersect(dmri_qc_base_mtbi_l$"pass", dmri_pc_base_mtbi_l$"pass")
 length(dmri_base_mtbi_l_pass)
 
-dmri_qc_base_uninj_l <- qc_dmri(mri_y_qc_raw_dmr, t = 2, subjects = base_uninj_subs, metric = "qc")
-lapply(dmri_qc_base_uninj_l, length) |> unlist()
-dmri_pc_base_uninj_l <- qc_dmri(mri_y_qc_raw_dmr, t = 2, subjects = base_uninj_subs, metric = "pc")
-lapply(dmri_pc_base_uninj_l, length) |> unlist()
-dmri_base_uninj_l_pass <- intersect(dmri_qc_base_uninj_l$"pass", dmri_pc_base_uninj_l$"pass")
-length(dmri_base_uninj_l_pass)
+dmri_qc_base_unij_l <- qc_dmri(mri_y_qc_raw_dmr, t = 2, subjects = base_unij_subs, metric = "qc")
+lapply(dmri_qc_base_unij_l, length) |> unlist()
+dmri_pc_base_unij_l <- qc_dmri(mri_y_qc_raw_dmr, t = 2, subjects = base_unij_subs, metric = "pc")
+lapply(dmri_pc_base_unij_l, length) |> unlist()
+dmri_base_unij_l_pass <- intersect(dmri_qc_base_unij_l$"pass", dmri_pc_base_unij_l$"pass")
+length(dmri_base_unij_l_pass)
 
 # rs-fMRI
 rsfmri_qc_long_mtbi_0 <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 0, subjects = long_mtbi_subs, metric = "qc")
@@ -258,12 +262,12 @@ lapply(rsfmri_pc_base_mtbi_l, length) |> unlist()
 rsfmri_base_mtbi_l_pass <- intersect(rsfmri_qc_base_mtbi_l$"pass", rsfmri_pc_base_mtbi_l$"pass")
 length(rsfmri_base_mtbi_l_pass)
 
-rsfmri_qc_base_uninj_l <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 2, subjects = base_uninj_subs, metric = "qc")
-lapply(rsfmri_qc_base_uninj_l, length) |> unlist()
-rsfmri_pc_base_uninj_l <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 2, subjects = base_uninj_subs, metric = "pc")
-lapply(rsfmri_pc_base_uninj_l, length) |> unlist()
-rsfmri_base_uninj_l_pass <- intersect(rsfmri_qc_base_uninj_l$"pass", rsfmri_pc_base_uninj_l$"pass")
-length(rsfmri_base_uninj_l_pass)
+rsfmri_qc_base_unij_l <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 2, subjects = base_unij_subs, metric = "qc")
+lapply(rsfmri_qc_base_unij_l, length) |> unlist()
+rsfmri_pc_base_unij_l <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 2, subjects = base_unij_subs, metric = "pc")
+lapply(rsfmri_pc_base_unij_l, length) |> unlist()
+rsfmri_base_unij_l_pass <- intersect(rsfmri_qc_base_unij_l$"pass", rsfmri_pc_base_unij_l$"pass")
+length(rsfmri_base_unij_l_pass)
 
 sm_subc_v_qc_long_mtbi_0 <- filter(sm_subc_v_long_mtbi_0, subjectkey %in% smri_long_mtbi_0_pass)
 sm_cort_t_qc_long_mtbi_0 <- filter(sm_cort_t_long_mtbi_0, subjectkey %in% smri_long_mtbi_0_pass)
@@ -283,12 +287,12 @@ sm_cort_sa_qc_base_mtbi_l <- filter(sm_cort_sa_base_mtbi_l, subjectkey %in% smri
 dm_all_wmnd_qc_base_mtbi_l <- filter(dm_all_wmnd_base_mtbi_l, subjectkey %in% dmri_base_mtbi_l_pass)
 rm_gord_cor_qc_base_mtbi_l <- filter(rm_gord_cor_base_mtbi_l, subjectkey %in% rsfmri_base_mtbi_l_pass)
 rm_subc_cor_qc_base_mtbi_l <- filter(rm_subc_cor_base_mtbi_l, subjectkey %in% rsfmri_base_mtbi_l_pass)
-sm_subc_v_qc_base_uninj_l <- filter(sm_subc_v_base_uninj_l, subjectkey %in% smri_base_uninj_l_pass)
-sm_cort_t_qc_base_uninj_l <- filter(sm_cort_t_base_uninj_l, subjectkey %in% smri_base_uninj_l_pass)
-sm_cort_sa_qc_base_uninj_l <- filter(sm_cort_sa_base_uninj_l, subjectkey %in% smri_base_uninj_l_pass)
-dm_all_wmnd_qc_base_uninj_l <- filter(dm_all_wmnd_base_uninj_l, subjectkey %in% dmri_base_uninj_l_pass)
-rm_gord_cor_qc_base_uninj_l <- filter(rm_gord_cor_base_uninj_l, subjectkey %in% rsfmri_base_uninj_l_pass)
-rm_subc_cor_qc_base_uninj_l <- filter(rm_subc_cor_base_uninj_l, subjectkey %in% rsfmri_base_uninj_l_pass)
+sm_subc_v_qc_base_unij_l <- filter(sm_subc_v_base_unij_l, subjectkey %in% smri_base_unij_l_pass)
+sm_cort_t_qc_base_unij_l <- filter(sm_cort_t_base_unij_l, subjectkey %in% smri_base_unij_l_pass)
+sm_cort_sa_qc_base_unij_l <- filter(sm_cort_sa_base_unij_l, subjectkey %in% smri_base_unij_l_pass)
+dm_all_wmnd_qc_base_unij_l <- filter(dm_all_wmnd_base_unij_l, subjectkey %in% dmri_base_unij_l_pass)
+rm_gord_cor_qc_base_unij_l <- filter(rm_gord_cor_base_unij_l, subjectkey %in% rsfmri_base_unij_l_pass)
+rm_subc_cor_qc_base_unij_l <- filter(rm_subc_cor_base_unij_l, subjectkey %in% rsfmri_base_unij_l_pass)
 
 write_csv(sm_subc_v_qc_long_mtbi_0, input_path("sm_subc_v_qc_long_mtbi_0.csv", TRUE))
 write_csv(sm_cort_t_qc_long_mtbi_0, input_path("sm_cort_t_qc_long_mtbi_0.csv", TRUE))
@@ -308,39 +312,39 @@ write_csv(sm_cort_sa_qc_base_mtbi_l, input_path("sm_cort_sa_qc_base_mtbi_l.csv",
 write_csv(dm_all_wmnd_qc_base_mtbi_l, input_path("dm_all_wmnd_qc_base_mtbi_l.csv", TRUE))
 write_csv(rm_gord_cor_qc_base_mtbi_l, input_path("rm_gord_cor_qc_base_mtbi_l.csv", TRUE))
 write_csv(rm_subc_cor_qc_base_mtbi_l, input_path("rm_subc_cor_qc_base_mtbi_l.csv", TRUE))
-write_csv(sm_subc_v_qc_base_uninj_l, input_path("sm_subc_v_qc_base_uninj_l.csv", TRUE))
-write_csv(sm_cort_t_qc_base_uninj_l, input_path("sm_cort_t_qc_base_uninj_l.csv", TRUE))
-write_csv(sm_cort_sa_qc_base_uninj_l, input_path("sm_cort_sa_qc_base_uninj_l.csv", TRUE))
-write_csv(dm_all_wmnd_qc_base_uninj_l, input_path("dm_all_wmnd_qc_base_uninj_l.csv", TRUE))
-write_csv(rm_gord_cor_qc_base_uninj_l, input_path("rm_gord_cor_qc_base_uninj_l.csv", TRUE))
-write_csv(rm_subc_cor_qc_base_uninj_l, input_path("rm_subc_cor_qc_base_uninj_l.csv", TRUE))
+write_csv(sm_subc_v_qc_base_unij_l, input_path("sm_subc_v_qc_base_unij_l.csv", TRUE))
+write_csv(sm_cort_t_qc_base_unij_l, input_path("sm_cort_t_qc_base_unij_l.csv", TRUE))
+write_csv(sm_cort_sa_qc_base_unij_l, input_path("sm_cort_sa_qc_base_unij_l.csv", TRUE))
+write_csv(dm_all_wmnd_qc_base_unij_l, input_path("dm_all_wmnd_qc_base_unij_l.csv", TRUE))
+write_csv(rm_gord_cor_qc_base_unij_l, input_path("rm_gord_cor_qc_base_unij_l.csv", TRUE))
+write_csv(rm_subc_cor_qc_base_unij_l, input_path("rm_subc_cor_qc_base_unij_l.csv", TRUE))
 ```
 
 ```{r}
-sm_subc_v_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_subc_v_qc_long_mtbi_0.csv"))
-sm_cort_t_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_t_qc_long_mtbi_0.csv"))
-sm_cort_sa_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_long_mtbi_0.csv"))
-dm_all_wmnd_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_long_mtbi_0.csv"))
-rm_gord_cor_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_long_mtbi_0.csv"))
-rm_subc_cor_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_long_mtbi_0.csv"))
-sm_subc_v_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_qc_long_mtbi_l.csv"))
-sm_cort_t_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_qc_long_mtbi_l.csv"))
-sm_cort_sa_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_long_mtbi_l.csv"))
-dm_all_wmnd_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_long_mtbi_l.csv"))
-rm_gord_cor_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_long_mtbi_l.csv"))
-rm_subc_cor_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_long_mtbi_l.csv"))
-sm_subc_v_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_qc_base_mtbi_l.csv"))
-sm_cort_t_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_qc_base_mtbi_l.csv"))
-sm_cort_sa_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_base_mtbi_l.csv"))
-dm_all_wmnd_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_base_mtbi_l.csv"))
-rm_gord_cor_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_base_mtbi_l.csv"))
-rm_subc_cor_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_base_mtbi_l.csv"))
-sm_subc_v_qc_base_uninj_l <- read_csv(input_path("2024_11_06_sm_subc_v_qc_base_uninj_l.csv"))
-sm_cort_t_qc_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_t_qc_base_uninj_l.csv"))
-sm_cort_sa_qc_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_base_uninj_l.csv"))
-dm_all_wmnd_qc_base_uninj_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_base_uninj_l.csv"))
-rm_gord_cor_qc_base_uninj_l <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_base_uninj_l.csv"))
-rm_subc_cor_qc_base_uninj_l <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_base_uninj_l.csv"))
+sm_subc_v_qc_long_mtbi_0 <- read_csv(input_path("2024_11_18_sm_subc_v_qc_long_mtbi_0.csv"))
+sm_cort_t_qc_long_mtbi_0 <- read_csv(input_path("2024_11_18_sm_cort_t_qc_long_mtbi_0.csv"))
+sm_cort_sa_qc_long_mtbi_0 <- read_csv(input_path("2024_11_18_sm_cort_sa_qc_long_mtbi_0.csv"))
+dm_all_wmnd_qc_long_mtbi_0 <- read_csv(input_path("2024_11_18_dm_all_wmnd_qc_long_mtbi_0.csv"))
+rm_gord_cor_qc_long_mtbi_0 <- read_csv(input_path("2024_11_18_rm_gord_cor_qc_long_mtbi_0.csv"))
+rm_subc_cor_qc_long_mtbi_0 <- read_csv(input_path("2024_11_18_rm_subc_cor_qc_long_mtbi_0.csv"))
+sm_subc_v_qc_long_mtbi_l <- read_csv(input_path("2024_11_18_sm_subc_v_qc_long_mtbi_l.csv"))
+sm_cort_t_qc_long_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_t_qc_long_mtbi_l.csv"))
+sm_cort_sa_qc_long_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_sa_qc_long_mtbi_l.csv"))
+dm_all_wmnd_qc_long_mtbi_l <- read_csv(input_path("2024_11_18_dm_all_wmnd_qc_long_mtbi_l.csv"))
+rm_gord_cor_qc_long_mtbi_l <- read_csv(input_path("2024_11_18_rm_gord_cor_qc_long_mtbi_l.csv"))
+rm_subc_cor_qc_long_mtbi_l <- read_csv(input_path("2024_11_18_rm_subc_cor_qc_long_mtbi_l.csv"))
+sm_subc_v_qc_base_mtbi_l <- read_csv(input_path("2024_11_18_sm_subc_v_qc_base_mtbi_l.csv"))
+sm_cort_t_qc_base_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_t_qc_base_mtbi_l.csv"))
+sm_cort_sa_qc_base_mtbi_l <- read_csv(input_path("2024_11_18_sm_cort_sa_qc_base_mtbi_l.csv"))
+dm_all_wmnd_qc_base_mtbi_l <- read_csv(input_path("2024_11_18_dm_all_wmnd_qc_base_mtbi_l.csv"))
+rm_gord_cor_qc_base_mtbi_l <- read_csv(input_path("2024_11_18_rm_gord_cor_qc_base_mtbi_l.csv"))
+rm_subc_cor_qc_base_mtbi_l <- read_csv(input_path("2024_11_18_rm_subc_cor_qc_base_mtbi_l.csv"))
+sm_subc_v_qc_base_unij_l <- read_csv(input_path("2024_11_18_sm_subc_v_qc_base_unij_l.csv"))
+sm_cort_t_qc_base_unij_l <- read_csv(input_path("2024_11_18_sm_cort_t_qc_base_unij_l.csv"))
+sm_cort_sa_qc_base_unij_l <- read_csv(input_path("2024_11_18_sm_cort_sa_qc_base_unij_l.csv"))
+dm_all_wmnd_qc_base_unij_l <- read_csv(input_path("2024_11_18_dm_all_wmnd_qc_base_unij_l.csv"))
+rm_gord_cor_qc_base_unij_l <- read_csv(input_path("2024_11_18_rm_gord_cor_qc_base_unij_l.csv"))
+rm_subc_cor_qc_base_unij_l <- read_csv(input_path("2024_11_18_rm_subc_cor_qc_base_unij_l.csv"))
 ```
 
 Building dataframes for imputation:
@@ -429,44 +433,44 @@ base_mtbi_l_list <- list(
 base_mtbi_l_df <- merge_df_list(base_mtbi_l_list, join = "full")
 base_mtbi_l_df
 
-base_uninj_l_list <- list(
-    d_interview_age_base_uninj_l,
-    d_sex_base_uninj_l,
-    d_income_base_uninj_l,
-    d_race_base_uninj_l,
-    d_pubertal_status_base_uninj_l,
-    mh_headaches_base_uninj_l,
-    sm_subc_v_qc_base_uninj_l,
-    sm_cort_t_qc_base_uninj_l,
-    sm_cort_sa_qc_base_uninj_l,
-    dm_all_wmnd_qc_base_uninj_l,
-    rm_gord_cor_qc_base_uninj_l,
-    rm_subc_cor_qc_base_uninj_l,
-    p_friends_base_uninj_l,
-    p_screen_time_base_uninj_l,
-    p_sports_base_uninj_l,
-    p_exercise_base_uninj_l,
-    p_prosocial_base_uninj_l,
-    p_fam_fn_base_uninj_l,
-    p_parent_psych_base_uninj_l,
-    cbcl_base_uninj_l,
-    sds_base_uninj_l
+base_unij_l_list <- list(
+    d_interview_age_base_unij_l,
+    d_sex_base_unij_l,
+    d_income_base_unij_l,
+    d_race_base_unij_l,
+    d_pubertal_status_base_unij_l,
+    mh_headaches_base_unij_l,
+    sm_subc_v_qc_base_unij_l,
+    sm_cort_t_qc_base_unij_l,
+    sm_cort_sa_qc_base_unij_l,
+    dm_all_wmnd_qc_base_unij_l,
+    rm_gord_cor_qc_base_unij_l,
+    rm_subc_cor_qc_base_unij_l,
+    p_friends_base_unij_l,
+    p_screen_time_base_unij_l,
+    p_sports_base_unij_l,
+    p_exercise_base_unij_l,
+    p_prosocial_base_unij_l,
+    p_fam_fn_base_unij_l,
+    p_parent_psych_base_unij_l,
+    cbcl_base_unij_l,
+    sds_base_unij_l
 )
-base_uninj_l_df <- merge_df_list(base_uninj_l_list, join = "full")
-base_uninj_l_df
+base_unij_l_df <- merge_df_list(base_unij_l_list, join = "full")
+base_unij_l_df
 
 write_csv(long_mtbi_0_df, input_path("long_mtbi_0_df.csv", TRUE))
 write_csv(long_mtbi_l_df, input_path("long_mtbi_l_df.csv", TRUE))
 write_csv(base_mtbi_l_df, input_path("base_mtbi_l_df.csv", TRUE))
-write_csv(base_uninj_l_df, input_path("base_uninj_l_df.csv", TRUE))
+write_csv(base_unij_l_df, input_path("base_unij_l_df.csv", TRUE))
 ```
 
 ```{r}
 # CHECKPOINT
-long_mtbi_0_df <- data.frame(read_csv(input_path("2024_11_06_long_mtbi_0_df.csv")))
-long_mtbi_l_df <- data.frame(read_csv(input_path("2024_11_06_long_mtbi_l_df.csv")))
-base_mtbi_l_df <- data.frame(read_csv(input_path("2024_11_06_base_mtbi_l_df.csv")))
-base_uninj_l_df <- data.frame(read_csv(input_path("2024_11_06_base_uninj_l_df.csv")))
+long_mtbi_0_df <- data.frame(read_csv(input_path("2024_11_18_long_mtbi_0_df.csv")))
+long_mtbi_l_df <- data.frame(read_csv(input_path("2024_11_18_long_mtbi_l_df.csv")))
+base_mtbi_l_df <- data.frame(read_csv(input_path("2024_11_18_base_mtbi_l_df.csv")))
+base_unij_l_df <- data.frame(read_csv(input_path("2024_11_18_base_unij_l_df.csv")))
 ```
 
 ```{r}
@@ -474,7 +478,7 @@ base_uninj_l_df <- data.frame(read_csv(input_path("2024_11_06_base_uninj_l_df.cs
 long_mtbi_0_df_no_subs <- char_to_fac(long_mtbi_0_df[, -1])
 long_mtbi_l_df_no_subs <- char_to_fac(long_mtbi_l_df[, -1])
 base_mtbi_l_df_no_subs <- char_to_fac(base_mtbi_l_df[, -1])
-base_uninj_l_df_no_subs <- char_to_fac(base_uninj_l_df[, -1])
+base_unij_l_df_no_subs <- char_to_fac(base_unij_l_df[, -1])
 ```
 
 Imputation functions (from ch03):
@@ -547,7 +551,7 @@ imputed_long_mtbi_0 <- futuremice(
 
 long_mtbi_0_pred_mat <- build_pred_mat(long_mtbi_0_df_no_subs, 1)
 write.table(long_mtbi_0_pred_mat, proc_path("long_mtbi_0_pred_mat.txt", TRUE))
-long_mtbi_0_pred_mat <- as.matrix(read.table(proc_path("2024_11_06_long_mtbi_0_pred_mat.txt")))
+long_mtbi_0_pred_mat <- as.matrix(read.table(proc_path("2024_11_18_long_mtbi_0_pred_mat.txt")))
 storage.mode(long_mtbi_0_pred_mat) <- "double"
 
 imputed_long_mtbi_0 <- futuremice(
@@ -559,24 +563,17 @@ imputed_long_mtbi_0 <- futuremice(
 )
 
 saveRDS(imputed_long_mtbi_0, file = proc_path("long_mtbi_0_imputed.rds", TRUE))
-imputed_long_mtbi_0 <- readRDS(proc_path("2024_11_06_long_mtbi_0_imputed.rds"))
+imputed_long_mtbi_0 <- readRDS(proc_path("2024_11_18_long_mtbi_0_imputed.rds"))
 
 five_imputed_long_mtbi_0 <- complete(imputed_long_mtbi_0, action = "long", include = TRUE)
 write_csv(five_imputed_long_mtbi_0, input_path("five_imputed_long_mtbi_0.csv", TRUE))
-five_imputed_long_mtbi_0 <- read_csv(input_path("2024_11_06_five_imputed_long_mtbi_0.csv"))
+five_imputed_long_mtbi_0 <- read_csv(input_path("2024_11_18_five_imputed_long_mtbi_0.csv"))
 ```
 
 ```{r}
-imputed_long_mtbi_l <- futuremice(
-    long_mtbi_l_df_no_subs,
-    m = 5,
-    maxit = 10,
-    parallelseed = 42
-)
-
 long_mtbi_l_pred_mat <- build_pred_mat(long_mtbi_l_df_no_subs, 1)
 write.table(long_mtbi_l_pred_mat, proc_path("long_mtbi_l_pred_mat.txt", TRUE))
-long_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2024_11_06_long_mtbi_l_pred_mat.txt")))
+long_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2024_11_18_long_mtbi_l_pred_mat.txt")))
 storage.mode(long_mtbi_l_pred_mat) <- "double"
 
 imputed_long_mtbi_l <- futuremice(
@@ -588,25 +585,18 @@ imputed_long_mtbi_l <- futuremice(
 )
 
 saveRDS(imputed_long_mtbi_l, file = proc_path("long_mtbi_l_imputed.rds", TRUE))
-imputed_long_mtbi_l <- readRDS(proc_path("2024_11_06_long_mtbi_l_imputed.rds"))
+imputed_long_mtbi_l <- readRDS(proc_path("2024_11_18_long_mtbi_l_imputed.rds"))
 
 five_imputed_long_mtbi_l <- complete(imputed_long_mtbi_l, action = "long", include = TRUE)
 write_csv(five_imputed_long_mtbi_l, input_path("five_imputed_long_mtbi_l.csv", TRUE))
-five_imputed_long_mtbi_l <- read_csv(input_path("2024_11_06_five_imputed_long_mtbi_l.csv"))
+five_imputed_long_mtbi_l <- read_csv(input_path("2024_11_18_five_imputed_long_mtbi_l.csv"))
 ```
 
 
 ```{r}
-imputed_base_mtbi_l <- futuremice(
-    base_mtbi_l_df_no_subs,
-    m = 5,
-    maxit = 10,
-    parallelseed = 42
-)
-
 base_mtbi_l_pred_mat <- build_pred_mat(base_mtbi_l_df_no_subs, 1)
 write.table(base_mtbi_l_pred_mat, proc_path("base_mtbi_l_pred_mat.txt", TRUE))
-base_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2024_11_06_base_mtbi_l_pred_mat.txt")))
+base_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2024_11_18_base_mtbi_l_pred_mat.txt")))
 storage.mode(base_mtbi_l_pred_mat) <- "double"
 
 imputed_base_mtbi_l <- futuremice(
@@ -618,66 +608,58 @@ imputed_base_mtbi_l <- futuremice(
 )
 
 saveRDS(imputed_base_mtbi_l, file = proc_path("base_mtbi_l_imputed.rds", TRUE))
-imputed_base_mtbi_l <- readRDS(proc_path("2024_11_06_base_mtbi_l_imputed.rds"))
+imputed_base_mtbi_l <- readRDS(proc_path("2024_11_18_base_mtbi_l_imputed.rds"))
 
 five_imputed_base_mtbi_l <- complete(imputed_base_mtbi_l, action = "long", include = TRUE)
 write_csv(five_imputed_base_mtbi_l, input_path("five_imputed_base_mtbi_l.csv", TRUE))
-five_imputed_base_mtbi_l <- read_csv(input_path("2024_11_06_five_imputed_base_mtbi_l.csv"))
+five_imputed_base_mtbi_l <- read_csv(input_path("2024_11_18_five_imputed_base_mtbi_l.csv"))
 ```
 
 ```{r}
-imputed_base_uninj_l <- futuremice(
-    base_uninj_l_df_no_subs,
-    m = 5,
-    maxit = 10,
-    parallelseed = 42
-)
+base_unij_l_pred_mat <- build_pred_mat(base_unij_l_df_no_subs, 1)
+write.table(base_unij_l_pred_mat, proc_path("base_unij_l_pred_mat.txt", TRUE))
+base_unij_l_pred_mat <- as.matrix(read.table(proc_path("2024_11_18_base_unij_l_pred_mat.txt")))
+storage.mode(base_unij_l_pred_mat) <- "double"
 
-base_uninj_l_pred_mat <- build_pred_mat(base_uninj_l_df_no_subs, 1)
-write.table(base_uninj_l_pred_mat, proc_path("base_uninj_l_pred_mat.txt", TRUE))
-base_uninj_l_pred_mat <- as.matrix(read.table(proc_path("2024_11_06_base_uninj_l_pred_mat.txt")))
-storage.mode(base_uninj_l_pred_mat) <- "double"
-
-imputed_base_uninj_l <- futuremice(
-    base_uninj_l_df_no_subs,
+imputed_base_unij_l <- futuremice(
+    base_unij_l_df_no_subs,
     m = 5,
     maxit = 10,
     parallelseed = 42,
-    predictorMatrix = base_uninj_l_pred_mat
+    predictorMatrix = base_unij_l_pred_mat
 )
 
-saveRDS(imputed_base_uninj_l, file = proc_path("base_uninj_l_imputed.rds", TRUE))
-imputed_base_uninj_l <- readRDS(proc_path("2024_11_06_base_uninj_l_imputed.rds"))
+saveRDS(imputed_base_unij_l, file = proc_path("base_unij_l_imputed.rds", TRUE))
+imputed_base_unij_l <- readRDS(proc_path("2024_11_18_base_unij_l_imputed.rds"))
 
-five_imputed_base_uninj_l <- complete(imputed_base_uninj_l, action = "long", include = TRUE)
-write_csv(five_imputed_base_uninj_l, input_path("five_imputed_base_uninj_l.csv", TRUE))
-five_imputed_base_uninj_l <- read_csv(input_path("2024_11_06_five_imputed_base_uninj_l.csv"))
+five_imputed_base_unij_l <- complete(imputed_base_unij_l, action = "long", include = TRUE)
+write_csv(five_imputed_base_unij_l, input_path("five_imputed_base_unij_l.csv", TRUE))
+five_imputed_base_unij_l <- read_csv(input_path("2024_11_18_five_imputed_base_unij_l.csv"))
 ```
 
 ```{r}
-five_imputed_long_mtbi_0 <- read_csv(input_path("2024_11_06_five_imputed_long_mtbi_0.csv"))
-five_imputed_long_mtbi_l <- read_csv(input_path("2024_11_06_five_imputed_long_mtbi_l.csv"))
-five_imputed_base_mtbi_l <- read_csv(input_path("2024_11_06_five_imputed_base_mtbi_l.csv"))
-five_imputed_base_uninj_l <- read_csv(input_path("2024_11_06_five_imputed_base_uninj_l.csv"))
+five_imputed_long_mtbi_0 <- read_csv(input_path("2024_11_18_five_imputed_long_mtbi_0.csv"))
+five_imputed_long_mtbi_l <- read_csv(input_path("2024_11_18_five_imputed_long_mtbi_l.csv"))
+five_imputed_base_mtbi_l <- read_csv(input_path("2024_11_18_five_imputed_base_mtbi_l.csv"))
+five_imputed_base_unij_l <- read_csv(input_path("2024_11_18_five_imputed_base_unij_l.csv"))
 
 named_imputed_long_mtbi_0 <- dplyr::mutate(five_imputed_long_mtbi_0, "subjectkey" = rep(long_mtbi_subs, 6))
 named_imputed_long_mtbi_l <- dplyr::mutate(five_imputed_long_mtbi_l, "subjectkey" = rep(long_mtbi_subs, 6))
 named_imputed_base_mtbi_l <- dplyr::mutate(five_imputed_base_mtbi_l, "subjectkey" = rep(base_mtbi_subs, 6))
-named_imputed_base_uninj_l <- dplyr::mutate(five_imputed_base_uninj_l, "subjectkey" = rep(base_uninj_subs, 6))
+named_imputed_base_unij_l <- dplyr::mutate(five_imputed_base_unij_l, "subjectkey" = rep(base_unij_subs, 6))
 
 write_csv(named_imputed_long_mtbi_0, input_path("named_imputed_long_mtbi_0.csv", TRUE))
 write_csv(named_imputed_long_mtbi_l, input_path("named_imputed_long_mtbi_l.csv", TRUE))
 write_csv(named_imputed_base_mtbi_l, input_path("named_imputed_base_mtbi_l.csv", TRUE))
-write_csv(named_imputed_base_uninj_l, input_path("named_imputed_base_uninj_l.csv", TRUE))
-
+write_csv(named_imputed_base_unij_l, input_path("named_imputed_base_unij_l.csv", TRUE))
 ```
 
 ```{r}
 # CHECKPOINT
-named_imputed_long_mtbi_0 <- read_csv(input_path("2024_11_06_named_imputed_long_mtbi_0.csv"))
-named_imputed_long_mtbi_l <- read_csv(input_path("2024_11_06_named_imputed_long_mtbi_l.csv"))
-named_imputed_base_mtbi_l <- read_csv(input_path("2024_11_06_named_imputed_base_mtbi_l.csv"))
-named_imputed_base_uninj_l <- read_csv(input_path("2024_11_06_named_imputed_base_uninj_l.csv"))
+named_imputed_long_mtbi_0 <- read_csv(input_path("2024_11_18_named_imputed_long_mtbi_0.csv"))
+named_imputed_long_mtbi_l <- read_csv(input_path("2024_11_18_named_imputed_long_mtbi_l.csv"))
+named_imputed_base_mtbi_l <- read_csv(input_path("2024_11_18_named_imputed_base_mtbi_l.csv"))
+named_imputed_base_unij_l <- read_csv(input_path("2024_11_18_named_imputed_base_unij_l.csv"))
 ```
 
 # mTBI subsetting
@@ -704,7 +686,7 @@ parse_imputations <- function(original_df_list, complete_imputed_df, imps) {
             }
         )
     names(parsed_imputations) <- gsub("_mtbi$", "", names(parsed_imputations))
-    names(parsed_imputations) <- gsub("_uninj$", "", names(parsed_imputations))
+    names(parsed_imputations) <- gsub("_unij$", "", names(parsed_imputations))
     return(parsed_imputations)
 }
 
@@ -785,7 +767,7 @@ names(base_mtbi_l_list) <- c(
     "sds"
 )
 
-names(base_uninj_l_list) <- c(
+names(base_unij_l_list) <- c(
     "d_interview_age",
     "d_sex",
     "d_income",
@@ -812,21 +794,21 @@ names(base_uninj_l_list) <- c(
 long_mtbi_0_pi <- parse_imputations(long_mtbi_0_list, named_imputed_long_mtbi_0, 6)
 long_mtbi_l_pi <- parse_imputations(long_mtbi_l_list, named_imputed_long_mtbi_l, 6)
 base_mtbi_l_pi <- parse_imputations(base_mtbi_l_list, named_imputed_base_mtbi_l, 6)
-base_uninj_l_pi <- parse_imputations(base_uninj_l_list, named_imputed_base_uninj_l, 6)
+base_unij_l_pi <- parse_imputations(base_unij_l_list, named_imputed_base_unij_l, 6)
 
 list.save(long_mtbi_0_pi, input_path("long_mtbi_0_pi.rds", TRUE))
 list.save(long_mtbi_l_pi, input_path("long_mtbi_l_pi.rds", TRUE))
 list.save(base_mtbi_l_pi, input_path("base_mtbi_l_pi.rds", TRUE))
-list.save(base_uninj_l_pi, input_path("base_uninj_l_pi.rds", TRUE))
+list.save(base_unij_l_pi, input_path("base_unij_l_pi.rds", TRUE))
 ```
 
 Re-reading:
 
 ```{r}
-long_mtbi_0_pi <- list.load(input_path("2024_11_06_long_mtbi_0_pi.rds"))
-long_mtbi_l_pi <- list.load(input_path("2024_11_06_long_mtbi_l_pi.rds"))
-base_mtbi_l_pi <- list.load(input_path("2024_11_06_base_mtbi_l_pi.rds"))
-base_uninj_l_pi <- list.load(input_path("2024_11_06_base_uninj_l_pi.rds"))
+long_mtbi_0_pi <- list.load(input_path("2024_11_18_long_mtbi_0_pi.rds"))
+long_mtbi_l_pi <- list.load(input_path("2024_11_18_long_mtbi_l_pi.rds"))
+base_mtbi_l_pi <- list.load(input_path("2024_11_18_base_mtbi_l_pi.rds"))
+base_unij_l_pi <- list.load(input_path("2024_11_18_base_unij_l_pi.rds"))
 ```
 
 ## Constructing data_lists
@@ -835,21 +817,21 @@ base_uninj_l_pi <- list.load(input_path("2024_11_06_base_uninj_l_pi.rds"))
 long_mtbi_0_dls <- build_dls(long_mtbi_0_pi)
 long_mtbi_l_dls <- build_dls(long_mtbi_l_pi)
 base_mtbi_l_dls <- build_dls(base_mtbi_l_pi)
-base_uninj_l_dls <- build_dls(base_uninj_l_pi)
+base_unij_l_dls <- build_dls(base_unij_l_pi)
 long_mtbi_0_ols <- build_ols(long_mtbi_0_pi)
 long_mtbi_l_ols <- build_ols(long_mtbi_l_pi)
 base_mtbi_l_ols <- build_ols(base_mtbi_l_pi)
-base_uninj_l_ols <- build_ols(base_uninj_l_pi)
+base_unij_l_ols <- build_ols(base_unij_l_pi)
 
 all_long_dls <- list(
     "long_mtbi_0_dls" = long_mtbi_0_dls,
     "long_mtbi_l_dls" = long_mtbi_l_dls,
     "base_mtbi_l_dls" = base_mtbi_l_dls,
-    "base_uninj_l_dls" = base_uninj_l_dls,
+    "base_unij_l_dls" = base_unij_l_dls,
     "long_mtbi_0_ols" = long_mtbi_0_ols,
     "long_mtbi_l_ols" = long_mtbi_l_ols,
     "base_mtbi_l_ols" = base_mtbi_l_ols,
-    "base_uninj_l_ols" = base_uninj_l_ols
+    "base_unij_l_ols" = base_unij_l_ols
 )
 
 ```
@@ -919,8 +901,6 @@ name_changes <- c(
     "weekend_screentime" = "screentime_wknd_hrs",
     "weekday_screentime" = "screentime_wkday_hrs"
 )
-
-all_long_dls[[1]][[1]] |> collapse_dl() |> colnames()
 
 all_long_dls <- all_long_dls |>
     lapply(

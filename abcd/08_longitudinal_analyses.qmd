@@ -127,7 +127,13 @@ lm_long_fit <- function(df, feature) {
     return(summary(pooled_results))
 }
 
-gg_long_cor(mtbi_long_changes, "cbcl_anxdep", 0)
+anxdep_long_cor_1 <- gg_long_cor(mtbi_long_changes, "cbcl_anxdep", 0)
+
+anxdep_long_cor_2 <- gg_long_cor(mtbi_long_changes, "cbcl_anxdep")
+
+ggsave(plot = anxdep_long_cor_1, fig_path("anxdep_long_cor_1.png", TRUE), height = 10, width = 10)
+
+ggsave(plot = anxdep_long_cor_2, fig_path("anxdep_long_cor_2.png", TRUE), height = 10, width = 10)
 
 gg_long_cor(mtbi_long_changes, "cbcl_withdep")
 
@@ -135,6 +141,7 @@ gg_long_cor(mtbi_long_changes, "cbcl_somatic")
 
 # None are significant
 lm_long_fit(mtbi_long_changes, "cbcl_anxdep")
+
 lm_long_fit(mtbi_long_changes, "cbcl_withdep")
 lm_long_fit(mtbi_long_changes, "cbcl_somatic")
 lm_long_fit(mtbi_long_changes, "cbcl_social")
@@ -304,19 +311,16 @@ long_mtbi_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
 base_uninj_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
 
 
+for_uninj <- c(sorted_features, outcomes)
+for_uninj <- for_uninj[for_uninj %in% names(long_mtbi_0_plot_list)]
+
 long_mtbi_0_plot_list <- auto_plot(
     cluster_df = long_mtbi_0_i1_cluster_df,
     data_list = long_mtbi_0_dls[[1]],
     target_list = long_mtbi_0_ols[[1]]
 )
-long_mtbi_0_all_plots <- wrap_plots(plot_list)
 
-long_mtbi_l_plot_list <- auto_plot(
-    cluster_df = long_mtbi_l_i1_cluster_df,
-    data_list = long_mtbi_l_dls[[1]],
-    target_list = long_mtbi_l_ols[[1]]
-)
-long_mtbi_l_all_plots <- wrap_plots(plot_list)
+long_mtbi_0_all_plots <- wrap_plots(long_mtbi_0_plot_list[for_uninj])
 
 ggsave(
     fig_path("long_mtbi_0_predicted_plots.png", TRUE),
@@ -325,6 +329,16 @@ ggsave(
     height = 30,
     dpi = 50
 )
+
+long_mtbi_l_plot_list <- auto_plot(
+    cluster_df = long_mtbi_l_i1_cluster_df,
+    data_list = long_mtbi_l_dls[[1]],
+    target_list = long_mtbi_l_ols[[1]]
+)
+
+long_mtbi_l_all_plots <- wrap_plots(plot_list)
+
+long_mtbi_l_all_plots <- wrap_plots(long_mtbi_l_plot_list[for_uninj])
 
 ggsave(
     fig_path("long_mtbi_l_predicted_plots.png", TRUE),
