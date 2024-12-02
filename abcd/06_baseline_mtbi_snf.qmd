@@ -1652,20 +1652,20 @@ significant_es <- function(type, l, u) {
 
 # FUNCTION: Format topologies
 format_tops <- function(tops) {
-    tops <- data.frame(tops) |> mutate(
+    tops <- data.frame(tops) |> dplyr::mutate(
         c12_sig = significant_es(es, c12_l, c12_u),
         c13_sig = significant_es(es, c13_l, c13_u),
         c23_sig = significant_es(es, c23_l, c23_u)
     )
     # Strips whitespace by converting number columns to numeric format
     tops <- numcol_to_numeric(tops)
-    tops <- tops |> mutate(
+    tops <- tops |> dplyr::mutate(
         "C1 vs. C2" = paste0(c12_es, " [", c12_l, ", ", c12_u, "]"),
         "C1 vs. C3" = paste0(c13_es, " [", c13_l, ", ", c13_u, "]"),
         "C2 vs. C3" = paste0(c23_es, " [", c23_l, ", ", c23_u, "]"),
         .keep = "unused"
     )
-    tops <- tops |> mutate(
+    tops <- tops |> dplyr::mutate(
         "C1 vs. C2" = ifelse(c12_sig == 1, paste0("textbf{", `C1 vs. C2`, "}"), `C1 vs. C2`),
         "C1 vs. C3" = ifelse(c13_sig == 1, paste0("textbf{", `C1 vs. C3`, "}"), `C1 vs. C3`),
         "C2 vs. C3" = ifelse(c23_sig == 1, paste0("textbf{", `C2 vs. C3`, "}"), `C2 vs. C3`),
