@@ -116,7 +116,9 @@ mtbi_subs_t0 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-# subs who had an mTBI as of the year 1 follow up data
+mtbi_subs_t0 # 446 kids
+
+# subs who had an mTBI based on year 1 follow up data
 mtbi_subs_t1 <- get_mtbi_subjects(
     ph_p_otbi,
     abcd_y_lt,
@@ -127,7 +129,12 @@ mtbi_subs_t1 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-# subs who had an mTBI as of the year 2 follow up data
+mtbi_subs_t1 # 133
+
+sum(mtbi_subs_t1 %in% mtbi_subs_t0)
+sum(mtbi_subs_t0 %in% mtbi_subs_t1)
+
+# subs who had an mTBI based on the year 2 follow up data
 mtbi_subs_t2 <- get_mtbi_subjects(
     ph_p_otbi,
     abcd_y_lt,
@@ -138,16 +145,16 @@ mtbi_subs_t2 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-# subs who had an mtbi pre-1yfu, but not pre-baseline
+mtbi_subs_t2 # 143
+
+# subs who had an mtbi pre-1yfu, but not pre-baseline (t1 only)
 mtbi_subs_t1o <- mtbi_subs_t1[!mtbi_subs_t1 %in% mtbi_subs_t0]
 
-# subs who had an mtbi between 1yfu and 2yfu, but not pre-baseline
+# subs who had an mtbi between 1yfu and 2yfu, but not pre-baseline (t2 only)
 mtbi_subs_t2o <- mtbi_subs_t2[!mtbi_subs_t2 %in% mtbi_subs_t0]
 
 # subs who had an mtbi pre-2yfu but not pre-baseline
 mtbi_subs_0_to_2 <- unique(c(mtbi_subs_t1o, mtbi_subs_t2o))
-
-length(mtbi_subs_0_to_2) #219
 
 write_subjects(
     mtbi_subs_t1,
@@ -597,7 +604,13 @@ write_csv(sm_cort_sa_base_unij_l, input_path("sm_cort_sa_base_unij_l.csv", date 
 ##### White matter neurite densities
 
 ```{r}
-dm_all_wmnd_long_mtbi_0 <- get_all_wmnd(mri_y_rsi_rnd_at, mri_y_rsi_rnd_wm_dsk, long_mtbi_subs, t = 0)
+
+dm_all_wmnd_long_mtbi_0 <- get_all_wmnd(mri_y_rsi_rnd_at, mri_y_rsi_rnd_wm_dsk, long_mtbi_subs, t = 2)
+dm_all_wmnd_long_mtbi_0 |> tibble()
+
+?get_all_wmnd
+
+
 tibble(dm_all_wmnd_long_mtbi_0)
 write_csv(dm_all_wmnd_long_mtbi_0, input_path("dm_all_wmnd_long_mtbi_0.csv", date = TRUE))
 
