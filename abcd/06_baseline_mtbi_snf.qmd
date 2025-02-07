@@ -28,29 +28,26 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subs <- read_csv(sub_path("2024_11_18_mtbi_subs.csv"))
-mtbi_train_subs <- read_csv(sub_path("2024_11_18_mtbi_train_subs.csv"))
-mtbi_test_subs <- read_csv(sub_path("2024_11_18_mtbi_test_subs.csv"))
-unij_subs <- read_csv(sub_path("2024_11_18_unij_subs.csv"))
+mtbi_subs <- read_csv(sub_path("2025_02_07_mtbi_subs.csv"))
+mtbi_train_subs <- read_csv(sub_path("2025_02_07_mtbi_train_subs.csv"))
+mtbi_test_subs <- read_csv(sub_path("2025_02_07_mtbi_test_subs.csv"))
+unij_subs <- read_csv(sub_path("2025_02_07_unij_subs.csv"))
 ```
 
 ## Importing data
 
 ```{r}
 # CHECKPOINT
-all_dls <- list.load(input_path("2024_11_18_all_dls.rds"))
+all_dls <- list.load(input_path("2025_02_07_all_dls.rds"))
 ```
 
-## Generating custom distance measures
+## Generating the SNF config
 
 ```{r}
-# CHECKPOINT
-###############################################################################
-# 2. Add standard normalized variations to the distance metrics list (also
-# achievable through toggling automatic_standard_normalize parameter in
-# `batch_snf`)
-###############################################################################
-my_distance_metrics <- generate_distance_metrics_list(
+set.seed(42)
+snf_config <- snf_config(
+    all_dls$"mtbi_train_data_lists"$"imp_1",
+    n_solutions = 200,
     continuous_distances = list(
         "standard_norm_euclidean" = sn_euclidean_distance
     ),
@@ -59,22 +56,7 @@ my_distance_metrics <- generate_distance_metrics_list(
     ),
     ordinal_distances = list(
         "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-)
-
-summarize_dml(my_distance_metrics)
-```
-
-
-## Generating the settings matrix
-
-
-```{r}
-set.seed(42)
-mtbi_settings_matrix <- generate_settings_matrix(
-    all_dls$"mtbi_train_data_lists"$"imp_1",
-    nrow = 200,
-    distance_metrics_list = my_distance_metrics
+    )
 )
 write_csv(mtbi_settings_matrix, proc_path("mtbi_settings_matrix.csv", TRUE))
 ```
