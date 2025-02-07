@@ -13,7 +13,6 @@ library(readr)
 library(dplyr)
 library(here)
 library(abcdutils)
-
 library(visdat)
 
 core_path <- path_maker(here(paste0("data/abcd/core")))
@@ -125,12 +124,14 @@ ph_p_otbi |>
     nrow()
 
 # mTBI subjects (latest mTBI at least 3 months prior to baseline collection
+# N = 437
 mtbi_subs <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 0)
 
 # Later analyses show some unusual data for subject: NDAR_INVBU31791C.
 # They are removed from the uninjured subjects list.
 
 # Uninjured subjects (those with no injuries as of baseline collection)
+# N = 9349
 unij_subs <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0)
 
 write_csv(mtbi_subs, sub_path("mtbi_subs.csv", date = TRUE))
@@ -138,8 +139,8 @@ write_csv(unij_subs, sub_path("unij_subs.csv", date = TRUE))
 
 # Note that the longitudinal subjects have not been filtered in any way based on
 #  whether or not they also had an mTBI at baseline or another timepoint
-mtbi_subs <- read_subjects(sub_path("2024_11_18_mtbi_subs.csv"))
-unij_subs <- read_subjects(sub_path("2024_11_18_unij_subs.csv"))
+mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
 
 length(mtbi_subs)
 length(unij_subs)
@@ -315,10 +316,6 @@ write_csv(mh_headaches_unij, input_path("mh_headaches_unij.csv", date = TRUE))
 mh_mtbi_count_mtbi <- get_mtbi_count(ph_p_otbi, abcd_y_lt, mtbi_subs, cutoff = 3, t = 0)
 tibble(mh_mtbi_count_mtbi)
 write_csv(mh_mtbi_count_mtbi, input_path("mh_mtbi_count_mtbi.csv", date = TRUE))
-
-mh_mtbi_count_unij <- get_mtbi_count(ph_p_otbi, abcd_y_lt, unij_subs, cutoff = 3, t = 0)
-tibble(mh_mtbi_count_unij)
-write_csv(mh_mtbi_count_unij, input_path("mh_mtbi_count_unij.csv", date = TRUE))
 ```
 
 ### Neuroimaging
@@ -549,11 +546,11 @@ write_csv(cbcl_unij, input_path("cbcl_unij.csv", date = TRUE))
 ### Sleep disturbance scale
 
 ```{r}
-sds_mtbi <- get_sds_total_probs(ph_p_sds, mtbi_subs, t = 0)
+sds_mtbi <- get_sleep_disturbance(ph_p_sds, mtbi_subs, t = 0)
 tibble(sds_mtbi)
 write_csv(sds_mtbi, input_path( "sds_mtbi.csv", date = TRUE))
 
-sds_unij <- get_sds_total_probs(ph_p_sds, unij_subs, t = 0)
+sds_unij <- get_sleep_disturbance(ph_p_sds, unij_subs, t = 0)
 tibble(sds_unij)
 write_csv(sds_unij, input_path( "sds_unij.csv", date = TRUE))
 ```
