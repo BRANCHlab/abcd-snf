@@ -3,7 +3,7 @@ let s:so_save = &g:so | let s:siso_save = &g:siso | setg so=0 siso=0 | setl so=-
 let v:this_session=expand("<sfile>:p")
 silent only
 silent tabonly
-cd ~/Documents/abcd-snf
+cd ~/Documents/metasnf/R
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
@@ -13,30 +13,32 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +28 abcd/01_baseline_extraction.qmd
-badd +857 abcd/02_baseline_preprocessing.qmd
-badd +414 abcd/06_baseline_mtbi_snf.qmd
-badd +1 ~/Documents/metasnf/R/t.R
-badd +160 ~/Documents/metasnf/R/snf_config.R
-badd +293 ~/Documents/metasnf/R/settings_df.R
-badd +1 ~/Documents/metasnf/R/signal.R
-badd +1 ~/Documents/metasnf/sandbox.R
-badd +67 ~/Documents/metasnf/R/extraction.R
-badd +88 ~/Documents/metasnf/R/weights_matrix.R
-badd +43 ~/Documents/metasnf/R/rbind.R
-badd +1 ~/Documents/metasnf/vignettes/a_complete_example.Rmd
-badd +167 ~/Documents/metasnf/R/ext_solutions_df.R
-badd +285 ~/Documents/metasnf/R/solutions_df.R
+badd +583 ~/Documents/abcd-snf/abcd/06_baseline_mtbi_snf.qmd
+badd +426 ~/Documents/metasnf/vignettes/a_complete_example.Rmd
+badd +1 t.R
+badd +74 get_representative_solutions.R
+badd +9 extraction.R
+badd +30 sim_mats_list.R
+badd +1 dplyr.R
+badd +462 print.R
+badd +34 ext_solutions_df.R
+badd +36 ~/Documents/prash/journal/prash.md
+badd +10 ~/Documents/metasnf/sandbox.R
+badd +6 ~/Documents/prash/time/time.csv
+badd +73 nmi.R
+badd +447 batch_snf.R
+badd +209 clust_fns_list.R
+badd +41 nclust_estimation.R
 argglobal
 %argdel
-$argadd abcd/01_baseline_extraction.qmd
-edit abcd/06_baseline_mtbi_snf.qmd
+$argadd ~/Documents/abcd-snf/abcd/06_baseline_mtbi_snf.qmd
+edit ~/Documents/abcd-snf/abcd/06_baseline_mtbi_snf.qmd
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
 wincmd _ | wincmd |
-split
-1wincmd k
+vsplit
+1wincmd h
 wincmd w
 let &splitbelow = s:save_splitbelow
 let &splitright = s:save_splitright
@@ -47,10 +49,10 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe '1resize ' . ((&lines * 26 + 28) / 57)
-exe '2resize ' . ((&lines * 27 + 28) / 57)
+exe 'vert 1resize ' . ((&columns * 159 + 159) / 318)
+exe 'vert 2resize ' . ((&columns * 158 + 159) / 318)
 argglobal
-balt ~/Documents/metasnf/R/t.R
+balt ~/Documents/metasnf/vignettes/a_complete_example.Rmd
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -59,19 +61,20 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 209 - ((17 * winheight(0) + 13) / 26)
+let s:l = 589 - ((42 * winheight(0) + 35) / 70)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 209
-normal! 024|
+keepjumps 589
+normal! 022|
+lcd ~/Documents/abcd-snf
 wincmd w
 argglobal
-if bufexists(fnamemodify("abcd/06_baseline_mtbi_snf.qmd", ":p")) | buffer abcd/06_baseline_mtbi_snf.qmd | else | edit abcd/06_baseline_mtbi_snf.qmd | endif
+if bufexists(fnamemodify("~/Documents/metasnf/R/nclust_estimation.R", ":p")) | buffer ~/Documents/metasnf/R/nclust_estimation.R | else | edit ~/Documents/metasnf/R/nclust_estimation.R | endif
 if &buftype ==# 'terminal'
-  silent file abcd/06_baseline_mtbi_snf.qmd
+  silent file ~/Documents/metasnf/R/nclust_estimation.R
 endif
-balt ~/Documents/metasnf/R/t.R
+balt ~/Documents/metasnf/R/clust_fns_list.R
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -80,15 +83,15 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 458 - ((18 * winheight(0) + 13) / 27)
+let s:l = 63 - ((50 * winheight(0) + 35) / 70)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 458
-normal! 0
+keepjumps 63
+normal! 014|
 wincmd w
-exe '1resize ' . ((&lines * 26 + 28) / 57)
-exe '2resize ' . ((&lines * 27 + 28) / 57)
+exe 'vert 1resize ' . ((&columns * 159 + 159) / 318)
+exe 'vert 2resize ' . ((&columns * 158 + 159) / 318)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf

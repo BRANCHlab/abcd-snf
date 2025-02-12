@@ -60,7 +60,7 @@ mtbi_config <- snf_config(
     use_default_dist_fns = TRUE
 )
 
-mtbi_config
+mtbi_config$"clust_fns_list"[[1]]
 
 saveRDS(mtbi_config, proc_path("mtbi_config.rds", TRUE))
 ```
@@ -196,27 +196,6 @@ names(mtbi_ari_order) <- NULL
 ## Calculating associations between cluster solutions and features
 
 ```{r}
-#imputation_labels <- data.frame(
-#    "imputation" = c(
-#        rep("s1", 200),
-#        rep("s2", 200),
-#        rep("s3", 200),
-#        rep("s4", 200),
-#        rep("s5", 200),
-#        rep("p1", 200),
-#        rep("p2", 200),
-#        rep("p3", 200),
-#        rep("p4", 200),
-#        rep("p5", 200)
-#    ),
-#    "pooled" = c(
-#        rep(FALSE, 1000),
-#        rep(TRUE, 1000)
-#    )
-#)
-#
-#mtbi_sol_df_imp_lab <- cbind(mtbi_sol_df, imputation_labels)
-
 # Solo imputation 1
 mtbi_ext_sol_df_s1 <- extend_solutions(
     mtbi_sol_df[1:200, ],
@@ -308,9 +287,6 @@ mtbi_ext_sol_df_p5 <- extend_solutions(
 )
 saveRDS(mtbi_ext_sol_df_p5, proc_path("mtbi_ext_sol_df_p5.rds", TRUE))
 
-
-saveRDS(mtbi_ext_sol_df_p5, proc_path("mtbi_ext_sol_df_p5.rds", TRUE))
-
 mtbi_ext_sol_df_s1 <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df_s1.rds"))
 mtbi_ext_sol_df_s2 <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df_s2.rds"))
 mtbi_ext_sol_df_s3 <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df_s3.rds"))
@@ -322,32 +298,42 @@ mtbi_ext_sol_df_p3 <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df_p3.rds"))
 mtbi_ext_sol_df_p4 <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df_p4.rds"))
 mtbi_ext_sol_df_p5 <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df_p5.rds"))
 
-mtbi_ext_sol_df <- dplyr::bind_rows(
-    mtbi_ext_sol_df_s1,
-    mtbi_ext_sol_df_s2,
-    mtbi_ext_sol_df_s3,
-    mtbi_ext_sol_df_s4,
-    mtbi_ext_sol_df_s5,
-    mtbi_ext_sol_df_p1,
-    mtbi_ext_sol_df_p2,
-    mtbi_ext_sol_df_p3,
-    mtbi_ext_sol_df_p4,
-    mtbi_ext_sol_df_p5
+mtbi_ext_sol_df_s1_no_mtbi <- mtbi_ext_sol_df_s1 |> dplyr::select(-dplyr::contains("mtbi"))
+mtbi_ext_sol_df_s2_no_mtbi <- mtbi_ext_sol_df_s2 |> dplyr::select(-dplyr::contains("mtbi"))
+mtbi_ext_sol_df_s3_no_mtbi <- mtbi_ext_sol_df_s3 |> dplyr::select(-dplyr::contains("mtbi"))
+mtbi_ext_sol_df_s4_no_mtbi <- mtbi_ext_sol_df_s4 |> dplyr::select(-dplyr::contains("mtbi"))
+mtbi_ext_sol_df_s5_no_mtbi <- mtbi_ext_sol_df_s5 |> dplyr::select(-dplyr::contains("mtbi"))
+
+mtbi_ext_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            mtbi_ext_sol_df_s1_no_mtbi,
+            mtbi_ext_sol_df_s2_no_mtbi,
+            mtbi_ext_sol_df_s3_no_mtbi,
+            mtbi_ext_sol_df_s4_no_mtbi,
+            mtbi_ext_sol_df_s5_no_mtbi,
+            mtbi_ext_sol_df_p1,
+            mtbi_ext_sol_df_p2,
+            mtbi_ext_sol_df_p3,
+            mtbi_ext_sol_df_p4,
+            mtbi_ext_sol_df_p5
+        ),
+        list(reset_indices = TRUE)
+    )
 )
 
+ mtbi_ext_sol_df   
+
 saveRDS(mtbi_ext_sol_df, proc_path("mtbi_ext_sol_df.rds", TRUE))
-
-
-#mtbi_ext_sol_df$"impairment_separation" <- -log10(mtbi_ext_sol_df$"mean_pval")
 ```
 
 ```{r}
 # CHECKPOINT
-mtbi_ext_sol_df <- readRDS(proc_path("2025_02_10_mtbi_ext_sol_df.rds"))
+mtbi_ext_sol_df <- readRDS(proc_path("2025_02_11_mtbi_ext_sol_df.rds"))
 ```
 
 ## Identifying and visualizing meta clusters
-
 
 ```{r}
 base_ari_hm <- meta_cluster_heatmap(
@@ -356,7 +342,6 @@ base_ari_hm <- meta_cluster_heatmap(
 )
 
 shiny_annotator(base_ari_hm)
-
 
 mtbi_split_vec <- c(
     167,
@@ -456,7 +441,7 @@ save_heatmap(
 )
 
 # Another heatmap without the imputation-related columns
-lite_mtbi_ari_hm <- adjusted_rand_index_heatmap(
+lite_mtbi_ari_hm <- meta_cluster_heatmap(
     aris = mtbi_ari,
     order = mtbi_ari_order,
     data = mtbi_esdf,
@@ -487,6 +472,21 @@ save_heatmap(
 )
 ```
 
+```{r}
+mtbi_mc_sol_df <- label_meta_clusters(
+    mtbi_ext_sol_df,
+    order = mtbi_ari_order,
+    split_vector = mtbi_split_vec
+)
+
+saveRDS(mtbi_mc_sol_df, proc_path("mtbi_mc_sol_df.rds", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+mtbi_mc_sol_df <- readRDS(proc_path("2025_02_11_mtbi_mc_sol_df.rds"))
+```
+
 When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have values for all features.
 
 ```{r}
@@ -494,8 +494,8 @@ When picking out representative solutions, I'd like to preferentially go for sol
 # This function will pick from solo solutions unless over 70% of the meta
 # cluster is pooled.
 restrict_fn <- function(x, threshold = 0.3) {
-    x_solo_ind <- x$"imputation" %in% c("s1", "s2", "s3", "s4", "s5")
-    x_pool_ind <- x$"imputation" %in% c("p1", "p2", "p3", "p4", "p5")
+    x_solo_ind <- x$"solution" %in% 1:1000
+    x_pool_ind <- x$"solution" %in% 1001:2000
     x_solo <- x[x_solo_ind, ]
     x_pool <- x[x_pool_ind, ]
     frac_solo <- nrow(x_solo) / (nrow(x_solo) + nrow(x_pool))
@@ -508,39 +508,34 @@ restrict_fn <- function(x, threshold = 0.3) {
 
 mtbi_rep_solutions <- get_representative_solutions(
     mtbi_ari,
-    split_vector = mtbi_split_vec,
-    order = mtbi_ari_order,
-    filter_fn = restrict_fn,
-    mtbi_esm
+    mtbi_mc_sol_df,
+    filter_fn = restrict_fn
 )
 
-# Based on the heatmap, we'll remove A, E, I (unstable meta clusters)
-mtbi_rep_solutions <- dplyr::filter(
-    mtbi_rep_solutions,
-    !label %in% c("A", "E", "I")
-)
+saveRDS(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.rds", TRUE))
+```
 
-write_csv(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.csv", TRUE))
+```{r}
+mtbi_rep_solutions <- readRDS(proc_path("2025_02_11_mtbi_rep_solutions.rds"))
+
+# Top solution is meta cluster E, represented by solution 576
+mtbi_top_solution <- mtbi_ext_sol_df_s3[mtbi_ext_sol_df_s3$"solution" == 576, ]
+
+mtbi_top_solution$"mc" <- "E"
+
+saveRDS(mtbi_top_solution, proc_path("mtbi_top_solution.rds", TRUE))
 ```
 
 ```{r}
 # CHECKPOINT
-mtbi_rep_solutions <- read_csv(proc_path("2024_11_26_mtbi_rep_solutions.csv"))
+mtbi_top_solution <- readRDS(proc_path("2025_02_11_mtbi_top_solution.rds"))
 
-mtbi_rep_solutions |>
-    dplyr::filter(label == "D") |>
-    dplyr::select(imputation)
-```
-
-```{r}
-# D (s3) is the top looking solution
-mtbi_rep_solutions$"imputation"
-mtbi_rep_solutions$"label"
-
+# Note that MC E came from imputation s3 (401:600 range) and MC F came from
+#  imputation p2 (1201:1400 range).
 mtbi_manhattan <- mc_manhattan_plot(
-    mtbi_rep_solutions,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
+    mtbi_top_solution,
+    dl = all_dls$"mtbi_train_data_lists"$"imp_3",
+    target_dl = all_dls$"mtbi_train_oom_lists"$"imp_3",
     domain_colours = c(
         "AS" = "#85929e",
         "D" = "#bb8fce",
@@ -557,15 +552,9 @@ ggsave(
     plot = mtbi_manhattan,
     filename = fig_path("mtbi_manhattan.png", TRUE),
     width = 18,
-    height = 14,
+    height = 5,
     dpi = 120
 )
-
-# The most robust solution, best outcome p-values
-mtbi_mc_d_esm <- mtbi_rep_solutions |>
-    dplyr::filter(label == "D")
-
-write_csv(mtbi_mc_d_esm, proc_path("mtbi_mc_d_esm.csv", TRUE))
 ```
 
 ```{r}
@@ -590,53 +579,46 @@ cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
 }
 ```
 
-```{r}
-mtbi_mc_d_esm <- read_csv(proc_path("2024_11_26_mtbi_mc_d_esm.csv"))
-
-# Actually, swap the cluster labels to match prior runs
-mtbi_mc_d_esm_2 <- cluster_label_swap(mtbi_mc_d_esm, 2, 3)
-
-write_csv(mtbi_mc_d_esm_2, proc_path("mtbi_mc_d_esm_2.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-mtbi_mc_d_esm_2 <- read_csv(proc_path("2024_11_26_mtbi_mc_d_esm_2.csv"))
-```
-
-```{r}
-# Feature plot generation
-plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm_2,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3",
-    save = fig_path("mtbi_mc_d", TRUE),
-    verbose = TRUE
-)
-
-# No save version:
-plot_list <- auto_plot(
-    solutions_matrix_row = mtbi_mc_d_esm_2,
-    data_list = all_dls$"mtbi_train_data_lists"$"imp_3",
-    target_list = all_dls$"mtbi_train_oom_lists"$"imp_3"
-)
-
-saveRDS(plot_list, fig_path("mtbi_mc_d_plot_list.rds", TRUE))
-
-plot_list <- readRDS(fig_path("2024_11_26_mtbi_mc_d_plot_list.rds"))
-```
-
-## Characterization of meta cluster D representative solution
+## Feature importance
 
 ### NMI
 
 ```{r}
-nmis <- batch_nmi(
-    all_dls$"mtbi_train_data_lists"$"imp_3",
-    mtbi_mc_d_esm_2,
-    distance_metrics_list = my_distance_metrics,
+
+undebug(calc_nmis)
+
+
+all_dls$"mtbi_train_data_lists"$"imp_3"[9]
+
+attr(mtbi_top_solution, "snf_config")$"clust_fns_list"[[1]] <- spectral_eigen
+
+attr(mtbi_top_solution, "snf_config")$"clust_fns_list"[[2]] <- spectral_rot
+
+nmis <- calc_nmis(
+    all_dls$"mtbi_train_data_lists"$"imp_3"[9],
+    mtbi_top_solution,
     verbose = TRUE
 )
+
+x <- 0
+
+dog <- 5
+
+result <- tryCatch(
+    {
+        dog <- 3
+        list("dog" = dog)
+    }, error = function(e) {
+        dog <- 2
+        list()
+    }
+)
+
+result
+
+result$"dog"
+
+dog
 
 nmi_order <- sort(
     nmis$"row_id_72",
@@ -819,6 +801,35 @@ ggsave(
     height = 12
 )
 ```
+
+
+```{r}
+# Feature plot generation
+plot_list <- auto_plot(
+    sol_df_row = mtbi_top_solution,
+    dl = c(
+        all_dls$"mtbi_train_data_lists"$"imp_3",
+        all_dls$"mtbi_train_oom_lists"$"imp_3"
+    ),
+    save = fig_path("ap_mtbi_mc_f", TRUE),
+    verbose = TRUE
+)
+
+# No save version:
+plot_list <- auto_plot(
+    sol_df_row = mtbi_top_solution,
+    dl = c(
+        all_dls$"mtbi_train_data_lists"$"imp_3",
+        all_dls$"mtbi_train_oom_lists"$"imp_3"
+    ),
+    verbose = TRUE
+)
+
+saveRDS(plot_list, fig_path("ap_mtbi_mc_f_plot_list.rds", TRUE))
+
+plot_list <- readRDS(fig_path("2025_02_11_ap_mtbi_mc_f_plot_list.rds"))
+```
+
 
 ### Visualizing top features
 
