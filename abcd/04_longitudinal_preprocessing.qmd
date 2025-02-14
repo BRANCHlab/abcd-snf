@@ -45,10 +45,10 @@ base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
 
 ```{r}
 # Just use 1st imputation.
-all_dls <- list.load(input_path("2025_02_07_all_dls.rds"))
+all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
 
 base_unij_dl <- all_dls$"unij_data_lists"$"imp_1"
-base_mtbi_dl <- merge_data_lists(
+base_mtbi_dl <- merge(
     all_dls$"mtbi_train_data_lists"$"imp_3",
     all_dls$"mtbi_test_data_lists"$"imp_1"
 )
@@ -56,8 +56,11 @@ base_mtbi_dl <- merge_data_lists(
 
 ```{r}
 strip_sub_prefix <- function(df) {
-    df$"subjectkey" <- gsub("subject_", "", df$"subjectkey")
-    return(df)
+    df <- df |>
+        dplyr::mutate(uid = gsub("uid_", "", uid)) |>
+        dplyr::rename("subjectkey" = "uid") |>
+        tibble::tibble()
+    return(tibble::tibble(df))
 }
 
 # LONG MTBI 0
@@ -156,6 +159,7 @@ d_race_base_unij_l <- strip_sub_prefix(base_unij_dl$"d_race"$"data")
 d_pubertal_status_base_unij_l <- read_csv(input_path("2025_02_07_d_pubertal_status_base_unij_l.csv"))
 mh_headaches_base_unij_l <- read_csv(input_path("2025_02_07_mh_headaches_base_unij_l.csv"))
 # mtbi_count not existent
+
 sm_subc_v_base_unij_l <- read_csv(input_path("2025_02_07_sm_subc_v_base_unij_l.csv"))
 sm_cort_t_base_unij_l <- read_csv(input_path("2025_02_07_sm_cort_t_base_unij_l.csv"))
 sm_cort_sa_base_unij_l <- read_csv(input_path("2025_02_07_sm_cort_sa_base_unij_l.csv"))
@@ -321,30 +325,30 @@ write_csv(rm_subc_cor_qc_base_unij_l, input_path("rm_subc_cor_qc_base_unij_l.csv
 ```
 
 ```{r}
-sm_subc_v_qc_long_mtbi_0 <- read_csv(input_path("2025_02_07_sm_subc_v_qc_long_mtbi_0.csv"))
-sm_cort_t_qc_long_mtbi_0 <- read_csv(input_path("2025_02_07_sm_cort_t_qc_long_mtbi_0.csv"))
-sm_cort_sa_qc_long_mtbi_0 <- read_csv(input_path("2025_02_07_sm_cort_sa_qc_long_mtbi_0.csv"))
-dm_all_wmnd_qc_long_mtbi_0 <- read_csv(input_path("2025_02_07_dm_all_wmnd_qc_long_mtbi_0.csv"))
-rm_gord_cor_qc_long_mtbi_0 <- read_csv(input_path("2025_02_07_rm_gord_cor_qc_long_mtbi_0.csv"))
-rm_subc_cor_qc_long_mtbi_0 <- read_csv(input_path("2025_02_07_rm_subc_cor_qc_long_mtbi_0.csv"))
-sm_subc_v_qc_long_mtbi_l <- read_csv(input_path("2025_02_07_sm_subc_v_qc_long_mtbi_l.csv"))
-sm_cort_t_qc_long_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_t_qc_long_mtbi_l.csv"))
-sm_cort_sa_qc_long_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_sa_qc_long_mtbi_l.csv"))
-dm_all_wmnd_qc_long_mtbi_l <- read_csv(input_path("2025_02_07_dm_all_wmnd_qc_long_mtbi_l.csv"))
-rm_gord_cor_qc_long_mtbi_l <- read_csv(input_path("2025_02_07_rm_gord_cor_qc_long_mtbi_l.csv"))
-rm_subc_cor_qc_long_mtbi_l <- read_csv(input_path("2025_02_07_rm_subc_cor_qc_long_mtbi_l.csv"))
-sm_subc_v_qc_base_mtbi_l <- read_csv(input_path("2025_02_07_sm_subc_v_qc_base_mtbi_l.csv"))
-sm_cort_t_qc_base_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_t_qc_base_mtbi_l.csv"))
-sm_cort_sa_qc_base_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_sa_qc_base_mtbi_l.csv"))
-dm_all_wmnd_qc_base_mtbi_l <- read_csv(input_path("2025_02_07_dm_all_wmnd_qc_base_mtbi_l.csv"))
-rm_gord_cor_qc_base_mtbi_l <- read_csv(input_path("2025_02_07_rm_gord_cor_qc_base_mtbi_l.csv"))
-rm_subc_cor_qc_base_mtbi_l <- read_csv(input_path("2025_02_07_rm_subc_cor_qc_base_mtbi_l.csv"))
-sm_subc_v_qc_base_unij_l <- read_csv(input_path("2025_02_07_sm_subc_v_qc_base_unij_l.csv"))
-sm_cort_t_qc_base_unij_l <- read_csv(input_path("2025_02_07_sm_cort_t_qc_base_unij_l.csv"))
-sm_cort_sa_qc_base_unij_l <- read_csv(input_path("2025_02_07_sm_cort_sa_qc_base_unij_l.csv"))
-dm_all_wmnd_qc_base_unij_l <- read_csv(input_path("2025_02_07_dm_all_wmnd_qc_base_unij_l.csv"))
-rm_gord_cor_qc_base_unij_l <- read_csv(input_path("2025_02_07_rm_gord_cor_qc_base_unij_l.csv"))
-rm_subc_cor_qc_base_unij_l <- read_csv(input_path("2025_02_07_rm_subc_cor_qc_base_unij_l.csv"))
+sm_subc_v_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_sm_subc_v_qc_long_mtbi_0.csv"))
+sm_cort_t_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_sm_cort_t_qc_long_mtbi_0.csv"))
+sm_cort_sa_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_long_mtbi_0.csv"))
+dm_all_wmnd_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_long_mtbi_0.csv"))
+rm_gord_cor_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_long_mtbi_0.csv"))
+rm_subc_cor_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_long_mtbi_0.csv"))
+sm_subc_v_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_sm_subc_v_qc_long_mtbi_l.csv"))
+sm_cort_t_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_t_qc_long_mtbi_l.csv"))
+sm_cort_sa_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_long_mtbi_l.csv"))
+dm_all_wmnd_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_long_mtbi_l.csv"))
+rm_gord_cor_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_long_mtbi_l.csv"))
+rm_subc_cor_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_long_mtbi_l.csv"))
+sm_subc_v_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_sm_subc_v_qc_base_mtbi_l.csv"))
+sm_cort_t_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_t_qc_base_mtbi_l.csv"))
+sm_cort_sa_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_base_mtbi_l.csv"))
+dm_all_wmnd_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_base_mtbi_l.csv"))
+rm_gord_cor_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_base_mtbi_l.csv"))
+rm_subc_cor_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_base_mtbi_l.csv"))
+sm_subc_v_qc_base_unij_l <- read_csv(input_path("2025_02_13_sm_subc_v_qc_base_unij_l.csv"))
+sm_cort_t_qc_base_unij_l <- read_csv(input_path("2025_02_13_sm_cort_t_qc_base_unij_l.csv"))
+sm_cort_sa_qc_base_unij_l <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_base_unij_l.csv"))
+dm_all_wmnd_qc_base_unij_l <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_base_unij_l.csv"))
+rm_gord_cor_qc_base_unij_l <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_base_unij_l.csv"))
+rm_subc_cor_qc_base_unij_l <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_base_unij_l.csv"))
 ```
 
 Building dataframes for imputation:
@@ -373,7 +377,7 @@ long_mtbi_0_list <- list(
     cbcl_long_mtbi_0,
     sds_long_mtbi_0
 )
-long_mtbi_0_df <- merge_df_list(long_mtbi_0_list, join = "full")
+long_mtbi_0_df <- merge_df_list(long_mtbi_0_list, join = "full", uid = "subjectkey")
 long_mtbi_0_df
 
 long_mtbi_l_list <- list(
@@ -404,7 +408,7 @@ long_mtbi_l_list <- list(
     cbcl_long_mtbi_l,
     sds_long_mtbi_l
 )
-long_mtbi_l_df <- merge_df_list(long_mtbi_l_list, join = "full")
+long_mtbi_l_df <- merge_df_list(long_mtbi_l_list, join = "full", uid = "subjectkey")
 long_mtbi_l_df
 
 base_mtbi_l_list <- list(
@@ -430,8 +434,9 @@ base_mtbi_l_list <- list(
     cbcl_base_mtbi_l,
     sds_base_mtbi_l
 )
-base_mtbi_l_df <- merge_df_list(base_mtbi_l_list, join = "full")
+base_mtbi_l_df <- merge_df_list(base_mtbi_l_list, join = "full", uid = "subjectkey")
 base_mtbi_l_df
+
 
 base_unij_l_list <- list(
     d_interview_age_base_unij_l,
@@ -456,7 +461,7 @@ base_unij_l_list <- list(
     cbcl_base_unij_l,
     sds_base_unij_l
 )
-base_unij_l_df <- merge_df_list(base_unij_l_list, join = "full")
+base_unij_l_df <- merge_df_list(base_unij_l_list, join = "full", uid = "subjectkey")
 base_unij_l_df
 
 write_csv(long_mtbi_0_df, input_path("long_mtbi_0_df.csv", TRUE))
@@ -467,10 +472,10 @@ write_csv(base_unij_l_df, input_path("base_unij_l_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-long_mtbi_0_df <- data.frame(read_csv(input_path("2025_02_07_long_mtbi_0_df.csv")))
-long_mtbi_l_df <- data.frame(read_csv(input_path("2025_02_07_long_mtbi_l_df.csv")))
-base_mtbi_l_df <- data.frame(read_csv(input_path("2025_02_07_base_mtbi_l_df.csv")))
-base_unij_l_df <- data.frame(read_csv(input_path("2025_02_07_base_unij_l_df.csv")))
+long_mtbi_0_df <- data.frame(read_csv(input_path("2025_02_13_long_mtbi_0_df.csv")))
+long_mtbi_l_df <- data.frame(read_csv(input_path("2025_02_13_long_mtbi_l_df.csv")))
+base_mtbi_l_df <- data.frame(read_csv(input_path("2025_02_13_base_mtbi_l_df.csv")))
+base_unij_l_df <- data.frame(read_csv(input_path("2025_02_13_base_unij_l_df.csv")))
 ```
 
 ```{r}
@@ -551,9 +556,8 @@ imputed_long_mtbi_0 <- futuremice(
 
 long_mtbi_0_pred_mat <- build_pred_mat(long_mtbi_0_df_no_subs, 1)
 write.table(long_mtbi_0_pred_mat, proc_path("long_mtbi_0_pred_mat.txt", TRUE))
-long_mtbi_0_pred_mat <- as.matrix(read.table(proc_path("2025_02_07_long_mtbi_0_pred_mat.txt")))
+long_mtbi_0_pred_mat <- as.matrix(read.table(proc_path("2025_02_13_long_mtbi_0_pred_mat.txt")))
 storage.mode(long_mtbi_0_pred_mat) <- "double"
-
 imputed_long_mtbi_0 <- futuremice(
     long_mtbi_0_df_no_subs,
     m = 5,
@@ -561,19 +565,19 @@ imputed_long_mtbi_0 <- futuremice(
     parallelseed = 42,
     predictorMatrix = long_mtbi_0_pred_mat
 )
-
+#
 saveRDS(imputed_long_mtbi_0, file = proc_path("long_mtbi_0_imputed.rds", TRUE))
-imputed_long_mtbi_0 <- readRDS(proc_path("2025_02_07_long_mtbi_0_imputed.rds"))
-
+imputed_long_mtbi_0 <- readRDS(proc_path("2025_02_13_long_mtbi_0_imputed.rds"))
+#
 five_imputed_long_mtbi_0 <- complete(imputed_long_mtbi_0, action = "long", include = TRUE)
 write_csv(five_imputed_long_mtbi_0, input_path("five_imputed_long_mtbi_0.csv", TRUE))
-five_imputed_long_mtbi_0 <- read_csv(input_path("2025_02_07_five_imputed_long_mtbi_0.csv"))
+five_imputed_long_mtbi_0 <- read_csv(input_path("2025_02_13_five_imputed_long_mtbi_0.csv"))
 ```
 
 ```{r}
 long_mtbi_l_pred_mat <- build_pred_mat(long_mtbi_l_df_no_subs, 1)
 write.table(long_mtbi_l_pred_mat, proc_path("long_mtbi_l_pred_mat.txt", TRUE))
-long_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2025_02_07_long_mtbi_l_pred_mat.txt")))
+long_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2025_02_13_long_mtbi_l_pred_mat.txt")))
 storage.mode(long_mtbi_l_pred_mat) <- "double"
 
 imputed_long_mtbi_l <- futuremice(
@@ -585,18 +589,17 @@ imputed_long_mtbi_l <- futuremice(
 )
 
 saveRDS(imputed_long_mtbi_l, file = proc_path("long_mtbi_l_imputed.rds", TRUE))
-imputed_long_mtbi_l <- readRDS(proc_path("2025_02_07_long_mtbi_l_imputed.rds"))
-
+imputed_long_mtbi_l <- readRDS(proc_path("2025_02_13_long_mtbi_l_imputed.rds"))
 five_imputed_long_mtbi_l <- complete(imputed_long_mtbi_l, action = "long", include = TRUE)
 write_csv(five_imputed_long_mtbi_l, input_path("five_imputed_long_mtbi_l.csv", TRUE))
-five_imputed_long_mtbi_l <- read_csv(input_path("2025_02_07_five_imputed_long_mtbi_l.csv"))
+five_imputed_long_mtbi_l <- read_csv(input_path("2025_02_13_five_imputed_long_mtbi_l.csv"))
 ```
 
 
 ```{r}
 base_mtbi_l_pred_mat <- build_pred_mat(base_mtbi_l_df_no_subs, 1)
 write.table(base_mtbi_l_pred_mat, proc_path("base_mtbi_l_pred_mat.txt", TRUE))
-base_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2025_02_07_base_mtbi_l_pred_mat.txt")))
+base_mtbi_l_pred_mat <- as.matrix(read.table(proc_path("2025_02_13_base_mtbi_l_pred_mat.txt")))
 storage.mode(base_mtbi_l_pred_mat) <- "double"
 
 imputed_base_mtbi_l <- futuremice(
@@ -608,17 +611,15 @@ imputed_base_mtbi_l <- futuremice(
 )
 
 saveRDS(imputed_base_mtbi_l, file = proc_path("base_mtbi_l_imputed.rds", TRUE))
-imputed_base_mtbi_l <- readRDS(proc_path("2025_02_07_base_mtbi_l_imputed.rds"))
+imputed_base_mtbi_l <- readRDS(proc_path("2025_02_13_base_mtbi_l_imputed.rds"))
 
 five_imputed_base_mtbi_l <- complete(imputed_base_mtbi_l, action = "long", include = TRUE)
 write_csv(five_imputed_base_mtbi_l, input_path("five_imputed_base_mtbi_l.csv", TRUE))
-five_imputed_base_mtbi_l <- read_csv(input_path("2025_02_07_five_imputed_base_mtbi_l.csv"))
-```
+five_imputed_base_mtbi_l <- read_csv(input_path("2025_02_13_five_imputed_base_mtbi_l.csv"))
 
-```{r}
 base_unij_l_pred_mat <- build_pred_mat(base_unij_l_df_no_subs, 1)
 write.table(base_unij_l_pred_mat, proc_path("base_unij_l_pred_mat.txt", TRUE))
-base_unij_l_pred_mat <- as.matrix(read.table(proc_path("2025_02_07_base_unij_l_pred_mat.txt")))
+base_unij_l_pred_mat <- as.matrix(read.table(proc_path("2025_02_13_base_unij_l_pred_mat.txt")))
 storage.mode(base_unij_l_pred_mat) <- "double"
 
 imputed_base_unij_l <- futuremice(
@@ -630,18 +631,18 @@ imputed_base_unij_l <- futuremice(
 )
 
 saveRDS(imputed_base_unij_l, file = proc_path("base_unij_l_imputed.rds", TRUE))
-imputed_base_unij_l <- readRDS(proc_path("2025_02_07_base_unij_l_imputed.rds"))
+imputed_base_unij_l <- readRDS(proc_path("2025_02_13_base_unij_l_imputed.rds"))
 
 five_imputed_base_unij_l <- complete(imputed_base_unij_l, action = "long", include = TRUE)
 write_csv(five_imputed_base_unij_l, input_path("five_imputed_base_unij_l.csv", TRUE))
-five_imputed_base_unij_l <- read_csv(input_path("2025_02_07_five_imputed_base_unij_l.csv"))
+five_imputed_base_unij_l <- read_csv(input_path("2025_02_13_five_imputed_base_unij_l.csv"))
 ```
 
 ```{r}
-five_imputed_long_mtbi_0 <- read_csv(input_path("2025_02_07_five_imputed_long_mtbi_0.csv"))
-five_imputed_long_mtbi_l <- read_csv(input_path("2025_02_07_five_imputed_long_mtbi_l.csv"))
-five_imputed_base_mtbi_l <- read_csv(input_path("2025_02_07_five_imputed_base_mtbi_l.csv"))
-five_imputed_base_unij_l <- read_csv(input_path("2025_02_07_five_imputed_base_unij_l.csv"))
+five_imputed_long_mtbi_0 <- read_csv(input_path("2025_02_13_five_imputed_long_mtbi_0.csv"))
+five_imputed_long_mtbi_l <- read_csv(input_path("2025_02_13_five_imputed_long_mtbi_l.csv"))
+five_imputed_base_mtbi_l <- read_csv(input_path("2025_02_13_five_imputed_base_mtbi_l.csv"))
+five_imputed_base_unij_l <- read_csv(input_path("2025_02_13_five_imputed_base_unij_l.csv"))
 
 named_imputed_long_mtbi_0 <- dplyr::mutate(five_imputed_long_mtbi_0, "subjectkey" = rep(long_mtbi_subs, 6))
 named_imputed_long_mtbi_l <- dplyr::mutate(five_imputed_long_mtbi_l, "subjectkey" = rep(long_mtbi_subs, 6))
@@ -656,10 +657,10 @@ write_csv(named_imputed_base_unij_l, input_path("named_imputed_base_unij_l.csv",
 
 ```{r}
 # CHECKPOINT
-named_imputed_long_mtbi_0 <- read_csv(input_path("2025_02_07_named_imputed_long_mtbi_0.csv"))
-named_imputed_long_mtbi_l <- read_csv(input_path("2025_02_07_named_imputed_long_mtbi_l.csv"))
-named_imputed_base_mtbi_l <- read_csv(input_path("2025_02_07_named_imputed_base_mtbi_l.csv"))
-named_imputed_base_unij_l <- read_csv(input_path("2025_02_07_named_imputed_base_unij_l.csv"))
+named_imputed_long_mtbi_0 <- read_csv(input_path("2025_02_13_named_imputed_long_mtbi_0.csv"))
+named_imputed_long_mtbi_l <- read_csv(input_path("2025_02_13_named_imputed_long_mtbi_l.csv"))
+named_imputed_base_mtbi_l <- read_csv(input_path("2025_02_13_named_imputed_base_mtbi_l.csv"))
+named_imputed_base_unij_l <- read_csv(input_path("2025_02_13_named_imputed_base_unij_l.csv"))
 ```
 
 # mTBI subsetting
@@ -805,19 +806,19 @@ list.save(base_unij_l_pi, input_path("base_unij_l_pi.rds", TRUE))
 Re-reading:
 
 ```{r}
-long_mtbi_0_pi <- list.load(input_path("2025_02_07_long_mtbi_0_pi.rds"))
-long_mtbi_l_pi <- list.load(input_path("2025_02_07_long_mtbi_l_pi.rds"))
-base_mtbi_l_pi <- list.load(input_path("2025_02_07_base_mtbi_l_pi.rds"))
-base_unij_l_pi <- list.load(input_path("2025_02_07_base_unij_l_pi.rds"))
+long_mtbi_0_pi <- list.load(input_path("2025_02_13_long_mtbi_0_pi.rds"))
+long_mtbi_l_pi <- list.load(input_path("2025_02_13_long_mtbi_l_pi.rds"))
+base_mtbi_l_pi <- list.load(input_path("2025_02_13_base_mtbi_l_pi.rds"))
+base_unij_l_pi <- list.load(input_path("2025_02_13_base_unij_l_pi.rds"))
 ```
 
 ## Constructing data_lists
 
 ```{r}
-long_mtbi_0_dls <- build_dls(long_mtbi_0_pi)
+long_mtbi_0_dls <- build_unij_dls(long_mtbi_0_pi)
 long_mtbi_l_dls <- build_dls(long_mtbi_l_pi)
-base_mtbi_l_dls <- build_dls(base_mtbi_l_pi)
-base_unij_l_dls <- build_dls(base_unij_l_pi)
+base_mtbi_l_dls <- build_unij_dls(base_mtbi_l_pi)
+base_unij_l_dls <- build_unij_dls(base_unij_l_pi)
 long_mtbi_0_ols <- build_ols(long_mtbi_0_pi)
 long_mtbi_l_ols <- build_ols(long_mtbi_l_pi)
 base_mtbi_l_ols <- build_ols(base_mtbi_l_pi)
@@ -833,7 +834,6 @@ all_long_dls <- list(
     "base_mtbi_l_ols" = base_mtbi_l_ols,
     "base_unij_l_ols" = base_unij_l_ols
 )
-
 ```
 
 ## Renaming the initial data
@@ -914,5 +914,6 @@ all_long_dls <- all_long_dls |>
         }
     )
 
-list.save(all_long_dls, input_path("all_long_dls.rds", TRUE))
+# 2025-02-13
+saveRDS(all_long_dls, input_path("all_long_dls.rds", TRUE))
 ```

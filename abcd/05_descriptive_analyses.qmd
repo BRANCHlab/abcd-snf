@@ -15,6 +15,7 @@ library(visdat)
 library(mice)
 library(circlize)
 library(ComplexHeatmap)
+library(metasnf)
 
 core_path <- path_maker(here(paste0("data/abcd/core")))
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
@@ -22,117 +23,125 @@ sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 
-long_mtbi_subs <- read_subjects(sub_path("2024_11_04_mtbi_subjects_0_to_2.csv"))
-long_uninj_subs <- read_subjects(sub_path("2024_11_04_uninjured_subjects_0_to_2.csv"))
-base_mtbi_subs <- read_subjects(sub_path("2024_10_29_mtbi_subs.csv"))
-base_uninj_subs <- read_subjects(sub_path("2024_10_29_uninj_subs.csv"))
+read <- function(path) {
+    read_csv(input_path(path))
+}
 ```
 
 ## Importing data
 
 ```{r}
+long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
+long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
+base_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+```
+
+```{r}
 # Baseline-related data frames, pre-imputation
-mtbi_train_df <- read_csv(proc_path("2024_11_15_mtbi_train_df.csv"))
-mtbi_test_df <- read_csv(proc_path("2024_11_15_mtbi_test_df.csv"))
+mtbi_train_df <- data.frame(read_csv(proc_path("2025_02_07_mtbi_train_df.csv")))
+mtbi_test_df <- data.frame(read_csv(proc_path("2025_02_07_mtbi_test_df.csv")))
 mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
-uninj_df <- read_csv(proc_path("2024_11_15_uninj_df.csv"))
+unij_df <- data.frame(read_csv(proc_path("2025_02_07_unij_df.csv")))
 ```
 
 ```{r}
 # Baseline-related pre-QC neuroimaging data
-sm_subc_v_mtbi <- read("2024_10_29_sm_subc_v_mtbi.csv")
-sm_cort_t_mtbi <- read("2024_10_29_sm_cort_t_mtbi.csv")
-sm_cort_sa_mtbi <- read("2024_10_29_sm_cort_sa_mtbi.csv")
-dm_all_wmnd_mtbi <- read("2024_10_29_dm_all_wmnd_mtbi.csv")
-rm_gord_cor_mtbi <- read("2024_10_29_rm_gord_cor_mtbi.csv")
-rm_subc_cor_mtbi <- read("2024_10_29_rm_subc_cor_mtbi.csv")
+sm_subc_v_mtbi <- read("2025_02_07_sm_subc_v_mtbi.csv")
+sm_cort_t_mtbi <- read("2025_02_07_sm_cort_t_mtbi.csv")
+sm_cort_sa_mtbi <- read("2025_02_07_sm_cort_sa_mtbi.csv")
+dm_all_wmnd_mtbi <- read("2025_02_07_dm_all_wmnd_mtbi.csv")
+rm_gord_cor_mtbi <- read("2025_02_07_rm_gord_cor_mtbi.csv")
+rm_subc_cor_mtbi <- read("2025_02_07_rm_subc_cor_mtbi.csv")
 
-sm_subc_v_uninj <- read("2024_10_29_sm_subc_v_uninj.csv")
-sm_cort_t_uninj <- read("2024_10_29_sm_cort_t_uninj.csv")
-sm_cort_sa_uninj <- read("2024_10_29_sm_cort_sa_uninj.csv")
-dm_all_wmnd_uninj <- read("2024_10_29_dm_all_wmnd_uninj.csv")
-rm_gord_cor_uninj <- read("2024_10_29_rm_gord_cor_uninj.csv")
-rm_subc_cor_uninj <- read("2024_10_29_rm_subc_cor_uninj.csv")
+sm_subc_v_unij <- read("2025_02_07_sm_subc_v_unij.csv")
+sm_cort_t_unij <- read("2025_02_07_sm_cort_t_unij.csv")
+sm_cort_sa_unij <- read("2025_02_07_sm_cort_sa_unij.csv")
+dm_all_wmnd_unij <- read("2025_02_07_dm_all_wmnd_unij.csv")
+rm_gord_cor_unij <- read("2025_02_07_rm_gord_cor_unij.csv")
+rm_subc_cor_unij <- read("2025_02_07_rm_subc_cor_unij.csv")
 
 # Baseline related post-QC neuroimaging data
-sm_cort_sa_qc_mtbi <- read("2024_10_29_sm_cort_sa_qc_mtbi.csv")
-sm_cort_t_qc_mtbi <- read("2024_10_29_sm_cort_t_qc_mtbi.csv")
-sm_subc_v_qc_mtbi <- read("2024_10_29_sm_subc_v_qc_mtbi.csv")
-sm_cort_sa_qc_uninj <- read("2024_10_29_sm_cort_sa_qc_uninj.csv")
-sm_cort_t_qc_uninj <- read("2024_10_29_sm_cort_t_qc_uninj.csv")
-sm_subc_v_qc_uninj <- read("2024_10_29_sm_subc_v_qc_uninj.csv")
-dm_all_wmnd_qc_mtbi <- read("2024_10_29_dm_all_wmnd_qc_mtbi.csv")
-dm_all_wmnd_qc_uninj <- read("2024_10_29_dm_all_wmnd_qc_uninj.csv")
-rm_gord_cor_qc_mtbi <- read("2024_10_29_rm_gord_cor_qc_mtbi.csv")
-rm_subc_cor_qc_mtbi <- read("2024_10_29_rm_subc_cor_qc_mtbi.csv")
-rm_gord_cor_qc_uninj <- read("2024_10_29_rm_gord_cor_qc_uninj.csv")
-rm_subc_cor_qc_uninj <- read("2024_10_29_rm_subc_cor_qc_uninj.csv")
+sm_cort_sa_qc_mtbi <- read("2025_02_07_sm_cort_sa_qc_mtbi.csv")
+sm_cort_t_qc_mtbi <- read("2025_02_07_sm_cort_t_qc_mtbi.csv")
+sm_subc_v_qc_mtbi <- read("2025_02_07_sm_subc_v_qc_mtbi.csv")
+sm_cort_sa_qc_unij <- read("2025_02_07_sm_cort_sa_qc_unij.csv")
+sm_cort_t_qc_unij <- read("2025_02_07_sm_cort_t_qc_unij.csv")
+sm_subc_v_qc_unij <- read("2025_02_07_sm_subc_v_qc_unij.csv")
+dm_all_wmnd_qc_mtbi <- read("2025_02_07_dm_all_wmnd_qc_mtbi.csv")
+dm_all_wmnd_qc_unij <- read("2025_02_07_dm_all_wmnd_qc_unij.csv")
+rm_gord_cor_qc_mtbi <- read("2025_02_07_rm_gord_cor_qc_mtbi.csv")
+rm_subc_cor_qc_mtbi <- read("2025_02_07_rm_subc_cor_qc_mtbi.csv")
+rm_gord_cor_qc_unij <- read("2025_02_07_rm_gord_cor_qc_unij.csv")
+rm_subc_cor_qc_unij <- read("2025_02_07_rm_subc_cor_qc_unij.csv")
 
 # Longitudinal-related data frames, pre-imputation
-long_mtbi_0_df <- read_csv(input_path("2024_11_06_long_mtbi_0_df.csv"))
-long_mtbi_l_df <- read_csv(input_path("2024_11_06_long_mtbi_l_df.csv"))
-base_mtbi_l_df <- read_csv(input_path("2024_11_06_base_mtbi_l_df.csv"))
-base_uninj_l_df <- read_csv(input_path("2024_11_06_base_uninj_l_df.csv"))
+long_mtbi_0_df <- read_csv(input_path("2025_02_13_long_mtbi_0_df.csv"))
+long_mtbi_l_df <- read_csv(input_path("2025_02_13_long_mtbi_l_df.csv"))
+base_mtbi_l_df <- read_csv(input_path("2025_02_13_base_mtbi_l_df.csv"))
+base_unij_l_df <- read_csv(input_path("2025_02_13_base_unij_l_df.csv"))
 
 # Longitudinal-related pre-QC neuroimaging data
-sm_subc_v_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_subc_v_long_mtbi_0.csv"))
-sm_cort_t_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_t_long_mtbi_0.csv"))
-sm_cort_sa_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_sa_long_mtbi_0.csv"))
-dm_all_wmnd_long_mtbi_0 <- read_csv(input_path("2024_11_06_dm_all_wmnd_long_mtbi_0.csv"))
-rm_gord_cor_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_gord_cor_long_mtbi_0.csv"))
-rm_subc_cor_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_subc_cor_long_mtbi_0.csv"))
+sm_subc_v_long_mtbi_0 <- read_csv(input_path("2025_02_07_sm_subc_v_long_mtbi_0.csv"))
+sm_cort_t_long_mtbi_0 <- read_csv(input_path("2025_02_07_sm_cort_t_long_mtbi_0.csv"))
+sm_cort_sa_long_mtbi_0 <- read_csv(input_path("2025_02_07_sm_cort_sa_long_mtbi_0.csv"))
+dm_all_wmnd_long_mtbi_0 <- read_csv(input_path("2025_02_07_dm_all_wmnd_long_mtbi_0.csv"))
+rm_gord_cor_long_mtbi_0 <- read_csv(input_path("2025_02_07_rm_gord_cor_long_mtbi_0.csv"))
+rm_subc_cor_long_mtbi_0 <- read_csv(input_path("2025_02_07_rm_subc_cor_long_mtbi_0.csv"))
 
-sm_subc_v_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_long_mtbi_l.csv"))
-sm_cort_t_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_long_mtbi_l.csv"))
-sm_cort_sa_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_long_mtbi_l.csv"))
-dm_all_wmnd_long_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_long_mtbi_l.csv"))
-rm_gord_cor_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_long_mtbi_l.csv"))
-rm_subc_cor_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_long_mtbi_l.csv"))
+sm_subc_v_long_mtbi_l <- read_csv(input_path("2025_02_07_sm_subc_v_long_mtbi_l.csv"))
+sm_cort_t_long_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_t_long_mtbi_l.csv"))
+sm_cort_sa_long_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_sa_long_mtbi_l.csv"))
+dm_all_wmnd_long_mtbi_l <- read_csv(input_path("2025_02_07_dm_all_wmnd_long_mtbi_l.csv"))
+rm_gord_cor_long_mtbi_l <- read_csv(input_path("2025_02_07_rm_gord_cor_long_mtbi_l.csv"))
+rm_subc_cor_long_mtbi_l <- read_csv(input_path("2025_02_07_rm_subc_cor_long_mtbi_l.csv"))
 
-sm_subc_v_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_base_mtbi_l.csv"))
-sm_cort_t_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_base_mtbi_l.csv"))
-sm_cort_sa_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_base_mtbi_l.csv"))
-dm_all_wmnd_base_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_base_mtbi_l.csv"))
-rm_gord_cor_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_base_mtbi_l.csv"))
-rm_subc_cor_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_base_mtbi_l.csv"))
+sm_subc_v_base_mtbi_l <- read_csv(input_path("2025_02_07_sm_subc_v_base_mtbi_l.csv"))
+sm_cort_t_base_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_t_base_mtbi_l.csv"))
+sm_cort_sa_base_mtbi_l <- read_csv(input_path("2025_02_07_sm_cort_sa_base_mtbi_l.csv"))
+dm_all_wmnd_base_mtbi_l <- read_csv(input_path("2025_02_07_dm_all_wmnd_base_mtbi_l.csv"))
+rm_gord_cor_base_mtbi_l <- read_csv(input_path("2025_02_07_rm_gord_cor_base_mtbi_l.csv"))
+rm_subc_cor_base_mtbi_l <- read_csv(input_path("2025_02_07_rm_subc_cor_base_mtbi_l.csv"))
 
-sm_subc_v_base_uninj_l <- read_csv(input_path("2024_11_06_sm_subc_v_base_uninj_l.csv"))
-sm_cort_t_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_t_base_uninj_l.csv"))
-sm_cort_sa_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_sa_base_uninj_l.csv"))
-dm_all_wmnd_base_uninj_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_base_uninj_l.csv"))
-rm_gord_cor_base_uninj_l <- read_csv(input_path("2024_11_06_rm_gord_cor_base_uninj_l.csv"))
-rm_subc_cor_base_uninj_l <- read_csv(input_path("2024_11_06_rm_subc_cor_base_uninj_l.csv"))
+sm_subc_v_base_unij_l <- read_csv(input_path("2025_02_07_sm_subc_v_base_unij_l.csv"))
+sm_cort_t_base_unij_l <- read_csv(input_path("2025_02_07_sm_cort_t_base_unij_l.csv"))
+sm_cort_sa_base_unij_l <- read_csv(input_path("2025_02_07_sm_cort_sa_base_unij_l.csv"))
+dm_all_wmnd_base_unij_l <- read_csv(input_path("2025_02_07_dm_all_wmnd_base_unij_l.csv"))
+rm_gord_cor_base_unij_l <- read_csv(input_path("2025_02_07_rm_gord_cor_base_unij_l.csv"))
+rm_subc_cor_base_unij_l <- read_csv(input_path("2025_02_07_rm_subc_cor_base_unij_l.csv"))
 
 # Longitudinal-related post-QC neuroimaging data
-sm_subc_v_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_subc_v_qc_long_mtbi_0.csv"))
-sm_cort_t_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_t_qc_long_mtbi_0.csv"))
-sm_cort_sa_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_long_mtbi_0.csv"))
-dm_all_wmnd_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_long_mtbi_0.csv"))
-rm_gord_cor_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_long_mtbi_0.csv"))
-rm_subc_cor_qc_long_mtbi_0 <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_long_mtbi_0.csv"))
-sm_subc_v_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_qc_long_mtbi_l.csv"))
-sm_cort_t_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_qc_long_mtbi_l.csv"))
-sm_cort_sa_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_long_mtbi_l.csv"))
-dm_all_wmnd_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_long_mtbi_l.csv"))
-rm_gord_cor_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_long_mtbi_l.csv"))
-rm_subc_cor_qc_long_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_long_mtbi_l.csv"))
-sm_subc_v_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_subc_v_qc_base_mtbi_l.csv"))
-sm_cort_t_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_t_qc_base_mtbi_l.csv"))
-sm_cort_sa_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_base_mtbi_l.csv"))
-dm_all_wmnd_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_base_mtbi_l.csv"))
-rm_gord_cor_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_base_mtbi_l.csv"))
-rm_subc_cor_qc_base_mtbi_l <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_base_mtbi_l.csv"))
-sm_subc_v_qc_base_uninj_l <- read_csv(input_path("2024_11_06_sm_subc_v_qc_base_uninj_l.csv"))
-sm_cort_t_qc_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_t_qc_base_uninj_l.csv"))
-sm_cort_sa_qc_base_uninj_l <- read_csv(input_path("2024_11_06_sm_cort_sa_qc_base_uninj_l.csv"))
-dm_all_wmnd_qc_base_uninj_l <- read_csv(input_path("2024_11_06_dm_all_wmnd_qc_base_uninj_l.csv"))
-rm_gord_cor_qc_base_uninj_l <- read_csv(input_path("2024_11_06_rm_gord_cor_qc_base_uninj_l.csv"))
-rm_subc_cor_qc_base_uninj_l <- read_csv(input_path("2024_11_06_rm_subc_cor_qc_base_uninj_l.csv"))
+sm_subc_v_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_sm_subc_v_qc_long_mtbi_0.csv"))
+sm_cort_t_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_sm_cort_t_qc_long_mtbi_0.csv"))
+sm_cort_sa_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_long_mtbi_0.csv"))
+dm_all_wmnd_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_long_mtbi_0.csv"))
+rm_gord_cor_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_long_mtbi_0.csv"))
+rm_subc_cor_qc_long_mtbi_0 <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_long_mtbi_0.csv"))
+sm_subc_v_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_sm_subc_v_qc_long_mtbi_l.csv"))
+sm_cort_t_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_t_qc_long_mtbi_l.csv"))
+sm_cort_sa_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_long_mtbi_l.csv"))
+dm_all_wmnd_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_long_mtbi_l.csv"))
+rm_gord_cor_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_long_mtbi_l.csv"))
+rm_subc_cor_qc_long_mtbi_l <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_long_mtbi_l.csv"))
+sm_subc_v_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_sm_subc_v_qc_base_mtbi_l.csv"))
+sm_cort_t_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_t_qc_base_mtbi_l.csv"))
+sm_cort_sa_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_base_mtbi_l.csv"))
+dm_all_wmnd_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_base_mtbi_l.csv"))
+rm_gord_cor_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_base_mtbi_l.csv"))
+rm_subc_cor_qc_base_mtbi_l <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_base_mtbi_l.csv"))
+sm_subc_v_qc_base_unij_l <- read_csv(input_path("2025_02_13_sm_subc_v_qc_base_unij_l.csv"))
+sm_cort_t_qc_base_unij_l <- read_csv(input_path("2025_02_13_sm_cort_t_qc_base_unij_l.csv"))
+sm_cort_sa_qc_base_unij_l <- read_csv(input_path("2025_02_13_sm_cort_sa_qc_base_unij_l.csv"))
+dm_all_wmnd_qc_base_unij_l <- read_csv(input_path("2025_02_13_dm_all_wmnd_qc_base_unij_l.csv"))
+rm_gord_cor_qc_base_unij_l <- read_csv(input_path("2025_02_13_rm_gord_cor_qc_base_unij_l.csv"))
+rm_subc_cor_qc_base_unij_l <- read_csv(input_path("2025_02_13_rm_subc_cor_qc_base_unij_l.csv"))
 ```
 
 ## Who failed QC?
 
 ```{r}
+# Function that will be used to compare subjects missing data in a list of
+# pre-QC data frames to those in a list of post-QC data frames.
 qc_fails <- function(df_list_1, df_list_2) {
     df_1 <- merge_df_list(df_list_1)
     df_2 <- merge_df_list(df_list_2)
@@ -163,25 +172,25 @@ base_mtbi_0_r_qcf <- qc_fails(
 base_mtbi_0_r_qcf
 
 ###############################################################################
-# Baseline uninj, T = 0
+# Baseline unij, T = 0
 ###############################################################################
-base_uninj_0_s_qcf <- qc_fails(
-    list(sm_subc_v_uninj, sm_cort_t_uninj, sm_cort_sa_uninj),
-    list(sm_cort_sa_qc_uninj, sm_cort_t_qc_uninj, sm_subc_v_qc_uninj)
+base_unij_0_s_qcf <- qc_fails(
+    list(sm_subc_v_unij, sm_cort_t_unij, sm_cort_sa_unij),
+    list(sm_cort_sa_qc_unij, sm_cort_t_qc_unij, sm_subc_v_qc_unij)
 )
-base_uninj_0_s_qcf
+base_unij_0_s_qcf
 
-base_uninj_0_d_qcf <- qc_fails(
-    list(dm_all_wmnd_uninj),
-    list(dm_all_wmnd_qc_uninj)
+base_unij_0_d_qcf <- qc_fails(
+    list(dm_all_wmnd_unij),
+    list(dm_all_wmnd_qc_unij)
 )
-base_uninj_0_d_qcf
+base_unij_0_d_qcf
 
-base_uninj_0_r_qcf <- qc_fails(
-    list(rm_gord_cor_uninj),
-    list(rm_gord_cor_qc_uninj)
+base_unij_0_r_qcf <- qc_fails(
+    list(rm_gord_cor_unij),
+    list(rm_gord_cor_qc_unij)
 )
-base_uninj_0_r_qcf
+base_unij_0_r_qcf
 
 ###############################################################################
 # Baseline mtbi, T = 2
@@ -205,25 +214,25 @@ base_mtbi_l_r_qcf <- qc_fails(
 base_mtbi_l_r_qcf
 
 ###############################################################################
-# Baseline uninj, T = 2
+# Baseline unij, T = 2
 ###############################################################################
-base_uninj_l_s_qcf <- qc_fails(
-    list(sm_subc_v_base_uninj_l, sm_cort_t_base_uninj_l, sm_cort_sa_base_uninj_l),
-    list(sm_cort_sa_qc_base_uninj_l, sm_cort_t_qc_base_uninj_l, sm_subc_v_qc_base_uninj_l)
+base_unij_l_s_qcf <- qc_fails(
+    list(sm_subc_v_base_unij_l, sm_cort_t_base_unij_l, sm_cort_sa_base_unij_l),
+    list(sm_cort_sa_qc_base_unij_l, sm_cort_t_qc_base_unij_l, sm_subc_v_qc_base_unij_l)
 )
-base_uninj_l_s_qcf
+base_unij_l_s_qcf
 
-base_uninj_l_d_qcf <- qc_fails(
-    list(dm_all_wmnd_base_uninj_l),
-    list(dm_all_wmnd_qc_base_uninj_l)
+base_unij_l_d_qcf <- qc_fails(
+    list(dm_all_wmnd_base_unij_l),
+    list(dm_all_wmnd_qc_base_unij_l)
 )
-base_uninj_l_d_qcf
+base_unij_l_d_qcf
 
-base_uninj_l_r_qcf <- qc_fails(
-    list(rm_gord_cor_base_uninj_l),
-    list(rm_gord_cor_qc_base_uninj_l)
+base_unij_l_r_qcf <- qc_fails(
+    list(rm_gord_cor_base_unij_l),
+    list(rm_gord_cor_qc_base_unij_l)
 )
-base_uninj_l_r_qcf
+base_unij_l_r_qcf
 
 ###############################################################################
 # Longitudinal mtbi, T = 0
@@ -266,9 +275,40 @@ long_mtbi_l_r_qcf <- qc_fails(
     list(rm_gord_cor_qc_long_mtbi_l)
 )
 long_mtbi_l_r_qcf
+
+
+# These are the subjects that were dropped due to QC. 
+# Can pull from this list to check correlations with any other features.
+failed_qc_subjects <- list(
+    "base_mtbi_0_s_qcf" = base_mtbi_0_s_qcf,
+    "base_mtbi_0_d_qcf" = base_mtbi_0_d_qcf,
+    "base_mtbi_0_r_qcf" = base_mtbi_0_r_qcf,
+    "base_unij_0_s_qcf" = base_unij_0_s_qcf,
+    "base_unij_0_d_qcf" = base_unij_0_d_qcf,
+    "base_unij_0_r_qcf" = base_unij_0_r_qcf,
+    "base_mtbi_l_s_qcf" = base_mtbi_l_s_qcf,
+    "base_mtbi_l_d_qcf" = base_mtbi_l_d_qcf,
+    "base_mtbi_l_r_qcf" = base_mtbi_l_r_qcf,
+    "base_unij_l_s_qcf" = base_unij_l_s_qcf,
+    "base_unij_l_d_qcf" = base_unij_l_d_qcf,
+    "base_unij_l_r_qcf" = base_unij_l_r_qcf,
+    "long_mtbi_0_s_qcf" = long_mtbi_0_s_qcf,
+    "long_mtbi_0_d_qcf" = long_mtbi_0_d_qcf,
+    "long_mtbi_0_r_qcf" = long_mtbi_0_r_qcf,
+    "long_mtbi_l_s_qcf" = long_mtbi_l_s_qcf,
+    "long_mtbi_l_d_qcf" = long_mtbi_l_d_qcf,
+    "long_mtbi_l_r_qcf" = long_mtbi_l_r_qcf
+)
+
+saveRDS(failed_qc_subjects, proc_path("failed_qc_subjects.rds", TRUE))
+failed_qc_subjects <- readRDS(proc_path("2025_02_13_failed_qc_subjects.rds"))
 ```
 
+## MAR/MCAR check
+
 ```{r}
+# This function will create new X_* columns in a data frame to keep track of
+# missing values 
 flag_missing <- function(df) {
     for (col in colnames(df)) {
         if (any(is.na(df[, col]))) {
@@ -284,14 +324,12 @@ flag_missing <- function(df) {
 }
 ```
 
-## MAR/MCAR check
-
 ```{r}
 mtbi_df$"group" <- "base_mtbi"
 mtbi_df$"t" <- 0
 
-uninj_df$"group" <- "base_uninj"
-uninj_df$"t" <- 0
+unij_df$"group" <- "base_unij"
+unij_df$"t" <- 0
 
 long_mtbi_0_df$"group" <- "long_mtbi"
 long_mtbi_0_df$"t" <- 0
@@ -302,16 +340,16 @@ long_mtbi_l_df$"t" <- 2
 base_mtbi_l_df$"group" <- "base_mtbi"
 base_mtbi_l_df$"t" <- 2
 
-base_uninj_l_df$"group" <- "base_uninj"
-base_uninj_l_df$"t" <- 2
+base_unij_l_df$"group" <- "base_unij"
+base_unij_l_df$"t" <- 2
 
 pre_imputation_df <- bind_rows(
     mtbi_df,
-    uninj_df,
+    unij_df,
     long_mtbi_0_df,
     long_mtbi_l_df,
     base_mtbi_l_df,
-    base_uninj_l_df
+    base_unij_l_df
 )
 
 pre_imputation_df <- pre_imputation_df |>
@@ -319,8 +357,8 @@ pre_imputation_df <- pre_imputation_df |>
         X_s_qc = dplyr::case_when(
             t == 0 & group == "base_mtbi" & subjectkey %in% base_mtbi_0_s_qcf ~ 1,
             t == 2 & group == "base_mtbi" & subjectkey %in% base_mtbi_l_s_qcf ~ 1,
-            t == 0 & group == "base_uninj" & subjectkey %in% base_uninj_0_s_qcf ~ 1,
-            t == 2 & group == "base_uninj" & subjectkey %in% base_uninj_l_s_qcf ~ 1,
+            t == 0 & group == "base_unij" & subjectkey %in% base_unij_0_s_qcf ~ 1,
+            t == 2 & group == "base_unij" & subjectkey %in% base_unij_l_s_qcf ~ 1,
             t == 0 & group == "long_mtbi" & subjectkey %in% long_mtbi_0_s_qcf ~ 1,
             t == 2 & group == "long_mtbi" & subjectkey %in% long_mtbi_l_s_qcf ~ 1,
             TRUE ~ 0
@@ -328,8 +366,8 @@ pre_imputation_df <- pre_imputation_df |>
         X_d_qc = dplyr::case_when(
             t == 0 & group == "base_mtbi" & subjectkey %in% base_mtbi_0_d_qcf ~ 1,
             t == 2 & group == "base_mtbi" & subjectkey %in% base_mtbi_l_d_qcf ~ 1,
-            t == 0 & group == "base_uninj" & subjectkey %in% base_uninj_0_d_qcf ~ 1,
-            t == 2 & group == "base_uninj" & subjectkey %in% base_uninj_l_d_qcf ~ 1,
+            t == 0 & group == "base_unij" & subjectkey %in% base_unij_0_d_qcf ~ 1,
+            t == 2 & group == "base_unij" & subjectkey %in% base_unij_l_d_qcf ~ 1,
             t == 0 & group == "long_mtbi" & subjectkey %in% long_mtbi_0_d_qcf ~ 1,
             t == 2 & group == "long_mtbi" & subjectkey %in% long_mtbi_l_d_qcf ~ 1,
             TRUE ~ 0
@@ -337,8 +375,8 @@ pre_imputation_df <- pre_imputation_df |>
         X_r_qc = dplyr::case_when(
             t == 0 & group == "base_mtbi" & subjectkey %in% base_mtbi_0_r_qcf ~ 1,
             t == 2 & group == "base_mtbi" & subjectkey %in% base_mtbi_l_r_qcf ~ 1,
-            t == 0 & group == "base_uninj" & subjectkey %in% base_uninj_0_r_qcf ~ 1,
-            t == 2 & group == "base_uninj" & subjectkey %in% base_uninj_l_r_qcf ~ 1,
+            t == 0 & group == "base_unij" & subjectkey %in% base_unij_0_r_qcf ~ 1,
+            t == 2 & group == "base_unij" & subjectkey %in% base_unij_l_r_qcf ~ 1,
             t == 0 & group == "long_mtbi" & subjectkey %in% long_mtbi_0_r_qcf ~ 1,
             t == 2 & group == "long_mtbi" & subjectkey %in% long_mtbi_l_r_qcf ~ 1,
             TRUE ~ 0
@@ -354,23 +392,33 @@ pre_imputation_df <- pre_imputation_df |>
 
 pre_imputation_df <- flag_missing(pre_imputation_df)
 
+# This data frame has X_* columns to keep track of missingness generally or by
+# the result of neuroimaging QC
+colnames(pre_imputation_df)
+
 write_csv(pre_imputation_df, proc_path("pre_imputation_df.csv", TRUE))
 
-pre_imputation_df <- read_csv(proc_path("2024_11_15_pre_imputation_df.csv"))
+pre_imputation_df <- read_csv(proc_path("2025_02_13_pre_imputation_df.csv"))
 ```
 
 
 ```{r}
-
-saiq_cols <- c("school_activities", "extracurriculars", "private_instruction", "activities_last_year")
-
-mtbi_train_df |> dplyr::select(all_of(saiq_cols))
-
+# This matrix contains the correlations across all regular and missing-based
+# columns.
 missing_mat <- pre_imputation_df |>
     dplyr::select(-subjectkey, -group, -t) |>
     cor(use = "pairwise.complete.obs") |>
     as.matrix()
 
+saveRDS(missing_mat, proc_path("missing_mat.rds", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+missing_mat <- readRDS(proc_path("2025_02_13_missing_mat.rds"))
+```
+
+```{r}
 missing_indicator_cols <- grepl("X_", colnames(missing_mat))
 
 # For checking MCAR vs. MAR
@@ -381,9 +429,9 @@ missing_cor_mat_2 <- missing_mat[missing_indicator_cols, missing_indicator_cols]
 
 x_map <- matrix(
     c(
-        "X_s_qc", "N (QC)",
-        "X_d_qc", "N (QC)",
-        "X_r_qc", "N (QC)",
+        "X_s_qc", "N",
+        "X_d_qc", "N",
+        "X_r_qc", "N",
         "X_latest_mtbi_mem_daze", "AS",
         "X_latest_mtbi_loc", "AS",
         "X_interview_age", "D",
@@ -414,37 +462,37 @@ x_map <- matrix(
         "X_considerate_p", "P",
         "X_helps_hurt_p", "P",
         "X_helpful_p", "P",
-        "X_q1_fight_y", "P (FE)",
-        "X_q2_angry_y", "P (FE)",
-        "X_q3_throw_y", "P (FE)",
-        "X_q4_temper_y", "P (FE)",
-        "X_q5_criticize_y", "P (FE)",
-        "X_q6_hit_y", "P (FE)",
-        "X_q7_peaceful_y", "P (FE)",
-        "X_q8_outdo_y", "P (FE)",
-        "X_q9_yell_y", "P (FE)",
-        "X_q1_fight_p", "P (FE)",
-        "X_q2_angry_p", "P (FE)",
-        "X_q3_throw_p", "P (FE)",
-        "X_q4_temper_p", "P (FE)",
-        "X_q5_criticize_p", "P (FE)",
-        "X_q6_hit_p", "P (FE)",
-        "X_q7_peaceful_p", "P (FE)",
-        "X_q8_outdo_p", "P (FE)",
-        "X_q9_yell_p", "P (FE)",
-        "X_asr_scr_perstr_r", "P (ASR)",
-        "X_asr_scr_anxdep_r", "P (ASR)",
-        "X_asr_scr_withdrawn_r", "P (ASR)",
-        "X_asr_scr_somatic_r", "P (ASR)",
-        "X_asr_scr_thought_r", "P (ASR)",
-        "X_asr_scr_attention_r", "P (ASR)",
-        "X_asr_scr_aggressive_r", "P (ASR)",
-        "X_asr_scr_intrusive_r", "P (ASR)",
-        "X_asr_scr_depress_r", "P (ASR)",
-        "X_asr_scr_anxdisord_r", "P (ASR)",
-        "X_asr_scr_avoidant_r", "P (ASR)",
-        "X_asr_scr_antisocial_r", "P (ASR)",
-        "X_asr_scr_hyperactive_r", "P (ASR)",
+        "X_q1_fight_y", "P",
+        "X_q2_angry_y", "P",
+        "X_q3_throw_y", "P",
+        "X_q4_temper_y", "P",
+        "X_q5_criticize_y", "P",
+        "X_q6_hit_y", "P",
+        "X_q7_peaceful_y", "P",
+        "X_q8_outdo_y", "P",
+        "X_q9_yell_y", "P",
+        "X_q1_fight_p", "P",
+        "X_q2_angry_p", "P",
+        "X_q3_throw_p", "P",
+        "X_q4_temper_p", "P",
+        "X_q5_criticize_p", "P",
+        "X_q6_hit_p", "P",
+        "X_q7_peaceful_p", "P",
+        "X_q8_outdo_p", "P",
+        "X_q9_yell_p", "P",
+        "X_asr_scr_perstr_r", "P",
+        "X_asr_scr_anxdep_r", "P",
+        "X_asr_scr_withdrawn_r", "P",
+        "X_asr_scr_somatic_r", "P",
+        "X_asr_scr_thought_r", "P",
+        "X_asr_scr_attention_r", "P",
+        "X_asr_scr_aggressive_r", "P",
+        "X_asr_scr_intrusive_r", "P",
+        "X_asr_scr_depress_r", "P",
+        "X_asr_scr_anxdisord_r", "P",
+        "X_asr_scr_avoidant_r", "P",
+        "X_asr_scr_antisocial_r", "P",
+        "X_asr_scr_hyperactive_r", "P",
         "X_cbcl_scr_syn_anxdep_r", "B",
         "X_cbcl_scr_syn_withdep_r", "B",
         "X_cbcl_scr_syn_somatic_r", "B",
@@ -453,7 +501,7 @@ x_map <- matrix(
         "X_cbcl_scr_syn_attention_r", "B",
         "X_cbcl_scr_syn_rulebreak_r", "B",
         "X_cbcl_scr_syn_aggressive_r", "B",
-        "X_sds_p_ss_total", "B (SDS)",
+        "X_sds_p_ss_total", "B",
         "X_latest_mtbi_mechanism_fall_hit", "AS",
         "X_latest_mtbi_mechanism_multi", "AS",
         "X_latest_mtbi_mechanism_other_loc", "AS",
@@ -467,72 +515,144 @@ x_map <- matrix(
     byrow = TRUE
 )
 
-
-# Here i am! - Interesting missingness plots
-ComplexHeatmap::Heatmap(
-    missing_cor_mat_1,
-    cluster_rows = FALSE,
-    cluster_columns = FALSE
+non_x_map <- matrix(
+    c(
+        "latest_mtbi_mem_daze", "AS",
+        "latest_mtbi_loc", "AS",
+        "interview_age", "D",
+        "latest_mtbi_age", "AS",
+        "sex", "D",
+        "household_income", "D",
+        "pubertal_status_p", "D",
+        "pubertal_status_y", "D",
+        "headache", "MH",
+        "mtbi_count", "MH",
+        "smri_vol_scs_wholeb", "N",
+        "smri_thick_cdk_mean", "N",
+        "smri_area_cdk_total", "N",
+        "dmri_rsirnd_fib_allfib", "N",
+        "dmri_rsirndwm_cdk_mean", "N",
+        "avg_gord_cor", "N",
+        "avg_subc_cor", "N",
+        "ss_friend", "P",
+        "os_friend", "P",
+        "ss_close_friend", "P",
+        "os_close_friend", "P",
+        "screentime_wknd_hrs", "P",
+        "screentime_wkday_hrs", "P",
+        "school_activities", "P",
+        "extracurriculars", "P",
+        "private_instruction", "P",
+        "activities_last_year", "P",
+        "physical_activity", "P",
+        "considerate_y", "P",
+        "helps_hurt_y", "P",
+        "helpful_y", "P",
+        "considerate_p", "P",
+        "helps_hurt_p", "P",
+        "helpful_p", "P",
+        "q1_fight_y", "P",
+        "q2_angry_y", "P",
+        "q3_throw_y", "P",
+        "q4_temper_y", "P",
+        "q5_criticize_y", "P",
+        "q6_hit_y", "P",
+        "q7_peaceful_y", "P",
+        "q8_outdo_y", "P",
+        "q9_yell_y", "P",
+        "q1_fight_p", "P",
+        "q2_angry_p", "P",
+        "q3_throw_p", "P",
+        "q4_temper_p", "P",
+        "q5_criticize_p", "P",
+        "q6_hit_p", "P",
+        "q7_peaceful_p", "P",
+        "q8_outdo_p", "P",
+        "q9_yell_p", "P",
+        "asr_scr_perstr_r", "P",
+        "asr_scr_anxdep_r", "P",
+        "asr_scr_withdrawn_r", "P",
+        "asr_scr_somatic_r", "P",
+        "asr_scr_thought_r", "P",
+        "asr_scr_attention_r", "P",
+        "asr_scr_aggressive_r", "P",
+        "asr_scr_intrusive_r", "P",
+        "asr_scr_depress_r", "P",
+        "asr_scr_anxdisord_r", "P",
+        "asr_scr_avoidant_r", "P",
+        "asr_scr_antisocial_r", "P",
+        "asr_scr_hyperactive_r", "P",
+        "cbcl_scr_syn_anxdep_r", "B",
+        "cbcl_scr_syn_withdep_r", "B",
+        "cbcl_scr_syn_somatic_r", "B",
+        "cbcl_scr_syn_social_r", "B",
+        "cbcl_scr_syn_thought_r", "B",
+        "cbcl_scr_syn_attention_r", "B",
+        "cbcl_scr_syn_rulebreak_r", "B",
+        "cbcl_scr_syn_aggressive_r", "B",
+        "sds_p_ss_total", "B",
+        "latest_mtbi_mechanism_fall_hit", "AS",
+        "latest_mtbi_mechanism_multi", "AS",
+        "latest_mtbi_mechanism_other_loc", "AS",
+        "latest_mtbi_mechanism_vehicle", "AS",
+        "latest_mtbi_mechanism_violent", "AS",
+        "race_black", "D",
+        "race_hispanic", "D",
+        "race_other", "D"
+    ),
+    ncol = 2,
+    byrow = TRUE
 )
 
-nrow(missing_cor_mat_1)
+# Here i am! - Interesting missingness plots
+overall_missing_cor_hm_1 <- ComplexHeatmap::Heatmap(
+    missing_cor_mat_1,
+    cluster_rows = TRUE,
+    cluster_columns = TRUE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    ),
+    column_names_gp = gpar(fontsize = 6),
+    row_names_gp = gpar(fontsize = 6),
+    column_split = non_x_map[, 2],
+    row_split = x_map[, 2]
+)
 
-ncol(missing_cor_mat_1)
-
-z <- paste0("X_", colnames(missing_cor_mat_1)) %in% x_map[, 1]
-
-ncol(missing_cor_mat_2)
-
-ncol(missing_cor_mat_2)
-
-for (i in colnames(missing_cor_mat_2)) {
-    print(i)
-}
-
-ComplexHeatmap::Heatmap(
+overall_missing_cor_hm_2 <- ComplexHeatmap::Heatmap(
     missing_cor_mat_2,
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
+    cluster_rows = TRUE,
+    cluster_columns = TRUE,
+    heatmap_legend_param = list(
+        title = "Corr"
+    ),
     col = circlize::colorRamp2(
         c(-1, 0, 1),
         c("blue", "white", "red")
     ),
-    column_split = x_map[, 2]
+    column_names_gp = gpar(fontsize = 6),
+    row_names_gp = gpar(fontsize = 6),
+    column_split = x_map[, 2],
+    row_split = x_map[, 2]
 )
 
-ComplexHeatmap::Heatmap(missing_cor_mat_2)
+# Missingness vs. feature values
+save_heatmap(
+    heatmap = overall_missing_cor_hm_1,
+    path = fig_path("overall_missing_cor_hm_1.png", TRUE),
+    width = 1200,
+    height = 1000,
+    res = 100
+)
 
-# Also need to do actual correlation structure plots across the imputations
-
-library(reshape2)
-
-# Example pairwise matrix
-mat <- matrix(c(0, 1, 2,
-                1, 0, 3,
-                2, 3, 0), 
-              nrow = 3, byrow = TRUE)
-rownames(mat) <- colnames(mat) <- c("A", "B", "C")
-
-mat
-
-# Convert to a 2-column dataframe
-df <- melt(
-    missing_correlation_matrix,
-    varnames = c("missing", "feature"), value.name = "correlation") |>
-    arrange(-abs(correlation))
-
-df[1:100, ]
-
-# Exclude redundant pairs (if symmetric)
-df <- df[df$Item1 < df$Item2, ]
-
-print(df)
+# Missingness vs. missingness
+save_heatmap(
+    heatmap = overall_missing_cor_hm_2,
+    path = fig_path("overall_missing_cor_hm_2.png", TRUE),
+    width = 950,
+    height = 900,
+    res = 100
+)
 ```
-
-
-
-
-
 
 ## Sex and Gender
 
