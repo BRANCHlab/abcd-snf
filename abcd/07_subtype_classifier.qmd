@@ -28,14 +28,18 @@ model_path <- path_maker(here(paste0("data/abcd/results/models")))
 
 ```{r}
 # Data to build classifier from
-mtbi_ful_df <- read_csv(proc_path("2024_11_07_mtbi_ful_df.csv"))
+mtbi_ful_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
 ```
 
 So we'll only want to use features that were both considered generalizable and that are present in uninjured children.
 These features are the same as those that were characterized in the matched uninjured group.
 
 ```{r}
-mtbi_gen_fts_in <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_in.csv"))
+#mtbi_gen_fts_in <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_in.csv"))
+
+mtbi_gen_fts_in <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in.csv"))
+mtbi_gen_fts_in_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in_long.csv"))
+
 classifier_fts <- unique(mtbi_gen_fts_in_long$feature) 
 classifier_fts <- classifier_fts[!grepl("mtbi", classifier_fts)]
 classifier_fts[grepl("race_", classifier_fts)] <- "race"
@@ -45,11 +49,11 @@ write_csv(data.frame(classifier_fts), proc_path("classifier_fts.csv", TRUE))
 ```
 
 ```{r}
-classifier_fts <- read_csv(proc_path("2024_11_07_classifier_fts.csv"))$"classifier_fts"
+classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
 
 mtbi_classification_df <- dplyr::select(
     mtbi_ful_df,
-    subjectkey,
+    uid,
     cluster,
     all_of(classifier_fts)
 )
@@ -61,7 +65,7 @@ write_csv(mtbi_classification_df, proc_path("mtbi_classification_df.csv", TRUE))
 ```
 
 ```{r}
-mtbi_classification_df <- read_csv(proc_path("2024_11_07_mtbi_classification_df.csv"))
+mtbi_classification_df <- read_csv(proc_path("2025_02_14_mtbi_classification_df.csv"))
 ```
 
 
@@ -72,8 +76,8 @@ shuffled_df <- mtbi_classification_df[sample(nrow(mtbi_classification_df)), ]
 
 nrow(mtbi_classification_df) * 0.8
 
-train_classification_df <- shuffled_df[1:352, ]
-test_classification_df <- shuffled_df[352: 440, ]
+train_classification_df <- shuffled_df[1:349, ]
+test_classification_df <- shuffled_df[349: 437, ]
 
 write_csv(train_classification_df, proc_path("train_classification_df.csv", TRUE))
 write_csv(test_classification_df, proc_path("test_classification_df.csv", TRUE))
@@ -81,8 +85,8 @@ write_csv(test_classification_df, proc_path("test_classification_df.csv", TRUE))
 
 ```{r}
 # checkpoint
-train_classification_df <- read_csv(proc_path("2024_11_07_train_classification_df.csv"))
-test_classification_df <- read_csv(proc_path("2024_11_07_test_classification_df.csv"))
+train_classification_df <- read_csv(proc_path("2025_02_14_train_classification_df.csv"))
+test_classification_df <- read_csv(proc_path("2025_02_14_test_classification_df.csv"))
 ```
 
 ## Function to prep training data
@@ -90,7 +94,7 @@ test_classification_df <- read_csv(proc_path("2024_11_07_test_classification_df.
 ```{r}
 # checkpoint
 prep_data <- function(df, standardize = FALSE) {
-    df <- dplyr::select(df, -"subjectkey")
+    df <- dplyr::select(df, -"uid")
     df <- dummy_cols(
         df,
         select_columns = "race",
@@ -101,20 +105,29 @@ prep_data <- function(df, standardize = FALSE) {
         "sex",
         "household_income",
         "pubertal_status_p",
+        "activities_last_year",
+        "private_instruction",
+        "extracurriculars",
         "family_fight_p",
         "family_outdo_p",
-        "helps_hurt_p",
-        "helpful_y",
         "considerate_y",
-        "helps_hurt_y",
+        "same_sex_close_friend",
         "family_criticize_p",
-        "family_outdo_y",
-        "family_angry_p",
-        "helpful_p",
         "family_throw_p",
         "family_hit_p",
+        "pubertal_status_y",
+        "helps_hurt_p",
+        "helps_hurt_y",
+        "helpful_p",
+        "family_angry_p",
+        "school_activities",
+        "family_peaceful_p",
+        "family_criticize_y",
         "family_peaceful_y",
+        "same_sex_friend",
+        "family_yell_y",
         "family_throw_y",
+        "helpful_y",
         "race_black",
         "race_hispanic",
         "race_other" 
@@ -202,17 +215,12 @@ for (maxnodes in c(5, 10, 15)) {
 }
 stopCluster(cl)
 unregister_dopar()
-
 print(Sys.time() - time)
-
 saveRDS(trained_models, model_path("rf_models.rds", TRUE))
-
-rf_models <- readRDS(model_path("2024_11_11_rf_models.rds"))
+rf_models <- readRDS(model_path("2025_02_14_rf_models.rds"))
 ```
 
-
 ### SVM
-
 
 ```{r}
 set.seed(42)
@@ -260,32 +268,32 @@ svm_model2 <- train(
 )
 
 saveRDS(svm_model2, model_path("svm_model.rds", TRUE))
-svm_model <- readRDS(model_path("2024_11_11_svm_model.rds"))
+svm_model <- readRDS(model_path("2025_02_14_svm_model.rds"))
 ```
 
 ### XGBoost
 
 ```{r}
-xgb_tune_grid <- expand.grid(
-  nrounds = c(50, 100, 200),
-  max_depth = c(4, 6, 8),
-  eta = c(0.01, 0.1, 0.2),
-  gamma = c(0, 0.25, 0.5),
-  colsample_bytree = c(0.6, 0.8, 1),
-  min_child_weight = c(1, 5),
-  subsample = c(0.5, 0.75, 1)
-)
-
-xgb_model <- train(
-    cluster ~ .,
-    data = prep_data(train_classification_df),
-    method = "xgbTree",
-    trControl = train_control,
-    tuneGrid = xgb_tune_grid
-)
-
-saveRDS(xgb_model, model_path("xgb_subtype_classifier_1.rds", TRUE))
-xgb_model <- readRDS(model_path("2024_11_11_xgb_subtype_classifier_1.rds"))
+#xgb_tune_grid <- expand.grid(
+#  nrounds = c(50, 100, 200),
+#  max_depth = c(4, 6, 8),
+#  eta = c(0.01, 0.1, 0.2),
+#  gamma = c(0, 0.25, 0.5),
+#  colsample_bytree = c(0.6, 0.8, 1),
+#  min_child_weight = c(1, 5),
+#  subsample = c(0.5, 0.75, 1)
+#)
+#
+#xgb_model <- train(
+#    cluster ~ .,
+#    data = prep_data(train_classification_df),
+#    method = "xgbTree",
+#    trControl = train_control,
+#    tuneGrid = xgb_tune_grid
+#)
+#
+#saveRDS(xgb_model, model_path("xgb_subtype_classifier_1.rds", TRUE))
+#xgb_model <- readRDS(model_path("2024_11_11_xgb_subtype_classifier_1.rds"))
 ```
 
 ### K-NN
@@ -301,29 +309,25 @@ knn_model <- train(
 )
 
 saveRDS(knn_model, model_path("knn_subtype_classifier_1.rds", TRUE))
-knn_model <- readRDS(model_path("2024_11_12_knn_subtype_classifier_1.rds"))
+knn_model <- readRDS(model_path("2025_02_14_knn_subtype_classifier_1.rds"))
 ```
 
 ### Comparisons
 
 ```{r}
-xgb_model <- readRDS(model_path("2024_11_11_xgb_subtype_classifier_1.rds"))
-knn_model <- readRDS(model_path("2024_11_12_knn_subtype_classifier_1.rds"))
-rf_models <- readRDS(model_path("2024_11_11_rf_models.rds"))
-svm_model <- readRDS(model_path("2024_11_11_svm_model.rds"))
+#xgb_model <- readRDS(model_path("2024_11_11_xgb_subtype_classifier_1.rds"))
+knn_model <- readRDS(model_path("2025_02_14_knn_subtype_classifier_1.rds"))
+rf_models <- readRDS(model_path("2025_02_14_rf_models.rds"))
+svm_model <- readRDS(model_path("2025_02_14_svm_model.rds"))
 
 classifier_list <- rf_models
-
 classifier_list[[61]] <- svm_model
-
-classifier_list[[62]] <- xgb_model
-
-classifier_list[[63]] <- knn_model
+classifier_list[[62]] <- knn_model
 
 names(classifier_list)[[61]] <- "svm"
-names(classifier_list)[[62]] <- "xgb"
-names(classifier_list)[[63]] <- "knn"
+names(classifier_list)[[62]] <- "knn"
 
+# HERE - 2025 -  02 - 14
 dotplot(resamples(classifier_list))
 
 # About 77.85% max
@@ -386,8 +390,6 @@ rf_accuracy_df |>
         aes(x = mtry, y = Accuracy)
     ) +
     geom_jitter(alpha = 0.2)
-
-
 
 rf_accuracy_df |>
     ggplot(

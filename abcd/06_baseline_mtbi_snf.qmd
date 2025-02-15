@@ -2096,19 +2096,21 @@ How would correcting for those variables influence the meta clustering results?
 
 
 ```{r}
-
 full_data_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_data_list_1.rds"))
 
 dl_no_demo <- full_data_list_1[-c(6:9)] 
-
 dl_demo <- full_data_list_1[c(6:9)]
 
 dl_corrected <- linear_adjust(dl_no_demo, dl_demo)
-
 saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
+```
 
+```{r}
+# CHECKPOINT
 dl_corrected <- readRDS(proc_path("2025_02_13_dl_corrected.rds"))
+```
 
+```{r}
 set.seed(42)
 corrected_config <- snf_config(
     dl_corrected,
@@ -2135,4 +2137,175 @@ demo_adj_sol_df <- batch_snf(
     processes = "max"
 )
 saveRDS(demo_adj_sol_df, proc_path("demo_adj_sol_df.rds", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+demo_adj_sol_df <- readRDS(proc_path("2025_02_13_demo_adj_sol_df.rds"))
+```
+
+```{r}
+demo_adj_ari <- calc_aris(demo_adj_sol_df)
+saveRDS(demo_adj_ari, proc_path("demo_adj_ari.rds", TRUE))
+
+demo_adj_ari_order <- get_matrix_order(demo_adj_ari)
+write_csv(data.frame(demo_adj_ari_order), proc_path("demo_adj_ari_order.csv", TRUE))
+
+```
+
+```{r}
+# CHECKPOINT
+demo_adj_ari <- readRDS(proc_path("2025_02_14_demo_adj_ari.rds"))
+demo_adj_ari_order <- unlist(read_csv(proc_path("2025_02_14_demo_adj_ari_order.csv")))
+names(demo_adj_ari_order) <- NULL
+```
+
+```{r}
+adj_oom_list <- linear_adjust(full_oom_list_1, dl_demo)
+
+# Extend solutions from adjusted inputs to unadjusted outcomes
+demo_adj_ext_sol_df <- extend_solutions(
+    demo_adj_sol_df,
+    dl = dl_corrected,
+    target_dl = full_oom_list_1,
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(demo_adj_ext_sol_df, proc_path("demo_adj_ext_sol_df.rds", TRUE))
+
+# Extend solutions from adjusted inputs to adjusted outcomes
+demo_double_adj_ext_sol_df <- extend_solutions(
+    demo_adj_sol_df,
+    dl = dl_corrected,
+    target_dl = adj_oom_list,
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(demo_double_adj_ext_sol_df, proc_path("demo_double_adj_ext_sol_df.rds", TRUE))
+```
+
+```{r}
+demo_adj_ext_sol_df <- readRDS(proc_path("2025_02_14_demo_adj_ext_sol_df.rds"))
+demo_double_adj_ext_sol_df <- readRDS(proc_path("2025_02_14_demo_double_adj_ext_sol_df.rds"))
+
+base_adj_ari_hm <- meta_cluster_heatmap(
+    demo_adj_ari,
+    order = demo_adj_ari_order
+)
+
+shiny_annotator(base_adj_ari_hm)
+
+demo_adj_esdf <- as.data.frame(demo_adj_ext_sol_df)
+demo_adj_esdf$"impairment_separation" <- -log10(demo_adj_esdf$"mean_pval")
+
+demo_double_adj_esdf <- as.data.frame(demo_double_adj_ext_sol_df)
+demo_double_adj_esdf$"impairment_separation" <- -log10(demo_double_adj_esdf$"mean_pval")
+
+demo_adj_split_vec <- c(
+    50,
+    74,
+    127,
+    297,
+    490,
+    642,
+    755
+)
+
+write_csv(data.frame(demo_adj_split_vec), proc_path("demo_adj_split_vec.csv", TRUE))
+
+demo_adj_split_vec <- read_csv(proc_path("2025_02_14_demo_adj_split_vec.csv")) |>
+    unlist() |>
+    as.numeric()
+
+full_demo_adj_ari_hm <- meta_cluster_heatmap(
+    aris = demo_adj_ari,
+    order = demo_adj_ari_order,
+    data = demo_adj_esdf,
+    min_colour = "black",
+    split_vector = demo_adj_split_vec,
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            demo_adj_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+full_demo_adj_ari_hm
+
+# The double adjustment does not yield and interesting meta clusters
+full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
+    aris = demo_adj_ari,
+    order = demo_adj_ari_order,
+    data = demo_double_adj_esdf,
+    min_colour = "black",
+    split_vector = demo_adj_split_vec,
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            demo_double_adj_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+full_demo_double_adj_ari_hm
+
+save_heatmap(
+    heatmap = full_demo_double_adj_ari_hm,
+    path = fig_path("full_demo_double_adj_ari_hm.png", TRUE),
+    width = 950,
+    height = 900,
+    res = 100
+)
+
+demo_adj_mc_sol_df <- label_meta_clusters(
+    demo_adj_ext_sol_df,
+    order = demo_adj_ari_order,
+    split_vector = demo_adj_split_vec
+)
+
+demo_adj_rep_solutions <- get_representative_solutions(
+    demo_adj_ari,
+    demo_adj_mc_sol_df
+)
+
+demo_adj_rep_solutions
+
+demo_adj_top_solution <- demo_adj_rep_solutions |>
+    dplyr::filter(mc == "E")
+
+saveRDS(demo_adj_top_solution, proc_path("demo_adj_top_solution.rds", TRUE))
+
+demo_adj_top_solution <- readRDS(proc_path("2025_02_14_demo_adj_top_solution.rds"))
+
+demo_adj_plot_list <- auto_plot(
+    demo_adj_top_solution,
+    dl = c(dl_corrected, dl_demo, full_oom_list_1)
+)
+
+demo_adj_plot_list$"cortical_sa"
+
+demo_adj_pl_ranked <- demo_adj_plot_list[sorted_in_and_out]
+
+demo_adj_p_ranked <- wrap_plots(demo_adj_pl_ranked)
+
+ggsave(
+    fig_path("demo_adj_ranked_plots.png", TRUE),
+    demo_adj_p_ranked,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
 ```
