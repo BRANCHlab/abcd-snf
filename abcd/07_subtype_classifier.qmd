@@ -338,6 +338,8 @@ rf_accuracies <- lapply(
     }
 ) |> unlist()
 
+max(rf_accuracies)
+
 rf_maccuracies <- lapply(
     rf_models,
     function(x) {
@@ -347,10 +349,8 @@ rf_maccuracies <- lapply(
 
 plot(rf_accuracies, rf_maccuracies)
 
-
 which(rf_accuracies == max(rf_accuracies))
 which(rf_maccuracies == max(rf_maccuracies))
-
 
 rf_accuracy_dfs <- lapply(
     names(rf_models),
@@ -373,6 +373,7 @@ rf_accuracy_df |>
     ) +
     geom_jitter(alpha = 0.2)
 
+# more than 15 seems clearly better
 rf_accuracy_df |>
     ggplot(
         aes(x = max_nodes, y = Accuracy)
@@ -385,6 +386,7 @@ rf_accuracy_df |>
     ) +
     geom_jitter(alpha = 0.2)
 
+# Around 5 seems good?
 rf_accuracy_df |>
     ggplot(
         aes(x = mtry, y = Accuracy)
@@ -416,7 +418,6 @@ rf_models[[1]]$results |>
 
 
 max(as.numeric(rf_accuracies))
-
 
 svm_model
 
@@ -474,7 +475,8 @@ unregister_dopar()
 print(Sys.time() - time)
 
 saveRDS(trained_models, model_path("rf_models_2.rds", TRUE))
-rf_models_2 <- readRDS(model_path("2024_11_12_rf_models_2.rds"))
+#rf_models_2 <- readRDS(model_path("2024_11_12_rf_models_2.rds"))
+rf_models_2 <- readRDS(model_path("2025_02_15_rf_models_2.rds"))
 
 rf_models_2_accs <- rf_models_2 |> lapply(
     function(x) max(x$results$Accuracy)
@@ -527,9 +529,7 @@ print(Sys.time() - time)
 
 saveRDS(trained_models, model_path("rf_models_3.rds", TRUE))
 
-rf_models_3 <- readRDS(model_path("2024_11_12_rf_models_3.rds"))
-
-
+rf_models_3 <- readRDS(model_path("2025_02_15_rf_models_3.rds"))
 
 rf_models_3_accs <- rf_models_3 |> lapply(
     function(x) max(x$results$Accuracy)
@@ -544,8 +544,8 @@ rf_models_3_accs[rf_models_3_accs == max(rf_models_3_accs)]
 
 ```{r}
 
-rf_models <- readRDS(model_path("2024_11_11_rf_models.rds"))
-rf_models_3 <- readRDS(model_path("2024_11_12_rf_models_3.rds"))
+rf_models <- readRDS(model_path("2025_02_14_rf_models.rds"))
+rf_models_3 <- readRDS(model_path("2025_02_15_rf_models_3.rds"))
 
 rf_models_3 |> resamples() |> dotplot()
 
