@@ -43,14 +43,14 @@ read <- function(path) {
 
 ```{r}
 # Import data
-mtbi_base_df <- read_csv(proc_path("2024_11_07_mtbi_ful_df.csv"))
+mtbi_base_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
 
-all_long_dls <- list.load(input_path("2024_11_13_all_long_dls.rds"))
+all_long_dls <- readRDS(input_path("2025_02_16_all_long_dls.rds"))
 
 base_mtbi_l_ols <- all_long_dls$"base_mtbi_l_ols"
 
 # Convert list of data lists into list of data frames for plotting
-base_mtbi_l_ol_dfs <- lapply(base_mtbi_l_ols, collapse_dl)
+base_mtbi_l_ol_dfs <- lapply(base_mtbi_l_ols, as.data.frame)
 
 # Tag each data frame with its originating imputation
 base_mtbi_l_ol_dfs <- lapply(
@@ -64,11 +64,20 @@ base_mtbi_l_ol_dfs <- lapply(
 # Horizontally merge list of data frames
 base_mtbi_l_ol_df <- do.call(rbind, base_mtbi_l_ol_dfs)
 
+
+mtbi_base_df <- mtbi_base_df |>
+    dplyr::select(uid, cluster, dplyr::everything())
+
 # Keep track of baseline data before attaching to longitudinal data
 colnames(mtbi_base_df) <- paste0(colnames(mtbi_base_df), "_0")
-colnames(mtbi_base_df)[1:2] <- c("subjectkey", "cluster")
 
-mtbi_base_outcomes_l <- dplyr::full_join(mtbi_base_df, base_mtbi_l_ol_df, "subjectkey")
+colnames(mtbi_base_df)[1:2] <- c("uid", "cluster")
+
+mtbi_base_outcomes_l <- dplyr::full_join(
+    mtbi_base_df,
+    base_mtbi_l_ol_df,
+    by = "uid"
+)
 
 mtbi_long_changes <- mtbi_base_outcomes_l |>
     dplyr::rename(
@@ -143,12 +152,19 @@ gg_long_cor(mtbi_long_changes, "cbcl_somatic")
 lm_long_fit(mtbi_long_changes, "cbcl_anxdep")
 
 lm_long_fit(mtbi_long_changes, "cbcl_withdep")
+
 lm_long_fit(mtbi_long_changes, "cbcl_somatic")
+
 lm_long_fit(mtbi_long_changes, "cbcl_social")
+
 lm_long_fit(mtbi_long_changes, "cbcl_thought")
+
 lm_long_fit(mtbi_long_changes, "cbcl_attention")
+
 lm_long_fit(mtbi_long_changes, "cbcl_rulebreak")
+
 lm_long_fit(mtbi_long_changes, "cbcl_aggressive")
+
 lm_long_fit(mtbi_long_changes, "sds_sleep")
 ```
 
