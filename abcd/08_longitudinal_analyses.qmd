@@ -47,6 +47,8 @@ mtbi_base_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
 
 all_long_dls <- readRDS(input_path("2025_02_16_all_long_dls.rds"))
 
+all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
+
 base_mtbi_l_ols <- all_long_dls$"base_mtbi_l_ols"
 
 # Convert list of data lists into list of data frames for plotting
@@ -165,7 +167,6 @@ Cluster is never a significant feature in predicting longitudinal outcome given 
 ### Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
 
 ```{r}
-
 matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
 
 # Those who exhibited heterogeneity most similar to the baseline mTBI group
@@ -234,11 +235,106 @@ unmatched_that_became_mtbi_frac #0.01649461
 
 No significant difference in the proportion of matched uninjured subjects to unmatched uninjured subjects that ended up in the longitudinal mTBI group (1.3% vs. 1.6%, uncorrected Chi-squared test p-value = 0.6565).
 
-Now I'll double check to see if there were any attributes of subjects that were particularly associated with membership in the longitudinal mTBI sample.
+Now I'll double check to see if there were any attributes of subjects that were particularly closely associated with membership in the longitudinal mTBI sample.
+
+```{r}
+long_mtbi_0_dl <- all_long_dls$"long_mtbi_0_dls"[[1]]
+
+base_unij_0_dl <- all_dls$"unij_pooled_data_lists"[[1]]
+
+long_unij_0_dl <- base_unij_0_dl |>
+    dlapply(
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% paste0("uid_", long_unij_subs))
+            return(x)
+        }
+    )
+
+long_unij_df <- as.data.frame(long_unij_0_dl)
+
+long_mtbi_df <- as.data.frame(long_mtbi_0_dl)
+
+long_unij_df$"mtbi" <- 0
+long_mtbi_df$"mtbi" <- 1
+
+long_corr_df <- rbind(long_unij_df, long_mtbi_df)
+
+saveRDS(long_corr_df, proc_path("long_corr_df.rds", TRUE))
+
+long_corr_df <- readRDS(proc_path("2025_02_16_long_corr_df.rds"))
+
+# Correlation matrix examining how correlated each feature is with being assigned to mTBI group
+long_corr_mat <- long_corr_df |>
+    dplyr::select(-uid) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    ) |>
+    cor()
+
+mtbi_corr_mat <- long_corr_mat[rownames(mtbi_corr_mat) != "mtbi", "mtbi", drop = FALSE]
+
+mtbi_corr_mat |>
+    ComplexHeatmap::Heatmap()
+
+mtbi_corr_mat |>
+    as.data.frame() |>
+    dplyr::arrange(mtbi)
+
+long_corr_df |>
+    ggplot(aes(x = factor(mtbi), y = major_wm_ndi)) +
+    geom_jitter() +
+    theme_bw()
 
 
+long_corr_clean_df <- long_corr_df |>
+    dplyr::select(-uid) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+
+pvalue_df <- data.frame()
+for (col in colnames(long_corr_clean_df)) {
+    test_results <- cor.test(long_corr_clean_df$"mtbi", long_corr_clean_df[[col]])
+    pval <- test_results$"p.value"
+    est <- test_results$"estimate"
+    l <- test_results$"conf.int"[1]
+    u <- test_results$"conf.int"[2]
+    pvalue_df <- rbind(
+        pvalue_df,
+        data.frame(
+            feature = col,
+            pval = pval,
+            est = est,
+            l = l,
+            u = u
+        )
+    )
+}
+rownames(pvalue_df) <- NULL
+p_values_bonferroni <- p.adjust(pvalue_df$"pval", method = "bonferroni")
+p_values_fdr <- p.adjust(pvalue_df$"pval", method = "fdr")
+pvalue_df$"pval_bon" <- p_values_bonferroni
+pvalue_df$"pval_fdr" <- p_values_fdr
+pvalue_df <- pvalue_df |>
+    dplyr::arrange(pval) |>
+    dplyr::filter(feature != "mtbi") |>
+    dplyr::select(feature, pval, pval_bon, pval_fdr, est, l, u)
+
+write_csv(pvalue_df, proc_path("pvalue_df.csv", TRUE))
+pvalue_df <- read_csv(proc_path("2025_02_16_pvalue_df.csv"))
+```
+
+Quite a few features there that remain significant even after bonferroni correction.
+There certainly seem to be factors that increase a child's risk of sustaining an mTBI.
+These are all taken from the same data collection period as well!
 
 ### Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
+
+Can perhaps skip this and just make use of the classifier.
 
 ### Q4. Classifier built from baseline mTBI data: informative?
 
