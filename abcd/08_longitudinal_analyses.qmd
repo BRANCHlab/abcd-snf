@@ -150,27 +150,93 @@ gg_long_cor(mtbi_long_changes, "cbcl_somatic")
 
 # None are significant
 lm_long_fit(mtbi_long_changes, "cbcl_anxdep")
-
 lm_long_fit(mtbi_long_changes, "cbcl_withdep")
-
 lm_long_fit(mtbi_long_changes, "cbcl_somatic")
-
 lm_long_fit(mtbi_long_changes, "cbcl_social")
-
 lm_long_fit(mtbi_long_changes, "cbcl_thought")
-
 lm_long_fit(mtbi_long_changes, "cbcl_attention")
-
 lm_long_fit(mtbi_long_changes, "cbcl_rulebreak")
-
 lm_long_fit(mtbi_long_changes, "cbcl_aggressive")
-
 lm_long_fit(mtbi_long_changes, "sds_sleep")
 ```
 
 Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
 
 ### Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
+
+```{r}
+
+matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
+
+# Those who exhibited heterogeneity most similar to the baseline mTBI group
+matched_subs <- uids(matched_unij_nearest_esdf)
+matched_subs <- gsub("uid_", "", matched_subs)
+
+# Those who never sustained a head injury prior to T2
+long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
+
+# Those who sustained a head injury between 0 and T2
+long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
+
+# The pool of all baseline uninjured subjects
+base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+
+#calc_injured_fractions <- function(subjects, became_injured, remained_uninjured) {
+#    frac_became_injured <- sum(subjects %in% became_injured) / length(subjects)
+#    frac_remained_uninjured <- sum(subjects %in% remained_uninjured) / length(subjects)
+#    cat(
+#        "Fraction injured: ", frac_became_injured, "\n",
+#        "Fraction uninjured: ", frac_remained_uninjured, "\n",
+#        "Fraction present: ", frac_became_injured + frac_remained_uninjured, "\n",
+#        sep = ""
+#    )
+#}
+#
+#calc_injured_fractions(
+#    matched_subs,
+#    long_mtbi_subs,
+#    long_unij_subs
+#)
+```
+
+Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
+Then I calculate the odds ratio and 95% CI of being in the mTBI sample based on being in the matched group.
+
+```{r}
+# Calculation 1: Explicitly looking for people that ended up in mTBI sample
+matched_that_became_mtbi <- sum(matched_subs %in% long_mtbi_subs)
+unmatched_that_became_mtbi <- sum(non_matched_subs %in% long_mtbi_subs)
+matched_that_remained_unij <- sum(!matched_subs %in% long_mtbi_subs)
+unmatched_that_remained_unij <- sum(!non_matched_subs %in% long_mtbi_subs)
+
+data_matrix <- matrix(
+    c(
+        matched_that_became_mtbi, matched_that_remained_unij,
+        unmatched_that_became_mtbi, unmatched_that_remained_unij
+    ),
+    nrow = 2,
+    byrow = TRUE
+)
+rownames(data_matrix) <- c("Matched", "Unmatched")
+colnames(data_matrix) <- c("Injured", "Remained Uninjured")
+chi_result <- chisq.test(data_matrix, correct = FALSE)
+print(chi_result)
+
+matched_that_became_mtbi_frac <- mean(matched_subs %in% long_mtbi_subs)
+unmatched_that_became_mtbi_frac <- mean(non_matched_subs %in% long_mtbi_subs)
+matched_that_remained_unij_frac <- mean(!matched_subs %in% long_mtbi_subs)
+unmatched_that_remained_unij_frac <- mean(!non_matched_subs %in% long_mtbi_subs)
+
+matched_that_became_mtbi_frac #0.01372998
+
+unmatched_that_became_mtbi_frac #0.01649461
+```
+
+No significant difference in the proportion of matched uninjured subjects to unmatched uninjured subjects that ended up in the longitudinal mTBI group (1.3% vs. 1.6%, uncorrected Chi-squared test p-value = 0.6565).
+
+Now I'll double check to see if there were any attributes of subjects that were particularly associated with membership in the longitudinal mTBI sample.
+
+
 
 ### Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
 
