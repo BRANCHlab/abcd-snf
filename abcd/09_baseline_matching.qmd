@@ -897,14 +897,20 @@ gen_in_fts
 
 top_unij_input_plots <- top_unij_pl[gen_in_fts]
 top_unij_outcome_plots <- top_unij_pl[gen_out_fts]
-top_unij_plots <- top_unij_pl[c(gen_in_fts, gen_out_fts)]
+#top_unij_plots <- top_unij_pl[c(gen_in_fts, gen_out_fts)]
+top_unij_plots <- c(top_unij_input_plots, top_unij_outcome_plots)
 
 saveRDS(top_unij_input_plots, proc_path("top_unij_input_plots.rds", TRUE))
 saveRDS(top_unij_outcome_plots, proc_path("top_unij_outcome_plots.rds", TRUE))
+saveRDS(top_unij_plots, proc_path("top_unij_plots.rds", TRUE))
 
 top_unij_input_plots <- readRDS(proc_path("2025_02_15_top_unij_input_plots.rds"))
 top_unij_outcome_plots <- readRDS(proc_path("2025_02_15_top_unij_outcome_plots.rds"))
-top_unij_plots <- readRDS(proc_path("2025_02_15_top_unij_plots.rds"))
+top_unij_plots <- readRDS(proc_path("2025_02_18_top_unij_plots.rds"))
+
+classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
+outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
+relevant_fts <- c(classifier_fts, outcomes)
 
 top_unij_plots <- top_unij_plots[!is.na(names(top_unij_plots))]
 
@@ -942,23 +948,22 @@ colnames(matched_unij_data_df)[2] <- "cluster"
 matched_unij_data_df
 
 saveRDS(matched_unij_data_df, proc_path("nearest_matched_unij_data_df.rds", TRUE))
-matched_unij_data_df <- readRDS(proc_path("2025_02_17_nearest_matched_unij_data_df.rds"))
+```
 
+```{r}
+matched_unij_data_df <- readRDS(proc_path("2025_02_17_nearest_matched_unij_data_df.rds"))
 mtbi_ful_df <- data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))) |>
     dplyr::select(uid, cluster, dplyr::everything())
 
-colnames(mtbi_ful_df)
-colnames(matched_unij_data_df)
-
 classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
 outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
-
 relevant_fts <- c(classifier_fts, outcomes)
 
 mtbi_ful_df_relevant <- mtbi_ful_df[, c("uid", "cluster", outcomes)]
 matched_unij_df_relevant <- matched_unij_data_df[, c("uid", "cluster", outcomes)]
 
-mtbi_ful_df_relevant |> topologizer()
+mtbi_ful_df_relevant <- mtbi_ful_df[, c("uid", "cluster", relevant_fts)]
+matched_unij_df_relevant <- matched_unij_data_df[, c("uid", "cluster", relevant_fts)]
 
 # Initial comparison
 get_mean_d <- function(df) {
@@ -977,7 +982,7 @@ get_mean_d <- function(df) {
                 es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
             )
         ) |>
-        dplyr::select(feature, c12_es, c13_es)
+        dplyr::select(feature, c12_d, c13_d, c23_d)
     tops_df_long <- tops_df |>
         pivot_longer(
             cols = -feature,
@@ -986,17 +991,112 @@ get_mean_d <- function(df) {
         ) |>
         dplyr::mutate(
             d = dplyr::case_when(
-                d == Inf | d == ~Inf ~ NA,
+                d == Inf | d == -Inf ~ NA,
                 TRUE ~ abs(d)
             )
         ) |>
         na.omit()
-    return(mean(tops_df_long$"d"))
+    return(tops_df_long)
+    #return(mean(tops_df_long$"d"))
 }
+
+compare_ds <- function(df1, df2) {
+    tops_df1 <- topologizer(df1) |>
+        dplyr::mutate(
+            c12_d = dplyr::case_when(
+                es == "d" ~ c12_es,
+                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
+            ),
+            c23_d = dplyr::case_when(
+                es == "d" ~ c23_es,
+                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
+            ),
+            c13_d = dplyr::case_when(
+                es == "d" ~ c13_es,
+                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
+            )
+        ) |>
+        dplyr::select(feature, c12_d, c13_d, c23_d)
+    tops_df2 <- topologizer(df2) |>
+        dplyr::mutate(
+            c12_d = dplyr::case_when(
+                es == "d" ~ c12_es,
+                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
+            ),
+            c23_d = dplyr::case_when(
+                es == "d" ~ c23_es,
+                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
+            ),
+            c13_d = dplyr::case_when(
+                es == "d" ~ c13_es,
+                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
+            )
+        ) |>
+        dplyr::select(feature, c12_d, c13_d, c23_d)
+    tops_df_long1 <- tops_df1 |>
+        pivot_longer(
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "d1"
+        )
+    tops_df_long2 <- tops_df2 |>
+        pivot_longer(
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "d2"
+        )
+    tops_df_long <- dplyr::inner_join(
+        tops_df_long1,
+        tops_df_long2,
+        by = c("feature", "comparison")
+    ) |>
+        dplyr::mutate(
+            d1 = dplyr::case_when(
+                d1 == Inf | d1 == -Inf ~ NA,
+                TRUE ~ d1
+            ),
+            d2 = dplyr::case_when(
+                d2 == Inf | d2 == -Inf ~ NA,
+                TRUE ~ d2
+            )
+        ) |>
+        na.omit() |>
+        dplyr::mutate(
+            sse = (d1 - d2)^2
+        )
+    return(tops_df_long)
+}
+
+mtbi_vs_mu_d <- compare_ds(mtbi_ful_df_relevant, matched_unij_df_relevant)
+
+mtbi_vs_mu_d_plot <- mtbi_vs_mu_d |>
+    dplyr::filter(feature != "sex") |>
+    ggplot(
+        aes(x = feature, y = sse)
+    ) +
+    geom_point() +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+    geom_hline(yintercept = 0.2, color = "red", alpha = 0.5, linewidth = 0.5) +
+    facet_wrap(~comparison, nrow = 3)
+ggsave(
+    fig_path("mtbi_vs_mu_d_plot.png", TRUE),
+    mtbi_vs_mu_d_plot,
+    width = 9,
+    height = 7,
+    dpi = 120
+)
 
 # Seems to be quite a bit higher.
 mtbi_mean_d <- get_mean_d(mtbi_ful_df_relevant) # 0.61
 unij_mean_d <- get_mean_d(matched_unij_df_relevant) # 0.53
+
+mtbi_mean_d
+
+unij_mean_d
+
+
+
 mtbi_mean_d - unij_mean_d
 
 stacked_df <- rbind(
