@@ -45,11 +45,12 @@ read <- function(path) {
 ```{r}
 # Import data
 mtbi_base_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
-
 all_long_dls <- readRDS(input_path("2025_02_16_all_long_dls.rds"))
 
 all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
+```
 
+```{r}
 base_mtbi_l_ols <- all_long_dls$"base_mtbi_l_ols"
 
 # Convert list of data lists into list of data frames for plotting
@@ -66,7 +67,6 @@ base_mtbi_l_ol_dfs <- lapply(
 
 # Horizontally merge list of data frames
 base_mtbi_l_ol_df <- do.call(rbind, base_mtbi_l_ol_dfs)
-
 
 mtbi_base_df <- mtbi_base_df |>
     dplyr::select(uid, cluster, dplyr::everything())
@@ -326,8 +326,6 @@ Can perhaps skip this and just make use of the classifier.
 library(caret)
 library(randomForest)
 
-names(all_long_dls)
-
 # Classifying data using baseline as well as longitudinal features
 long_mtbi_0_dls <- all_long_dls$"long_mtbi_0_dls"
 long_mtbi_l_dls <- all_long_dls$"long_mtbi_l_dls"
@@ -347,31 +345,25 @@ dls_to_dfs <- function(dls) {
 }
 
 long_mtbi_0_dfs <- dls_to_dfs(long_mtbi_0_dls)
+nrow(long_mtbi_0_dfs[[1]])
 long_mtbi_l_dfs <- dls_to_dfs(long_mtbi_l_dls)
+nrow(long_mtbi_l_dfs[[1]])
 base_unij_l_dfs <- dls_to_dfs(base_unij_l_dls)
+nrow(base_unij_l_dfs[[1]])
 
-#reduce_to_gen_fts <- function(df_list) {
-#    df_list <- lapply(
-#        df_list,
-#        function(df) {
-#            df <- df |> dplyr::select(
-#                any_of(
-#                    colnames(
-#                        train_classification_df
-#                    )
-#                )
-#            )
-#            return(df)
-#        }
-#    )
-#    return(df_list)
-#}
-#
-#long_mtbi_0_gen_dfs <- reduce_to_gen_fts(long_mtbi_0_dfs)
-#long_mtbi_l_gen_dfs <- reduce_to_gen_fts(long_mtbi_l_dfs)
-#base_uninj_l_gen_dfs <- reduce_to_gen_fts(base_uninj_l_dfs)
+long_mtbi_0_df <- long_mtbi_0_dfs[[1]]
+long_mtbi_l_df <- long_mtbi_l_dfs[[1]]
+base_unij_l_df <- base_unij_l_dfs[[1]]
 
-subtype_classifier <- readRDS(model_path("2025_02_16_subtype_classifier.rds"))
+train_scale_df <- read_csv(proc_path("2025_02_17_train_scale_df.csv"))
+
+# T0 temporal DF
+temporal_df <- readRDS(proc_path("2025_02_17_temporal_df.rds"))
+
+# T2 temporal DF
+temporal_df2 <- readRDS(proc_path("2025_02_17_temporal_df2.rds"))
+
+subtype_classifier <- readRDS(model_path("2025_02_17_subtype_classifier.rds"))
 ```
 
 Assigning predicted clusters to three groups:
@@ -381,64 +373,89 @@ Assigning predicted clusters to three groups:
 3. Baseline uninjured group, ssimilarly post-injury data for context to see how it divvies up
 
 ```{r}
-long_mtbi_0_pred_dfs <- lapply(
-    long_mtbi_0_dfs,
-    function(x) {
-        # Function from chapter 7: subtype classifier
-        clean_df <- prep_data(x)
-        predictions <- predict(
-            subtype_classifier,
-            newdata = clean_df
-        )
-        x$"cluster" <- predictions
-        x
-    }
+train_scale_df <- train_scale_df |>
+    dplyr::select(-cluster)
+
+long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
+long_unij_subs <- paste0("uid_", long_unij_subs)
+
+long_mtbi_0_df <- long_mtbi_0_df[, colnames(train_scale_df)]
+long_mtbi_l_df <- long_mtbi_l_df[, colnames(train_scale_df)]
+long_unij_l_df <- base_unij_l_df[, colnames(train_scale_df)] |>
+    dplyr::filter(uid %in% long_unij_subs)
+
+temporal_df <- temporal_df |>
+    dplyr::filter(!uid %in% long_mtbi_0_df$"uid")
+temporal_df2 <- temporal_df2 |>
+    dplyr::filter(!uid %in% long_mtbi_l_df$"uid")
+temporal_df2 <- temporal_df2 |>
+    dplyr::filter(!uid %in% long_unij_l_df$"uid")
+
+scaling_df_0 <- dplyr::bind_rows(
+    temporal_df,
+    long_mtbi_0_df[, colnames(temporal_df)]
 )
 
-long_mtbi_l_pred_dfs <- lapply(
-    long_mtbi_l_dfs,
-    function(x) {
-        clean_df <- prep_data(x)
-        predictions <- predict(
-            subtype_classifier,
-            newdata = clean_df
-        )
-        x$"cluster" <- predictions
-        x
-    }
+scaling_df_2 <- dplyr::bind_rows(
+    temporal_df2,
+    long_mtbi_l_df[, colnames(temporal_df2)],
+    long_unij_l_df[, colnames(temporal_df2)]
 )
 
-base_unij_l_pred_dfs <- lapply(
-    base_unij_l_dfs,
-    function(x) {
-        clean_df <- prep_data(x)
-        predictions <- predict(
-            subtype_classifier,
-            newdata = clean_df
-        )
-        x$"cluster" <- predictions
-        x
-    }
-)
+scale_cols <- colnames(temporal_df)[2:ncol(temporal_df)]
+scaling_df_0[scale_cols] <- sapply(scaling_df_0[scale_cols], scale)
+scaling_df_2[scale_cols] <- sapply(scaling_df_2[scale_cols], scale)
 
-list.save(long_mtbi_0_pred_dfs, proc_path("long_mtbi_0_pred_dfs.rds", TRUE))
-list.save(long_mtbi_l_pred_dfs, proc_path("long_mtbi_l_pred_dfs.rds", TRUE))
-list.save(base_unij_l_pred_dfs, proc_path("base_unij_l_pred_dfs.rds", TRUE))
+long_mtbi_0_scaled_df <- long_mtbi_0_df |>
+    dplyr::select(-dplyr::all_of(scale_cols)) |>
+    dplyr::inner_join(scaling_df_0, by = "uid") |>
+    data.frame()
 
-long_mtbi_0_pred_dfs <- list.load(proc_path("2025_02_17_long_mtbi_0_pred_dfs.rds"))
-long_mtbi_l_pred_dfs <- list.load(proc_path("2025_02_17_long_mtbi_l_pred_dfs.rds"))
-base_unij_l_pred_dfs <- list.load(proc_path("2025_02_17_base_unij_l_pred_dfs.rds"))
+long_mtbi_l_scaled_df <- long_mtbi_l_df |>
+    dplyr::select(-dplyr::all_of(scale_cols)) |>
+    dplyr::inner_join(scaling_df_2, by = "uid") |>
+    data.frame()
 
-long_mtbi_0_i1_cluster_df <- long_mtbi_0_pred_dfs[[1]] |> 
-    dplyr::select(uid, cluster)
-long_mtbi_l_i1_cluster_df <- long_mtbi_l_pred_dfs[[1]] |> 
-    dplyr::select(uid, cluster)
-base_unij_l_i1_cluster_df <- base_unij_l_pred_dfs[[1]] |> 
-    dplyr::select(uid, cluster)
+long_unij_l_scaled_df <- long_unij_l_df |>
+    dplyr::select(-dplyr::all_of(scale_cols)) |>
+    dplyr::inner_join(scaling_df_2, by = "uid") |>
+    data.frame()
 
-long_mtbi_0_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
-long_mtbi_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
-base_unij_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+write_csv(long_mtbi_0_scaled_df, proc_path("long_mtbi_0_scaled_df.csv", TRUE))
+write_csv(long_mtbi_l_scaled_df, proc_path("long_mtbi_l_scaled_df.csv", TRUE))
+write_csv(long_unij_l_scaled_df, proc_path("long_unij_l_scaled_df.csv", TRUE))
+
+long_mtbi_0_scaled_df <- read_csv(proc_path("2025_02_17_long_mtbi_0_scaled_df.csv"))
+long_mtbi_l_scaled_df <- read_csv(proc_path("2025_02_17_long_mtbi_l_scaled_df.csv"))
+long_unij_l_scaled_df <- read_csv(proc_path("2025_02_17_long_unij_l_scaled_df.csv"))
+
+make_pred_df <- function(df) {
+    clean_df <- prep_data(df)
+    df$"cluster" <- predict(subtype_classifier, newdata = clean_df)
+    return(df)
+}
+
+long_mtbi_0_pred_df <- make_pred_df(long_mtbi_0_scaled_df)
+long_mtbi_l_pred_df <- make_pred_df(long_mtbi_l_scaled_df)
+long_unij_l_pred_df <- make_pred_df(long_unij_l_scaled_df)
+
+write_csv(long_mtbi_0_pred_df, proc_path("long_mtbi_0_pred_df.csv", TRUE))
+write_csv(long_mtbi_l_pred_df, proc_path("long_mtbi_l_pred_df.csv", TRUE))
+write_csv(long_unij_l_pred_df, proc_path("long_unij_l_pred_df.csv", TRUE))
+
+long_mtbi_0_pred_df <- read_csv(proc_path("2025_02_17_long_mtbi_0_pred_df.csv"))
+long_mtbi_l_pred_df <- read_csv(proc_path("2025_02_17_long_mtbi_l_pred_df.csv"))
+long_unij_l_pred_df <- read_csv(proc_path("2025_02_17_long_unij_l_pred_df.csv"))
+
+long_mtbi_0_cluster_df <- long_mtbi_0_pred_df |> dplyr::select(uid, cluster)
+long_mtbi_l_cluster_df <- long_mtbi_l_pred_df |> dplyr::select(uid, cluster)
+long_unij_l_cluster_df <- long_unij_l_pred_df |> dplyr::select(uid, cluster)
+
+long_mtbi_0_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+
+long_mtbi_l_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+
+long_unij_l_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
 
 classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
 outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
@@ -446,12 +463,12 @@ outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
 relevant_fts <- c(classifier_fts, outcomes)
 
 long_mtbi_0_plot_list <- auto_plot(
-    cluster_df = long_mtbi_0_i1_cluster_df,
+    cluster_df = data.frame(long_mtbi_0_cluster_df),
     dl = c(long_mtbi_0_dls[[1]], long_mtbi_0_ols[[1]])
 )
 long_mtbi_0_all_plots <- wrap_plots(long_mtbi_0_plot_list[relevant_fts])
 ggsave(
-    fig_path("long_mtbi_0_predicted_plots.png", TRUE),
+    fig_path("long_mtbi_0_pred_scaled_plots.png", TRUE),
     long_mtbi_0_all_plots,
     width = 45,
     height = 30,
@@ -459,32 +476,50 @@ ggsave(
 )
 
 long_mtbi_l_plot_list <- auto_plot(
-    cluster_df = long_mtbi_l_i1_cluster_df,
+    cluster_df = data.frame(long_mtbi_l_cluster_df),
     dl = c(long_mtbi_l_dls[[1]], long_mtbi_l_ols[[1]])
 )
 long_mtbi_l_all_plots <- wrap_plots(long_mtbi_l_plot_list[relevant_fts])
 ggsave(
-    fig_path("long_mtbi_l_predicted_plots.png", TRUE),
+    fig_path("long_mtbi_l_pred_scaled_plots.png", TRUE),
     long_mtbi_l_all_plots,
     width = 45,
     height = 30,
     dpi = 50
 )
 
-base_unij_l_plot_list <- auto_plot(
-    cluster_df = base_unij_l_i1_cluster_df,
-    dl = c(base_unij_l_dls[[1]], base_unij_l_ols[[1]])
+long_unij_l_dl <- base_unij_l_dls[[1]] |>
+    dlapply(
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% long_unij_subs)
+            return(x)
+        }
+    )
+
+long_unij_l_ol <- base_unij_l_ols[[1]] |>
+    dlapply(
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% long_unij_subs)
+            return(x)
+        }
+    )
+
+long_unij_l_plot_list <- auto_plot(
+    cluster_df = data.frame(long_unij_l_cluster_df),
+    dl = c(long_unij_l_dl, long_unij_l_ol)
 )
-base_unij_l_all_plots <- wrap_plots(base_unij_l_plot_list[relevant_fts])
+long_unij_l_all_plots <- wrap_plots(long_unij_l_plot_list[relevant_fts])
 ggsave(
-    fig_path("base_unij_l_predicted_plots.png", TRUE),
-    base_unij_l_all_plots,
+    fig_path("long_unij_l_pred_scaled_plots.png", TRUE),
+    long_unij_l_all_plots,
     width = 45,
     height = 30,
     dpi = 50
 )
 # Looks very similar!
 ```
+
+- HERE I AM 2025-02-17 end
 
 Statistical analysis: bootstrapped similarity to baseline mTBI solution
 

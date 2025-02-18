@@ -100,8 +100,6 @@ import <- function(path) {
     return(abcd_load(core_path(path)))
 }
 
-# Ohio TBI screen
-ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
 # Age
 abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
 # Pubertal development scale, youth report
@@ -110,48 +108,16 @@ ph_y_pds <- import("physical-health/ph_y_pds.csv")
 ph_p_pds <- import("physical-health/ph_p_pds.csv")
 # Parent report of gender identity
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
-# Demographic data
-abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
-# Medical history
-ph_p_mhx <- import("physical-health/ph_p_mhx.csv")
 # Subcortical volumes (ASEG)
 mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
 # Desikan cortical thicknesses
 mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
 # Desikan cortical surface areas
 mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
-# Neurite density (AtlasTrack, all fibers)
-mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
-# Neurite density (Desikan, peri-cortical WM)
-mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
-# Neurite density (Destriux, peri-cortical WM)
-mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
-# rs-fMRI cortical-cortical correlations
-mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
-# rs-fMRI cortical-subcortical correlations
-mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
 # Number of friends
 mh_y_or <- import("mental-health/mh_y_or.csv")
 # Screen time
 nt_p_stq <- import("novel-technologies/nt_p_stq.csv")
-# Participation in sports and activities
-ph_p_saiq <- import("physical-health/ph_p_saiq.csv")
-# Exercise habits
-ph_y_yrb <- import("physical-health/ph_y_yrb.csv")
-# Youth report of prosocial behaviour
-ce_y_psb <- import("culture-environment/ce_y_psb.csv")
-# Parent report of prosocial behaviour
-ce_p_psb <- import("culture-environment/ce_p_psb.csv")
-# Youth report of family function
-ce_y_fes <- import("culture-environment/ce_y_fes.csv")
-# Parent report of family function
-ce_p_fes <- import("culture-environment/ce_p_fes.csv")
-# Parent ASEBA self-report (psychopathology)
-mh_p_asr <- import("mental-health/mh_p_asr.csv")
-# Parent report of child behaviour (CBCL)
-mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
-# Sleep disturbance scale
-ph_p_sds <- import("physical-health/ph_p_sds.csv")
 ```
 
 ```{r}
@@ -169,6 +135,14 @@ pubertal_status_p <- get_pubertal_status_p(ph_p_pds, max_value = 3, t = 0)
 pubertal_status_y <- get_pubertal_status_y(ph_y_pds, max_value = 3, t = 0)
 age <- get_interview_age(abcd_y_lt, t = 0, as_years = FALSE)
 screen_time <- get_screen_time(nt_p_stq, t = 0)
+
+subc_v_t2 <- get_subc_v(mri_y_smr_vol_aseg, t = 2)
+cort_t_t2 <- get_cort_t(mri_y_smr_thk_dsk, t = 2)
+cort_sa_t2 <- get_cort_sa(mri_y_smr_area_dsk, t = 2)
+pubertal_status_p_t2 <- get_pubertal_status_p(ph_p_pds, max_value = 4, t = 2)
+pubertal_status_y_t2 <- get_pubertal_status_y(ph_y_pds, max_value = 4, t = 2)
+age_t2 <- get_interview_age(abcd_y_lt, t = 2, as_years = FALSE)
+screen_time_t2 <- get_screen_time(nt_p_stq, t = 2)
 ```
 
 Temporally sensitive features:
@@ -197,6 +171,19 @@ temporal_df <- metasnf::merge_df_list(
     uid = "subjectkey"
 )
 
+temporal_df2 <- metasnf::merge_df_list(
+    list(
+        subc_v_t2,
+        cort_t_t2,
+        cort_sa_t2,
+        pubertal_status_p_t2,
+        pubertal_status_y_t2,
+        age_t2,
+        screen_time_t2
+    ),
+    uid = "subjectkey"
+)
+
 temporal_df <- temporal_df |> dplyr::rename(
     "uid" = "subjectkey",
     "age" = "interview_age",
@@ -207,7 +194,23 @@ temporal_df <- temporal_df |> dplyr::rename(
     "weekday_screentime" = "screentime_wkday_hrs"
 )
 
+temporal_df2 <- temporal_df2 |> dplyr::rename(
+    "uid" = "subjectkey",
+    "age" = "interview_age",
+    "brain_volume" = "smri_vol_scs_wholeb",
+    "cortical_thickness" = "smri_thick_cdk_mean",
+    "cortical_sa" = "smri_area_cdk_total",
+    "weekend_screentime" = "screentime_wknd_hrs",
+    "weekday_screentime" = "screentime_wkday_hrs"
+)
+
 temporal_df$"uid" <- paste0("uid_", temporal_df$"uid")
+temporal_df2$"uid" <- paste0("uid_", temporal_df2$"uid")
+
+saveRDS(temporal_df, proc_path("temporal_df.rds", TRUE))
+saveRDS(temporal_df2, proc_path("temporal_df2.rds", TRUE))
+
+temporal_df <- readRDS(proc_path("2025_02_17_temporal_df.rds"))
 
 temporal_df <- temporal_df |> 
     dplyr::filter(
@@ -216,9 +219,6 @@ temporal_df <- temporal_df |>
             test_classification_df$"uid"
         )
     )
-
-saveRDS(temporal_df, proc_path("temporal_df.rds", TRUE))
-temporal_df <- readRDS(proc_path("2025_02_17_temporal_df.rds"))
 
 scaling_df <- dplyr::bind_rows(
     temporal_df,
