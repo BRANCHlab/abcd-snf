@@ -877,16 +877,7 @@ Matching by D+O and O+P seem to be best.
 The D+O and O+P matching yielded identical sets of matched uninjured subjects.
 
 ```{r}
-
-matched_unij_esm_3c_list_loose$"do_p"[11, ]
-
 saveRDS(matched_unij_esm_3c_list_loose$"op_p"[11, ], proc_path("matched_unij_nearest_esdf.rds", TRUE))
-matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
-
-
-matched_pls
-
-matched_unij_dls |> names()
 
 top_unij_pl <- auto_plot(
     matched_unij_esm_3c_list_loose$"do_p"[11, ],
@@ -928,7 +919,108 @@ ggsave(
     height = 30,
     dpi = 50
 )
+```
 
+```{r}
+#Is the extent of separation significantly different?
+matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
+matched_unij_dl_do_p <- readRDS(proc_path("2025_02_14_matched_unij_dl_do_p.rds"))
+matched_unij_ol_do_p <- readRDS(proc_path("2025_02_14_matched_unij_ol_do_p.rds"))
+
+
+matched_unij_dl_df <- as.data.frame(c(matched_unij_dl_do_p, matched_unij_ol_do_p))
+matched_unij_cluster_df <- t(matched_unij_nearest_esdf)
+
+matched_unij_data_df <- dplyr::inner_join(
+    matched_unij_cluster_df,
+    matched_unij_dl_df,
+    by = "uid"
+) |>
+    data.frame()
+colnames(matched_unij_data_df)[2] <- "cluster"
+
+matched_unij_data_df
+
+saveRDS(matched_unij_data_df, proc_path("nearest_matched_unij_data_df.rds", TRUE))
+matched_unij_data_df <- readRDS(proc_path("2025_02_17_nearest_matched_unij_data_df.rds"))
+
+mtbi_ful_df <- data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))) |>
+    dplyr::select(uid, cluster, dplyr::everything())
+
+colnames(mtbi_ful_df)
+colnames(matched_unij_data_df)
+
+classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
+outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
+
+relevant_fts <- c(classifier_fts, outcomes)
+
+mtbi_ful_df_relevant <- mtbi_ful_df[, c("uid", "cluster", outcomes)]
+matched_unij_df_relevant <- matched_unij_data_df[, c("uid", "cluster", outcomes)]
+
+mtbi_ful_df_relevant |> topologizer()
+
+# Initial comparison
+get_mean_d <- function(df) {
+    tops_df <- topologizer(df) |>
+        dplyr::mutate(
+            c12_d = dplyr::case_when(
+                es == "d" ~ c12_es,
+                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
+            ),
+            c23_d = dplyr::case_when(
+                es == "d" ~ c23_es,
+                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
+            ),
+            c13_d = dplyr::case_when(
+                es == "d" ~ c13_es,
+                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
+            )
+        ) |>
+        dplyr::select(feature, c12_es, c13_es)
+    tops_df_long <- tops_df |>
+        pivot_longer(
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "d"
+        ) |>
+        dplyr::mutate(
+            d = dplyr::case_when(
+                d == Inf | d == ~Inf ~ NA,
+                TRUE ~ abs(d)
+            )
+        ) |>
+        na.omit()
+    return(mean(tops_df_long$"d"))
+}
+
+# Seems to be quite a bit higher.
+mtbi_mean_d <- get_mean_d(mtbi_ful_df_relevant) # 0.61
+unij_mean_d <- get_mean_d(matched_unij_df_relevant) # 0.53
+mtbi_mean_d - unij_mean_d
+
+stacked_df <- rbind(
+    mtbi_ful_df_relevant,
+    matched_unij_df_relevant
+)
+
+set.seed(42)
+mean_ds <- c()
+for (i in 1:10) {
+    print(i)
+    random_df <- stacked_df[sample(nrow(stacked_df)), ]
+    random_df1 <- random_df[1:427, ]
+    random_df2 <- random_df[428:854, ]
+    mean_d1 <- get_mean_d(random_df1)
+    mean_d2 <- get_mean_d(random_df2)
+    mean_ds <- c(mean_ds, (mean_d1 - mean_d2))
+}
+
+hist(mean_ds)
+
+# That didn't really amount to much.
+
+#Is the proportion of observations in each cluster significantly different?
 #------------------------------------------------------------------------------
 
 ## qs2 image export helper function

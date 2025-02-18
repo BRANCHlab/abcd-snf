@@ -23,6 +23,7 @@ library(mice)
 library(fastDummies)
 library(randomForest)
 library(patchwork)
+library(tidyr)
 
 # The path_maker function helps with managing and date stamping long paths. The
 # functions are just used here to help with reading and writing data. See
@@ -181,23 +182,6 @@ long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
 
 # The pool of all baseline uninjured subjects
 base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
-
-#calc_injured_fractions <- function(subjects, became_injured, remained_uninjured) {
-#    frac_became_injured <- sum(subjects %in% became_injured) / length(subjects)
-#    frac_remained_uninjured <- sum(subjects %in% remained_uninjured) / length(subjects)
-#    cat(
-#        "Fraction injured: ", frac_became_injured, "\n",
-#        "Fraction uninjured: ", frac_remained_uninjured, "\n",
-#        "Fraction present: ", frac_became_injured + frac_remained_uninjured, "\n",
-#        sep = ""
-#    )
-#}
-#
-#calc_injured_fractions(
-#    matched_subs,
-#    long_mtbi_subs,
-#    long_unij_subs
-#)
 ```
 
 Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
@@ -339,6 +323,9 @@ Can perhaps skip this and just make use of the classifier.
 ### Q4. Classifier built from baseline mTBI data: informative?
 
 ```{r}
+library(caret)
+library(randomForest)
+
 names(all_long_dls)
 
 # Classifying data using baseline as well as longitudinal features
@@ -347,21 +334,21 @@ long_mtbi_l_dls <- all_long_dls$"long_mtbi_l_dls"
 long_mtbi_0_ols <- all_long_dls$"long_mtbi_0_ols"
 long_mtbi_l_ols <- all_long_dls$"long_mtbi_l_ols"
 
-base_uninj_l_dls <- all_long_dls$"base_uninj_l_dls"
-base_uninj_l_ols <- all_long_dls$"base_uninj_l_ols"
+base_unij_l_dls <- all_long_dls$"base_unij_l_dls"
+base_unij_l_ols <- all_long_dls$"base_unij_l_ols"
 
 dls_to_dfs <- function(dls) {
     lapply(
         seq_along(dls),
         function(x) {
-            collapse_dl(dls[[x]])
+            as.data.frame(dls[[x]])
         }
     )
 }
 
 long_mtbi_0_dfs <- dls_to_dfs(long_mtbi_0_dls)
 long_mtbi_l_dfs <- dls_to_dfs(long_mtbi_l_dls)
-base_uninj_l_dfs <- dls_to_dfs(base_uninj_l_dls)
+base_unij_l_dfs <- dls_to_dfs(base_unij_l_dls)
 
 #reduce_to_gen_fts <- function(df_list) {
 #    df_list <- lapply(
@@ -384,53 +371,20 @@ base_uninj_l_dfs <- dls_to_dfs(base_uninj_l_dls)
 #long_mtbi_l_gen_dfs <- reduce_to_gen_fts(long_mtbi_l_dfs)
 #base_uninj_l_gen_dfs <- reduce_to_gen_fts(base_uninj_l_dfs)
 
-subtype_classifier <- readRDS(model_path("2024_11_12_subtype_classifier.rds"))
+subtype_classifier <- readRDS(model_path("2025_02_16_subtype_classifier.rds"))
+```
 
-# Just FYI
-prep_data <- function(df, standardize = FALSE) {
-    df <- dplyr::select(df, -"subjectkey")
-    df <- dummy_cols(
-        df,
-        select_columns = "race",
-        remove_selected_columns = TRUE,
-        remove_most_frequent_dummy = TRUE
-    )
-    ordered_factors <- c(
-        "sex",
-        "household_income",
-        "pubertal_status_p",
-        "family_fight_p",
-        "family_outdo_p",
-        "helps_hurt_p",
-        "helpful_y",
-        "considerate_y",
-        "helps_hurt_y",
-        "family_criticize_p",
-        "family_outdo_y",
-        "family_angry_p",
-        "helpful_p",
-        "family_throw_p",
-        "family_hit_p",
-        "family_peaceful_y",
-        "family_throw_y",
-        "race_black",
-        "race_hispanic",
-        "race_other" 
-    )
-    df[ordered_factors] <- lapply(df[ordered_factors], as.ordered)
-    if (standardize) {
-        df[] <- lapply(df, as.numeric)
-        df <- as.data.frame(scale(df))
-    }
-    if ("cluster" %in% colnames(df)) {
-        df$"cluster" <- as.factor(df$"cluster")
-    }
-    return(df)
-}
+Assigning predicted clusters to three groups:
 
+1. Longitudinal mTBI, pre-injury data
+2. Longitudinal mTBI, post-injury data
+3. Baseline uninjured group, ssimilarly post-injury data for context to see how it divvies up
+
+```{r}
 long_mtbi_0_pred_dfs <- lapply(
     long_mtbi_0_dfs,
     function(x) {
+        # Function from chapter 7: subtype classifier
         clean_df <- prep_data(x)
         predictions <- predict(
             subtype_classifier,
@@ -454,8 +408,8 @@ long_mtbi_l_pred_dfs <- lapply(
     }
 )
 
-base_uninj_l_pred_dfs <- lapply(
-    base_uninj_l_dfs,
+base_unij_l_pred_dfs <- lapply(
+    base_unij_l_dfs,
     function(x) {
         clean_df <- prep_data(x)
         predictions <- predict(
@@ -469,37 +423,33 @@ base_uninj_l_pred_dfs <- lapply(
 
 list.save(long_mtbi_0_pred_dfs, proc_path("long_mtbi_0_pred_dfs.rds", TRUE))
 list.save(long_mtbi_l_pred_dfs, proc_path("long_mtbi_l_pred_dfs.rds", TRUE))
-list.save(base_uninj_l_pred_dfs, proc_path("base_uninj_l_pred_dfs.rds", TRUE))
+list.save(base_unij_l_pred_dfs, proc_path("base_unij_l_pred_dfs.rds", TRUE))
 
-long_mtbi_0_pred_dfs <- list.load(proc_path("2024_11_15_long_mtbi_0_pred_dfs.rds"))
-long_mtbi_l_pred_dfs <- list.load(proc_path("2024_11_15_long_mtbi_l_pred_dfs.rds"))
-base_uninj_l_pred_dfs <- list.load(proc_path("2024_11_15_base_uninj_l_pred_dfs.rds"))
+long_mtbi_0_pred_dfs <- list.load(proc_path("2025_02_17_long_mtbi_0_pred_dfs.rds"))
+long_mtbi_l_pred_dfs <- list.load(proc_path("2025_02_17_long_mtbi_l_pred_dfs.rds"))
+base_unij_l_pred_dfs <- list.load(proc_path("2025_02_17_base_unij_l_pred_dfs.rds"))
 
 long_mtbi_0_i1_cluster_df <- long_mtbi_0_pred_dfs[[1]] |> 
-    dplyr::select(subjectkey, cluster)
+    dplyr::select(uid, cluster)
 long_mtbi_l_i1_cluster_df <- long_mtbi_l_pred_dfs[[1]] |> 
-    dplyr::select(subjectkey, cluster)
-base_uninj_l_i1_cluster_df <- base_uninj_l_pred_dfs[[1]] |> 
-    dplyr::select(subjectkey, cluster)
+    dplyr::select(uid, cluster)
+base_unij_l_i1_cluster_df <- base_unij_l_pred_dfs[[1]] |> 
+    dplyr::select(uid, cluster)
 
 long_mtbi_0_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
-
 long_mtbi_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+base_unij_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
 
-base_uninj_l_i1_cluster_df$cluster |> table() |> prop.table() |> (\(x) 100 * x)()
+classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
+outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
 
-
-for_uninj <- c(sorted_features, outcomes)
-for_uninj <- for_uninj[for_uninj %in% names(long_mtbi_0_plot_list)]
+relevant_fts <- c(classifier_fts, outcomes)
 
 long_mtbi_0_plot_list <- auto_plot(
     cluster_df = long_mtbi_0_i1_cluster_df,
-    data_list = long_mtbi_0_dls[[1]],
-    target_list = long_mtbi_0_ols[[1]]
+    dl = c(long_mtbi_0_dls[[1]], long_mtbi_0_ols[[1]])
 )
-
-long_mtbi_0_all_plots <- wrap_plots(long_mtbi_0_plot_list[for_uninj])
-
+long_mtbi_0_all_plots <- wrap_plots(long_mtbi_0_plot_list[relevant_fts])
 ggsave(
     fig_path("long_mtbi_0_predicted_plots.png", TRUE),
     long_mtbi_0_all_plots,
@@ -510,14 +460,9 @@ ggsave(
 
 long_mtbi_l_plot_list <- auto_plot(
     cluster_df = long_mtbi_l_i1_cluster_df,
-    data_list = long_mtbi_l_dls[[1]],
-    target_list = long_mtbi_l_ols[[1]]
+    dl = c(long_mtbi_l_dls[[1]], long_mtbi_l_ols[[1]])
 )
-
-long_mtbi_l_all_plots <- wrap_plots(plot_list)
-
-long_mtbi_l_all_plots <- wrap_plots(long_mtbi_l_plot_list[for_uninj])
-
+long_mtbi_l_all_plots <- wrap_plots(long_mtbi_l_plot_list[relevant_fts])
 ggsave(
     fig_path("long_mtbi_l_predicted_plots.png", TRUE),
     long_mtbi_l_all_plots,
@@ -526,6 +471,206 @@ ggsave(
     dpi = 50
 )
 
+base_unij_l_plot_list <- auto_plot(
+    cluster_df = base_unij_l_i1_cluster_df,
+    dl = c(base_unij_l_dls[[1]], base_unij_l_ols[[1]])
+)
+base_unij_l_all_plots <- wrap_plots(base_unij_l_plot_list[relevant_fts])
+ggsave(
+    fig_path("base_unij_l_predicted_plots.png", TRUE),
+    base_unij_l_all_plots,
+    width = 45,
+    height = 30,
+    dpi = 50
+)
 # Looks very similar!
+```
+
+Statistical analysis: bootstrapped similarity to baseline mTBI solution
+
+```{r}
+mtbi_gen_fts_in_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in_long.csv"))
+mtbi_gen_fts_out_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out_long.csv"))
+mtbi_gen_long <- rbind(
+    mtbi_gen_fts_in_long,
+    mtbi_gen_fts_out_long
+)
+mtbi_gen_long <- na.omit(mtbi_gen_long)
+
+n <- nrow(long_mtbi_0_i1_cluster_df)
+
+long_mtbi_0_data_df <- dplyr::inner_join(
+    long_mtbi_0_i1_cluster_df,
+    as.data.frame(c(long_mtbi_0_dls[[1]], long_mtbi_0_ols[[1]])),
+    by = "uid"
+)
+
+long_mtbi_l_data_df <- dplyr::inner_join(
+    long_mtbi_l_i1_cluster_df,
+    as.data.frame(c(long_mtbi_l_dls[[1]], long_mtbi_l_ols[[1]])),
+    by = "uid"
+)
+
+base_unij_l_data_df <- dplyr::inner_join(
+    base_unij_l_i1_cluster_df,
+    as.data.frame(c(base_unij_l_dls[[1]], base_unij_l_ols[[1]])),
+    by = "uid"
+)
+
+long_mtbi_l_data_df
+
+
+concordance_w_mtbi <- function(data_df, n = 220) {
+    set.seed(42)
+    lapply(
+        1:10,
+        function(x) {
+            bootstrap_sample <- sample(n, replace = TRUE)
+            sampled_df <- data_df[bootstrap_sample, ]
+            tops_df <- topologizer(sampled_df)
+            gen_tops_df <- generalizable_features(tops_df, compare_fn_a)
+            gen_tops_df_long <- gen_tops_df |>
+                pivot_longer(
+                    cols = -feature,
+                    names_to = "comparison",
+                    values_to = "order_sample"
+                )
+            joint_df <- dplyr::left_join(
+                mtbi_gen_long,
+                gen_tops_df_long,
+                by = c("feature", "comparison")
+            ) |>
+                dplyr::mutate(
+                    match = ifelse(order_sample == order, 1, 0)
+                ) |>
+                dplyr::filter(!grepl("mtbi", feature))
+            concordance <- sum(joint_df$"match") / nrow(joint_df)
+            print(concordance)
+        }
+    )
+}
+
+concordance_w_mtbi(long_mtbi_0_data_df)
+
+concordance_w_mtbi(long_mtbi_l_data_df)
+
+concordance_w_mtbi(base_unij_l_data_df)
+
+```
+
+To check concordance between T0 and T2 is simple.
+
+But how about by permutation testing?
+
+Say I am trying to say the concordance is significantly different between T0 and T2.
+
+
+I'm trying to say that two things are basically the same thing.
+
+
+```{r}
+matched_pls_dfs <- readRDS(proc_path("2025_02_15_matched_pl_dfs.rds"))
+
+concordance_between_dfs <- function(df1, df2, feature_set) {
+    tops_df1 <- topologizer(df1)
+    tops_df2 <- topologizer(df2)
+    gen_tops_df1 <- generalizable_features(tops_df1, compare_fn_a)
+    gen_tops_df2 <- generalizable_features(tops_df2, compare_fn_a)
+    gen_tops_df_long1 <- gen_tops_df1 |>
+        pivot_longer(
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "order"
+        )
+    gen_tops_df_long2 <- gen_tops_df2 |>
+        pivot_longer(
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "order"
+        )
+    joint_df <- dplyr::left_join(
+        gen_tops_df_long1,
+        gen_tops_df_long2,
+        by = c("feature", "comparison")
+    ) |>
+        dplyr::filter(feature %in% feature_set) |>
+        dplyr::mutate(
+            match = ifelse(order.x == order.y, 1, 0)
+        )
+    concordance <- sum(joint_df$"match") / nrow(joint_df)
+    return(concordance)
+}
+
+concordance_between_dfs(
+    long_mtbi_0_data_df,
+    long_mtbi_l_data_df,
+    feature_set = relevant_fts
+)
+
+concordance_between_time <- function(data_df_t0, data_df_t2, n = 220) {
+    set.seed(42)
+    lapply(
+        1:10,
+        function(x) {
+            permutation <- sample(n, replace = FALSE)
+            t0_picks <- permutation[1:110]
+            t2_picks <- permutation[111:220]
+            sampled_df_t0 <- data_df_t0[t0_picks, ]
+            sampled_df_t2 <- data_df_t2[t2_picks, ]
+            sample_df <- rbind(sampled_df_t0, sampled_df_t2)
+            tops_df <- topologizer(sampled_df)
+            gen_tops_df <- generalizable_features(tops_df, compare_fn_a)
+            gen_tops_df_long <- gen_tops_df |>
+                pivot_longer(
+                    cols = -feature,
+                    names_to = "comparison",
+                    values_to = "order_sample"
+                )
+            joint_df <- dplyr::left_join(
+                mtbi_gen_long,
+                gen_tops_df_long,
+                by = c("feature", "comparison")
+            ) |>
+                dplyr::mutate(
+                    match = ifelse(order_sample == order, 1, 0)
+                ) |>
+                dplyr::filter(!grepl("mtbi", feature))
+            concordance <- sum(joint_df$"match") / nrow(joint_df)
+            print(concordance)
+        }
+    )
+}
+
+long_mtbi_l_tops_df <- topologizer(long_mtbi_l_data_df)
+long_mtbi_l_gen_tops_df <- generalizable_features(long_mtbi_l_tops_df, compare_fn_a)
+long_mtbi_l_gen_tops_df_long <- long_mtbi_l_gen_tops_df |>
+    pivot_longer(
+        cols = -feature,
+        names_to = "comparison",
+        values_to = "order_sample"
+    )
+
+long_gen_x <- dplyr::left_join(
+    mtbi_gen_long,
+    long_mtbi_l_gen_tops_df_long,
+    by = c("feature", "comparison")
+) 
+
+long_gen_x
+
+
+mtbi_gen_long
+
+
+
+
+
+
+
+long_mtbi_0_i1_cluster_df
+
+long_mtbi_l_i1_cluster_df
+
+
 ```
 

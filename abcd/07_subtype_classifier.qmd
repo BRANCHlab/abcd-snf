@@ -16,6 +16,7 @@ library(doParallel)
 library(future)
 library(future.apply)
 library(progressr)
+library(patchwork)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -36,7 +37,6 @@ These features are the same as those that were characterized in the matched unin
 
 ```{r}
 #mtbi_gen_fts_in <- read_csv(proc_path("2024_11_07_mtbi_gen_fts_in.csv"))
-
 mtbi_gen_fts_in <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in.csv"))
 mtbi_gen_fts_in_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in_long.csv"))
 
@@ -77,7 +77,7 @@ shuffled_df <- mtbi_classification_df[sample(nrow(mtbi_classification_df)), ]
 nrow(mtbi_classification_df) * 0.8
 
 train_classification_df <- shuffled_df[1:349, ]
-test_classification_df <- shuffled_df[349: 437, ]
+test_classification_df <- shuffled_df[350:437, ]
 
 write_csv(train_classification_df, proc_path("train_classification_df.csv", TRUE))
 write_csv(test_classification_df, proc_path("test_classification_df.csv", TRUE))
@@ -85,14 +85,173 @@ write_csv(test_classification_df, proc_path("test_classification_df.csv", TRUE))
 
 ```{r}
 # checkpoint
-train_classification_df <- read_csv(proc_path("2025_02_14_train_classification_df.csv"))
-test_classification_df <- read_csv(proc_path("2025_02_14_test_classification_df.csv"))
+train_classification_df <- read_csv(proc_path("2025_02_17_train_classification_df.csv"))
+test_classification_df <- read_csv(proc_path("2025_02_17_test_classification_df.csv"))
+```
+
+## Time scaling classifier
+
+```{r}
+core_path <- path_maker(here(paste0("data/abcd/core")))
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+# Ohio TBI screen
+ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
+# Age
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+# Pubertal development scale, youth report
+ph_y_pds <- import("physical-health/ph_y_pds.csv")
+# Pubertal development scale, parent report
+ph_p_pds <- import("physical-health/ph_p_pds.csv")
+# Parent report of gender identity
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+# Demographic data
+abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
+# Medical history
+ph_p_mhx <- import("physical-health/ph_p_mhx.csv")
+# Subcortical volumes (ASEG)
+mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
+# Desikan cortical thicknesses
+mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
+# Desikan cortical surface areas
+mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
+# rs-fMRI cortical-cortical correlations
+mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
+# rs-fMRI cortical-subcortical correlations
+mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
+# Number of friends
+mh_y_or <- import("mental-health/mh_y_or.csv")
+# Screen time
+nt_p_stq <- import("novel-technologies/nt_p_stq.csv")
+# Participation in sports and activities
+ph_p_saiq <- import("physical-health/ph_p_saiq.csv")
+# Exercise habits
+ph_y_yrb <- import("physical-health/ph_y_yrb.csv")
+# Youth report of prosocial behaviour
+ce_y_psb <- import("culture-environment/ce_y_psb.csv")
+# Parent report of prosocial behaviour
+ce_p_psb <- import("culture-environment/ce_p_psb.csv")
+# Youth report of family function
+ce_y_fes <- import("culture-environment/ce_y_fes.csv")
+# Parent report of family function
+ce_p_fes <- import("culture-environment/ce_p_fes.csv")
+# Parent ASEBA self-report (psychopathology)
+mh_p_asr <- import("mental-health/mh_p_asr.csv")
+# Parent report of child behaviour (CBCL)
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+# Sleep disturbance scale
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+```
+
+```{r}
+train_classification_df <- read_csv(proc_path("2025_02_17_train_classification_df.csv"))
+test_classification_df <- read_csv(proc_path("2025_02_17_test_classification_df.csv"))
+
+for (name in colnames(train_classification_df)) {
+    print(name)
+}
+
+subc_v <- get_subc_v(mri_y_smr_vol_aseg, t = 0)
+cort_t <- get_cort_t(mri_y_smr_thk_dsk, t = 0)
+cort_sa <- get_cort_sa(mri_y_smr_area_dsk, t = 0)
+pubertal_status_p <- get_pubertal_status_p(ph_p_pds, max_value = 3, t = 0)
+pubertal_status_y <- get_pubertal_status_y(ph_y_pds, max_value = 3, t = 0)
+age <- get_interview_age(abcd_y_lt, t = 0, as_years = FALSE)
+screen_time <- get_screen_time(nt_p_stq, t = 0)
+```
+
+Temporally sensitive features:
+
+- brain_volume
+- cortical_sa
+- pubertal_status_p
+- age
+- weekday_screentime
+- weekend_screentime
+- cortical_thickness
+- pubertal_status_y
+
+
+```{r}
+temporal_df <- metasnf::merge_df_list(
+    list(
+        subc_v,
+        cort_t,
+        cort_sa,
+        pubertal_status_p,
+        pubertal_status_y,
+        age,
+        screen_time
+    ),
+    uid = "subjectkey"
+)
+
+temporal_df <- temporal_df |> dplyr::rename(
+    "uid" = "subjectkey",
+    "age" = "interview_age",
+    "brain_volume" = "smri_vol_scs_wholeb",
+    "cortical_thickness" = "smri_thick_cdk_mean",
+    "cortical_sa" = "smri_area_cdk_total",
+    "weekend_screentime" = "screentime_wknd_hrs",
+    "weekday_screentime" = "screentime_wkday_hrs"
+)
+
+temporal_df$"uid" <- paste0("uid_", temporal_df$"uid")
+
+temporal_df <- temporal_df |> 
+    dplyr::filter(
+        !uid %in% c(
+            train_classification_df$"uid",
+            test_classification_df$"uid"
+        )
+    )
+
+saveRDS(temporal_df, proc_path("temporal_df.rds", TRUE))
+temporal_df <- readRDS(proc_path("2025_02_17_temporal_df.rds"))
+
+scaling_df <- dplyr::bind_rows(
+    temporal_df,
+    train_classification_df[, colnames(temporal_df)],
+    test_classification_df[, colnames(temporal_df)]
+)
+scale_cols <- colnames(temporal_df)[2:ncol(temporal_df)]
+scaling_df[scale_cols] <- sapply(scaling_df[scale_cols], scale)
+
+train_scale_df <- train_classification_df |>
+    dplyr::select(-dplyr::all_of(scale_cols)) |>
+    dplyr::inner_join(scaling_df, by = "uid") |>
+    data.frame()
+
+test_scale_df <- test_classification_df |>
+    dplyr::select(-dplyr::all_of(scale_cols)) |>
+    dplyr::inner_join(scaling_df, by = "uid") |>
+    data.frame()
+
+write_csv(train_scale_df, proc_path("train_scale_df.csv", TRUE))
+write_csv(test_scale_df, proc_path("test_scale_df.csv", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+train_scale_df <- read_csv(proc_path("2025_02_17_train_scale_df.csv"))
+test_scale_df <- read_csv(proc_path("2025_02_17_test_scale_df.csv"))
 ```
 
 ## Function to prep training data
 
 ```{r}
-# checkpoint
+# CHECKPOINT
 prep_data <- function(df, standardize = FALSE) {
     df <- dplyr::select(df, -"uid")
     df <- dummy_cols(
@@ -152,7 +311,7 @@ unregister_dopar <- function() {
 ## Caret CV
 
 ```{r}
-# checkpoint
+# CHECKPOINT
 train_control <- caret::trainControl(
     method = "cv",             # Cross-validation
     number = 5,                # 5-fold CV
@@ -180,7 +339,7 @@ For random forest, I vary the following hyperparameters:
 ```{r}
 set.seed(42)
 
-training_data <- prep_data(train_classification_df)
+training_data <- prep_data(train_scale_df)
 
 # Hyperparameters
 tune_grid <- expand.grid(mtry = c(1:20))
@@ -217,7 +376,7 @@ stopCluster(cl)
 unregister_dopar()
 print(Sys.time() - time)
 saveRDS(trained_models, model_path("rf_models.rds", TRUE))
-rf_models <- readRDS(model_path("2025_02_14_rf_models.rds"))
+rf_models <- readRDS(model_path("2025_02_17_rf_models.rds"))
 ```
 
 ### SVM
@@ -232,7 +391,7 @@ svm_tune_grid_1 <- expand.grid(
 
 svm_model <- train(
   cluster ~ .,                # Formula for the model
-  data = prep_data(train_classification_df, TRUE),                # Your dataset
+  data = prep_data(train_scale_df, TRUE),                # Your dataset
   method = "svmRadial",       # Using radial kernel
   trControl = train_control,  # Cross-validation settings
   tuneGrid = svm_tune_grid_1        # Hyperparameter grid to tune
@@ -247,12 +406,11 @@ svm_tune_grid_2 <- expand.grid(
 
 svm_model2 <- train(
   cluster ~ .,                # Formula for the model
-  data = prep_data(train_classification_df, TRUE),                # Your dataset
+  data = prep_data(train_scale_df, TRUE),                # Your dataset
   method = "svmRadial",       # Using radial kernel
   trControl = train_control,  # Cross-validation settings
   tuneGrid = svm_tune_grid_2        # Hyperparameter grid to tune
 )
-
 
 svm_tune_grid_2 <- expand.grid(
     sigma = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
@@ -261,14 +419,14 @@ svm_tune_grid_2 <- expand.grid(
 
 svm_model2 <- train(
   cluster ~ .,                # Formula for the model
-  data = prep_data(train_classification_df, TRUE),                # Your dataset
+  data = prep_data(train_scale_df, TRUE),                # Your dataset
   method = "svmRadial",       # Using radial kernel
   trControl = train_control,  # Cross-validation settings
   tuneGrid = svm_tune_grid_2        # Hyperparameter grid to tune
 )
 
 saveRDS(svm_model2, model_path("svm_model.rds", TRUE))
-svm_model <- readRDS(model_path("2025_02_14_svm_model.rds"))
+svm_model <- readRDS(model_path("2025_02_17_svm_model.rds"))
 ```
 
 ### XGBoost
@@ -286,7 +444,7 @@ svm_model <- readRDS(model_path("2025_02_14_svm_model.rds"))
 #
 #xgb_model <- train(
 #    cluster ~ .,
-#    data = prep_data(train_classification_df),
+#    data = prep_data(train_scale_df),
 #    method = "xgbTree",
 #    trControl = train_control,
 #    tuneGrid = xgb_tune_grid
@@ -302,23 +460,23 @@ svm_model <- readRDS(model_path("2025_02_14_svm_model.rds"))
 # Train the KNN model
 knn_model <- train(
   cluster ~ ., 
-  data = prep_data(train_classification_df, TRUE), 
+  data = prep_data(train_scale_df, TRUE), 
   method = "knn", 
   trControl = train_control, 
   tuneLength = 130  # Tuning k (number of neighbors)
 )
 
 saveRDS(knn_model, model_path("knn_subtype_classifier_1.rds", TRUE))
-knn_model <- readRDS(model_path("2025_02_14_knn_subtype_classifier_1.rds"))
+knn_model <- readRDS(model_path("2025_02_17_knn_subtype_classifier_1.rds"))
 ```
 
 ### Comparisons
 
 ```{r}
 #xgb_model <- readRDS(model_path("2024_11_11_xgb_subtype_classifier_1.rds"))
-knn_model <- readRDS(model_path("2025_02_14_knn_subtype_classifier_1.rds"))
-rf_models <- readRDS(model_path("2025_02_14_rf_models.rds"))
-svm_model <- readRDS(model_path("2025_02_14_svm_model.rds"))
+knn_model <- readRDS(model_path("2025_02_17_knn_subtype_classifier_1.rds"))
+rf_models <- readRDS(model_path("2025_02_17_rf_models.rds"))
+svm_model <- readRDS(model_path("2025_02_17_svm_model.rds"))
 
 classifier_list <- rf_models
 classifier_list[[61]] <- svm_model
@@ -327,10 +485,11 @@ classifier_list[[62]] <- knn_model
 names(classifier_list)[[61]] <- "svm"
 names(classifier_list)[[62]] <- "knn"
 
-# HERE - 2025 -  02 - 14
-dotplot(resamples(classifier_list))
+png(filename = fig_path("resampled_classifier_models_round_1.png", TRUE), width = 800, height = 1500, res = 100)
+print(dotplot(resamples(classifier_list)))
+dev.off()
 
-# About 77.85% max
+# About 72% max
 rf_accuracies <- lapply(
     rf_models,
     function(x) {
@@ -339,18 +498,6 @@ rf_accuracies <- lapply(
 ) |> unlist()
 
 max(rf_accuracies)
-
-rf_maccuracies <- lapply(
-    rf_models,
-    function(x) {
-        mean(x$"results"$"Accuracy")
-    }
-) |> unlist()
-
-plot(rf_accuracies, rf_maccuracies)
-
-which(rf_accuracies == max(rf_accuracies))
-which(rf_maccuracies == max(rf_maccuracies))
 
 rf_accuracy_dfs <- lapply(
     names(rf_models),
@@ -367,69 +514,36 @@ rf_accuracy_dfs <- lapply(
 
 rf_accuracy_df <- do.call(rbind, rf_accuracy_dfs)
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = n_trees, y = Accuracy)
+tuning_plot <- function(df, param) {
+    plot <- ggplot(
+        df,
+        aes(x = .data[[param]], y = .data[["Accuracy"]]),
     ) +
-    geom_jitter(alpha = 0.2)
+    geom_jitter(alpha = 0.2) +
+    theme_bw()
+    return(plot)
+}
 
-# more than 15 seems clearly better
-rf_accuracy_df |>
-    ggplot(
-        aes(x = max_nodes, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.2)
+set.seed(42)
+n_trees_plot <- tuning_plot(rf_accuracy_df, "n_trees")
+max_nodes_plot <- tuning_plot(rf_accuracy_df, "max_nodes")
+node_size_plot <- tuning_plot(rf_accuracy_df, "node_size")
+mtry_plot <- tuning_plot(rf_accuracy_df, "mtry")
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = node_size, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.2)
+tuning_plots <- wrap_plots(
+    list(n_trees_plot, max_nodes_plot, node_size_plot, mtry_plot),
+    ncol = 2
+)
 
-# Around 5 seems good?
-rf_accuracy_df |>
-    ggplot(
-        aes(x = mtry, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.2)
+tuning_plots
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = n_trees, y = Accuracy, group = uid)
-    ) +
-    geom_line(alpha = 0.2) +
-    geom_ribbon(aes(ymin = Accuracy - AccuracySD, ymax = Accuracy + AccuracySD), alpha = 0.01)
-
-rf_accuracy_df |>
-    ggplot(
-        aes(x = max_nodes, y = Accuracy, group = uid)
-    ) +
-    geom_jitter(alpha = 0.2)
-
-
-arrange(rf_accuracy_df, -Accuracy)[1:20, ]
-
-rf_models[[1]]$results |>
-    ggplot(
-        aes(x = mtry, y = Accuracy)
-    ) +
-    geom_line() +
-    geom_ribbon(aes(ymin = Accuracy - AccuracySD, ymax = Accuracy + AccuracySD), alpha = 0.1)
-
-
-max(as.numeric(rf_accuracies))
-
-svm_model
-
-resamples(
-    list(
-        "xgb" = xgb_model,
-        "svm" = svm_model,
-        "rf" = rf_models[[1]],
-        "knn" = knn_model
-    )
-) |> dotplot()
-
+ggsave(
+    fig_path("tuning_plots.png", TRUE),
+    tuning_plots,
+    width = 10,
+    height = 10,
+    dpi = 300
+)
 ```
 
 ### Random forest - Second round of training
@@ -437,7 +551,7 @@ resamples(
 ```{r}
 set.seed(42)
 
-training_data <- prep_data(train_classification_df)
+training_data <- prep_data(train_scale_df)
 
 # Hyperparameters
 tune_grid <- expand.grid(mtry = c(1:10))
@@ -446,7 +560,7 @@ cl <- makePSOCKcluster(64)
 registerDoParallel(cl)
 trained_models <- list()
 counter <- 0
-for (maxnodes in c(13, 15, 20, 25)) {
+for (maxnodes in c(15, 25, 30, 35, 40, 50)) {
     for (nodesize in c(1:5)) {
         for (ntree in c(100, 1000, 2000, 3000)) {
             rf_model <- train(
@@ -475,84 +589,14 @@ unregister_dopar()
 print(Sys.time() - time)
 
 saveRDS(trained_models, model_path("rf_models_2.rds", TRUE))
-#rf_models_2 <- readRDS(model_path("2024_11_12_rf_models_2.rds"))
-rf_models_2 <- readRDS(model_path("2025_02_15_rf_models_2.rds"))
 
-rf_models_2_accs <- rf_models_2 |> lapply(
-    function(x) max(x$results$Accuracy)
-) |> unlist()
+rf_models_2 <- readRDS(model_path("2025_02_17_rf_models_2.rds"))
 
-rf_models_2_accs[rf_models_2_accs == max(rf_models_2_accs)]
-
-# Still looks like the max maxnodes value (25) gave best results.
-# I'll search again now across 30 to 40.
-
-rf_models |> lapply(
-    function(x) max(x$results$Accuracy)
-) |> unlist() |> max()
-
-
-# Hyperparameters
-tune_grid <- expand.grid(mtry = c(1:10))
-time <- Sys.time()
-cl <- makePSOCKcluster(64)
-registerDoParallel(cl)
-trained_models <- list()
-counter <- 0
-for (maxnodes in c(30, 35, 40)) {
-    for (nodesize in c(1:5)) {
-        for (ntree in c(100, 1000, 2000, 3000)) {
-            rf_model <- train(
-                cluster ~ .,
-                data = training_data,
-                method = "rf",
-                trControl = train_control,
-                tuneGrid = tune_grid,
-                ntree = ntree,
-                maxnodes = maxnodes,
-                nodesize = nodesize
-            )
-            trained_models[[length(trained_models) + 1]] <- rf_model
-            names(trained_models)[[length(trained_models)]] <- paste0(
-                "maxnodes_", maxnodes,
-                "nodesize_", nodesize,
-                "ntree_", ntree
-            )
-            counter <- counter + 1
-            print(paste0(round(counter / (4*5*4) * 100, 2), "% complete..."))
-        }
-    }
-}
-stopCluster(cl)
-unregister_dopar()
-print(Sys.time() - time)
-
-saveRDS(trained_models, model_path("rf_models_3.rds", TRUE))
-
-rf_models_3 <- readRDS(model_path("2025_02_15_rf_models_3.rds"))
-
-rf_models_3_accs <- rf_models_3 |> lapply(
-    function(x) max(x$results$Accuracy)
-) |> unlist()
-
-# Best one so far!
-rf_models_3_accs[rf_models_3_accs == max(rf_models_3_accs)]
-```
-
-
-### Second round of comparisons
-
-```{r}
-rf_models <- readRDS(model_path("2025_02_14_rf_models.rds"))
-rf_models_3 <- readRDS(model_path("2025_02_15_rf_models_3.rds"))
-
-rf_models_3 |> resamples() |> dotplot()
-
-rf_accuracy_dfs_3 <- lapply(
-    names(rf_models_3),
+rf_accuracy_dfs2 <- lapply(
+    names(rf_models_2),
     function(x) {
         hyperparameters <- as.numeric(unlist(regmatches(x, gregexpr("\\d+", x))))
-        results <- rf_models_3[[x]]$results
+        results <- rf_models_2[[x]]$results
         results$"max_nodes" <- hyperparameters[[1]]
         results$"node_size" <- hyperparameters[[2]]
         results$"n_trees" <- hyperparameters[[3]]
@@ -561,53 +605,45 @@ rf_accuracy_dfs_3 <- lapply(
     }
 )
 
-rf_accuracy_df <- do.call(rbind, rf_accuracy_dfs_3)
+rf_accuracy_df2 <- do.call(rbind, rf_accuracy_dfs2)
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = n_trees, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.8) +
-    theme_bw()
+n_trees_plot2 <- tuning_plot(rf_accuracy_df2, "n_trees")
+max_nodes_plot2 <- tuning_plot(rf_accuracy_df2, "max_nodes")
+node_size_plot2 <- tuning_plot(rf_accuracy_df2, "node_size")
+mtry_plot2 <- tuning_plot(rf_accuracy_df2, "mtry")
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = max_nodes, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.8) +
-    theme_bw()
+tuning_plots2 <- wrap_plots(
+    list(n_trees_plot2, max_nodes_plot2, node_size_plot2, mtry_plot2),
+    ncol = 2
+)
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = node_size, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.8) +
-    theme_bw()
+tuning_plots2
 
-rf_accuracy_df |>
-    ggplot(
-        aes(x = mtry, y = Accuracy)
-    ) +
-    geom_jitter(alpha = 0.8) +
-    theme_bw()
+rf_models_2_accs <- rf_models_2 |> lapply(
+    function(x) max(x$results$Accuracy)
+) |> unlist()
 
-rf_accuracy_df |>
-    arrange(-Accuracy) |>
-    head()
+rf_models_2_accs[rf_models_2_accs == max(rf_models_2_accs)]
 
-rf_models_3$"maxnodes_35nodesize_3ntree_1000"$"finalModel"
+rf_sorted <- rf_accuracy_df2 |> 
+    dplyr::select(-Kappa, -KappaSD) |>
+    dplyr::arrange(-Accuracy)
+
+rf_sorted[3, ]
+
+rf_models_2$"maxnodes_35nodesize_4ntree_1000"$"finalModel"
 ```
 
-Best model seemed to have mtry 6, max nodes 40, node size 1, n trees 100.
-But I'll pick the best based on also having a decent n_trees and node_size and reduced max_nodes:
-mtry of 6, max nodes of 35, node size of 3, n tree of 1000.
+Best model seemed to have mtry 9, max nodes 25, node size 1, n trees 1000.
+But to be safe, I'll lean on one witha slightly larger node size that is still 72% acc (just as the top one is):
+mtry of 8, max nodes of 35, node size of 4, n tree of 1000.
 
-        OOB estimate of  error rate: 31.81%
+        OOB estimate of  error rate: 31.52%
 Confusion matrix:
    1  2  3 class.error
-1 71 22 21   0.3771930
-2 14 96 13   0.2195122
-3 15 26 71   0.3660714
+1 70 23 21   0.3859649
+2  9 98 16   0.2032520
+3 16 25 71   0.3660714
 
 ### Training on full data set
 
@@ -616,75 +652,60 @@ set.seed(42)
 
 model <- randomForest(
     cluster ~ .,
-    data = prep_data(train_classification_df),
-    mtry = 6,
+    data = prep_data(train_scale_df),
+    mtry = 8,
     ntree = 1000,
     maxnodes = 35,
-    nodesize = 3
+    nodesize = 4
 )
 
 saveRDS(model, model_path("rf_training_subtype_classifier.rds", TRUE))
 
-rf_training_subtype_classifier <- readRDS(model_path("2025_02_16_rf_training_subtype_classifier.rds"))
+rf_training_subtype_classifier <- readRDS(model_path("2025_02_17_rf_training_subtype_classifier.rds"))
 
 predictions <- predict(
     rf_training_subtype_classifier,
-    newdata = prep_data(test_classification_df)
+    newdata = prep_data(test_scale_df)
 )
 
-# Model acc on test data: 75.28%
-mean(predictions == prep_data(test_classification_df)$cluster)
+# Model acc on test data: 76.1%
+mean(predictions == prep_data(test_scale_df)$cluster)
 
-confusionMatrix(predictions, prep_data(test_classification_df)$"cluster")
+confusionMatrix(predictions, prep_data(test_scale_df)$"cluster")
 ```
 
           Reference
 Prediction  1  2  3
-         1 16  2  0
-         2  9 30  2
+         1 17  3  0
+         2  7 29  2
          3  7  2 21
 
 Overall Statistics
 
-               Accuracy : 0.7528
-                 95% CI : (0.65, 0.8381)
-    No Information Rate : 0.382
-    P-Value [Acc > NIR] : 1.264e-12
+               Accuracy : 0.7614
+                 95% CI : (0.6586, 0.8458)
+    No Information Rate : 0.3864
+    P-Value [Acc > NIR] : 9.232e-13
 
-                  Kappa : 0.6278
+                  Kappa : 0.6406
 
- Mcnemar's Test P-Value : 0.009506
-
-Statistics by Class:
-
-                     Class: 1 Class: 2 Class: 3
-Sensitivity            0.5000   0.8824   0.9130
-Specificity            0.9649   0.8000   0.8636
-Pos Pred Value         0.8889   0.7317   0.7000
-Neg Pred Value         0.7746   0.9167   0.9661
-Prevalence             0.3596   0.3820   0.2584
-Detection Rate         0.1798   0.3371   0.2360
-Detection Prevalence   0.2022   0.4607   0.3371
-Balanced Accuracy      0.7325   0.8412   0.8883
+ Mcnemar's Test P-Value : 0.03511
 
 ```{r}
 set.seed(42)
-full_classification_df <- rbind(train_classification_df, test_classification_df)
+full_classification_df <- rbind(train_scale_df, test_scale_df)
 
 full_model <- randomForest(
     cluster ~ .,
     data = prep_data(full_classification_df),
-    mtry = 6,
+    mtry = 8,
     ntree = 1000,
     maxnodes = 35,
-    nodesize = 3
+    nodesize = 4
 )
 
-full_model
-
 saveRDS(full_model, model_path("subtype_classifier.rds", TRUE))
-
-subtype_classifier <- readRDS(model_path("2025_02_16_subtype_classifier.rds"))
+subtype_classifier <- readRDS(model_path("2025_02_17_subtype_classifier.rds"))
 ```
 
 ### Variable importances
@@ -693,7 +714,7 @@ subtype_classifier <- readRDS(model_path("2025_02_16_subtype_classifier.rds"))
 var_imp_df <- as.data.frame(importance(subtype_classifier))
 var_imp_df$"feature" <- rownames(var_imp_df)
 write_csv(var_imp_df, proc_path("var_imp_df.csv", TRUE))
-var_imp_df <- read_csv(proc_path("2025_02_16_var_imp_df.csv"))
+var_imp_df <- read_csv(proc_path("2025_02_17_var_imp_df.csv"))
 
 var_imp_df
 
