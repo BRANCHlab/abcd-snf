@@ -585,3 +585,15 @@ topologizer <- function(df) {
     }
     return(summary_df)
 }
+
+png_save <- function(img, path, w = 1250, h = 1000, r = 125) {
+    grDevices::png(
+        filename = path,
+        width = w,
+        height = h,
+        res = r
+    )
+    print(img)
+    grDevices::dev.off()
+}
+

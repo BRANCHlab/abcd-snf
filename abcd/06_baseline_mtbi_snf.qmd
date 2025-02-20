@@ -72,11 +72,18 @@ mtbi_config <- readRDS(proc_path("2025_02_10_mtbi_config.rds"))
 ## Running SNF for each of the imputations
 
 ```{r}
+
+mtbi_config[176]
+
 mtbi_sol_df_s1 <- batch_snf(
     dl = all_dls$"mtbi_train_data_lists"[[1]],
-    sc = mtbi_config,
-    processes = "max"
+    sc = mtbi_config[176],
+    processes = 1,
+    return_sim_mats = TRUE
 )
+
+sim_mats_list(mtbi_sol_df_s1)[[1]]
+
 saveRDS(mtbi_sol_df_s1, proc_path("mtbi_sol_df_s1.rds", TRUE))
 #
 mtbi_sol_df_s2 <- batch_snf(
@@ -484,6 +491,18 @@ saveRDS(mtbi_mc_sol_df, proc_path("mtbi_mc_sol_df.rds", TRUE))
 ```{r}
 # CHECKPOINT
 mtbi_mc_sol_df <- readRDS(proc_path("2025_02_11_mtbi_mc_sol_df.rds"))
+
+e_pvals <- mtbi_mc_sol_df |>
+    dplyr::filter(mc == "E") |>
+    as.data.frame() |>
+    dplyr::select(mean_pval) |>
+    unlist() |>
+    as.numeric()
+
+length(e_pvals)
+
+mean(-log10(e_pvals) > 4)
+
 ```
 
 When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have values for all features.
@@ -517,10 +536,12 @@ saveRDS(mtbi_rep_solutions, proc_path("mtbi_rep_solutions.rds", TRUE))
 ```{r}
 mtbi_rep_solutions <- readRDS(proc_path("2025_02_11_mtbi_rep_solutions.rds"))
 
-# Top solution is meta cluster E, represented by solution 576
+mtbi_rep_solutions
+
+# Top solution is meta cluster F, represented by solution 576
 mtbi_top_solution <- mtbi_ext_sol_df_s3[mtbi_ext_sol_df_s3$"solution" == 576, ]
 
-mtbi_top_solution$"mc" <- "E"
+mtbi_top_solution$"mc" <- "F"
 
 saveRDS(mtbi_top_solution, proc_path("mtbi_top_solution.rds", TRUE))
 ```
@@ -737,6 +758,12 @@ saveRDS(outputs, proc_path("outputs.rds", TRUE))
 sorted_inputs <- readRDS(proc_path("2025_02_12_sorted_inputs.rds"))
 sorted_in_and_out <- readRDS(proc_path("2025_02_12_sorted_in_and_out.rds"))
 outputs <- readRDS(proc_path("2025_02_13_outputs.rds"))
+
+data.frame(
+    Rank = 1:length(sorted_inputs),
+    Feature = sorted_inputs
+)
+
 ```
 
 ### Correlation of NMI and p-value
@@ -1547,7 +1574,11 @@ saveRDS(mtbi_val_df, proc_path("mtbi_val_df.rds", TRUE))
 ```{r}
 # CHECKPOINT
 mtbi_der_df <- readRDS(proc_path("2025_02_13_mtbi_der_df.rds"))
+
 mtbi_ful_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
+
+mtbi_ful_df$"cluster" |> table()
+
 mtbi_val_df <- readRDS(proc_path("2025_02_13_mtbi_val_df.rds"))
 ```
 
@@ -1821,6 +1852,8 @@ full_data_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_data_list_1.rds"))
 dl_no_demo <- full_data_list_1[-c(6:9)] 
 dl_demo <- full_data_list_1[c(6:9)]
 
+dl_demo
+
 dl_corrected <- linear_adjust(dl_no_demo, dl_demo)
 saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
 ```
@@ -2028,4 +2061,27 @@ ggsave(
     height = 30,
     dpi = 50
 )
+```
+
+```{r}
+full_data_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_data_list_1.rds"))
+
+mtbi_age_distribution <- full_data_list_1[[5]]$"data" |>
+    dplyr::mutate(
+        age = mtbi_age / 12
+    ) |>
+    ggplot(aes(x = age)) +
+    geom_histogram(binwidth = 1, fill = "grey", color = "black") +
+    labs(x = "mTBI Age (Years)", y = "Count") +
+    theme_minimal() +
+    theme(text = element_text(size = 20))
+
+ggsave(
+    fig_path("mtbi_age_distribution.png", TRUE),
+    mtbi_age_distribution,
+    width = 7,
+    height = 5,
+    dpi = 60
+)
+
 ```

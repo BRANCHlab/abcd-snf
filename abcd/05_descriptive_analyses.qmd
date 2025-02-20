@@ -1264,12 +1264,7 @@ saveRDS(cor_mats, proc_path("baseline_cor_mats.rds", TRUE))
 
 cor_mats <- readRDS(proc_path("2025_02_18_baseline_cor_mats.rds"))
 
-colnames(cor_mats[[1]])[!colnames(cor_mats[[1]]) %in% colnames(cor_mats_long[[1]])]
-
-cor_mats_long[[1]] |> colnames()
-
-
-make_and_save_heatmap <- function(mat, filename) {
+make_and_save_heatmap <- function(mat, filename = NULL, save = TRUE) {
     hm <- ComplexHeatmap::Heatmap(
         mat,
         cluster_rows = FALSE,
@@ -1280,16 +1275,18 @@ make_and_save_heatmap <- function(mat, filename) {
         column_names_gp = gpar(fontsize = 8),
         row_names_gp = gpar(fontsize = 8)
     )
-    save_heatmap(
-        heatmap = hm,
-        path = fig_path(filename, TRUE),
-        width = 1000,
-        height = 900,
-        res = 100
-    )
+    if (save) {
+        save_heatmap(
+            heatmap = hm,
+            path = fig_path(filename, TRUE),
+            width = 1000,
+            height = 900,
+            res = 100
+        )
+    } else {
+        return(hm)
+    }
 }
-
-mean(cor_mats[[1]])
 
 # Imputation variations are minor, but uninjured to injured has a notable difference
 make_and_save_heatmap(cor_mats[[1]], "baseline_cor_mat_s1.png")
@@ -1365,6 +1362,7 @@ cor_mats_long <- lapply(
 )
 
 saveRDS(cor_mats_long, proc_path("longitudinal_cor_mats_long.rds", TRUE))
+
 cor_mats_long <- readRDS(proc_path("2025_02_18_longitudinal_cor_mats_long.rds"))
 
 make_and_save_heatmap(cor_mats_long[[1]], "long_cor_mat_preinj_1.png")
@@ -1441,4 +1439,92 @@ ggsave(
     height = 5,
     dpi = 120
 )
+```
+
+Getting more specific
+
+```{r}
+
+# Baseline mTBI
+base_mtbi_avg_cors2 <- c(
+    mean(abs(cor_mats[[1]][1:33, 1:33])),
+    mean(abs(cor_mats[[2]][1:33, 1:33])),
+    mean(abs(cor_mats[[3]][1:33, 1:33])),
+    mean(abs(cor_mats[[4]][1:33, 1:33])),
+    mean(abs(cor_mats[[5]][1:33, 1:33])),
+    mean(abs(cor_mats[[6]][1:33, 1:33])),
+    mean(abs(cor_mats[[7]][1:33, 1:33])),
+    mean(abs(cor_mats[[8]][1:33, 1:33])),
+    mean(abs(cor_mats[[9]][1:33, 1:33])),
+    mean(abs(cor_mats[[10]][1:33, 1:33]))
+)
+
+# Baseline unij
+base_unij_avg_cors2 <- c(
+    mean(abs(cor_mats[[11]][1:33, 1:33])),
+    mean(abs(cor_mats[[12]][1:33, 1:33])),
+    mean(abs(cor_mats[[13]][1:33, 1:33])),
+    mean(abs(cor_mats[[14]][1:33, 1:33])),
+    mean(abs(cor_mats[[15]][1:33, 1:33])),
+    mean(abs(cor_mats[[16]][1:33, 1:33])),
+    mean(abs(cor_mats[[17]][1:33, 1:33])),
+    mean(abs(cor_mats[[18]][1:33, 1:33])),
+    mean(abs(cor_mats[[19]][1:33, 1:33])),
+    mean(abs(cor_mats[[20]][1:33, 1:33]))
+)
+
+# Pre-injury
+long_mtbi_0_avg_cors2 <- c(
+    mean(abs(cor_mats_long[[1]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[2]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[3]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[4]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[5]][1:33, 1:33]))
+)
+
+# Post-injury
+long_mtbi_1_avg_cors2 <- c(
+    mean(abs(cor_mats_long[[6]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[7]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[8]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[9]][1:33, 1:33])),
+    mean(abs(cor_mats_long[[10]][1:33, 1:33]))
+)
+
+avg_cor_plot2 <- data.frame(
+    group = c(
+        rep("Baseline mTBI", 10),
+        rep("Baseline uninjured", 10),
+        rep("Longitudinal mTBI, pre-injury", 5),
+        rep("Longitudinal mTBI, post-injury", 5)
+    ),
+    avg_cor = c(
+        base_mtbi_avg_cors2,
+        base_unij_avg_cors2,
+        long_mtbi_0_avg_cors2,
+        long_mtbi_1_avg_cors2
+    )
+) |>
+    ggplot(aes(x = group, y = avg_cor)) +
+    geom_jitter(width = 0.1, height = 0, alpha = 0.5) +
+    labs(
+        y = "Mean Absolute Correlation",
+        x = "Group"
+    ) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+avg_cor_plot2
+
+ggsave(
+    fig_path("avg_cor_plot2.png", TRUE),
+    avg_cor_plot2,
+    width = 5,
+    height = 5,
+    dpi = 120
+)
+
+
+#make_and_save_heatmap(cor_mats[[1]][1:21, 1:33], save = FALSE)
+
 ```
