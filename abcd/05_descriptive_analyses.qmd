@@ -1176,16 +1176,20 @@ expect it is all diffuse global is fine
 ## Correlation analyse
 
 ```{r}
-
 all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
-
-names(all_dls)
 
 mtbi_train_dl_s1 <- c(all_dls$"mtbi_train_data_lists"[[1]], all_dls$"mtbi_train_oom_lists"[[1]])
 mtbi_train_dl_s2 <- c(all_dls$"mtbi_train_data_lists"[[2]], all_dls$"mtbi_train_oom_lists"[[2]])
 mtbi_train_dl_s3 <- c(all_dls$"mtbi_train_data_lists"[[3]], all_dls$"mtbi_train_oom_lists"[[3]])
 mtbi_train_dl_s4 <- c(all_dls$"mtbi_train_data_lists"[[4]], all_dls$"mtbi_train_oom_lists"[[4]])
 mtbi_train_dl_s5 <- c(all_dls$"mtbi_train_data_lists"[[5]], all_dls$"mtbi_train_oom_lists"[[5]])
+
+mtbi_test_dl_s1 <- c(all_dls$"mtbi_test_data_lists"[[1]], all_dls$"mtbi_test_oom_lists"[[1]])
+mtbi_test_dl_s2 <- c(all_dls$"mtbi_test_data_lists"[[2]], all_dls$"mtbi_test_oom_lists"[[2]])
+mtbi_test_dl_s3 <- c(all_dls$"mtbi_test_data_lists"[[3]], all_dls$"mtbi_test_oom_lists"[[3]])
+mtbi_test_dl_s4 <- c(all_dls$"mtbi_test_data_lists"[[4]], all_dls$"mtbi_test_oom_lists"[[4]])
+mtbi_test_dl_s5 <- c(all_dls$"mtbi_test_data_lists"[[5]], all_dls$"mtbi_test_oom_lists"[[5]])
+
 mtbi_pooled_dl_s1 <- c(all_dls$"mtbi_pooled_data_lists"[[1]], all_dls$"mtbi_pooled_oom_lists"[[1]])
 mtbi_pooled_dl_s2 <- c(all_dls$"mtbi_pooled_data_lists"[[2]], all_dls$"mtbi_pooled_oom_lists"[[2]])
 mtbi_pooled_dl_s3 <- c(all_dls$"mtbi_pooled_data_lists"[[3]], all_dls$"mtbi_pooled_oom_lists"[[3]])
@@ -1353,6 +1357,14 @@ cor_mats_long <- lapply(
         cor()
     }
 )
+
+cor_mat_names <- colnames(cor_mats[[1]])
+
+saveRDS(cor_mat_names, proc_path("cor_mat_names.rds", TRUE))
+```
+
+```{r}
+cor_mat_names <- readRDS(proc_path("2025_02_26_cor_mat_names.rds"))
 
 cor_mats_long <- lapply(
     cor_mats_long,
@@ -1527,4 +1539,144 @@ ggsave(
 
 #make_and_save_heatmap(cor_mats[[1]][1:21, 1:33], save = FALSE)
 
+```
+
+## Permutation testing correlation comparisons
+
+First, a simple permutation test comparing the first mTBI correlation sample with the first uninjured correlation sample.
+
+```{r}
+
+mtbi_full_train_dl_1 <- merge(mtbi_train_dl_s1, mtbi_test_dl_s1)
+
+mtbi_df_1 <- mtbi_full_train_dl_1 |>
+    as.data.frame() |>
+    dplyr::select(-uid, -dplyr::contains("mtbi")) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+
+unij_df_1 <- unij_dl_s1 |>
+    as.data.frame() |>
+    dplyr::select(-uid, -dplyr::contains("mtbi")) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+
+cor_mat_names <- readRDS(proc_path("2025_02_26_cor_mat_names.rds"))
+
+mtbi_df_1 |> colnames()
+unij_df_1 |> colnames()
+
+mean(abs(cor(mtbi_df_1)))
+
+mean(abs(cor(unij_df_1[sample(nrow(unij_df_1), size = 437), ])))
+
+# Effect of sample size on correlation
+sample_size_cor_df <- data.frame()
+for (i in c(1:50)) {
+    for (n in c(50, 100, 250, 500, 1000, 2000, 5000)) {
+        print(n)
+        cor <- mean(
+            abs(
+                cor(
+                    unij_df_1[sample(nrow(unij_df_1), size = n), ]
+                )
+            )
+        )
+        sample_size_cor_df <- rbind(
+            sample_size_cor_df,
+            data.frame(
+                n = n,
+                cor = cor
+            )
+        )
+    }
+}
+
+sample_size_cor_plot <- sample_size_cor_df |>
+    ggplot(
+        aes(x = factor(n), y = cor)
+    ) +
+    geom_jitter(width = 0.1) +
+    theme_bw() +
+    labs(x = "Sample size", y = "Correlation") +
+    theme(text = element_text(size = 20))
+
+ggsave(
+    fig_path("sample_size_cor_plot.png", TRUE),
+    sample_size_cor_plot,
+    width = 5,
+    height = 5,
+    dpi = 120
+)
+
+# Non-Absolute value version
+sample_size_non_abs_cor_df <- data.frame()
+for (i in c(1:50)) {
+    for (n in c(50, 100, 250, 500, 1000, 2000, 5000)) {
+        print(n)
+        cor <- mean(
+            cor(
+                unij_df_1[sample(nrow(unij_df_1), size = n), ]
+            )
+        )
+        sample_size_non_abs_cor_df <- rbind(
+            sample_size_non_abs_cor_df,
+            data.frame(
+                n = n,
+                cor = cor
+            )
+        )
+    }
+}
+
+sample_size_non_abs_cor_plot <- sample_size_non_abs_cor_df |>
+    ggplot(
+        aes(x = factor(n), y = cor)
+    ) +
+    geom_jitter(width = 0.1) +
+    theme_bw() +
+    labs(x = "Sample size", y = "Correlation") +
+    theme(text = element_text(size = 20))
+sample_size_non_abs_cor_plot
+
+ggsave(
+    fig_path("sample_size_non_abs_cor_plot.png", TRUE),
+    sample_size_non_abs_cor_plot,
+    width = 5,
+    height = 5,
+    dpi = 120
+)
+
+```
+
+After creating a correlation matrix, it is necessary to remove the diagonal values and the lower triangle of the matrix to avoid double counting.
+
+```{r}
+
+upper_tri_cor <- function(df) {
+    cor_df <- cor(df)
+    return(mean(abs(cor_df[upper.tri(cor_df)])))
+}
+
+unij_cor_dist <- c()
+for (i in 1:10000) {
+    print(i)
+    sampled_df <- unij_df_1[sample(nrow(unij_df_1), size = 437), ]
+    unij_cor_dist <- c(unij_cor_dist, upper_tri_cor(sampled_df))
+}
+
+unij_cor_dist > upper_tri_cor(mtbi_df_1)
+
+max(unij_cor_dist)
+
+hist(unij_cor_dist)
+# Histogram of unij correlation distribution with a red vertical line and the mtbi correlation
+
+# HERE I AM
 ```
