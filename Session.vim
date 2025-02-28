@@ -13,15 +13,13 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +583 abcd/06_baseline_mtbi_snf.qmd
-badd +23 abcd/03_longitudinal_extraction.qmd
-badd +25 abcd/04_longitudinal_preprocessing.qmd
+badd +1678 abcd/05_descriptive_analyses.qmd
+badd +2 ~/Documents/prash/time/time.csv
 argglobal
 %argdel
-$argadd abcd/06_baseline_mtbi_snf.qmd
-edit abcd/06_baseline_mtbi_snf.qmd
+$argadd abcd/05_descriptive_analyses.qmd
+edit abcd/05_descriptive_analyses.qmd
 argglobal
-balt abcd/03_longitudinal_extraction.qmd
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -30,12 +28,12 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 583 - ((38 * winheight(0) + 26) / 53)
+let s:l = 1678 - ((32 * winheight(0) + 23) / 46)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 583
-normal! 02|
+keepjumps 1678
+normal! 0
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf

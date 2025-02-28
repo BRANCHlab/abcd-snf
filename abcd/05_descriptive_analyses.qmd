@@ -1205,7 +1205,9 @@ unij_pooled_dl_s2 <- c(all_dls$"unij_pooled_data_lists"[[2]], all_dls$"unij_pool
 unij_pooled_dl_s3 <- c(all_dls$"unij_pooled_data_lists"[[3]], all_dls$"unij_pooled_oom_lists"[[3]])
 unij_pooled_dl_s4 <- c(all_dls$"unij_pooled_data_lists"[[4]], all_dls$"unij_pooled_oom_lists"[[4]])
 unij_pooled_dl_s5 <- c(all_dls$"unij_pooled_data_lists"[[5]], all_dls$"unij_pooled_oom_lists"[[5]])
+```
 
+```{r}
 dls <- list(
     "mtbi_train_dl_s1" = mtbi_train_dl_s1,
     "mtbi_train_dl_s2" = mtbi_train_dl_s2,
@@ -1546,7 +1548,6 @@ ggsave(
 First, a simple permutation test comparing the first mTBI correlation sample with the first uninjured correlation sample.
 
 ```{r}
-
 mtbi_full_train_dl_1 <- merge(mtbi_train_dl_s1, mtbi_test_dl_s1)
 
 mtbi_df_1 <- mtbi_full_train_dl_1 |>
@@ -1568,13 +1569,6 @@ unij_df_1 <- unij_dl_s1 |>
     )
 
 cor_mat_names <- readRDS(proc_path("2025_02_26_cor_mat_names.rds"))
-
-mtbi_df_1 |> colnames()
-unij_df_1 |> colnames()
-
-mean(abs(cor(mtbi_df_1)))
-
-mean(abs(cor(unij_df_1[sample(nrow(unij_df_1), size = 437), ])))
 
 # Effect of sample size on correlation
 sample_size_cor_df <- data.frame()
@@ -1604,8 +1598,9 @@ sample_size_cor_plot <- sample_size_cor_df |>
     ) +
     geom_jitter(width = 0.1) +
     theme_bw() +
-    labs(x = "Sample size", y = "Correlation") +
-    theme(text = element_text(size = 20))
+    labs(x = "Sample size", y = "Mean Absolute Correlation") +
+    theme(text = element_text(size = 15))
+sample_size_cor_plot
 
 ggsave(
     fig_path("sample_size_cor_plot.png", TRUE),
@@ -1641,8 +1636,8 @@ sample_size_non_abs_cor_plot <- sample_size_non_abs_cor_df |>
     ) +
     geom_jitter(width = 0.1) +
     theme_bw() +
-    labs(x = "Sample size", y = "Correlation") +
-    theme(text = element_text(size = 20))
+    labs(x = "Sample size", y = "Mean Correlation") +
+    theme(text = element_text(size = 15))
 sample_size_non_abs_cor_plot
 
 ggsave(
@@ -1658,12 +1653,13 @@ ggsave(
 After creating a correlation matrix, it is necessary to remove the diagonal values and the lower triangle of the matrix to avoid double counting.
 
 ```{r}
-
 upper_tri_cor <- function(df) {
     cor_df <- cor(df)
     return(mean(abs(cor_df[upper.tri(cor_df)])))
 }
 
+# Distribution of upper triangle MACs, uninjured sample
+set.seed(42)
 unij_cor_dist <- c()
 for (i in 1:10000) {
     print(i)
@@ -1671,12 +1667,123 @@ for (i in 1:10000) {
     unij_cor_dist <- c(unij_cor_dist, upper_tri_cor(sampled_df))
 }
 
+saveRDS(unij_cor_dist, proc_path("unij_mac_dist.rds", TRUE))
+
+unij_cor_dist <- readRDS(proc_path("2025_02_27_unij_mac_dist.rds"))
+
+unij_mac_hist <- data.frame(mac = unij_cor_dist) |>
+    ggplot(
+        aes(x = mac)
+    ) +
+    geom_histogram(color = "gray") +
+    theme_bw() +
+    labs(x = "Mean Average Correlation", y = "Count") +
+    geom_vline(
+        aes(
+            xintercept = upper_tri_cor(mtbi_df_1)
+        ),
+        color = "red"
+    )
+
+ggsave(
+    plot = unij_mac_hist,
+    fig_path("unij_mac_hist.png", TRUE),
+    width = 5,
+    height = 5,
+    dpi = 120
+)
+
 unij_cor_dist > upper_tri_cor(mtbi_df_1)
+```
 
-max(unij_cor_dist)
+## Alternative approach
 
-hist(unij_cor_dist)
-# Histogram of unij correlation distribution with a red vertical line and the mtbi correlation
+Pick a random sample, then permutation test the difference in MACs.
+Repeat for perhaps 100 samples?
 
-# HERE I AM
+```{r}
+perm_test <- function(df1, df2, n = 2000) {
+    # MAC for DF1
+    mac1 <- upper_tri_cor(df1)
+    # MAC for random sampled DF2
+    observed_df2 <- df2[sample(nrow(df2), size = nrow(df1)), ]
+    mac2 <- upper_tri_cor(observed_df2)
+    # "Observed difference"
+    diff <- mac1 - mac2
+    diff_dist <- c()
+    for (i in 1:n) {
+        full_df <- rbind(df1, observed_df2)
+        full_df <- full_df[sample(nrow(full_df)), ]
+        diff_dist <- c(
+            diff_dist,
+            upper_tri_cor(full_df[1:nrow(df1), ]) - upper_tri_cor(full_df[(nrow(df1) + 1):nrow(full_df), ])
+        )
+    }
+    return(sum(diff <= diff_dist))
+}
+z <- perm_test(mtbi_df_1, unij_df_1, n = 1000)
+z
+
+future::plan(future::multisession, workers = 64)
+
+progressr::handlers(global = TRUE)  # Use a global handler to update progress
+
+progressr::with_progress({
+p <- progressr::progressor(steps = 1000) 
+perm_test_dist <- future.apply::future_lapply(
+    1:1000,
+    function(x) {
+        result <- perm_test(mtbi_df_1, unij_df_1, n = 1000)
+        p()      
+        return(result)
+    },
+    future.seed = TRUE
+)
+})
+saveRDS(perm_test_dist, proc_path("perm_test_dist.rds", TRUE))
+
+perm_test_dist <- readRDS(proc_path("2025_02_27_perm_test_dist.rds"))
+
+perm_test_dist_plot <- data.frame(
+    p = unlist(perm_test_dist)
+) |>
+    ggplot(
+        aes(x = p)
+    ) +
+    geom_histogram(fill = "black", binwidth = 0.002) +
+    theme_bw() +
+    theme(text = element_text(size = 15)) +
+    labs(x = "p-value", y = "Count") +
+    geom_vline(
+        aes(
+            xintercept = 0.05
+        ),
+        color = "red"
+    )
+ggsave(
+    plot = perm_test_dist_plot,
+    fig_path("perm_test_dist_plot.png", TRUE),
+    width = 5,
+    height = 3,
+    dpi = 200
+)
+
+unlist(perm_test_dist) |> hist()
+
+print(Sys.time() - start)
+```
+
+## Repeating both approaches for only the top left set of correlations
+
+```{r}
+upper_tri_top_cor <- function(df) {
+    cor_df <- cor(df)
+    cor_df <- cor_df[cor_mat_names, cor_mat_names]
+    cor_df <- cor_df[grepl("^cbcl|^sds", cor_mat_names), !grepl("^cbcl|^sds", cor_mat_names)]
+    return(mean(abs(cor_df)))
+}
+
+upper_tri_top_cor(mtbi_df_1)
+
+upper_tri_top_cor(unij_df_1)
 ```
