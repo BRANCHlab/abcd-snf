@@ -1916,6 +1916,10 @@ names(demo_adj_ari_order) <- NULL
 ```{r}
 adj_oom_list <- linear_adjust(full_oom_list_1, dl_demo)
 
+saveRDS(adj_oom_list, proc_path("adj_oom_list.rds", TRUE))
+
+adj_oom_list <- readRDS(proc_path("2025_03_17_adj_oom_list.rds"))
+
 # Extend solutions from adjusted inputs to unadjusted outcomes
 demo_adj_ext_sol_df <- extend_solutions(
     demo_adj_sol_df,
@@ -2061,6 +2065,19 @@ ggsave(
     height = 30,
     dpi = 50
 )
+
+demo_adj_plot_df <- auto_plot(
+    demo_adj_top_solution,
+    dl = c(dl_corrected, dl_demo, full_oom_list_1),
+    return_plots = FALSE
+)
+
+demo_adj_plot_df |>
+    ggplot(
+        aes(x = cluster, y = fmri_cort_subcort_cors)
+    ) +
+    geom_point()
+
 ```
 
 ```{r}
@@ -2083,5 +2100,337 @@ ggsave(
     height = 5,
     dpi = 60
 )
+
+```
+
+```{r}
+
+dl_demo
+
+dl_corrected <- readRDS(proc_path("2025_02_13_dl_corrected.rds"))
+
+adj_oom_list <- readRDS(proc_path("2025_03_17_adj_oom_list.rds"))
+
+all_corrected_dl <- c(dl_corrected, adj_oom_list)
+all_corrected_dl <- c(all_corrected_dl, dl_demo)
+
+all_uncorrected_dl <- c(full_data_list_1, full_oom_list_1)
+
+all_corrected_df <- as.data.frame(all_corrected_dl)
+
+all_corrected_df$"cluster" <- mtbi_ful_df$"cluster"
+
+corrected_assoc_mat <- calc_assoc_pval_matrix(
+    all_corrected_dl
+)
+
+uncorrected_assoc_mat <- calc_assoc_pval_matrix(
+    all_uncorrected_dl
+)
+
+uncorrected_assoc_hm <- assoc_pval_heatmap(
+    uncorrected_assoc_mat * (71 * 71 - 71) / 2,
+    dl = all_uncorrected_dl,
+    scale_diag = "none",
+    significance_stars = FALSE,
+    split_by_domain = TRUE
+)
+
+save_heatmap(
+    uncorrected_assoc_hm,
+    fig_path(
+        "explr_raw_bonferroni_assoc_hm.png",
+        TRUE
+    ),
+    width = 1500,
+    height = 1300,
+    res = 130
+)
+
+corrected_assoc_hm <- assoc_pval_heatmap(
+    corrected_assoc_mat * (71 * 71 - 71) / 2,
+    dl = all_corrected_dl,
+    scale_diag = "none",
+    significance_stars = FALSE,
+    split_by_domain = TRUE
+)
+
+save_heatmap(
+    corrected_assoc_hm,
+    fig_path(
+        "explr_demo_bonferroni_assoc_hm.png",
+        TRUE
+    ),
+    width = 1500,
+    height = 1300,
+    res = 130
+)
+
+uncorrected_assoc_hm_no_b <- assoc_pval_heatmap(
+    uncorrected_assoc_mat,
+    dl = all_uncorrected_dl,
+    scale_diag = "none",
+    significance_stars = FALSE,
+    split_by_domain = TRUE
+)
+
+save_heatmap(
+    uncorrected_assoc_hm_no_b,
+    fig_path(
+        "explr_raw_bonferroni_assoc_hm_no_b.png",
+        TRUE
+    ),
+    width = 1500,
+    height = 1300,
+    res = 130
+)
+
+corrected_assoc_hm_no_b <- assoc_pval_heatmap(
+    corrected_assoc_mat,
+    dl = all_corrected_dl,
+    scale_diag = "none",
+    significance_stars = FALSE,
+    split_by_domain = TRUE
+)
+
+save_heatmap(
+    corrected_assoc_hm_no_b,
+    fig_path(
+        "explr_demo_bonferroni_assoc_hm_no_b.png",
+        TRUE
+    ),
+    width = 1500,
+    height = 1300,
+    res = 130
+)
+
+# Bonferroni correcting a 71 * 71 matrix
+bf_assoc_mat <- corrected_assoc_mat * (71 * 71 - 71) / 2
+#bf_assoc_mat <- corrected_assoc_mat
+bf_assoc_mat <- bf_assoc_mat[!grepl("cbcl|sds", colnames(bf_assoc_mat)), grepl("cbcl|sds", colnames(bf_assoc_mat))]
+bf_assoc_mat <- bf_assoc_mat[apply(bf_assoc_mat, 1, min) <= 0.05, ]
+hm_1 <- ComplexHeatmap::Heatmap(
+    bf_assoc_mat,
+    col = circlize::colorRamp2(
+        c(0, 0.0005, 0.005, 0.05, 1),
+        c(
+            "black",
+            "navy",
+            "blue",
+            "royalblue",
+            "steelblue2"
+        )
+    ),
+    cluster_rows = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, 0.0005, 0.005, 0.05, 1),
+        break_dist = 1
+    )
+)
+save_heatmap(hm_1, fig_path("explr_demo_b_top.png", TRUE))
+
+hm_1
+
+bf_assoc_mat <- corrected_assoc_mat
+bf_assoc_mat <- bf_assoc_mat[!grepl("cbcl|sds", colnames(bf_assoc_mat)), grepl("cbcl|sds", colnames(bf_assoc_mat))]
+bf_assoc_mat <- bf_assoc_mat[apply(bf_assoc_mat, 1, min) <= 0.05, ]
+hm_2 <- ComplexHeatmap::Heatmap(
+    bf_assoc_mat,
+    col = circlize::colorRamp2(
+        c(0, 0.0005, 0.005, 0.05, 1),
+        c(
+            "black",
+            "navy",
+            "blue",
+            "royalblue",
+            "steelblue2"
+        )
+    ),
+    cluster_rows = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, 0.0005, 0.005, 0.05, 1),
+        break_dist = 1
+    )
+)
+
+save_heatmap(
+    hm_2,
+    fig_path(
+        "explr_demo_no_b_top.png",
+        TRUE
+    ),
+    height = 800
+)
+
+
+signif(min(bf_assoc_mat), 2)
+signif(max(bf_assoc_mat), 2)
+
+
+
+```
+
+Probably would be valuable to really zoom in on the effect of the concussion itself.
+
+## Physiological characterization
+
+### fMRI?
+
+```{r}
+mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
+
+# Appears to be quite a substantial difference in cort-subcort fMRI
+mtbi_ful_df |>
+    ggplot(
+        aes(x = cluster, y = fmri_cort_subcort_cors)
+    ) +
+    geom_violin() + 
+    geom_point() 
+
+
+
+# Seems to still persist after demographic correction?
+z1 <- all_corrected_df |>
+    ggplot(
+        aes(x = cluster, y = fmri_cort_subcort_cors)
+    ) +
+    geom_boxplot() + 
+    geom_jitter(height = 0, width = 0.1, alpha = 0.4) 
+
+ggsave(fig_path("z1.png"), z1)
+
+z2 <- all_corrected_df |>
+    ggplot(
+        aes(y = cbcl_attention, x = fmri_cort_subcort_cors)
+    ) +
+    geom_smooth(method = "lm") +
+    geom_point()
+
+ggsave(fig_path("z2.png"), z2)
+
+
+z3 <- all_corrected_df |>
+    ggplot(
+        aes(y = cbcl_somatic, x = pericortical_wm_ndi)
+    ) +
+    geom_smooth(method = "lm") +
+    geom_point()
+
+
+ggsave(fig_path("z3.png"), z3)
+
+
+# value in looking at thise within subgroups
+
+
+
+all_corrected_df |>
+    ggplot(
+        aes(x = weekday_screentime, y = cbcl_aggressive)
+    ) +
+    geom_point() 
+
+
+# Appears to be quite a substantial difference in cort-subcort fMRI
+mtbi_ful_df |>
+    ggplot(
+        aes(x = mtbi_mechanism, y = cbcl_somatic)
+    ) +
+    geom_violin() + 
+    geom_jitter() 
+
+# Is this really correlated with outcomes directly?
+
+mtbi_ful_df |>
+    dplyr::mutate(
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    ) |>
+    ggplot(
+        aes(y = fmri_cort_subcort_cors, x = race)
+    ) +
+    geom_boxplot() +
+    geom_point() 
+
+colnames(mtbi_ful_df)
+
+full_data_list_1 <- readRDS(
+    input_path(
+        "2025_02_12_mtbi_full_data_list_1.rds"
+    )
+)
+
+der_pl <- readRDS(fig_path("2025_02_12_ap_mtbi_mc_f_plot_list.rds"))
+
+der_pl$"fmri_cort_cors"
+
+der_pl$"fmri_cort_subcort_cors"
+
+my_ttest <- function(df, ft, c1 = 1, c2 = 2) {
+    group_1 <- df |>
+        dplyr::filter(cluster == c1) |>
+        dplyr::select(dplyr::all_of(ft)) |>
+        unlist()
+        as.numeric()
+    group_2 <- df |>
+        dplyr::filter(cluster == c2) |>
+        dplyr::select(dplyr::all_of(ft)) |>
+        unlist()
+        as.numeric()
+    return(t.test(group_1, group_2))
+}
+
+my_ttest(mtbi_ful_df, "fmri_cort_subcort_cors")
+
+my_ttest(all_corrected_df, "fmri_cort_subcort_cors")
+
+```
+
+### Sleep?
+
+```{r}
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+
+mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+```
+
+```{r}
+sleep <- ph_p_sds |>
+    filter_timepoint(t = 0) |>
+    filter_subjects(mtbi_subs)
+
+sleep$"uid" <- paste0("uid_", sleep$"subjectkey") 
+
+q <- search_dd("ph_p_sds") |>
+    dplyr::filter(grepl("sds_p_ss", var_name))
+
+q$"var_label"
+
+print(search_dd("ph_p_sds"), n= 50)
+
+sleep_df <- dplyr::inner_join(
+    mtbi_ful_df,
+    sleep
+)
+
+colnames(sleep)
+
+jitter_plot(sleep_df, "sds_p_ss_dims") + labs(y = "Disorders of starting/maintaining sleep")
+
+jitter_plot(sleep_df, "sds_p_ss_sbd") + labs(y = "Sleep breathing disorders")
+
+jitter_plot(sleep_df, "sds_p_ss_da") + labs(y = "Disorders of arousal")
+
+jitter_plot(sleep_df, "sds_p_ss_swtd") + labs(y = "Disorders of sleep-wake transition")
+
+jitter_plot(sleep_df, "sds_p_ss_does") + labs(y = "Excessive Somnolence")
+
+jitter_plot(sleep_df, "sds_p_ss_shy") + labs(y = "Hyperhydrosis")
 
 ```
