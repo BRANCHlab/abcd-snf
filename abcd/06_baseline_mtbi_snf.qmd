@@ -2117,17 +2117,6 @@ all_corrected_df <- as.data.frame(all_corrected_dl)
 
 all_corrected_df$"cluster" <- mtbi_ful_df$"cluster"
 
-corrected_assoc_mat <- calc_assoc_pval_matrix(
-    all_corrected_dl
-)
-
-uncorrected_assoc_mat <- calc_assoc_pval_matrix(
-    all_uncorrected_dl
-)
-
-uncorrected_assoc_mat
-
-
 fdr_matrix <- function(mat) {
     pvals <- mat[upper.tri(mat)]
     p_adjusted <- p.adjust(pvals, method = "fdr")
@@ -2137,20 +2126,22 @@ fdr_matrix <- function(mat) {
     return(adj_mat)
 }
 
-fdr_matrix(uncorrected_assoc_mat)
+all_corrected_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
 
+corrected_assoc_mat <- calc_assoc_pval_matrix(all_corrected_dl)
+fdr_demo_mat <- fdr_matrix(corrected_assoc_mat)
 
+uncorrected_assoc_mat <- calc_assoc_pval_matrix(all_uncorrected_dl)
+fdr_raw_mat <- fdr_matrix(uncorrected_assoc_mat)
 
-
-
-
-
-
-
-
-
+# No demographic adjustment, correlations of features
+# after FDR
 raw_assoc_hm <- assoc_pval_heatmap(
-    fdr_matrix(uncorrected_assoc_mat),
+    fdr_raw_mat,
     dl = all_uncorrected_dl,
     scale_diag = "none",
     significance_stars = FALSE,
@@ -2159,7 +2150,7 @@ raw_assoc_hm <- assoc_pval_heatmap(
 raw_assoc_hm
 
 save_heatmap(
-    uncorrected_assoc_hm,
+    raw_assoc_hm,
     fig_path(
         "explr_raw_fdr_assoc_hm.png",
         TRUE
@@ -2169,18 +2160,21 @@ save_heatmap(
     res = 130
 )
 
-corrected_assoc_hm <- assoc_pval_heatmap(
-    corrected_assoc_mat * (71 * 71 - 71) / 2,
+# Demographic adjustment, correlations of features
+# after FDR
+demo_assoc_hm <- assoc_pval_heatmap(
+    fd = fdr_demo_mat,
     dl = all_corrected_dl,
     scale_diag = "none",
     significance_stars = FALSE,
     split_by_domain = TRUE
 )
+demo_assoc_hm
 
 save_heatmap(
-    corrected_assoc_hm,
+    demo_assoc_hm,
     fig_path(
-        "explr_demo_bonferroni_assoc_hm.png",
+        "explr_demo_fdr_assoc_hm.png",
         TRUE
     ),
     width = 1500,
@@ -2188,51 +2182,10 @@ save_heatmap(
     res = 130
 )
 
-uncorrected_assoc_hm_no_b <- assoc_pval_heatmap(
-    uncorrected_assoc_mat,
-    dl = all_uncorrected_dl,
-    scale_diag = "none",
-    significance_stars = FALSE,
-    split_by_domain = TRUE
-)
-
-save_heatmap(
-    uncorrected_assoc_hm_no_b,
-    fig_path(
-        "explr_raw_bonferroni_assoc_hm_no_b.png",
-        TRUE
-    ),
-    width = 1500,
-    height = 1300,
-    res = 130
-)
-
-corrected_assoc_hm_no_b <- assoc_pval_heatmap(
-    corrected_assoc_mat,
-    dl = all_corrected_dl,
-    scale_diag = "none",
-    significance_stars = FALSE,
-    split_by_domain = TRUE
-)
-
-save_heatmap(
-    corrected_assoc_hm_no_b,
-    fig_path(
-        "explr_demo_bonferroni_assoc_hm_no_b.png",
-        TRUE
-    ),
-    width = 1500,
-    height = 1300,
-    res = 130
-)
-
-# Bonferroni correcting a 71 * 71 matrix
-bf_assoc_mat <- corrected_assoc_mat * (71 * 71 - 71) / 2
-#bf_assoc_mat <- corrected_assoc_mat
-bf_assoc_mat <- bf_assoc_mat[!grepl("cbcl|sds", colnames(bf_assoc_mat)), grepl("cbcl|sds", colnames(bf_assoc_mat))]
-bf_assoc_mat <- bf_assoc_mat[apply(bf_assoc_mat, 1, min) <= 0.05, ]
-hm_1 <- ComplexHeatmap::Heatmap(
-    bf_assoc_mat,
+fdr_raw_mat2 <- fdr_raw_mat[!grepl("cbcl|sds", colnames(fdr_raw_mat)), grepl("cbcl|sds", colnames(fdr_raw_mat))]
+#fdr_raw_mat2 <- fdr_raw_mat2[apply(fdr_raw_mat2, 1, min) <= 0.05, ]
+fdr_raw_hm_out <- ComplexHeatmap::Heatmap(
+    fdr_raw_mat2,
     col = circlize::colorRamp2(
         c(0, 0.0005, 0.005, 0.05, 1),
         c(
@@ -2244,21 +2197,30 @@ hm_1 <- ComplexHeatmap::Heatmap(
         )
     ),
     cluster_rows = FALSE,
+    cluster_columns = FALSE,
     heatmap_legend_param = list(
         color_bar = "continuous",
         at = c(0, 0.0005, 0.005, 0.05, 1),
+        title = "FDR Corrected\np-value",
         break_dist = 1
     )
 )
-save_heatmap(hm_1, fig_path("explr_demo_b_top.png", TRUE))
+fdr_raw_hm_out
 
-hm_1
+save_heatmap(
+    fdr_raw_hm_out,
+    fig_path(
+        "fdr_raw_hm_out.png",
+        TRUE
+    ),
+    width = 800,
+    height = 1300
+)
 
-bf_assoc_mat <- corrected_assoc_mat
-bf_assoc_mat <- bf_assoc_mat[!grepl("cbcl|sds", colnames(bf_assoc_mat)), grepl("cbcl|sds", colnames(bf_assoc_mat))]
-bf_assoc_mat <- bf_assoc_mat[apply(bf_assoc_mat, 1, min) <= 0.05, ]
-hm_2 <- ComplexHeatmap::Heatmap(
-    bf_assoc_mat,
+fdr_demo_mat2 <- fdr_demo_mat[!grepl("cbcl|sds", colnames(fdr_demo_mat)), grepl("cbcl|sds", colnames(fdr_demo_mat))]
+fdr_demo_mat2 <- fdr_demo_mat2[rownames(fdr_raw_mat2), ]
+fdr_demo_hm_out <- ComplexHeatmap::Heatmap(
+    fdr_demo_mat2,
     col = circlize::colorRamp2(
         c(0, 0.0005, 0.005, 0.05, 1),
         c(
@@ -2270,29 +2232,166 @@ hm_2 <- ComplexHeatmap::Heatmap(
         )
     ),
     cluster_rows = FALSE,
+    cluster_columns = FALSE,
     heatmap_legend_param = list(
         color_bar = "continuous",
         at = c(0, 0.0005, 0.005, 0.05, 1),
+        title = "FDR Corrected\np-value",
+        break_dist = 1
+    )
+)
+fdr_demo_hm_out
+
+save_heatmap(
+    fdr_demo_hm_out,
+    fig_path(
+        "fdr_demo_hm_out.png",
+        TRUE
+    ),
+    width = 800,
+    height = 1300
+)
+
+
+max(-log10(fdr_demo_mat2))
+
+-log10(0.05)
+
+-log10(1)
+
+-log10(1e-10)
+
+pval_heatmap
+
+ComplexHeatmap::Heatmap(
+    -log10(fdr_demo_mat2),
+    col = circlize::colorRamp2(
+        c(0, -log10(0.05) , -log10(0.01), -log10(0.001), -log10(0.0001)),
+        c(
+            "steelblue2",
+            "royalblue",
+            "blue",
+            "navy",
+            "black"
+        )
+    ),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, signif(-log10(0.05), 2), -log10(0.01), -log10(0.001), -log10(0.0001)),
+        title = "Negative log10\nFDR Corrected\np-value",
         break_dist = 1
     )
 )
 
-save_heatmap(
-    hm_2,
-    fig_path(
-        "explr_demo_no_b_top.png",
-        TRUE
+ComplexHeatmap::Heatmap(
+    -log10(fdr_raw_mat2),
+    col = circlize::colorRamp2(
+        c(0, -log10(0.05) , -log10(0.01), -log10(0.001), -log10(0.0001)),
+        c(
+            "steelblue2",
+            "royalblue",
+            "blue",
+            "navy",
+            "black"
+        )
     ),
-    height = 800
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, signif(-log10(0.05), 2), -log10(0.01), -log10(0.001), -log10(0.0001)),
+        title = "Negative log10\nFDR Corrected\np-value",
+        break_dist = 1
+    )
 )
 
+log_pval_hm <- function(mat, colours = NULL) {
+    if (is.null(colours)) {
+        colours <- c(
+            "steelblue2",
+            "royalblue",
+            "blue",
+            "navy",
+            "black"
+        )
+    }
+    ComplexHeatmap::Heatmap(
+        -log10(mat),
+        col = circlize::colorRamp2(
+            c(0, -log10(0.05) , -log10(0.01), -log10(0.001), -log10(0.0001)),
+            colours
+        ),
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        heatmap_legend_param = list(
+            color_bar = "continuous",
+            at = c(0, signif(-log10(0.05), 2), -log10(0.01), -log10(0.001), -log10(0.0001)),
+            title = "Negative log10\nFDR Corrected\np-value",
+            break_dist = 1
+        )
+    )
+}
 
-signif(min(bf_assoc_mat), 2)
-signif(max(bf_assoc_mat), 2)
+neuro_fts <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors"
+)
 
+rownames(fdr_raw_mat2)
+
+log_pval_hm(
+    fdr_demo_mat2[neuro_fts, ],
+    colours = c(
+        "white",
+        "orange",
+        "red",
+        "black",
+        "white"
+    )
+)
+
+log_pval_hm(
+    fdr_raw_mat2[neuro_fts, ],
+    colours = c(
+        "white",
+        "orange",
+        "red",
+        "black",
+        "white"
+    )
+)
+
+log_pval_hm(
+    fdr_raw_mat2[neuro_fts, ]
+)
+
+log_pval_hm(
+    fdr_demo_mat2[neuro_fts, ]
+)
+
+fdr_raw_mat3 <- ifelse(fdr_raw_mat2 <= 0.05, 1, 0)
+
+fdr_demo_mat2[neuro_fts, ]
+
+ComplexHeatmap::Heatmap(fdr_raw_mat3[neuro_fts, ])
 
 
 ```
+
+These heatmaps serve as the starting point for which specific associations to dig deeper into.
+
+```{r}
+
+```
+
+
 
 Probably would be valuable to really zoom in on the effect of the concussion itself.
 
@@ -2510,4 +2609,31 @@ colnames(m_df)
 
 df |>
     ggplot()
+```
+
+### What's different between the clusters, physiolocially? A closer look at neuroimaging
+
+```{r}
+
+colnames(mtbi_ful_df)
+
+mtbi_ful_df |>
+    jitter_plot("cortical_thickness")
+
+
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors * cluster, mtbi_ful_df))
+
+
+model_cluster1 <- lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 1))
+model_cluster2 <- lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 2))
+model_cluster3 <- lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 3))
+
+summary(model_cluster1)
+
+summary(model_cluster2)
+
+summary(model_cluster3)
+
+
+
 ```
