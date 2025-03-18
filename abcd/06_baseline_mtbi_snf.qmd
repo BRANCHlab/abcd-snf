@@ -2104,12 +2104,9 @@ ggsave(
 ```
 
 ```{r}
-
-dl_demo
-
 dl_corrected <- readRDS(proc_path("2025_02_13_dl_corrected.rds"))
-
 adj_oom_list <- readRDS(proc_path("2025_03_17_adj_oom_list.rds"))
+full_oom_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_oom_list_1.rds"))
 
 all_corrected_dl <- c(dl_corrected, adj_oom_list)
 all_corrected_dl <- c(all_corrected_dl, dl_demo)
@@ -2128,18 +2125,43 @@ uncorrected_assoc_mat <- calc_assoc_pval_matrix(
     all_uncorrected_dl
 )
 
-uncorrected_assoc_hm <- assoc_pval_heatmap(
-    uncorrected_assoc_mat * (71 * 71 - 71) / 2,
+uncorrected_assoc_mat
+
+
+fdr_matrix <- function(mat) {
+    pvals <- mat[upper.tri(mat)]
+    p_adjusted <- p.adjust(pvals, method = "fdr")
+    adj_mat <- mat
+    adj_mat[upper.tri(adj_mat)] <- p_adjusted
+    adj_mat[lower.tri(adj_mat)] <- t(adj_mat)[lower.tri(adj_mat)]
+    return(adj_mat)
+}
+
+fdr_matrix(uncorrected_assoc_mat)
+
+
+
+
+
+
+
+
+
+
+
+raw_assoc_hm <- assoc_pval_heatmap(
+    fdr_matrix(uncorrected_assoc_mat),
     dl = all_uncorrected_dl,
     scale_diag = "none",
     significance_stars = FALSE,
     split_by_domain = TRUE
 )
+raw_assoc_hm
 
 save_heatmap(
     uncorrected_assoc_hm,
     fig_path(
-        "explr_raw_bonferroni_assoc_hm.png",
+        "explr_raw_fdr_assoc_hm.png",
         TRUE
     ),
     width = 1500,
@@ -2323,9 +2345,6 @@ ggsave(fig_path("z3.png"), z3)
 
 
 # value in looking at thise within subgroups
-
-
-
 all_corrected_df |>
     ggplot(
         aes(x = weekday_screentime, y = cbcl_aggressive)
@@ -2433,4 +2452,62 @@ jitter_plot(sleep_df, "sds_p_ss_does") + labs(y = "Excessive Somnolence")
 
 jitter_plot(sleep_df, "sds_p_ss_shy") + labs(y = "Hyperhydrosis")
 
+```
+
+```{r}
+
+mtbi_subs
+
+unij_dl_s1 <- c(all_dls$"unij_data_lists"[[1]], all_dls$"unij_oom_lists"[[1]])
+
+unij_df <- as.data.frame(unij_dl_s1)
+
+unij_df$"cluster" <- "ctrl"
+
+mtbi_df <- mtbi_ful_df[, colnames(unij_df)]
+
+df <- rbind(mtbi_df, unij_df)
+
+df |>
+    ggplot(
+        aes(x = cluster, y = cbcl_aggressive)
+    ) +
+    geom_jitter(height = 0) +
+    geom_violin(alpha = 0.8)
+
+c1 <- df |>
+    dplyr::filter(cluster == 1)
+
+c1 |>
+    dplyr::select(-uid, -cluster, -race) |>
+    cor() |>
+    ComplexHeatmap::Heatmap()
+
+df |>
+    dplyr::mutate(sex = as.factor(sex)) |>
+    dplyr::group_by(cluster, sex) |>
+    dplyr::summarize(fmri_cor = cor(cbcl_attention, fmri_cort_subcort_cors)) |>
+    ggplot(aes(x = cluster, y = fmri_cor, fill = sex)) +
+      geom_bar(stat = "identity", position = position_dodge()) +
+      labs(x = "Cluster", y = "fMRI Correlation", fill = "Sex") +
+      theme_minimal()
+
+df$"sex" <- as.factor(df$"sex")
+
+df |>
+    dplyr::mutate(sex = dplyr::case_when(sex == 1 ~ "M", TRUE ~ "F")) |>
+    ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_attention, colour = sex)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    facet_wrap(~cluster + sex, nrow = 2)
+    
+
+m_df <- df |>
+    dplyr::filter(sex == 1, cluster == 1)
+cor.test(m_df$"cbcl_somatic", m_df$"pericortical_wm_ndi")
+
+colnames(m_df)
+
+df |>
+    ggplot()
 ```
