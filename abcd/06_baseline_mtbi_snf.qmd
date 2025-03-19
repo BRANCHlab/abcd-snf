@@ -2615,18 +2615,35 @@ df |>
 
 ```{r}
 
-colnames(mtbi_ful_df)
+df$"parent"
+
 
 mtbi_ful_df |>
-    jitter_plot("cortical_thickness")
+    dplyr::mutate(
+        parent_total = rowSums(across(starts_with("parent"))),
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    ) |>
+    ggplot(
+        aes(x = parent_total, y = cbcl_aggressive)
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm")
+
+z2 <- mtbi_ful_df |>
+    dplyr::mutate(
+        parent_total = rowSums(across(starts_with("parent"))),
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    )
+
+summary(lm(cbcl_total ~ parent_total + sex + race + brain_volume + cluster + household_income, z2))
+
 
 
 summary(lm(cbcl_attention ~ fmri_cort_subcort_cors * cluster, mtbi_ful_df))
-
-
-model_cluster1 <- lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 1))
-model_cluster2 <- lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 2))
-model_cluster3 <- lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 3))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 1)))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 2)))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 3)))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors * race, data = mtbi_ful_df))
 
 summary(model_cluster1)
 
@@ -2634,6 +2651,502 @@ summary(model_cluster2)
 
 summary(model_cluster3)
 
+mtbi_ful_df |>
+    ggplot(
+        aes(
+            x = fmri_cort_subcort_cors,
+            y = cbcl_attention,
+            group = race,
+            colour = race
+        )
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    facet_wrap("race")
 
+df |>
+    ggplot(
+        aes(
+            x = fmri_cort_subcort_cors,
+            y = cbcl_attention,
+            group = race,
+            colour = race
+        )
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    facet_wrap("race")
+
+```
+
+```{r}
+
+mtbi_ful_df |> colnames()
+
+my_jitter <- function(plot_data, ft, name, plottitle = "Baseline mTBI (N = 437)") {
+    ggplot(
+        plot_data,
+        aes(
+            x = cluster,
+            y = .data[[ft]],
+        )
+    ) +
+    geom_violin() +
+    geom_jitter(
+        height = 0,
+        width = 0.1,
+        alpha = 0.3
+    ) +
+    ggplot2::stat_summary(
+        data = plot_data,
+        aes(colour = cluster),
+        fun = "mean",
+        geom = "crossbar",
+        width = 0.5
+    ) +
+    labs(
+        title = plottitle,
+        x = "Cluster",
+        y = name
+    ) +
+    theme_bw() +
+    theme(text = element_text(size = 16))
+}
+
+# Generalizable: C1 < C2, C1 > C3, C2 > C3
+mtbi_0_volume_plot <- my_jitter(
+    mtbi_ful_df,
+    "brain_volume",
+    "Brain Volume (mm^3)"
+)
+mtbi_0_volume_plot
+
+# Generalizable: C1 < C2, C1 > C3, C2 > C3
+mtbi_0_cortsa_plot <- my_jitter( 
+    mtbi_ful_df,
+    "cortical_sa",
+    "Cortical surface area (mm^2)"
+)
+mtbi_0_cortsa_plot
+
+# Generalizable: C1 < C2
+mtbi_0_fmri_subc_c_plot <- my_jitter(
+    mtbi_ful_df,
+    "fmri_cort_subcort_cors",
+    "fMRI Cortical-Subcortical Correlation"
+)
+mtbi_0_fmri_subc_c_plot
+
+# Generalizable: C1 < C3
+# Qualitatively: C1 < C2 and C1 < C3
+mtbi_0_cortt_plot <-  my_jitter( 
+    mtbi_ful_df,
+    "cortical_thickness",
+    "Cortical thickness (mm)"
+)
+mtbi_0_cortt_plot
+
+ggsave(
+    fig_path("mtbi_0_volume_plot.png", TRUE),
+    mtbi_0_volume_plot,
+    width = 7,
+    height = 5
+)
+
+ggsave(
+    fig_path("mtbi_0_cortsa_plot.png", TRUE),
+    mtbi_0_cortsa_plot,
+    width = 7,
+    height = 5
+)
+
+ggsave(
+    fig_path("mtbi_0_fmri_subc_c_plot.png", TRUE),
+    mtbi_0_fmri_subc_c_plot,
+    width = 7,
+    height = 5
+)
+
+ggsave(
+    fig_path("mtbi_0_cortt_plot.png", TRUE),
+    mtbi_0_cortt_plot,
+    width = 7,
+    height = 5
+)
+
+# Outcomes
+
+mtbi_0_aggressive_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_aggressive",
+    "CBCL Aggressive"
+)
+mtbi_0_aggressive_plot
+
+ggsave(
+    fig_path("mtbi_0_aggressive_plot.png", TRUE),
+    mtbi_0_aggressive_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_anxdep_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_anxdep",
+    "CBCL Anxious/Depressed"
+)
+mtbi_0_anxdep_plot
+
+ggsave(
+    fig_path("mtbi_0_anxdep_plot.png", TRUE),
+    mtbi_0_anxdep_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_attention_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_attention",
+    "CBCL Attention"
+)
+mtbi_0_attention_plot
+
+ggsave(
+    fig_path("mtbi_0_attention_plot.png", TRUE),
+    mtbi_0_attention_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_rulebreak_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_rulebreak",
+    "CBCL Rule-Breaking"
+)
+mtbi_0_rulebreak_plot
+
+ggsave(
+    fig_path("mtbi_0_rulebreak_plot.png", TRUE),
+    mtbi_0_rulebreak_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_social_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_social",
+    "CBCL Social"
+)
+mtbi_0_social_plot
+
+ggsave(
+    fig_path("mtbi_0_social_plot.png", TRUE),
+    mtbi_0_social_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_somatic_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_somatic",
+    "CBCL Somatic"
+)
+mtbi_0_somatic_plot
+
+ggsave(
+    fig_path("mtbi_0_somatic_plot.png", TRUE),
+    mtbi_0_somatic_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_thought_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_thought",
+    "CBCL Thought"
+)
+mtbi_0_thought_plot
+
+ggsave(
+    fig_path("mtbi_0_thought_plot.png", TRUE),
+    mtbi_0_thought_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_withdep_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_withdep",
+    "CBCL Withdrawn/Depressed"
+)
+mtbi_0_withdep_plot
+
+ggsave(
+    fig_path("mtbi_0_withdep_plot.png", TRUE),
+    mtbi_0_withdep_plot,
+    width = 7,
+    height = 5
+)
+
+mtbi_0_sleep_plot <- my_jitter(
+    mtbi_ful_df,
+    "sds_sleep",
+    "Sleep Disorders"
+)
+mtbi_0_sleep_plot
+
+ggsave(
+    fig_path("mtbi_0_sleep_plot.png", TRUE),
+    mtbi_0_sleep_plot,
+    width = 7,
+    height = 5
+)
+
+
+```
+
+```{r}
+
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, mtbi_df))
+
+
+
+
+
+
+# Nothing was generalizable...
+my_jitter( 
+    mtbi_ful_df,
+    "pericortical_wm_ndi",
+    "Pericortical WM NDI"
+)
+
+
+mtbi_ful_df |> colnames()
+
+q <- mtbi_ful_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        fmri_cort_subcort_cors
+    ) |>
+    cor()
+q2 <- q[, "fmri_cort_subcort_cors"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    geom_bar(stat = "identity")
+    
+
+mtbi_ful_df$"sex"
+
+dplyr::filter()
+
+dplyr::filter(mtbi_ful_df, cluster == 1)$"sex" |> table()
+
+z <- mtbi_ful_df |> 
+    dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::select(fmri_cort_subcort_cors, cbcl_aggressive)
+
+z |> cor()
+
+# Interesting: high corr between withdep and fmri in cluster 3
+q <- mtbi_ful_df |>
+#q <- df |>
+    #dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        fmri_cort_subcort_cors
+    ) |>
+    cor()
+q2 <- q[, "fmri_cort_subcort_cors"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    ylim(-0.3, 0.3) +
+    geom_bar(stat = "identity") +
+    theme_bw()
+    
+q <- mtbi_ful_df |>
+#q <- df |>
+    #dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        fmri_cort_subcort_cors
+    ) |>
+    cor()
+q2 <- q[, "fmri_cort_subcort_cors"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    ylim(-0.3, 0.3) +
+    geom_bar(stat = "identity") +
+    theme_bw()
+    
+q <- mtbi_ful_df |>
+#q <- df |>
+    #dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        brain_volume
+    ) |>
+    cor()
+q2 <- q[, "brain_volume"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    ylim(-0.3, 0.3) +
+    geom_bar(stat = "identity") +
+    theme_bw()
+```
+
+```{r}
+
+neuro_fts <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "fmri_cort_subcort_cors"
+)
+
+
+
+give_cors <- function(data_df) {
+    cor_results <- sapply(
+        2:ncol(data_df),
+        function(i) {
+            test <- cor.test(data_df[[1]], data_df[[i]])
+            c(correlation = test$estimate, p_value = test$p.value)
+        }
+    )
+    # Convert results to a dataframe
+    cor_results_df <- as.data.frame(t(cor_results))
+    rownames(cor_results_df) <- colnames(data_df)[2:10]
+    return(cor_results_df)
+}
+
+give_cors(z1)
+
+
+```
+
+```{r}
+
+
+z1 <- mtbi_ful_df |>
+    dplyr::select(
+        dplyr::all_of(neuro_fts),
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    cor()
+z1[!grepl("cbcl|sds", rownames(z1)), grepl("cbcl|sds", colnames(z1))] |>
+    abs() |>
+    ComplexHeatmap::Heatmap(
+        col = circlize::colorRamp2(
+            c(0, 0.1),
+            c(
+                "white",
+                "black"
+            )
+        ),
+    )
+
+
+z2 <- mtbi_ful_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::select(
+        dplyr::all_of(neuro_fts),
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    cor()
+z2[!grepl("cbcl|sds", rownames(z2)), grepl("cbcl|sds", colnames(z2))] |>
+    abs() |>
+    ComplexHeatmap::Heatmap(
+        col = circlize::colorRamp2(
+            c(0, 0.5),
+            c(
+                "white",
+                "black"
+            )
+        ),
+    )
+
+z3 <- mtbi_ful_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::select(
+        dplyr::all_of(neuro_fts),
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    cor()
+z3 <- z3[!grepl("cbcl|sds", rownames(z3)), grepl("cbcl|sds", colnames(z3))]
+
+z3["fmri_cort_subcort_cors", ] |> min()
+z3["fmri_cort_subcort_cors", ] |> max()
+
+z3["brain_volume", ] |> min()
+z3["brain_volume", ] |> max()
+
+z3["cortical_thickness", ] |> min()
+z3["cortical_thickness", ] |> max()
+
+z3["cortical_thickness", ]
+
+z3["cortical_sa", ] |> min()
+z3["cortical_sa", ] |> max()
+
+neuro_fts
+
+max(z3)
+
+min(z3)
+
+mtbi_ful_df |>
+    dplyr::filter(cluster == 1) |>
+    ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_attention)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor(
+        aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,`~")), 
+        label.x.npc = "left", label.y.npc = "top", size = 5
+    )
+
+library(ggpubr)
+
+df |>
+    dplyr::filter(sex == 1) |>
+    ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_attention)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,`~")), 
+    label.x.npc = "left", label.y.npc = "top", size = 5)
+
+# keep looking...
 
 ```
