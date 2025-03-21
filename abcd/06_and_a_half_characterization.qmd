@@ -1,0 +1,1765 @@
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(rlist)
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library(fastDummies)
+library(tidyr)
+library(ggpubr)
+library(ComplexHeatmap)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+
+mtbi_subs <- read_csv(sub_path("2025_02_07_mtbi_subs.csv"))
+mtbi_train_subs <- read_csv(sub_path("2025_02_07_mtbi_train_subs.csv"))
+mtbi_test_subs <- read_csv(sub_path("2025_02_07_mtbi_test_subs.csv"))
+unij_subs <- read_csv(sub_path("2025_02_07_unij_subs.csv"))
+```
+
+
+```{r}
+# Data frame of all the features, observations, and cluster assignments
+mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
+
+all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
+
+unij_dl_s1 <- c(all_dls$"unij_data_lists"[[1]], all_dls$"unij_oom_lists"[[1]])
+unij_df <- as.data.frame(unij_dl_s1)
+unij_df$"cluster" <- "ctrl"
+mtbi_df <- mtbi_ful_df[, colnames(unij_df)]
+df <- rbind(mtbi_df, unij_df)
+```
+
+```{r}
+# HERE
+
+dl_corrected <- readRDS(proc_path("2025_02_13_dl_corrected.rds"))
+adj_oom_list <- readRDS(proc_path("2025_03_17_adj_oom_list.rds"))
+full_oom_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_oom_list_1.rds"))
+full_data_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_data_list_1.rds"))
+
+dl_no_demo <- full_data_list_1[-c(6:9)] 
+dl_demo <- full_data_list_1[c(6:9)]
+
+mtbi_demo_dl <- c(dl_corrected, adj_oom_list)
+mtbi_demo_dl <- c(mtbi_demo_dl, dl_demo)
+
+mtbi_demo_df <- as.data.frame(mtbi_demo_dl)
+mtbi_demo_df$"cluster" <- mtbi_ful_df$"cluster"
+
+mtbi_raw_dl <- c(full_data_list_1, full_oom_list_1)
+mtbi_raw_df <- as.data.frame(mtbi_raw_dl)
+mtbi_raw_df$"cluster" <- mtbi_ful_df$"cluster"
+
+fdr_matrix <- function(mat) {
+    pvals <- mat[upper.tri(mat)]
+    p_adjusted <- p.adjust(pvals, method = "fdr")
+    adj_mat <- mat
+    adj_mat[upper.tri(adj_mat)] <- p_adjusted
+    adj_mat[lower.tri(adj_mat)] <- t(adj_mat)[lower.tri(adj_mat)]
+    return(adj_mat)
+}
+
+
+raw_mtbi_cmat <- mtbi_raw_df |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+raw_mtbi_order <- get_matrix_order(raw_mtbi_cmat)
+raw_mtbi_cmat <- raw_mtbi_cmat[raw_mtbi_order, raw_mtbi_order]
+Heatmap(raw_mtbi_cmat, cluster_rows = FALSE, cluster_columns = FALSE)
+
+raw_mtbi_cmat_1 <- mtbi_raw_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+raw_mtbi_cmat_1 <- raw_mtbi_cmat_1[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(raw_mtbi_cmat_1, cluster_rows = FALSE, cluster_columns = FALSE)
+
+raw_mtbi_cmat_2 <- mtbi_raw_df |>
+    dplyr::filter(cluster == 2) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+raw_mtbi_cmat_2 <- raw_mtbi_cmat_2[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(raw_mtbi_cmat_2, cluster_rows = FALSE, cluster_columns = FALSE)
+
+raw_mtbi_cmat_3 <- mtbi_raw_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+raw_mtbi_cmat_3 <- raw_mtbi_cmat_3[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(raw_mtbi_cmat_3, cluster_rows = FALSE, cluster_columns = FALSE)
+
+raw_mtbi_cmat_12 <- mtbi_raw_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+
+raw_mtbi_cmat_12 <- raw_mtbi_cmat_12[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(raw_mtbi_cmat_12, cluster_rows = FALSE, cluster_columns = FALSE)
+
+raw_mtbi_cmat_m <- mtbi_raw_df |>
+    dplyr::filter(sex == 0) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+raw_mtbi_cmat_m <- raw_mtbi_cmat_m[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(raw_mtbi_cmat_m, cluster_rows = FALSE, cluster_columns = FALSE)
+
+raw_mtbi_cmat_f <- mtbi_raw_df |>
+    dplyr::filter(sex == 1) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+raw_mtbi_cmat_f <- raw_mtbi_cmat_f[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(raw_mtbi_cmat_f, cluster_rows = FALSE, cluster_columns = FALSE)
+
+#------------------------------------------------------------------------------
+
+demo_mtbi_cmat <- mtbi_demo_df |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat <- demo_mtbi_cmat[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat, cluster_rows = FALSE, cluster_columns = FALSE)
+
+demo_mtbi_cmat_1 <- mtbi_demo_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat_1 <- demo_mtbi_cmat_1[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat_1, cluster_rows = FALSE, cluster_columns = FALSE)
+
+demo_mtbi_cmat_2 <- mtbi_demo_df |>
+    dplyr::filter(cluster == 2) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat_2 <- demo_mtbi_cmat_2[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat_2, cluster_rows = FALSE, cluster_columns = FALSE)
+
+demo_mtbi_cmat_3 <- mtbi_demo_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat_3 <- demo_mtbi_cmat_3[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat_3, cluster_rows = FALSE, cluster_columns = FALSE)
+
+demo_mtbi_cmat_12 <- mtbi_demo_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat_12 <- demo_mtbi_cmat_12[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat_12, cluster_rows = FALSE, cluster_columns = FALSE)
+
+demo_mtbi_cmat_m <- mtbi_demo_df |>
+    dplyr::filter(sex == 0) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat_m <- demo_mtbi_cmat_m[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat_m, cluster_rows = FALSE, cluster_columns = FALSE)
+
+demo_mtbi_cmat_f <- mtbi_demo_df |>
+    dplyr::filter(sex == 1) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor()
+demo_mtbi_cmat_f <- demo_mtbi_cmat_f[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat_f, cluster_rows = FALSE, cluster_columns = FALSE)
+
+#------------------------------------------------------------------------------
+
+abs_hm_fn <- function(mat1, mat2, thresh = 0) {
+    breaks <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5)
+    colors <- RColorBrewer::brewer.pal(n = 6, name = "BuPu")
+    col_fun <- circlize::colorRamp2(breaks, colors)  # Maps discrete ranges to colors
+    mat <- abs(mat1 - mat2)
+    mat <- ifelse(mat > thresh, mat, 0)
+    Heatmap(
+        mat,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        col = col_fun
+    )
+}
+
+abs_hm_fn(raw_mtbi_cmat, demo_mtbi_cmat, thresh = 0.2)
+
+abs_hm_fn(raw_mtbi_cmat, raw_mtbi_cmat_1, thresh = 0.2)
+
+abs_hm_fn(raw_mtbi_cmat, raw_mtbi_cmat_2, thresh = 0.2)
+
+abs_hm_fn(raw_mtbi_cmat, raw_mtbi_cmat_3, thresh = 0.2)
+
+abs_hm_fn(raw_mtbi_cmat_1, raw_mtbi_cmat_2, thresh = 0.3)
+
+abs_hm_fn(raw_mtbi_cmat_2, raw_mtbi_cmat_3, thresh = 0.3)
+
+abs_hm_fn(raw_mtbi_cmat_m, raw_mtbi_cmat_f, thresh = 0.3)
+
+abs_hm_fn(demo_mtbi_cmat, demo_mtbi_cmat_1, thresh = 0.2)
+
+abs_hm_fn(demo_mtbi_cmat, demo_mtbi_cmat_2, thresh = 0.3)
+
+abs_hm_fn(demo_mtbi_cmat, demo_mtbi_cmat_3, thresh = 0.3)
+
+abs_hm_fn(demo_mtbi_cmat_1, demo_mtbi_cmat_2, thresh = 0.4)
+
+abs_hm_fn(demo_mtbi_cmat_2, demo_mtbi_cmat_3, thresh = 0.35)
+
+abs_hm_fn(demo_mtbi_cmat_m, demo_mtbi_cmat_f, thresh = 0.3)
+
+# This is looking quite promising
+
+```
+
+```{r}
+
+
+
+
+demo_mtbi_cmat <- mtbi_demo_df |>
+    dummy_cols(
+        select_columns = c("race", "mtbi_mechanism"),
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(-cluster, -uid) |>
+    cor()
+demo_mtbi_cmat <- demo_mtbi_cmat[colnames(raw_mtbi_cmat), colnames(raw_mtbi_cmat)]
+Heatmap(demo_mtbi_cmat, cluster_rows = FALSE, cluster_columns = FALSE)
+
+
+
+
+
+
+
+cmat <- all_corrected_df |>
+    dplyr::filter(cluster == 1) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(-cluster, -uid, -mtbi_mechanism) |>
+    cor()
+cmat <- ifelse(abs(cmat) > 0.2, abs(cmat), 0)
+Heatmap(cmat)
+
+cmat <- all_corrected_df |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(-cluster, -uid, -mtbi_mechanism) |>
+    cor()
+cmat <- ifelse(abs(cmat) > 0.2, abs(cmat), 0)
+Heatmap(cmat)
+
+cmat <- all_corrected_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(-cluster, -uid, -mtbi_mechanism) |>
+    cor()
+cmat <- ifelse(abs(cmat) > 0.2, abs(cmat), abs(cmat))
+Heatmap(cmat)
+
+
+
+
+all_corrected_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::mutate(minority = as.numeric(race != "white")) |>
+    dplyr::select(-cluster, -uid, -race, -mtbi_mechanism) |>
+    cor() |>
+    Heatmap()
+
+corrected_assoc_mat <- calc_assoc_pval_matrix(mtbi_demo_dl)
+fdr_demo_mat <- fdr_matrix(corrected_assoc_mat)
+
+uncorrected_assoc_mat <- calc_assoc_pval_matrix(all_uncorrected_dl)
+fdr_raw_mat <- fdr_matrix(uncorrected_assoc_mat)
+
+
+fdr_raw_mat["fmri_cort_subcort_cors", ] |>
+    ComplexHeatmap::Heatmap()
+
+fdr_raw_mat["cortical_sa", !grepl("cortical_sa|brain_volume|sex|pubertal_status_p|race|cortical_thickness", rownames(fdr_raw_mat))] |>
+    log() |>
+    ComplexHeatmap::Heatmap()
+
+fdr_raw_mat["pericortical_wm_ndi", ] |>
+    ComplexHeatmap::Heatmap()
+
+
+fdr_demo_mat["fmri_cort_subcort_cors", !grepl("fmri_cort_subcort_cors", rownames(fdr_demo_mat))] |>
+    as.data.frame() |>
+    rename_with(~ if_else(seq_along(.) == 1, "p", .)) |>
+    dplyr::filter(p <= 0.05) |>
+    dplyr::mutate(p = -log10(p)) |>
+    as.matrix() |>
+    ComplexHeatmap::Heatmap()
+
+top_cor_check <- function(mat, ft) {
+    mat[ft, !grepl(ft, rownames(mat))] |>
+        as.data.frame() |>
+        rename_with(~ if_else(seq_along(.) == 1, "p", .)) |>
+        dplyr::filter(p <= 0.05) |>
+        dplyr::mutate(p = -log10(p)) |>
+        as.matrix()
+        as.matrix() |>
+        ComplexHeatmap::Heatmap()
+}
+
+top_cor_check(fdr_demo_mat, "fmri_cort_subcort_cors")
+
+top_cor_check(fdr_demo_mat, "cortical_sa")
+
+top_cor_check(fdr_demo_mat, "cortical_thickness")
+
+top_cor_check(fdr_demo_mat, "brain_volume")
+
+top_cor_check(fdr_demo_mat, "cbcl_aggressive")
+
+# Do this kind of plot for all the features
+
+fdr_demo_mat["cortical_sa", !grepl("cortical_sa|brain_volume|sex|pubertal_status_p|race|cortical_thickness", rownames(fdr_demo_mat))] |>
+    log() |>
+    ComplexHeatmap::Heatmap()
+
+fdr_demo_mat["pericortical_wm_ndi", ] |>
+    ComplexHeatmap::Heatmap()
+
+# No demographic adjustment, correlations of features
+# after FDR
+raw_assoc_hm <- assoc_pval_heatmap(
+    fdr_raw_mat,
+    dl = all_uncorrected_dl,
+    scale_diag = "none",
+    significance_stars = FALSE,
+    split_by_domain = TRUE
+)
+raw_assoc_hm
+
+save_heatmap(
+    raw_assoc_hm,
+    fig_path(
+        "explr_raw_fdr_assoc_hm.png",
+        TRUE
+    ),
+    width = 1500,
+    height = 1300,
+    res = 130
+)
+
+# Demographic adjustment, correlations of features
+# after FDR
+demo_assoc_hm <- assoc_pval_heatmap(
+    fd = fdr_demo_mat,
+    dl = mtbi_demo_dl,
+    scale_diag = "none",
+    significance_stars = FALSE,
+    split_by_domain = TRUE
+)
+demo_assoc_hm
+
+save_heatmap(
+    demo_assoc_hm,
+    fig_path(
+        "explr_demo_fdr_assoc_hm.png",
+        TRUE
+    ),
+    width = 1500,
+    height = 1300,
+    res = 130
+)
+
+fdr_raw_mat2 <- fdr_raw_mat[!grepl("cbcl|sds", colnames(fdr_raw_mat)), grepl("cbcl|sds", colnames(fdr_raw_mat))]
+#fdr_raw_mat2 <- fdr_raw_mat2[apply(fdr_raw_mat2, 1, min) <= 0.05, ]
+fdr_raw_hm_out <- ComplexHeatmap::Heatmap(
+    fdr_raw_mat2,
+    col = circlize::colorRamp2(
+        c(0, 0.0005, 0.005, 0.05, 1),
+        c(
+            "black",
+            "navy",
+            "blue",
+            "royalblue",
+            "steelblue2"
+        )
+    ),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, 0.0005, 0.005, 0.05, 1),
+        title = "FDR Corrected\np-value",
+        break_dist = 1
+    )
+)
+fdr_raw_hm_out
+
+save_heatmap(
+    fdr_raw_hm_out,
+    fig_path(
+        "fdr_raw_hm_out.png",
+        TRUE
+    ),
+    width = 800,
+    height = 1300
+)
+
+fdr_demo_mat2 <- fdr_demo_mat[!grepl("cbcl|sds", colnames(fdr_demo_mat)), grepl("cbcl|sds", colnames(fdr_demo_mat))]
+fdr_demo_mat2 <- fdr_demo_mat2[rownames(fdr_raw_mat2), ]
+fdr_demo_hm_out <- ComplexHeatmap::Heatmap(
+    fdr_demo_mat2,
+    col = circlize::colorRamp2(
+        c(0, 0.0005, 0.005, 0.05, 1),
+        c(
+            "black",
+            "navy",
+            "blue",
+            "royalblue",
+            "steelblue2"
+        )
+    ),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, 0.0005, 0.005, 0.05, 1),
+        title = "FDR Corrected\np-value",
+        break_dist = 1
+    )
+)
+fdr_demo_hm_out
+
+save_heatmap(
+    fdr_demo_hm_out,
+    fig_path(
+        "fdr_demo_hm_out.png",
+        TRUE
+    ),
+    width = 800,
+    height = 1300
+)
+
+
+max(-log10(fdr_demo_mat2))
+
+-log10(0.05)
+
+-log10(1)
+
+-log10(1e-10)
+
+pval_heatmap
+
+ComplexHeatmap::Heatmap(
+    -log10(fdr_demo_mat2),
+    col = circlize::colorRamp2(
+        c(0, -log10(0.05) , -log10(0.01), -log10(0.001), -log10(0.0001)),
+        c(
+            "steelblue2",
+            "royalblue",
+            "blue",
+            "navy",
+            "black"
+        )
+    ),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, signif(-log10(0.05), 2), -log10(0.01), -log10(0.001), -log10(0.0001)),
+        title = "Negative log10\nFDR Corrected\np-value",
+        break_dist = 1
+    )
+)
+
+ComplexHeatmap::Heatmap(
+    -log10(fdr_raw_mat2),
+    col = circlize::colorRamp2(
+        c(0, -log10(0.05) , -log10(0.01), -log10(0.001), -log10(0.0001)),
+        c(
+            "steelblue2",
+            "royalblue",
+            "blue",
+            "navy",
+            "black"
+        )
+    ),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    heatmap_legend_param = list(
+        color_bar = "continuous",
+        at = c(0, signif(-log10(0.05), 2), -log10(0.01), -log10(0.001), -log10(0.0001)),
+        title = "Negative log10\nFDR Corrected\np-value",
+        break_dist = 1
+    )
+)
+
+log_pval_hm <- function(mat, colours = NULL) {
+    if (is.null(colours)) {
+        colours <- c(
+            "steelblue2",
+            "royalblue",
+            "blue",
+            "navy",
+            "black"
+        )
+    }
+    ComplexHeatmap::Heatmap(
+        -log10(mat),
+        col = circlize::colorRamp2(
+            c(0, -log10(0.05) , -log10(0.01), -log10(0.001), -log10(0.0001)),
+            colours
+        ),
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        heatmap_legend_param = list(
+            color_bar = "continuous",
+            at = c(0, signif(-log10(0.05), 2), -log10(0.01), -log10(0.001), -log10(0.0001)),
+            title = "Negative log10\nFDR Corrected\np-value",
+            break_dist = 1
+        )
+    )
+}
+
+neuro_fts <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors"
+)
+
+rownames(fdr_raw_mat2)
+
+log_pval_hm(
+    fdr_demo_mat2[neuro_fts, ],
+    colours = c(
+        "white",
+        "orange",
+        "red",
+        "black",
+        "white"
+    )
+)
+
+log_pval_hm(
+    fdr_raw_mat2[neuro_fts, ],
+    colours = c(
+        "white",
+        "orange",
+        "red",
+        "black",
+        "white"
+    )
+)
+
+log_pval_hm(
+    fdr_raw_mat2[neuro_fts, ]
+)
+
+log_pval_hm(
+    fdr_demo_mat2[neuro_fts, ]
+)
+
+fdr_raw_mat3 <- ifelse(fdr_raw_mat2 <= 0.05, 1, 0)
+
+fdr_demo_mat2[neuro_fts, ]
+
+ComplexHeatmap::Heatmap(fdr_raw_mat3[neuro_fts, ])
+```
+
+These heatmaps serve as the starting point for which specific associations to dig deeper into.
+
+
+Probably would be valuable to really zoom in on the effect of the concussion itself.
+
+## Physiological characterization
+
+```{r}
+mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
+
+# Seems to still persist after demographic correction?
+z1 <- all_corrected_df |>
+    ggplot(
+        aes(x = cluster, y = fmri_cort_subcort_cors)
+    ) +
+    geom_boxplot() + 
+    geom_jitter(height = 0, width = 0.1, alpha = 0.4) 
+z1
+
+ggsave(fig_path("z1.png"), z1)
+
+z2 <- all_corrected_df |>
+    ggplot(
+        aes(y = cbcl_attention, x = fmri_cort_subcort_cors)
+    ) +
+    geom_smooth(method = "lm") +
+    geom_point()
+
+ggsave(fig_path("z2.png"), z2)
+
+
+z3 <- all_corrected_df |>
+    ggplot(
+        aes(y = cbcl_somatic, x = pericortical_wm_ndi)
+    ) +
+    geom_smooth(method = "lm") +
+    geom_point()
+
+
+ggsave(fig_path("z3.png"), z3)
+
+
+# value in looking at thise within subgroups
+all_corrected_df |>
+    ggplot(
+        aes(x = weekday_screentime, y = cbcl_aggressive)
+    ) +
+    geom_point() 
+
+
+# Appears to be quite a substantial difference in cort-subcort fMRI
+mtbi_ful_df |>
+    ggplot(
+        aes(x = mtbi_mechanism, y = cbcl_somatic)
+    ) +
+    geom_violin() + 
+    geom_jitter() 
+
+# Is this really correlated with outcomes directly?
+
+mtbi_ful_df |>
+    dplyr::mutate(
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    ) |>
+    ggplot(
+        aes(y = fmri_cort_subcort_cors, x = race)
+    ) +
+    geom_boxplot() +
+    geom_point() 
+
+colnames(mtbi_ful_df)
+
+full_data_list_1 <- readRDS(
+    input_path(
+        "2025_02_12_mtbi_full_data_list_1.rds"
+    )
+)
+
+der_pl <- readRDS(fig_path("2025_02_12_ap_mtbi_mc_f_plot_list.rds"))
+
+der_pl$"fmri_cort_cors"
+
+der_pl$"fmri_cort_subcort_cors"
+
+my_ttest <- function(df, ft, c1 = 1, c2 = 2) {
+    group_1 <- df |>
+        dplyr::filter(cluster == c1) |>
+        dplyr::select(dplyr::all_of(ft)) |>
+        unlist()
+        as.numeric()
+    group_2 <- df |>
+        dplyr::filter(cluster == c2) |>
+        dplyr::select(dplyr::all_of(ft)) |>
+        unlist()
+        as.numeric()
+    return(t.test(group_1, group_2))
+}
+
+my_ttest(mtbi_ful_df, "fmri_cort_subcort_cors")
+
+my_ttest(all_corrected_df, "fmri_cort_subcort_cors")
+
+```
+
+### Sleep?
+
+```{r}
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+
+mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+```
+
+```{r}
+sleep <- ph_p_sds |>
+    filter_timepoint(t = 0) |>
+    filter_subjects(mtbi_subs)
+
+sleep$"uid" <- paste0("uid_", sleep$"subjectkey") 
+
+q <- search_dd("ph_p_sds") |>
+    dplyr::filter(grepl("sds_p_ss", var_name))
+
+q$"var_label"
+
+print(search_dd("ph_p_sds"), n= 50)
+
+sleep_df <- dplyr::inner_join(
+    mtbi_ful_df,
+    sleep
+)
+
+colnames(sleep)
+
+jitter_plot(sleep_df, "sds_p_ss_dims") + labs(y = "Disorders of starting/maintaining sleep")
+
+jitter_plot(sleep_df, "sds_p_ss_sbd") + labs(y = "Sleep breathing disorders")
+
+jitter_plot(sleep_df, "sds_p_ss_da") + labs(y = "Disorders of arousal")
+
+jitter_plot(sleep_df, "sds_p_ss_swtd") + labs(y = "Disorders of sleep-wake transition")
+
+jitter_plot(sleep_df, "sds_p_ss_does") + labs(y = "Excessive Somnolence")
+
+jitter_plot(sleep_df, "sds_p_ss_shy") + labs(y = "Hyperhydrosis")
+
+```
+
+```{r}
+
+mtbi_subs
+
+df |>
+    ggplot(
+        aes(x = cluster, y = cbcl_aggressive)
+    ) +
+    geom_jitter(height = 0) +
+    geom_violin(alpha = 0.8)
+
+c1 <- df |>
+    dplyr::filter(cluster == 1)
+
+c1 |>
+    dplyr::select(-uid, -cluster, -race) |>
+    cor() |>
+    ComplexHeatmap::Heatmap()
+
+df |>
+    dplyr::mutate(sex = as.factor(sex)) |>
+    dplyr::group_by(cluster, sex) |>
+    dplyr::summarize(fmri_cor = cor(cbcl_attention, fmri_cort_subcort_cors)) |>
+    ggplot(aes(x = cluster, y = fmri_cor, fill = sex)) +
+      geom_bar(stat = "identity", position = position_dodge()) +
+      labs(x = "Cluster", y = "fMRI Correlation", fill = "Sex") +
+      theme_minimal()
+
+df$"sex" <- as.factor(df$"sex")
+
+df |>
+    dplyr::mutate(sex = dplyr::case_when(sex == 1 ~ "M", TRUE ~ "F")) |>
+    ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_attention, colour = sex)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    facet_wrap(~cluster + sex, nrow = 2)
+    
+
+m_df <- df |>
+    dplyr::filter(sex == 1, cluster == 1)
+cor.test(m_df$"cbcl_somatic", m_df$"pericortical_wm_ndi")
+
+colnames(m_df)
+
+df |>
+    ggplot()
+```
+
+### What's different between the clusters, physiolocially? A closer look at neuroimaging
+
+```{r}
+
+df$"parent"
+
+
+mtbi_ful_df |>
+    dplyr::mutate(
+        parent_total = rowSums(across(starts_with("parent"))),
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    ) |>
+    ggplot(
+        aes(x = parent_total, y = cbcl_aggressive)
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm")
+
+z2 <- mtbi_ful_df |>
+    dplyr::mutate(
+        parent_total = rowSums(across(starts_with("parent"))),
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    )
+
+summary(lm(cbcl_total ~ parent_total + sex + race + brain_volume + cluster + household_income, z2))
+
+
+
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors * cluster, mtbi_ful_df))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 1)))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 2)))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 3)))
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors * race, data = mtbi_ful_df))
+
+summary(model_cluster1)
+
+summary(model_cluster2)
+
+summary(model_cluster3)
+
+mtbi_ful_df |>
+    ggplot(
+        aes(
+            x = fmri_cort_subcort_cors,
+            y = cbcl_attention,
+            group = race,
+            colour = race
+        )
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    facet_wrap("race")
+
+df |>
+    ggplot(
+        aes(
+            x = fmri_cort_subcort_cors,
+            y = cbcl_attention,
+            group = race,
+            colour = race
+        )
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    facet_wrap("race")
+
+```
+
+```{r}
+my_jitter <- function(plot_data, ft, name) {
+    ggplot(
+        plot_data,
+        aes(
+            x = cluster,
+            y = .data[[ft]],
+        )
+    ) +
+    geom_violin(
+        data = plot_data,
+        alpha = 0.1,
+        aes(colour = cluster)
+    ) +
+    geom_jitter(
+        height = 0,
+        width = 0.1,
+        alpha = 0.1
+    ) +
+    ggplot2::stat_summary(
+        data = plot_data,
+        aes(colour = cluster),
+        fun = "mean",
+        geom = "crossbar",
+        fatten = 4,
+        width = 0.6
+    ) +
+    labs(
+        x = "Cluster",
+        y = name
+    ) +
+    theme_classic() +
+    theme(legend.position = "none") +
+    theme(text = element_text(size = 16))
+}
+# Generalizable: C1 < C2, C1 > C3, C2 > C3
+mtbi_0_volume_plot <- my_jitter(
+    mtbi_ful_df,
+    "brain_volume",
+    "Brain\nVolume"
+)
+mtbi_0_volume_plot
+#ggsave(
+#    fig_path("mtbi_0_volume_plot.png", TRUE),
+#    mtbi_0_volume_plot,
+#    width = 7,
+#    height = 5
+#)
+
+# Generalizable: C1 < C2, C1 > C3, C2 > C3
+mtbi_0_cortsa_plot <- my_jitter( 
+    mtbi_ful_df,
+    "cortical_sa",
+    "Cortical SA"
+)
+mtbi_0_cortsa_plot
+#ggsave(
+#    fig_path("mtbi_0_cortsa_plot.png", TRUE),
+#    mtbi_0_cortsa_plot,
+#    width = 7,
+#    height = 5
+#)
+
+# Generalizable: C1 < C2
+mtbi_0_fmri_subc_c_plot <- my_jitter(
+    mtbi_ful_df,
+    "fmri_cort_subcort_cors",
+    "fMRI Cort-Subcort\nCorr"
+)
+mtbi_0_fmri_subc_c_plot
+#ggsave(
+#    fig_path("mtbi_0_fmri_subc_c_plot.png", TRUE),
+#    mtbi_0_fmri_subc_c_plot,
+#    width = 7,
+#    height = 5
+#)
+
+# Generalizable: C1 < C3
+# Qualitatively: C1 < C2 and C1 < C3
+mtbi_0_cortt_plot <-  my_jitter( 
+    mtbi_ful_df,
+    "cortical_thickness",
+    "Cortical\nthickness"
+)
+mtbi_0_cortt_plot
+#ggsave(
+#    fig_path("mtbi_0_cortt_plot.png", TRUE),
+#    mtbi_0_cortt_plot,
+#    width = 7,
+#    height = 5
+#)
+
+# Outcomes
+
+mtbi_0_aggressive_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_aggressive",
+    "Aggressive"
+)
+mtbi_0_aggressive_plot
+#ggsave(
+#    fig_path("mtbi_0_aggressive_plot.png", TRUE),
+#    mtbi_0_aggressive_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_anxdep_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_anxdep",
+    "Anxious\nDepressed"
+)
+mtbi_0_anxdep_plot
+#ggsave(
+#    fig_path("mtbi_0_anxdep_plot.png", TRUE),
+#    mtbi_0_anxdep_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_attention_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_attention",
+    "Attention"
+)
+mtbi_0_attention_plot
+#ggsave(
+#    fig_path("mtbi_0_attention_plot.png", TRUE),
+#    mtbi_0_attention_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_rulebreak_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_rulebreak",
+    "Rule-Breaking"
+)
+mtbi_0_rulebreak_plot
+#ggsave(
+#    fig_path("mtbi_0_rulebreak_plot.png", TRUE),
+#    mtbi_0_rulebreak_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_social_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_social",
+    "Social"
+)
+mtbi_0_social_plot
+#ggsave(
+#    fig_path("mtbi_0_social_plot.png", TRUE),
+#    mtbi_0_social_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_somatic_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_somatic",
+    "Somatic"
+)
+mtbi_0_somatic_plot
+#ggsave(
+#    fig_path("mtbi_0_somatic_plot.png", TRUE),
+#    mtbi_0_somatic_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_thought_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_thought",
+    "Thought"
+)
+mtbi_0_thought_plot
+#ggsave(
+#    fig_path("mtbi_0_thought_plot.png", TRUE),
+#    mtbi_0_thought_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_withdep_plot <- my_jitter(
+    mtbi_ful_df,
+    "cbcl_withdep",
+    "Withdrawn\nDepressed"
+)
+mtbi_0_withdep_plot
+#ggsave(
+#    fig_path("mtbi_0_withdep_plot.png", TRUE),
+#    mtbi_0_withdep_plot,
+#    width = 7,
+#    height = 5
+#)
+
+mtbi_0_sleep_plot <- my_jitter(
+    mtbi_ful_df,
+    "sds_sleep",
+    "Sleep\nDisorders"
+)
+mtbi_0_sleep_plot
+#ggsave(
+#    fig_path("mtbi_0_sleep_plot.png", TRUE),
+#    mtbi_0_sleep_plot,
+#    width = 7,
+#    height = 5
+#)
+
+# Patchwork assembly of those plots
+
+jitters_neuro_behav <- (mtbi_0_sleep_plot + mtbi_0_withdep_plot + mtbi_0_thought_plot + mtbi_0_somatic_plot + mtbi_0_social_plot + mtbi_0_rulebreak_plot + mtbi_0_attention_plot + mtbi_0_anxdep_plot + mtbi_0_aggressive_plot) |
+(mtbi_0_cortt_plot + mtbi_0_fmri_subc_c_plot + mtbi_0_cortsa_plot + mtbi_0_volume_plot)
+jitters_neuro_behav
+
+ggsave(
+    fig_path(
+        "jitters_neuro_behav.png",
+        TRUE
+    ),
+    jitters_neuro_behav,
+    width = 15,
+    height = 7
+)
+```
+
+```{r}
+my_bar <- function(plot_data, ft, name) {
+    plot_data$"cluster" <- as.factor(plot_data$"cluster")
+    plot_data <- plot_data |>
+        dplyr::rename("keycol" = !!ft) |>
+        dplyr::select(
+            "cluster",
+            "keycol"
+        ) |>
+        dplyr::group_by(cluster) |>
+        dplyr::count(keycol) |>
+        dplyr::mutate(percent = n / sum(n) * 100)
+    plot_data$"keycol" <- factor(plot_data$"keycol")
+    if (all(plot_data$"keycol" %in% c(0, 1))) {
+        levels(plot_data$"keycol") <- c("1", "0")
+    }
+    plot <- plot_data |>
+        ggplot2::ggplot(
+            ggplot2::aes(
+                x = cluster,
+                y = percent,
+                fill = keycol
+            )
+        ) +
+        ggplot2::geom_bar(
+            stat = "identity",
+            position = ggplot2::position_stack(),
+            show.legend = TRUE
+        ) +
+        ggplot2::geom_text(
+            ggplot2::aes(
+                label = n,
+                y = percent
+            ),
+            size = 6,
+            position = ggplot2::position_stack(vjust = 0.5)
+        ) +
+        ggplot2::labs(
+            x = "cluster",
+            y = "%",
+            fill = ft
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            text = ggplot2::element_text(size = 20),
+            legend.text = ggplot2::element_text(size = 20),
+            legend.title = ggplot2::element_text(size = 20),
+            legend.position = "right",
+            panel.grid.major.x = ggplot2::element_blank()
+        )
+    return(plot)
+}
+
+mtbi_0_race_plot <- my_bar(
+    mtbi_ful_df,
+    "race",
+    "Race"
+)
+mtbi_0_race_plot
+
+mtbi_0_sex_plot <- my_bar(
+    mtbi_ful_df,
+    "sex",
+    "Sex"
+)
+mtbi_0_sex_plot
+
+mtbi_0_income_plot <- my_bar(
+    mtbi_ful_df,
+    "household_income",
+    "Income"
+)
+mtbi_0_income_plot
+
+mtbi_0_pds_p_plot <- my_bar(
+    mtbi_ful_df,
+    "pubertal_status_p",
+    "pds_p"
+)
+mtbi_0_pds_p_plot
+
+mtbi_0_parent_thought_plot <- my_jitter(
+    mtbi_ful_df,
+    "parent_thought",
+    "Parent Thought"
+)
+mtbi_0_parent_thought_plot
+```
+
+```{r}
+my_scatter <- function(plot_data, ft1, ft2) {
+    ggplot(
+        plot_data,
+        aes(
+            x = .data[[ft1]],
+            y = .data[[ft2]],
+        )
+    ) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_classic() +
+    theme(legend.position = "none") +
+    theme(text = element_text(size = 16)) +
+    stat_cor(
+        aes(
+            label = paste(
+                after_stat(r.label), 
+                after_stat(rr.label), 
+                after_stat(p.label),
+                sep = "~`,`~"
+            )
+        ), 
+        label.x.npc = "left",
+        label.y.npc = "top",
+        size = 5
+    )
+}
+
+# No need to keep using cortical SA AND brain volume?
+my_scatter(
+    mtbi_ful_df,
+    "cortical_sa",
+    "brain_volume"
+)
+
+my_scatter(
+    dplyr::filter(mtbi_ful_df, sex == 1),
+    "cbcl_attention",
+    "fmri_cort_subcort_cors"
+)
+
+my_scatter(
+    dplyr::filter(mtbi_ful_df, sex == 0),
+    "brain_volume",
+    "cbcl_somatic"
+)
+
+my_scatter(
+    mtbi_ful_df,
+    "parent_thought",
+    "fmri_cort_subcort_cors"
+)
+
+# Interesting
+my_scatter(
+    mtbi_ful_df,
+    "weekday_screentime",
+    "cbcl_attention"
+)
+
+my_scatter(
+    mtbi_ful_df,
+    "physical_activity",
+    "fmri_cort_subcort_cors"
+)
+
+my_scatter(
+    mtbi_ful_df,
+    "parent_antisocial",
+    "fmri_cort_subcort_cors"
+)
+
+my_scatter(
+    mtbi_ful_df,
+    "pubertal_status_p",
+    "fmri_cort_subcort_cors"
+)
+
+ggplot(
+    mtbi_ful_df,
+    aes(
+        x = factor(extracurriculars),
+        y = cortical_sa
+    )
+) +
+    geom_point()
+
+my_scatter(
+    mtbi_ful_df,
+    "cortical_sa",
+    "extracurriculars"
+)
+
+
+my_scatter(
+    mtbi_ful_df,
+    "pericortical_wm_ndi",
+    "cbcl_somatic"
+)
+
+summary(lm(cbcl_attention ~ race + cluster, data = mtbi_ful_df))
+
+
+my_scatter(mtbi_ful_df, "brain_volume", "cbcl_somatic")
+
+my_scatter(mtbi_ful_df, "brain_volume", "cbcl_aggressive")
+
+z_mtbi <- mtbi_ful_df |>
+    dplyr::mutate(
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    )
+
+z_all <- df |>
+    dplyr::mutate(
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    )
+
+dfs <- list(
+    #z_mtbi,
+    #dplyr::filter(z_mtbi, cluster == 1),
+    #dplyr::filter(z_mtbi, cluster == 2),
+    #dplyr::filter(z_mtbi, cluster == 3),
+    #dplyr::filter(z_mtbi, cluster != 3),
+    #dplyr::filter(z_mtbi, sex == 0),
+    #dplyr::filter(z_mtbi, sex == 1),
+    #dplyr::filter(z_mtbi, race == "white"),
+    dplyr::filter(z_mtbi, race == "other"),
+    #dplyr::filter(z_mtbi, race != "white"),
+    #z_all,
+    #dplyr::filter(z_all, cluster == 1),
+    #dplyr::filter(z_all, cluster == 2),
+    #dplyr::filter(z_all, cluster == 3),
+    #dplyr::filter(z_all, cluster != 3),
+    #dplyr::filter(z_all, sex == 0),
+    #dplyr::filter(z_all, sex == 1),
+    #dplyr::filter(z_all, race == "white"),
+    #dplyr::filter(z_all, race == "other"),
+    dplyr::filter(z_all, race != "white")
+)
+neuro_fts <- c(
+    #"brain_volume",
+    "fmri_cort_subcort_cors"
+    #"cortical_sa",
+    #"cortical_thickness",
+    #"pericortical_wm_ndi",
+    #"major_wm_ndi",
+    #"fmri_cort_cors"
+)
+behav_fts <- c(
+    #"cbcl_anxdep",
+    #"cbcl_withdep",
+    #"cbcl_somatic",
+    #"cbcl_social",
+    #"cbcl_thought",
+    #"cbcl_attention",
+    #"cbcl_rulebreak",
+    #"cbcl_aggressive",
+    #"cbcl_total",
+    "sds_sleep"
+)
+cor_data <- data.frame()
+for (x in dfs) {
+    for (neuro_ft in neuro_fts) {
+        for (behav_ft in behav_fts) {
+            cor_data <- rbind(
+                cor_data,
+                data.frame(
+                    neuro_ft = neuro_ft,
+                    behav_ft = behav_ft,
+                    cor = cor(x[[neuro_ft]], x[[behav_ft]])
+                )
+            )
+        }
+    }
+}
+max(abs(cor_data$"cor"))
+
+which(cor_data$"cor" == min(cor_data$"cor"))
+
+cor_data[580, ]
+
+mtbi_ful_df |>
+    dplyr::filter(race == "other") |>
+    my_scatter("fmri_cort_subcort_cors", "sds_sleep")
+
+neuro_fts <- c(
+    "brain_volume",
+    "fmri_cort_subcort_cors",
+    "cortical_sa",
+    "cortical_thickness"
+)
+
+behav_fts <- c(
+    "cbcl_anxdep",
+    "cbcl_withdep",
+    "cbcl_somatic",
+    "cbcl_social",
+    "cbcl_thought",
+    "cbcl_attention",
+    "cbcl_rulebreak",
+    "cbcl_aggressive",
+    "sds_sleep"
+)
+
+parent_fts <- colnames(mtbi_ful_df)[grepl("parent", colnames(mtbi_ful_df))]
+
+parent_pca <- prcomp(
+    dplyr::select(mtbi_ful_df, dplyr::all_of(neuro_fts)),
+    center = TRUE,
+    scale. = TRUE
+)
+summary(parent_pca)
+
+neuro_pca <- prcomp(
+    dplyr::select(mtbi_ful_df, dplyr::all_of(neuro_fts)),
+    center = TRUE,
+    scale. = TRUE
+)
+summary(neuro_pca)
+
+neuro_pca <- prcomp(
+    dplyr::select(mtbi_ful_df, dplyr::all_of(neuro_fts)),
+    center = TRUE,
+    scale. = TRUE
+)
+summary(neuro_pca)
+
+outcome_pca <- prcomp(
+    dplyr::select(mtbi_ful_df, dplyr::all_of(behav_fts)),
+    center = TRUE,
+    scale. = TRUE
+)
+summary(outcome_pca)
+
+neuro_pca_df <- as.data.frame(neuro_pca$x)[, 1:3]  # First few PCs for reduced dimensions
+behav_pca_df <- as.data.frame(outcome_pca$x)[, 1:4]  # First few PCs for reduced dimensions
+
+colnames(neuro_pca_df) <- c("neuro1", "neuro2", "neuro3")
+colnames(behav_pca_df) <- c("behav1", "behav2", "behav3", "behav4")
+
+
+z_mtbi <- mtbi_ful_df |>
+    dplyr::mutate(
+        cbcl_total = rowSums(across(starts_with("cbcl")))
+    )
+z_mtbi <- cbind(z_mtbi, neuro_pca_df)
+z_mtbi <- cbind(z_mtbi, behav_pca_df)
+
+neuro_and_pca_fts <- c(
+    "brain_volume",
+    "fmri_cort_subcort_cors",
+    "cortical_sa",
+    "cortical_thickness",
+    "neuro1",
+    "neuro2",
+    "neuro3"
+)
+behav_and_pca_fts <- c(
+    "cbcl_anxdep",
+    "cbcl_withdep",
+    "cbcl_somatic",
+    "cbcl_social",
+    "cbcl_thought",
+    "cbcl_attention",
+    "cbcl_rulebreak",
+    "cbcl_aggressive",
+    "sds_sleep",
+    "behav1",
+    "behav2",
+    "behav3",
+    "behav4"
+)
+dfs <- list(
+    "all_obs" = z_mtbi,
+    "c1_only" = dplyr::filter(z_mtbi, cluster == 1),
+    "c2_only" = dplyr::filter(z_mtbi, cluster == 2),
+    "c3_only" = dplyr::filter(z_mtbi, cluster == 3),
+    "c1_and_c2" = dplyr::filter(z_mtbi, cluster != 3),
+    "only_f" = dplyr::filter(z_mtbi, sex == 0),
+    "only_m" = dplyr::filter(z_mtbi, sex == 1),
+    "only_white" = dplyr::filter(z_mtbi, race == "white"),
+    "only_non_white" = dplyr::filter(z_mtbi, race != "white"),
+    "only_other" = dplyr::filter(z_mtbi, race == "other")
+)
+cor_data <- data.frame()
+for (x in names(dfs)) {
+    for (neuro_ft in neuro_and_pca_fts) {
+        for (behav_ft in behav_and_pca_fts) {
+            temp_df <- dfs[[x]]
+            test <- cor.test(temp_df[[neuro_ft]], temp_df[[behav_ft]])
+            cor_data <- rbind(
+                cor_data,
+                data.frame(
+                    n = nrow(temp_df),
+                    subset = x,
+                    neuro_ft = neuro_ft,
+                    behav_ft = behav_ft,
+                    cor = signif(test$"estimate", 3),
+                    p = signif(test$"p.value", 3)
+                )
+            )
+        }
+    }
+}
+max(abs(cor_data$"cor"))
+cor_data$"abs_cor" <- abs(cor_data$"cor")
+cor_data$"p.adj" <- p.adjust(cor_data$"p", method = "fdr")
+cor_data |>
+    dplyr::arrange(-cor)
+
+?p.adjust
+
+
+my_scatter(
+    dplyr::filter(z_mtbi, cluster == 1),
+    "neuro2",
+    "cbcl_social"
+)
+
+my_scatter(
+    dplyr::filter(z_mtbi, cluster == 3),
+    "neuro2",
+    "cbcl_social"
+)
+
+
+
+
+
+
+
+
+```
+
+
+
+```{r}
+
+summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, mtbi_df))
+
+
+
+
+
+
+# Nothing was generalizable...
+my_jitter( 
+    mtbi_ful_df,
+    "pericortical_wm_ndi",
+    "Pericortical WM NDI"
+)
+
+
+mtbi_ful_df |> colnames()
+
+q <- mtbi_ful_df |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        fmri_cort_subcort_cors
+    ) |>
+    cor()
+q2 <- q[, "fmri_cort_subcort_cors"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    geom_bar(stat = "identity")
+    
+
+mtbi_ful_df$"sex"
+
+dplyr::filter()
+
+dplyr::filter(mtbi_ful_df, cluster == 1)$"sex" |> table()
+
+z <- mtbi_ful_df |> 
+    dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::select(fmri_cort_subcort_cors, cbcl_aggressive)
+
+z |> cor()
+
+# Interesting: high corr between withdep and fmri in cluster 3
+q <- mtbi_ful_df |>
+#q <- df |>
+    #dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::filter(cluster == 3) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        fmri_cort_subcort_cors
+    ) |>
+    cor()
+q2 <- q[, "fmri_cort_subcort_cors"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    ylim(-0.3, 0.3) +
+    geom_bar(stat = "identity") +
+    theme_bw()
+    
+q <- mtbi_ful_df |>
+#q <- df |>
+    #dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        fmri_cort_subcort_cors
+    ) |>
+    cor()
+q2 <- q[, "fmri_cort_subcort_cors"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    ylim(-0.3, 0.3) +
+    geom_bar(stat = "identity") +
+    theme_bw()
+    
+q <- mtbi_ful_df |>
+#q <- df |>
+    #dplyr::filter(sex == 1, cluster == 1) |>
+    dplyr::select(
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds"),
+        brain_volume
+    ) |>
+    cor()
+q2 <- q[, "brain_volume"] |>
+    data.frame()
+colnames(q2) <- "cor"
+q2$"feature" <- rownames(q)
+q2[-10, ] |>
+    ggplot(
+        aes(x = feature, y = cor)
+    ) +
+    ylim(-0.3, 0.3) +
+    geom_bar(stat = "identity") +
+    theme_bw()
+```
+
+```{r}
+
+neuro_fts <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "fmri_cort_subcort_cors"
+)
+
+
+
+give_cors <- function(data_df) {
+    cor_results <- sapply(
+        2:ncol(data_df),
+        function(i) {
+            test <- cor.test(data_df[[1]], data_df[[i]])
+            c(correlation = test$estimate, p_value = test$p.value)
+        }
+    )
+    # Convert results to a dataframe
+    cor_results_df <- as.data.frame(t(cor_results))
+    rownames(cor_results_df) <- colnames(data_df)[2:10]
+    return(cor_results_df)
+}
+
+give_cors(z1)
+
+
+```
+
+```{r}
+
+
+z1 <- mtbi_ful_df |>
+    dplyr::select(
+        dplyr::all_of(neuro_fts),
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    cor()
+z1[!grepl("cbcl|sds", rownames(z1)), grepl("cbcl|sds", colnames(z1))] |>
+    abs() |>
+    ComplexHeatmap::Heatmap(
+        col = circlize::colorRamp2(
+            c(0, 0.1),
+            c(
+                "white",
+                "black"
+            )
+        ),
+    )
+
+
+z2 <- mtbi_ful_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::select(
+        dplyr::all_of(neuro_fts),
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    cor()
+z2[!grepl("cbcl|sds", rownames(z2)), grepl("cbcl|sds", colnames(z2))] |>
+    abs() |>
+    ComplexHeatmap::Heatmap(
+        col = circlize::colorRamp2(
+            c(0, 0.5),
+            c(
+                "white",
+                "black"
+            )
+        ),
+    )
+
+z3 <- mtbi_ful_df |>
+    dplyr::filter(cluster == 1) |>
+    dplyr::select(
+        dplyr::all_of(neuro_fts),
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    cor()
+z3 <- z3[!grepl("cbcl|sds", rownames(z3)), grepl("cbcl|sds", colnames(z3))]
+
+z3["fmri_cort_subcort_cors", ] |> min()
+z3["fmri_cort_subcort_cors", ] |> max()
+
+z3["brain_volume", ] |> min()
+z3["brain_volume", ] |> max()
+
+z3["cortical_thickness", ] |> min()
+z3["cortical_thickness", ] |> max()
+
+z3["cortical_thickness", ]
+
+z3["cortical_sa", ] |> min()
+z3["cortical_sa", ] |> max()
+
+neuro_fts
+
+max(z3)
+
+min(z3)
+
+mtbi_ful_df |>
+    dplyr::filter(cluster == 1) |>
+    ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_attention)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor(
+        aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,`~")), 
+        label.x.npc = "left", label.y.npc = "top", size = 5
+    )
+
+mtbi_df |>
+    dplyr::filter(sex == 1) |>
+    ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_somatic)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,`~")), 
+    label.x.npc = "left", label.y.npc = "top", size = 5)
+
+# keep looking...
+
+```
