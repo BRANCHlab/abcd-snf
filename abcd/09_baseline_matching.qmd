@@ -23,14 +23,14 @@ library(tidyr)
 library(xtable)
 library(patchwork)
 
-input_path <- path_maker(here(paste0("data/abcd/inputs")))
-proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
-fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
-sub_path <- path_maker(here(paste0("data/abcd/subjects")))
-model_path <- path_maker(here(paste0("data/abcd/results/models")))
+input_path <- abcdutils::path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- abcdutils::path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- abcdutils::path_maker(here(paste0("data/abcd/results/figures")))
+sub_path <- abcdutils::path_maker(here(paste0("data/abcd/subjects")))
+model_path <- abcdutils::path_maker(here(paste0("data/abcd/results/models")))
 
-mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
-unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+mtbi_subs <- abcdutils::read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+unij_subs <- abcdutils::read_subjects(sub_path("2025_02_07_unij_subs.csv"))
 ```
 
 ## Importing data
@@ -54,40 +54,76 @@ Finding matched uninjured controls for each mtbi subject based on a variety of v
 Matching will be done based on the first imputed dataset of the baseline data.
 
 ```{r}
-mtbi_matching_df <- c(mtbi_full_data_list_1, mtbi_full_oom_list_1) |> as.data.frame()
-unij_matching_df_s1 <- c(unij_dl_s1, unij_ol_s1) |> as.data.frame()
-unij_matching_df_s1 <- c(unij_dl_s1, unij_ol_s1) |> as.data.frame()
-unij_matching_df_p1 <- c(unij_dl_p1, unij_ol_p1) |> as.data.frame()
+# mTBI group, first imputation
+mtbi_matching_df <- as.data.frame(
+    c(mtbi_full_data_list_1, mtbi_full_oom_list_1)
+)
 
+# Uninjured group, first solo imputation
+unij_matching_df_s1 <- as.data.frame(
+    c(unij_dl_s1, unij_ol_s1)
+)
+
+# Uninjured group, first pooled imputation
+unij_matching_df_p1 <- as.data.frame(
+    c(unij_dl_p1, unij_ol_p1)
+)
+
+# Labeling if each group was or was not mTBI
 mtbi_matching_df$"mtbi" <- 1
 unij_matching_df_s1$"mtbi" <- 0
 unij_matching_df_p1$"mtbi" <- 0
 
+# Restricting mTBI data frame to only columns shared with uninjured
 mtbi_matching_df <- dplyr::select(
     mtbi_matching_df,
     colnames(unij_matching_df_s1)
 )
 
+# Concatenating mTBI and uninjured data frames for matching
 matching_df_s1 <- rbind(mtbi_matching_df, unij_matching_df_s1)
 matching_df_p1 <- rbind(mtbi_matching_df, unij_matching_df_p1)
 ```
 
 
 ```{r}
-# Total parent psych
-matching_df_s1$"total_parent_psych" <- matching_df_s1 |> dplyr::select(dplyr::starts_with("parent")) |> rowSums()
-matching_df_p1$"total_parent_psych" <- matching_df_p1 |> dplyr::select(dplyr::starts_with("parent")) |> rowSums()
+# Creating parent psych matching variable
+matching_df_s1$"total_parent_psych" <- matching_df_s1 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
+matching_df_p1$"total_parent_psych" <- matching_df_p1 |>
+    dplyr::select(dplyr::starts_with("parent")) |>
+    rowSums()
 
-# Total CBCL
-matching_df_s1$"total_impairments" <- matching_df_s1 |> dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |> rowSums()
-matching_df_p1$"total_impairments" <- matching_df_p1 |> dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |> rowSums()
+# Creating outcome matching variable
+matching_df_s1$"total_impairments" <- matching_df_s1 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
+matching_df_p1$"total_impairments" <- matching_df_p1 |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums()
 ```
 
-We'll try a few different matching schemes:
+I investigate the following matching schemes:
+
+1. Demographic matching (household income, race, sex, parent and youth reports of pubertal status; d)
+2. Parent psychosocial matching (total parent psychosocial score; p)
+3. Outcome matching (total impairments; o)
+4. Demographic and parent psychosocial matching together (dp)
+5. Demographic and outcome matching together (do)
+6. Parent psychosocial and outcome matching together (op)
+7. Demographic, parent psychosocial, and outcome matching together (dpo)
 
 ```{r}
 # Establishing formulae
-d_vars <- "household_income + race + sex + pubertal_status_p + pubertal_status_y"
+d_vars <- paste(
+    "household_income",
+    "race",
+    "sex",
+    "pubertal_status_p",
+    "pubertal_status_y",
+    sep = " + "
+)
 p_vars <- "total_parent_psych"
 o_vars <- "total_impairments"
 dp_vars <- paste0(d_vars, " + ", p_vars)
@@ -95,20 +131,52 @@ do_vars <- paste0(d_vars, " + ", o_vars)
 op_vars <- paste0(o_vars, " + ", p_vars)
 dpo_vars <- paste0(d_vars, " + ", p_vars, " + ", o_vars)
 
-match_d_results_s <- matchit(as.formula(paste0("mtbi ~ ", d_vars)), matching_df_s1, method = "nearest")
-match_p_results_s <- matchit(as.formula(paste0("mtbi ~ ", p_vars)), matching_df_s1, method = "nearest")
-match_o_results_s <- matchit(as.formula(paste0("mtbi ~ ", o_vars)), matching_df_s1, method = "nearest")
-match_d_results_p <- matchit(as.formula(paste0("mtbi ~ ", d_vars)), matching_df_p1, method = "nearest")
-match_p_results_p <- matchit(as.formula(paste0("mtbi ~ ", p_vars)), matching_df_p1, method = "nearest")
-match_o_results_p <- matchit(as.formula(paste0("mtbi ~ ", o_vars)), matching_df_p1, method = "nearest")
-match_dp_results_s <- matchit(as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_s1, method = "nearest")
-match_do_results_s <- matchit(as.formula(paste0("mtbi ~ ", op_vars)), matching_df_s1, method = "nearest")
-match_op_results_s <- matchit(as.formula(paste0("mtbi ~ ", op_vars)), matching_df_s1, method = "nearest")
-match_dp_results_p <- matchit(as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_p1, method = "nearest")
-match_do_results_p <- matchit(as.formula(paste0("mtbi ~ ", op_vars)), matching_df_p1, method = "nearest")
-match_op_results_p <- matchit(as.formula(paste0("mtbi ~ ", op_vars)), matching_df_p1, method = "nearest")
-match_dpo_results_s <- matchit(as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_s1, method = "nearest")
-match_dpo_results_p <- matchit(as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_p1, method = "nearest")
+match_d_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", d_vars)), matching_df_s1, method = "nearest"
+)
+match_p_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", p_vars)), matching_df_s1, method = "nearest"
+)
+match_o_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", o_vars)), matching_df_s1, method = "nearest"
+)
+
+match_d_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", d_vars)), matching_df_p1, method = "nearest"
+)
+match_p_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", p_vars)), matching_df_p1, method = "nearest"
+)
+match_o_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", o_vars)), matching_df_p1, method = "nearest"
+)
+
+match_dp_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_s1, method = "nearest"
+)
+match_do_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", op_vars)), matching_df_s1, method = "nearest"
+)
+match_op_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", op_vars)), matching_df_s1, method = "nearest"
+)
+
+match_dp_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_p1, method = "nearest"
+)
+match_do_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", op_vars)), matching_df_p1, method = "nearest"
+)
+match_op_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", op_vars)), matching_df_p1, method = "nearest"
+)
+
+match_dpo_results_s <- matchit(
+    as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_s1, method = "nearest"
+)
+match_dpo_results_p <- matchit(
+    as.formula(paste0("mtbi ~ ", dp_vars)), matching_df_p1, method = "nearest"
+)
 
 # Saving plots
 save_matching_plot <- function(matching_results, name) {
@@ -117,20 +185,62 @@ save_matching_plot <- function(matching_results, name) {
     grDevices::dev.off()
 }
 
-save_matching_plot(match_d_results_s, fig_path("match_d_results_s.png", TRUE))
-save_matching_plot(match_p_results_s, fig_path("match_p_results_s.png", TRUE))
-save_matching_plot(match_o_results_s, fig_path("match_o_results_s.png", TRUE))
-save_matching_plot(match_d_results_p, fig_path("match_d_results_p.png", TRUE))
-save_matching_plot(match_p_results_p, fig_path("match_p_results_p.png", TRUE))
-save_matching_plot(match_o_results_p, fig_path("match_o_results_p.png", TRUE))
-save_matching_plot(match_dp_results_s, fig_path("match_dp_results_s.png", TRUE))
-save_matching_plot(match_do_results_s, fig_path("match_do_results_s.png", TRUE))
-save_matching_plot(match_op_results_s, fig_path("match_op_results_s.png", TRUE))
-save_matching_plot(match_dp_results_p, fig_path("match_dp_results_p.png", TRUE))
-save_matching_plot(match_do_results_p, fig_path("match_do_results_p.png", TRUE))
-save_matching_plot(match_op_results_p, fig_path("match_op_results_p.png", TRUE))
-save_matching_plot(match_dpo_results_s, fig_path("match_dpo_results_s.png", TRUE))
-save_matching_plot(match_dpo_results_p, fig_path("match_dpo_results_p.png", TRUE))
+save_matching_plot(
+    match_d_results_s,
+    fig_path("match_d_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_p_results_s,
+    fig_path("match_p_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_o_results_s,
+    fig_path("match_o_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_d_results_p,
+    fig_path("match_d_results_p.png", TRUE)
+)
+save_matching_plot(
+    match_p_results_p,
+    fig_path("match_p_results_p.png", TRUE)
+)
+save_matching_plot(
+    match_o_results_p,
+    fig_path("match_o_results_p.png", TRUE)
+)
+save_matching_plot(
+    match_dp_results_s,
+    fig_path("match_dp_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_do_results_s,
+    fig_path("match_do_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_op_results_s,
+    fig_path("match_op_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_dp_results_p,
+    fig_path("match_dp_results_p.png", TRUE)
+)
+save_matching_plot(
+    match_do_results_p,
+    fig_path("match_do_results_p.png", TRUE)
+)
+save_matching_plot(
+    match_op_results_p,
+    fig_path("match_op_results_p.png", TRUE)
+)
+save_matching_plot(
+    match_dpo_results_s,
+    fig_path("match_dpo_results_s.png", TRUE)
+)
+save_matching_plot(
+    match_dpo_results_p,
+    fig_path("match_dpo_results_p.png", TRUE)
+)
 ```
 
 
@@ -185,6 +295,7 @@ match_dpo_p <- readRDS(proc_path("2025_02_14_match_dpo_p.rds"))
 ```
 
 ```{r}
+# Extracting the matched uninjured subjects
 matched_unij_d_s <- dplyr::filter(match_d_s, mtbi == 0)$"uid"
 matched_unij_p_s <- dplyr::filter(match_p_s, mtbi == 0)$"uid"
 matched_unij_o_s <- dplyr::filter(match_o_s, mtbi == 0)$"uid"
@@ -200,42 +311,113 @@ matched_unij_op_p <- dplyr::filter(match_op_p, mtbi == 0)$"uid"
 matched_unij_dpo_s <- dplyr::filter(match_dpo_s, mtbi == 0)$"uid"
 matched_unij_dpo_p <- dplyr::filter(match_dpo_p, mtbi == 0)$"uid"
 
-write_csv(data.frame(subjectkey = matched_unij_d_s), sub_path("matched_unij_d_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_p_s), sub_path("matched_unij_p_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_o_s), sub_path("matched_unij_o_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_d_p), sub_path("matched_unij_d_p.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_p_p), sub_path("matched_unij_p_p.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_o_p), sub_path("matched_unij_o_p.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_dp_s), sub_path("matched_unij_dp_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_do_s), sub_path("matched_unij_do_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_op_s), sub_path("matched_unij_op_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_dp_p), sub_path("matched_unij_dp_p.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_do_p), sub_path("matched_unij_do_p.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_op_p), sub_path("matched_unij_op_p.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_dpo_s), sub_path("matched_unij_dpo_s.csv", TRUE))
-write_csv(data.frame(subjectkey = matched_unij_dpo_p), sub_path("matched_unij_dpo_p.csv", TRUE))
+write_csv(
+    data.frame(subjectkey = matched_unij_d_s),
+    sub_path("matched_unij_d_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_p_s),
+    sub_path("matched_unij_p_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_o_s),
+    sub_path("matched_unij_o_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_d_p),
+    sub_path("matched_unij_d_p.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_p_p),
+    sub_path("matched_unij_p_p.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_o_p),
+    sub_path("matched_unij_o_p.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_dp_s),
+    sub_path("matched_unij_dp_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_do_s),
+    sub_path("matched_unij_do_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_op_s),
+    sub_path("matched_unij_op_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_dp_p),
+    sub_path("matched_unij_dp_p.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_do_p),
+    sub_path("matched_unij_do_p.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_op_p),
+    sub_path("matched_unij_op_p.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_dpo_s),
+    sub_path("matched_unij_dpo_s.csv", TRUE)
+)
+write_csv(
+    data.frame(subjectkey = matched_unij_dpo_p),
+    sub_path("matched_unij_dpo_p.csv", TRUE)
+)
 ```
 
 ```{r}
-matched_unij_d_s <- read_subjects(sub_path("2025_02_14_matched_unij_d_s.csv"))
-matched_unij_p_s <- read_subjects(sub_path("2025_02_14_matched_unij_p_s.csv"))
-matched_unij_o_s <- read_subjects(sub_path("2025_02_14_matched_unij_o_s.csv"))
-matched_unij_d_p <- read_subjects(sub_path("2025_02_14_matched_unij_d_p.csv"))
-matched_unij_p_p <- read_subjects(sub_path("2025_02_14_matched_unij_p_p.csv"))
-matched_unij_o_p <- read_subjects(sub_path("2025_02_14_matched_unij_o_p.csv"))
-matched_unij_dp_s <- read_subjects(sub_path("2025_02_14_matched_unij_dp_s.csv"))
-matched_unij_do_s <- read_subjects(sub_path("2025_02_14_matched_unij_do_s.csv"))
-matched_unij_op_s <- read_subjects(sub_path("2025_02_14_matched_unij_op_s.csv"))
-matched_unij_dp_p <- read_subjects(sub_path("2025_02_14_matched_unij_dp_p.csv"))
-matched_unij_do_p <- read_subjects(sub_path("2025_02_14_matched_unij_do_p.csv"))
-matched_unij_op_p <- read_subjects(sub_path("2025_02_14_matched_unij_op_p.csv"))
-matched_unij_dpo_s <- read_subjects(sub_path("2025_02_14_matched_unij_dpo_s.csv"))
-matched_unij_dpo_p <- read_subjects(sub_path("2025_02_14_matched_unij_dpo_p.csv"))
+matched_unij_d_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_d_s.csv")
+)
+matched_unij_p_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_p_s.csv")
+)
+matched_unij_o_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_o_s.csv")
+)
+matched_unij_d_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_d_p.csv")
+)
+matched_unij_p_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_p_p.csv")
+)
+matched_unij_o_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_o_p.csv")
+)
+matched_unij_dp_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_dp_s.csv")
+)
+matched_unij_do_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_do_s.csv")
+)
+matched_unij_op_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_op_s.csv")
+)
+matched_unij_dp_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_dp_p.csv")
+)
+matched_unij_do_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_do_p.csv")
+)
+matched_unij_op_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_op_p.csv")
+)
+matched_unij_dpo_s <- read_subjects(
+    sub_path("2025_02_14_matched_unij_dpo_s.csv")
+)
+matched_unij_dpo_p <- read_subjects(
+    sub_path("2025_02_14_matched_unij_dpo_p.csv")
+)
 ```
 
 ## Subsetting matched unijured data and out of model lists
 
 ```{r}
+# Function reduces a data list to only subjects in the subject vector
 subject_filter_dl <- function(data_list, subject_vector) {
     data_list <- data_list |>
         dlapply(
@@ -472,38 +654,134 @@ random_unij_sm_p1 <- readRDS(proc_path("2025_02_15_random_unij_sm_p1.rds"))
 
 
 ```{r}
-matched_unij_esm_dpo_s <- extend_solutions(matched_unij_sm_dpo_s, dl = matched_unij_dl_dpo_s, target_dl = matched_unij_ol_dpo_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_dpo_s <- extend_solutions(
+    matched_unij_sm_dpo_s,
+    dl = matched_unij_dl_dpo_s,
+    target_dl = matched_unij_ol_dpo_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_dpo_s, proc_path("matched_unij_esm_dpo_s.rds", TRUE))
-matched_unij_esm_dpo_p <- extend_solutions(matched_unij_sm_dpo_p, dl = matched_unij_dl_dpo_p, target_dl = matched_unij_ol_dpo_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_dpo_p <- extend_solutions(
+    matched_unij_sm_dpo_p,
+    dl = matched_unij_dl_dpo_p,
+    target_dl = matched_unij_ol_dpo_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_dpo_p, proc_path("matched_unij_esm_dpo_p.rds", TRUE))
-matched_unij_esm_op_p <- extend_solutions(matched_unij_sm_op_p, dl = matched_unij_dl_op_p, target_dl = matched_unij_ol_op_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_op_p <- extend_solutions(
+    matched_unij_sm_op_p,
+    dl = matched_unij_dl_op_p,
+    target_dl = matched_unij_ol_op_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_op_p, proc_path("matched_unij_esm_op_p.rds", TRUE))
-matched_unij_esm_do_p <- extend_solutions(matched_unij_sm_do_p, dl = matched_unij_dl_do_p, target_dl = matched_unij_ol_do_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_do_p <- extend_solutions(
+    matched_unij_sm_do_p,
+    dl = matched_unij_dl_do_p,
+    target_dl = matched_unij_ol_do_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_do_p, proc_path("matched_unij_esm_do_p.rds", TRUE))
-matched_unij_esm_dp_p <- extend_solutions(matched_unij_sm_dp_p, dl = matched_unij_dl_dp_p, target_dl = matched_unij_ol_dp_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_dp_p <- extend_solutions(
+    matched_unij_sm_dp_p,
+    dl = matched_unij_dl_dp_p,
+    target_dl = matched_unij_ol_dp_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_dp_p, proc_path("matched_unij_esm_dp_p.rds", TRUE))
-matched_unij_esm_op_s <- extend_solutions(matched_unij_sm_op_s, dl = matched_unij_dl_op_s, target_dl = matched_unij_ol_op_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_op_s <- extend_solutions(
+    matched_unij_sm_op_s,
+    dl = matched_unij_dl_op_s,
+    target_dl = matched_unij_ol_op_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_op_s, proc_path("matched_unij_esm_op_s.rds", TRUE))
-matched_unij_esm_do_s <- extend_solutions(matched_unij_sm_do_s, dl = matched_unij_dl_do_s, target_dl = matched_unij_ol_do_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_do_s <- extend_solutions(
+    matched_unij_sm_do_s,
+    dl = matched_unij_dl_do_s,
+    target_dl = matched_unij_ol_do_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_do_s, proc_path("matched_unij_esm_do_s.rds", TRUE))
 #
-matched_unij_esm_dp_s <- extend_solutions(matched_unij_sm_dp_s, dl = matched_unij_dl_dp_s, target_dl = matched_unij_ol_dp_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_dp_s <- extend_solutions(
+    matched_unij_sm_dp_s,
+    dl = matched_unij_dl_dp_s,
+    target_dl = matched_unij_ol_dp_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_dp_s, proc_path("matched_unij_esm_dp_s.rds", TRUE))
-matched_unij_esm_o_p <- extend_solutions(matched_unij_sm_o_p, dl = matched_unij_dl_o_p, target_dl = matched_unij_ol_o_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_o_p <- extend_solutions(
+    matched_unij_sm_o_p,
+    dl = matched_unij_dl_o_p,
+    target_dl = matched_unij_ol_o_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_o_p, proc_path("matched_unij_esm_o_p.rds", TRUE))
-matched_unij_esm_p_p <- extend_solutions(matched_unij_sm_p_p, dl = matched_unij_dl_p_p, target_dl = matched_unij_ol_p_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_p_p <- extend_solutions(
+    matched_unij_sm_p_p,
+    dl = matched_unij_dl_p_p,
+    target_dl = matched_unij_ol_p_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_p_p, proc_path("matched_unij_esm_p_p.rds", TRUE))
-matched_unij_esm_d_p <- extend_solutions(matched_unij_sm_d_p, dl = matched_unij_dl_d_p, target_dl = matched_unij_ol_d_p, min_pval = 1e-10, processes = "max")
+matched_unij_esm_d_p <- extend_solutions(
+    matched_unij_sm_d_p,
+    dl = matched_unij_dl_d_p,
+    target_dl = matched_unij_ol_d_p,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_d_p, proc_path("matched_unij_esm_d_p.rds", TRUE))
-matched_unij_esm_o_s <- extend_solutions(matched_unij_sm_o_s, dl = matched_unij_dl_o_s, target_dl = matched_unij_ol_o_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_o_s <- extend_solutions(
+    matched_unij_sm_o_s,
+    dl = matched_unij_dl_o_s,
+    target_dl = matched_unij_ol_o_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_o_s, proc_path("matched_unij_esm_o_s.rds", TRUE))
-matched_unij_esm_p_s <- extend_solutions(matched_unij_sm_p_s, dl = matched_unij_dl_p_s, target_dl = matched_unij_ol_p_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_p_s <- extend_solutions(
+    matched_unij_sm_p_s,
+    dl = matched_unij_dl_p_s,
+    target_dl = matched_unij_ol_p_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_p_s, proc_path("matched_unij_esm_p_s.rds", TRUE))
-matched_unij_esm_d_s <- extend_solutions(matched_unij_sm_d_s, dl = matched_unij_dl_d_s, target_dl = matched_unij_ol_d_s, min_pval = 1e-10, processes = "max")
+matched_unij_esm_d_s <- extend_solutions(
+    matched_unij_sm_d_s,
+    dl = matched_unij_dl_d_s,
+    target_dl = matched_unij_ol_d_s,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(matched_unij_esm_d_s, proc_path("matched_unij_esm_d_s.rds", TRUE))
-random_unij_esm_s1 <- extend_solutions(random_unij_sm_s1, dl = random_unij_dl_s1, target_dl = random_unij_ol_s1, min_pval = 1e-10, processes = "max")
+random_unij_esm_s1 <- extend_solutions(
+    random_unij_sm_s1,
+    dl = random_unij_dl_s1,
+    target_dl = random_unij_ol_s1,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(random_unij_esm_s1, proc_path("random_unij_esm_s1.rds", TRUE))
-random_unij_esm_p1 <- extend_solutions(random_unij_sm_p1, dl = random_unij_dl_p1, target_dl = random_unij_ol_p1, min_pval = 1e-10, processes = "max")
+random_unij_esm_p1 <- extend_solutions(
+    random_unij_sm_p1,
+    dl = random_unij_dl_p1,
+    target_dl = random_unij_ol_p1,
+    min_pval = 1e-10,
+    processes = "max"
+)
 saveRDS(random_unij_esm_p1, proc_path("random_unij_esm_p1.rds", TRUE))
 ```
 
@@ -550,16 +828,23 @@ saveRDS(matched_unij_esm_list, proc_path("matched_unij_esm_list.rds", TRUE))
 ```
 
 ```{r}
-matched_unij_esm_list <- readRDS(proc_path("2025_02_15_matched_unij_esm_list.rds"))
+matched_unij_esm_list <- readRDS(
+    proc_path("2025_02_15_matched_unij_esm_list.rds")
+)
 ```
 
 ```{r}
+
+matched_unij_esm_list
+
 # Tight requirement: -log10(pval) > 4
 matched_unij_esm_3c_list <- lapply(
     matched_unij_esm_list,
     function(x) {
-        x <- dplyr::filter(x, nclust == 3, -log10(mean_pval) > 4)
-        return(x)
+        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 4, ]
+        if (nrow(x) > 0) {
+            return(x)
+        } 
     }
 )
 
@@ -567,12 +852,22 @@ matched_unij_esm_3c_list <- lapply(
 matched_unij_esm_3c_list_loose <- lapply(
     matched_unij_esm_list,
     function(x) {
-        x <- dplyr::filter(x, nclust == 3, -log10(mean_pval) > 1)
-        return(x)
+        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 1, ]
+        if (nrow(x) > 0) {
+            return(x)
+        } 
     }
 )
 
-sapply(matched_unij_esm_3c_list_loose, nrow) |> sum()
+# 6 tight matches
+sapply(matched_unij_esm_3c_list, nrow) |>
+    unlist() |>
+    sum()
+
+# 82 loose matches
+sapply(matched_unij_esm_3c_list_loose, nrow) |>
+    unlist() |>
+    sum()
 
 matched_unij_esm_3c_list <- matched_unij_esm_3c_list[sapply(matched_unij_esm_3c_list, function(x) nrow(x) > 0)]
 matched_unij_esm_3c_list_loose <- matched_unij_esm_3c_list_loose[sapply(matched_unij_esm_3c_list_loose, function(x) nrow(x) > 0)]
@@ -585,6 +880,7 @@ matched_unij_esm_3c_list_loose <- readRDS(proc_path("2025_02_15_matched_unij_esm
 ```
 
 ```{r}
+# Domain colour labels
 dcols <- c(
     "AS" = "#85929e",
     "D" = "#bb8fce",
@@ -595,6 +891,7 @@ dcols <- c(
     "B" = "#ff3131"
 )
 
+# do_s, do_p, op_s, op_p
 names(matched_unij_esm_3c_list)
 
 matched_unij_do_s <- mc_manhattan_plot(
@@ -643,6 +940,7 @@ matched_unij_manhattan_plots <- readRDS(fig_path("2025_02_15_matched_unij_manhat
 So we know that only a couple of combinations lead to somewhat similar cluster solutions in terms of the mean p-values on outcomes.
 
 ```{r}
+# Quick save function
 qs2 <- function(plot, path, w = 18, h = 14, d = 120) {    
     path <- paste0("matched_unij_", path, "_manhattan.png")
     ggsave(
@@ -716,47 +1014,16 @@ matched_unij_ols <- readRDS(proc_path("2025_02_15_matched_unij_ols.rds"))
 ```
 
 ```{r}
-#matched_unij_esm_3c_list <- matched_unij_esm_3c_list[
-#    c(
-#        "a_s1",
-#        "a_p1",
-#        "b_s1",
-#        "b_p1",
-#        "c_s1",
-#        "c_p1",
-#        "d_p1"
-#    )
-#]
-#
-#matched_pls <- lapply(
-#    names(matched_unij_esm_3c_list),
-#    function(match) {
-#        pl <- list()
-#        nrows <- nrow(matched_unij_esm_3c_list[[match]])
-#        for (row in seq_len(nrows)) {
-#            p <- auto_plot(
-#                matched_unij_esm_3c_list[[match]][row, ],
-#                data_list = matched_unij_dls[[match]],
-#                target_list = matched_unij_ols[[match]]
-#            )
-#            pl[[length(pl) + 1]] <- p
-#        }
-#        names(pl) <- paste0("row_", seq_len(nrows))
-#        return(pl)
-#    }
-#)
-#names(matched_pls) <- names(matched_unij_esm_3c_list)
-#
-#list.save(matched_pls, fig_path("matched_pls.rds", TRUE))
-```
-
-```{r}
 # CHECKPOINT
-#matched_pls <- list.load(fig_path("2024_11_28_matched_pls.rds"))
-mtbi_gen_fts_in_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in_long.csv"))
-mtbi_gen_fts_out_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out_long.csv"))
+mtbi_gen_fts_in_long <- read_csv(
+    proc_path("2025_02_13_mtbi_gen_fts_in_long.csv")
+)
+mtbi_gen_fts_out_long <- read_csv(
+    proc_path("2025_02_13_mtbi_gen_fts_out_long.csv")
+)
 
-classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
+classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))
+classifier_fts <- classifier_fts$"classifier_fts"
 ```
 
 Calculating concordance (similarity between matched uninjured solution and baseline mTBI solution topologies) using loose threshold.
@@ -775,7 +1042,6 @@ matched_pl_dfs <- lapply(
             )
             pl[[length(pl) + 1]] <- p
         }
-        #names(pl) <- paste0("row_", seq_len(nrows))
         return(pl)
     }
 )
@@ -860,26 +1126,31 @@ concordance_df <- data.frame(
     arrange(desc(concordance))
 rownames(concordance_df) <- NULL
 
-concordance_df
-
 write_csv(concordance_df, proc_path("matched_unij_concordance.csv", TRUE))
 
 concordance_df <- read_csv(proc_path("2025_02_15_matched_unij_concordance.csv"))
 
 xtable(concordance_df)
 
-knitr::kable(concordance_df, format = "markdown", digits = 3, format.args = list(scientific = FALSE)) |>
+knitr::kable(
+    concordance_df,
+    format = "markdown",
+    digits = 3,
+    format.args = list(scientific = FALSE)
+) |>
     writeLines(proc_path("matched_unij_concordance.txt", TRUE))
 
 concordance_df
-
 ```
 
 Matching by D+O and O+P seem to be best.
 The D+O and O+P matching yielded identical sets of matched uninjured subjects.
 
 ```{r}
-saveRDS(matched_unij_esm_3c_list_loose$"op_p"[11, ], proc_path("matched_unij_nearest_esdf.rds", TRUE))
+saveRDS(
+    matched_unij_esm_3c_list_loose$"op_p"[11, ],
+    proc_path("matched_unij_nearest_esdf.rds", TRUE)
+)
 
 top_unij_pl <- auto_plot(
     matched_unij_esm_3c_list_loose$"do_p"[11, ],
@@ -899,18 +1170,22 @@ gen_in_fts
 
 top_unij_input_plots <- top_unij_pl[gen_in_fts]
 top_unij_outcome_plots <- top_unij_pl[gen_out_fts]
-#top_unij_plots <- top_unij_pl[c(gen_in_fts, gen_out_fts)]
 top_unij_plots <- c(top_unij_input_plots, top_unij_outcome_plots)
 
 saveRDS(top_unij_input_plots, proc_path("top_unij_input_plots.rds", TRUE))
 saveRDS(top_unij_outcome_plots, proc_path("top_unij_outcome_plots.rds", TRUE))
 saveRDS(top_unij_plots, proc_path("top_unij_plots.rds", TRUE))
 
-top_unij_input_plots <- readRDS(proc_path("2025_02_15_top_unij_input_plots.rds"))
-top_unij_outcome_plots <- readRDS(proc_path("2025_02_15_top_unij_outcome_plots.rds"))
-top_unij_plots <- readRDS(proc_path("2025_02_18_top_unij_plots.rds"))
+top_unij_input_plots <- readRDS(
+    proc_path("2025_02_15_top_unij_input_plots.rds")
+)
+top_unij_outcome_plots <- readRDS(
+    proc_path("2025_02_15_top_unij_outcome_plots.rds")
+)
+top_unij_plots <- readRDS(
+    proc_path("2025_02_18_top_unij_plots.rds")
+)
 
-classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
 outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
 relevant_fts <- c(classifier_fts, outcomes)
 
@@ -934,7 +1209,6 @@ ggsave(
 matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
 matched_unij_dl_do_p <- readRDS(proc_path("2025_02_14_matched_unij_dl_do_p.rds"))
 matched_unij_ol_do_p <- readRDS(proc_path("2025_02_14_matched_unij_ol_do_p.rds"))
-
 
 matched_unij_dl_df <- as.data.frame(c(matched_unij_dl_do_p, matched_unij_ol_do_p))
 matched_unij_cluster_df <- t(matched_unij_nearest_esdf)
@@ -1119,8 +1393,6 @@ for (i in 1:10) {
 }
 
 hist(mean_ds)
-
-# That didn't really amount to much.
 
 #Is the proportion of observations in each cluster significantly different?
 #------------------------------------------------------------------------------
@@ -1526,3 +1798,111 @@ Can always check this later
 #    get_cluster_df(mtbi_full_top_3c)$"cluster" |> table()
 #) |> chisq.test()
 ```
+
+## 1. Examining correlation structure between mTBI and matched uninjured
+
+Are the correlations stronger in the mTBI group?
+
+```{r}
+mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
+
+d_s_df <- as.data.frame(c(matched_unij_dl_d_s, matched_unij_ol_d_s))
+p_s_df <- as.data.frame(c(matched_unij_dl_p_s, matched_unij_ol_p_s))
+o_s_df <- as.data.frame(c(matched_unij_dl_o_s, matched_unij_ol_o_s))
+d_p_df <- as.data.frame(c(matched_unij_dl_d_p, matched_unij_ol_d_p))
+p_p_df <- as.data.frame(c(matched_unij_dl_p_p, matched_unij_ol_p_p))
+o_p_df <- as.data.frame(c(matched_unij_dl_o_p, matched_unij_ol_o_p))
+dp_s_df <- as.data.frame(c(matched_unij_dl_dp_s, matched_unij_ol_dp_s))
+do_s_df <- as.data.frame(c(matched_unij_dl_do_s, matched_unij_ol_do_s))
+op_s_df <- as.data.frame(c(matched_unij_dl_op_s, matched_unij_ol_op_s))
+dp_p_df <- as.data.frame(c(matched_unij_dl_dp_p, matched_unij_ol_dp_p))
+do_p_df <- as.data.frame(c(matched_unij_dl_do_p, matched_unij_ol_do_p))
+op_p_df <- as.data.frame(c(matched_unij_dl_op_p, matched_unij_ol_op_p))
+dpo_p_df <- as.data.frame(c(matched_unij_dl_dpo_p, matched_unij_ol_dpo_p))
+dpo_s_df <- as.data.frame(c(matched_unij_dl_dpo_s, matched_unij_ol_dpo_s))
+random_s1_df <- as.data.frame(c(random_unij_dl_s1, random_unij_ol_s1))
+random_p1_df <- as.data.frame(c(random_unij_dl_p1, random_unij_ol_p1))
+
+matched_unij_dfs <- list(
+    "d_s_df" = d_s_df,
+    "p_s_df" = p_s_df,
+    "o_s_df" = o_s_df,
+    "d_p_df" = d_p_df,
+    "p_p_df" = p_p_df,
+    "o_p_df" = o_p_df,
+    "dp_s_df" = dp_s_df,
+    "do_s_df" = do_s_df,
+    "op_s_df" = op_s_df,
+    "dp_p_df" = dp_p_df,
+    "do_p_df" = do_p_df,
+    "op_p_df" = op_p_df,
+    "dpo_p_df" = dpo_p_df,
+    "dpo_s_df" = dpo_s_df,
+    "random_s1_df" = random_s1_df,
+    "random_p1_df" = random_p1_df
+)
+
+# No duplicate data frames
+matched_unij_dfs2 <- matched_unij_dfs[!duplicated(matched_unij_dfs)]
+
+names(matched_unij_dfs2)
+
+# Data frame that only has the uninjured columns
+mtbi_compare_df <- mtbi_ful_df[, colnames(d_s_df)]
+
+cor_fn <- function(df) {
+    df <- dplyr::select(df, -"uid") |>
+        dummy_cols(
+            select_columns = "race",
+            remove_selected_columns = TRUE,
+            remove_most_frequent_dummy = TRUE
+        ) |>
+        cor()
+    return(df) 
+}
+
+mean_cor <- function(mat) {
+    mat |>
+        upper.tri() |>
+        abs() |>
+        mean()
+}
+
+perm_test <- function(df1, df2, n = 10) {
+    mean_cor_1 <- mean_cor(cor_fn(df1)) 
+    mean_cor_2 <- mean_cor(cor_fn(df2))
+    mean_cor_diff <- mean_cor_1 - mean_cor_2
+    for (i in 1:n) {
+        print(i)
+        stacked_df <- rbind(df1, df2)
+        random_df <- stacked_df[sample(nrow(stacked_df)), ]
+        random_df1 <- random_df[1:437, ]
+        random_df2 <- random_df[438:874, ]
+        mean_cor_1 <- mean_cor(cor_fn(random_df1))
+        mean_cor_2 <- mean_cor(cor_fn(random_df2))
+        mean_cor_diff <- c(mean_cor_diff, mean_cor_1 - mean_cor_2)
+    }
+}
+
+437*2
+
+nrow(mtbi_compare_df) nrow(o_s_df)
+
+
+
+cor_fn(mtbi_compare_df) |>
+    abs() |>
+    mean()
+
+cor_fn(o_s_df) |>
+    abs() |>
+    mean()
+
+
+
+
+```
+
+## 2. Compare correlations between mTBI C1 and C2
+
+What correlations, if any, are significantly different?
