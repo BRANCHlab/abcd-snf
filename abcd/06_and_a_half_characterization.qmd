@@ -30,18 +30,29 @@ mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
 
 all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
 
+# An uninjured data frame
 unij_dl_s1 <- c(all_dls$"unij_data_lists"[[1]], all_dls$"unij_oom_lists"[[1]])
 unij_df <- as.data.frame(unij_dl_s1)
 unij_df$"cluster" <- "ctrl"
+
+# A compatible comparison mTBI data frame
 mtbi_df <- mtbi_ful_df[, colnames(unij_df)]
+
+# A joint data frame
 df <- rbind(mtbi_df, unij_df)
+
 ```
 
 ```{r}
-# HERE
 
+# Input features adjusted for demographics
 dl_corrected <- readRDS(proc_path("2025_02_13_dl_corrected.rds"))
+
+# Outcome features adjusted for demographics
 adj_oom_list <- readRDS(proc_path("2025_03_17_adj_oom_list.rds"))
+
+dl_corrected
+
 full_oom_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_oom_list_1.rds"))
 full_data_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_data_list_1.rds"))
 
@@ -844,9 +855,6 @@ z2 <- mtbi_ful_df |>
     )
 
 summary(lm(cbcl_total ~ parent_total + sex + race + brain_volume + cluster + household_income, z2))
-
-
-
 summary(lm(cbcl_attention ~ fmri_cort_subcort_cors * cluster, mtbi_ful_df))
 summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 1)))
 summary(lm(cbcl_attention ~ fmri_cort_subcort_cors, data = subset(mtbi_ful_df, cluster == 2)))
@@ -1741,10 +1749,6 @@ z3["cortical_sa", ] |> max()
 
 neuro_fts
 
-max(z3)
-
-min(z3)
-
 mtbi_ful_df |>
     dplyr::filter(cluster == 1) |>
     ggplot(aes(x = fmri_cort_subcort_cors, y = cbcl_attention)) +
@@ -1764,5 +1768,26 @@ stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,
     label.x.npc = "left", label.y.npc = "top", size = 5)
 
 # keep looking...
+```
+
+```{r}
+
+# A combination of the raw inputs, but adjusted outputs
+mtbi_only_adj_out <- c(dl_no_demo, dl_demo, adj_oom_list)
+
+mtbi_only_adj_out_df <- as.data.frame(mtbi_only_adj_out)
+
+mtbi_only_adj_out_cor <- mtbi_only_adj_out_df |>
+    dplyr::select(-uid, -mtbi_mechanism, -race) |>
+    cor()
+
+out_idx <- grepl("^cbcl|^sds", rownames(mtbi_only_adj_out_cor))
+
+mtbi_only_adj_out_cor[out_idx, !out_idx] |>
+    abs() |>
+    ComplexHeatmap::Heatmap()
+
+
+# Here 2025-03-25
 
 ```

@@ -1,0 +1,80 @@
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(rlist)
+library(mice)
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library(fastDummies)
+library(tidyr)
+library(ggpubr)
+library(ComplexHeatmap)
+
+#input_path <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+#sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+#
+#mtbi_subs <- read_csv(sub_path("2025_02_07_mtbi_subs.csv"))
+#mtbi_train_subs <- read_csv(sub_path("2025_02_07_mtbi_train_subs.csv"))
+#mtbi_test_subs <- read_csv(sub_path("2025_02_07_mtbi_test_subs.csv"))
+#unij_subs <- read_csv(sub_path("2025_02_07_unij_subs.csv"))
+```
+
+
+```{r}
+# Data frame of all the features, observations, and cluster assignments
+mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
+
+# Generalizable features from full cluster solution
+mtbi_gen_fts <- data.frame(read_csv(proc_path("2025_02_13_mtbi_gen_fts.csv")))
+
+
+all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
+
+mtbi_ful_cmat <- mtbi_ful_df |>
+    dplyr::select(-uid) |>
+    dummy_cols(
+        select_columns = c("race", "mtbi_mechanism"),
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(dplyr::all_of(mtbi_gen_fts$"feature")) |>
+    cor()
+#mtbi_ful_cmat <- ifelse(mtbi_ful_cmat < 0.2, 0, mtbi_ful_cmat)
+outcome_idx <- grepl("^cbcl|^sds", colnames(mtbi_ful_cmat))
+Heatmap(abs(mtbi_ful_cmat[outcome_idx,!outcome_idx]))
+
+
+jitter_plot(mtbi_ful_df, "weekend_screentime")
+
+my_scatter(mtbi_ful_df, "weekend_screentime", "cbcl_aggressive")
+
+mtbi_long_changes <- readRDS(proc_path("2025_03_25_mtbi_long_changes.rds"))
+
+# Checking just in baseline now...
+my_lm <- function(df, ft1, ft2) {
+    models <- list(
+      lm(as.formula(paste0(ft1, "_0 ~ ", ft2, "_0")), data = filter(df, imputation == 1)),
+      lm(as.formula(paste0(ft1, "_0 ~ ", ft2, "_0")), data = filter(df, imputation == 2)),
+      lm(as.formula(paste0(ft1, "_0 ~ ", ft2, "_0")), data = filter(df, imputation == 3)),
+      lm(as.formula(paste0(ft1, "_0 ~ ", ft2, "_0")), data = filter(df, imputation == 4)),
+      lm(as.formula(paste0(ft1, "_0 ~ ", ft2, "_0")), data = filter(df, imputation == 5))
+    )
+    pooled_results <- pool(as.mira(models))
+    return(summary(pooled_results))
+}
+
+colnames(mtbi_long_changes)
+
+my_lm(mtbi_long_changes, "parent_aggressive", "cbcl_aggressive")
+
+
+
+
+
+
+```

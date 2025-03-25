@@ -1844,63 +1844,108 @@ matched_unij_dfs <- list(
 
 # No duplicate data frames
 matched_unij_dfs2 <- matched_unij_dfs[!duplicated(matched_unij_dfs)]
-
 names(matched_unij_dfs2)
+```
+
+```{r}
+saveRDS(matched_unij_dfs2, proc_path("matched_unij_dfs2.rds", TRUE))
+
+matched_unij_dfs2 <- readRDS(proc_path("2025_03_25_matched_unij_dfs2.rds"))
+
 
 # Data frame that only has the uninjured columns
 mtbi_compare_df <- mtbi_ful_df[, colnames(d_s_df)]
 
-cor_fn <- function(df) {
-    df <- dplyr::select(df, -"uid") |>
-        dummy_cols(
-            select_columns = "race",
-            remove_selected_columns = TRUE,
-            remove_most_frequent_dummy = TRUE
-        ) |>
-        cor()
-    return(df) 
-}
-
 mean_cor <- function(mat) {
-    mat |>
-        upper.tri() |>
+    mat[upper.tri(mat)] |>
         abs() |>
         mean()
 }
 
 perm_test <- function(df1, df2, n = 10) {
-    mean_cor_1 <- mean_cor(cor_fn(df1)) 
-    mean_cor_2 <- mean_cor(cor_fn(df2))
-    mean_cor_diff <- mean_cor_1 - mean_cor_2
+    mean_cor_diff <- mean_cor(cor(df1)) - mean_cor(cor(df2))
+    stacked_df <- rbind(df1, df2)
+    diffs <- numeric(n)
     for (i in 1:n) {
-        print(i)
-        stacked_df <- rbind(df1, df2)
-        random_df <- stacked_df[sample(nrow(stacked_df)), ]
-        random_df1 <- random_df[1:437, ]
-        random_df2 <- random_df[438:874, ]
-        mean_cor_1 <- mean_cor(cor_fn(random_df1))
-        mean_cor_2 <- mean_cor(cor_fn(random_df2))
-        mean_cor_diff <- c(mean_cor_diff, mean_cor_1 - mean_cor_2)
+        random_df <- stacked_df[sample.int(nrow(stacked_df)), ]
+        mean_cor_1 <- mean_cor(cor_fn(random_df[1:437, ]))
+        mean_cor_2 <- mean_cor(cor_fn(random_df[438:874, ]))
+        diffs[i] <- mean_cor_1 - mean_cor_2
     }
+    return(list(
+        "observed_diff" = mean_cor_diff,
+        "simulated_diffs" = diffs,
+        "p_value" = sum(diffs > mean_cor_diff) / n
+    ))
 }
 
-437*2
+library(Rcpp)
 
-nrow(mtbi_compare_df) nrow(o_s_df)
+sourceCpp("abcd/perm_test.cpp")
 
+prep_and_test <- function(df1, df2, n = 10) {
+    df1 <- df1 |>
+        dplyr::select(-"uid") |>
+        dummy_cols(
+            select_columns = "race",
+            remove_selected_columns = TRUE,
+            remove_most_frequent_dummy = TRUE
+        ) |>
+        as.matrix()
+    df2 <- df2 |>
+        dplyr::select(-"uid") |>
+        dummy_cols(
+            select_columns = "race",
+            remove_selected_columns = TRUE,
+            remove_most_frequent_dummy = TRUE
+        ) |>
+        as.matrix()
+    results <- perm_test_cpp(df1, df2, n = n)
+    return(results)
+}
 
+matched_unij_dfs2 |> length();
 
-cor_fn(mtbi_compare_df) |>
-    abs() |>
-    mean()
+set.seed(42)
+matched_perm_test_df <- data.frame()
+for (i in seq_along(matched_unij_dfs2)) {
+    cat("DF: ", i, "\n")
+    p_value <- prep_and_test(
+        mtbi_compare_df,
+        matched_unij_dfs2[[i]],
+        n = 10000
+    )$"p_value"
+    matched_perm_test_df <- rbind(
+        matched_perm_test_df,
+        data.frame(
+            "match" = names(matched_unij_dfs2)[[i]],
+            "p" = p_value
+        )
+    )
+}
+write_csv(matched_perm_test_df, proc_path("matched_perm_test_df.csv", TRUE))
 
-cor_fn(o_s_df) |>
-    abs() |>
-    mean()
+matched_perm_test_df <- read_csv(
+    proc_path("2025_03_25_matched_perm_test_df.csv")
+)
 
+matched_perm_test_df |> arrange(p)
 
-
-
+## A tibble: 12 × 2
+#   match             p
+#   <chr>         <dbl>
+# 1 d_s_df       0
+# 2 d_p_df       0
+# 3 random_s1_df 0
+# 4 random_p1_df 0
+# 5 p_s_df       0.0022
+# 6 p_p_df       0.0037
+# 7 do_s_df      0.0407
+# 8 do_p_df      0.0618
+# 9 dp_s_df      0.0655
+#10 dp_p_df      0.120
+#11 o_s_df       0.176
+#12 o_p_df       0.217
 ```
 
 ## 2. Compare correlations between mTBI C1 and C2
