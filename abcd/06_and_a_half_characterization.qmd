@@ -11,6 +11,7 @@ library(fastDummies)
 library(tidyr)
 library(ggpubr)
 library(ComplexHeatmap)
+library(Hmisc)
 
 input_path <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -1772,8 +1773,158 @@ stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,
 
 ```{r}
 
+# feature ranks
+mtbi_gen_fts_in <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in.csv"))
+mtbi_gen_fts_out <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out.csv"))
+
+mtbi_gen_fts_in$"feature" %in% colnames(oom_raw_pl_data)
+
+setdiff(mtbi_gen_fts_in$"feature", colnames(oom_raw_pl_data))
+
+
 # A combination of the raw inputs, but adjusted outputs
+mtbi_all_adj <- c(dl_corrected, dl_demo, adj_oom_list)
 mtbi_only_adj_out <- c(dl_no_demo, dl_demo, adj_oom_list)
+mtbi_raw_dl <- c(full_data_list_1, full_oom_list_1)
+
+mtbi_full_top_3c <- readRDS(proc_path("2025_02_13_mtbi_full_top_3c.rds"))
+
+all_raw_pl_data <- auto_plot(mtbi_full_top_3c, mtbi_raw_dl, return_plots = FALSE)
+oom_adj_pl_data <- auto_plot(mtbi_full_top_3c, mtbi_only_adj_out, return_plots = FALSE)
+all_adj_pl_data <- auto_plot(mtbi_full_top_3c, mtbi_all_adj, return_plots = FALSE)
+
+all_raw_pl_data <- as.data.frame(all_raw_pl_data)
+oom_adj_pl_data <- as.data.frame(oom_adj_pl_data) |> dplyr::select(dplyr::all_of(colnames(all_raw_pl_data)))
+all_adj_pl_data <- as.data.frame(all_adj_pl_data) |> dplyr::select(dplyr::all_of(colnames(all_raw_pl_data)))
+
+write_csv(all_raw_pl_data, proc_path("all_raw_pl_data.csv", TRUE))
+write_csv(oom_adj_pl_data, proc_path("oom_adj_pl_data.csv", TRUE))
+write_csv(all_adj_pl_data, proc_path("all_adj_pl_data.csv", TRUE))
+
+all_raw_pl_data <- read_csv(proc_path("2025_03_26_all_raw_pl_data.csv"))
+oom_adj_pl_data <- read_csv(proc_path("2025_03_26_oom_adj_pl_data.csv"))
+all_adj_pl_data <- read_csv(proc_path("2025_03_26_all_adj_pl_data.csv"))
+
+oom_adj_pl <- auto_plot(mtbi_full_top_3c, mtbi_only_adj_out)
+all_adj_pl <- auto_plot(mtbi_full_top_3c, mtbi_all_adj)
+all_raw_pl <- auto_plot(mtbi_full_top_3c, mtbi_raw_dl)
+
+# Plot shows that clusters still explain outcome measures beyond 
+# demographic variables
+adjusted_vs_unadjusted_plots <-
+    wrap_plots(all_raw_pl[grepl("cbcl|sds", names(all_raw_pl))], nrow = 1) /
+    wrap_plots(oom_adj_pl[grepl("cbcl|sds", names(all_raw_pl))], nrow = 1)
+
+ggsave(
+    fig_path("adjusted_vs_unadjusted_plots.png", TRUE),
+    adjusted_vs_unadjusted_plots,
+    width = 30,
+    height = 7
+)
+
+# Are these new adjusted outcomes correlated with anything?
+outcome_cmat <- function(df) {
+    cmat <- df |>
+        dplyr::select(-uid, -mtbi_mechanism) |>
+        dummy_cols(
+            c("cluster", "race"),
+            remove_selected_columns = TRUE
+        ) |>
+        cor()
+    out_idx <- grepl("^cbcl|^sds", rownames(cmat))
+    cmat_out <- cmat[out_idx, !out_idx] |>
+        abs() |>
+        ComplexHeatmap::Heatmap(
+            cluster_rows = FALSE,
+            cluster_columns = FALSE
+        )
+    cmat_out
+}
+
+
+outcome_cmat(all_raw_pl_data)
+
+outcome_cmat(oom_adj_pl_data)
+
+outcome_cmat(all_adj_pl_data)
+
+
+# Compute correlations and p-values
+
+outcome_cmat_hmisc <- function(df, thresh = 0.05) {
+    cmat <- df |>
+        dplyr::select(-uid, -mtbi_mechanism) |>
+        dummy_cols(
+            c("cluster", "race"),
+            remove_selected_columns = TRUE
+        ) |>
+        as.matrix() |>
+        rcorr()
+    cmat <- cmat$P
+    out_idx <- grepl("^cbcl|^sds", rownames(cmat))
+    in_model_colours <- c(
+        "black",
+        "blue"
+    )
+    cmat_out <- cmat[out_idx, !out_idx]
+        #fdr_matrix()
+    #cmat_out <- cmat[out_idx, !out_idx] |>
+    #    fdr_matrix()
+    cmat_out[cmat_out <= thresh] <- 0  # Set values ≤ 0.05 to 1
+    cmat_out[cmat_out > thresh] <- 1   # Set values > 0.05 to 0
+    cmat_out[cmat_out == 0] <- 99
+    cmat_out[cmat_out == 1] <- 0
+    cmat_out[cmat_out == 99] <- 1
+    col <- function(x) {
+      ifelse(x == 1, in_model_colours[2], in_model_colours[1])
+    }
+    hm <- cmat_out |>
+        ComplexHeatmap::Heatmap(
+            cluster_rows = FALSE,
+            cluster_columns = FALSE,
+            col = col,
+            heatmap_legend_param = list(
+                at = c(0, 1),
+                color_bar = "discrete",
+                title = paste0("p < ", thresh),
+                labels = c("No", "Yes")
+            )
+        )
+    hm
+}
+#outcome_cmat(oom_adj_pl_data)
+#outcome_cmat_hmisc(all_adj_pl_data, 0.00000000000000000000000000000000000000000000000000000000001)
+
+outcome_cmat_hmisc(all_adj_pl_data, 0.05)
+
+outcome_cmat_hmisc(oom_adj_pl_data, 0.05)
+
+outcome_cmat_hmisc(all_raw_pl_data, 0.05)
+
+result <- rcorr(as.matrix(df))
+
+# Extract correlation matrix
+cor_matrix <- result$r
+
+# Extract p-value matrix
+p_matrix <- result$P
+
+print(cor_matrix)
+print(p_matrix)
+
+
+
+
+all_adj_pl_data |>
+    dplyr::select(-uid, -mtbi_mechanism, -race) |>
+    cor()
+
+pl |>
+    ggplot(aes(x = pubertal_status_p, y = cbcl_aggressive)) +
+    geom_point() +
+    geom_smooth(method = "lm")
+
+pl$"cbcl_aggressive"
 
 mtbi_only_adj_out_df <- as.data.frame(mtbi_only_adj_out)
 
@@ -1787,7 +1938,5 @@ mtbi_only_adj_out_cor[out_idx, !out_idx] |>
     abs() |>
     ComplexHeatmap::Heatmap()
 
-
-# Here 2025-03-25
 
 ```
