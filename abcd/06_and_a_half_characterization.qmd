@@ -1822,6 +1822,19 @@ ggsave(
     height = 7
 )
 
+# HERE 2025_04_02
+
+```
+
+- Make the cmats below
+- Check what (if anything) significantly correlated with the outcome measures
+- check most recent chatgpt convo (particularly #4): https://chatgpt.com/c/67eda298-677c-8005-bb6a-c959ead198a2
+- repeat it all in the demo adjusted and demo unadjusted data.
+    - may need to consider doing the demo adjustment off of the entire dataset? Talk to Anne about this
+- better get some systematic review extractions done!
+
+```{r}
+
 # Are these new adjusted outcomes correlated with anything?
 outcome_cmat <- function(df) {
     cmat <- df |>
@@ -1832,25 +1845,38 @@ outcome_cmat <- function(df) {
         ) |>
         cor()
     out_idx <- grepl("^cbcl|^sds", rownames(cmat))
-    cmat_out <- cmat[out_idx, !out_idx] |>
-        abs() |>
-        ComplexHeatmap::Heatmap(
-            cluster_rows = FALSE,
-            cluster_columns = FALSE
-        )
-    cmat_out
+    cmat <- cmat[out_idx, !out_idx] |>
+        abs()
+    return(cmat)
 }
 
+outcome_hm <- function(cmat) {
+    ComplexHeatmap::Heatmap(
+        cmat,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        col = circlize::colorRamp2(
+            c(0, 0.1, 0.2, 0.3, 0.4, 0.5),
+            RColorBrewer::brewer.pal(n = 6, name = "BuPu")
+        ),
+        heatmap_legend_param = list(
+            title = "|Cor|"
+        )
+    )
+}
 
-outcome_cmat(all_raw_pl_data)
+all_raw_cmat <- outcome_cmat(all_raw_pl_data)
+oom_adj_cmat <- outcome_cmat(oom_adj_pl_data)
+all_adj_cmat <- outcome_cmat(all_adj_pl_data)
 
-outcome_cmat(oom_adj_pl_data)
+outcome_hm(all_raw_cmat)
 
-outcome_cmat(all_adj_pl_data)
+outcome_hm(all_adj_cmat)
+
+outcome_hm(all_raw_cmat - all_adj_cmat)
 
 
 # Compute correlations and p-values
-
 outcome_cmat_hmisc <- function(df, thresh = 0.05) {
     cmat <- df |>
         dplyr::select(-uid, -mtbi_mechanism) |>
