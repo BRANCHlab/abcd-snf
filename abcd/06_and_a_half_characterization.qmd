@@ -24,7 +24,6 @@ mtbi_test_subs <- read_csv(sub_path("2025_02_07_mtbi_test_subs.csv"))
 unij_subs <- read_csv(sub_path("2025_02_07_unij_subs.csv"))
 ```
 
-
 ```{r}
 # Data frame of all the features, observations, and cluster assignments
 mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
@@ -41,7 +40,6 @@ mtbi_df <- mtbi_ful_df[, colnames(unij_df)]
 
 # A joint data frame
 df <- rbind(mtbi_df, unij_df)
-
 ```
 
 ```{r}
@@ -1772,7 +1770,6 @@ stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,
 ```
 
 ```{r}
-
 # feature ranks
 mtbi_gen_fts_in <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in.csv"))
 mtbi_gen_fts_out <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out.csv"))
@@ -1780,7 +1777,6 @@ mtbi_gen_fts_out <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out.csv"))
 mtbi_gen_fts_in$"feature" %in% colnames(oom_raw_pl_data)
 
 setdiff(mtbi_gen_fts_in$"feature", colnames(oom_raw_pl_data))
-
 
 # A combination of the raw inputs, but adjusted outputs
 mtbi_all_adj <- c(dl_corrected, dl_demo, adj_oom_list)
@@ -1800,7 +1796,9 @@ all_adj_pl_data <- as.data.frame(all_adj_pl_data) |> dplyr::select(dplyr::all_of
 write_csv(all_raw_pl_data, proc_path("all_raw_pl_data.csv", TRUE))
 write_csv(oom_adj_pl_data, proc_path("oom_adj_pl_data.csv", TRUE))
 write_csv(all_adj_pl_data, proc_path("all_adj_pl_data.csv", TRUE))
+```
 
+```{r}
 all_raw_pl_data <- read_csv(proc_path("2025_03_26_all_raw_pl_data.csv"))
 oom_adj_pl_data <- read_csv(proc_path("2025_03_26_oom_adj_pl_data.csv"))
 all_adj_pl_data <- read_csv(proc_path("2025_03_26_all_adj_pl_data.csv"))
@@ -1823,7 +1821,6 @@ ggsave(
 )
 
 # ALSO HERE 2025_04_02
-
 ```
 
 - Make the cmats below
@@ -1834,7 +1831,6 @@ ggsave(
 - better get some systematic review extractions done!
 
 ```{r}
-
 # Are these new adjusted outcomes correlated with anything?
 outcome_cmat <- function(df) {
     cmat <- df |>
@@ -1850,14 +1846,29 @@ outcome_cmat <- function(df) {
     return(cmat)
 }
 
+all_raw_cmat <- outcome_cmat(all_raw_pl_data)
+oom_adj_cmat <- outcome_cmat(oom_adj_pl_data)
+all_adj_cmat <- outcome_cmat(all_adj_pl_data)
+
+sorted_names <- names(sort(colSums(all_adj_cmat), decreasing = TRUE))
+
 outcome_hm <- function(cmat) {
+    cmat <- cmat[, sorted_names]
     ComplexHeatmap::Heatmap(
         cmat,
         cluster_rows = FALSE,
         cluster_columns = FALSE,
         col = circlize::colorRamp2(
             c(0, 0.1, 0.2, 0.3, 0.4, 0.5),
-            RColorBrewer::brewer.pal(n = 6, name = "BuPu")
+            c(
+                "white",
+                "#BFD3E6",
+                "#9EBCDA",
+                "#8C96C6",
+                "#8856A7",
+                "#810F7C"
+            )
+            #RColorBrewer::brewer.pal(n = 6, name = "BuPu")
         ),
         heatmap_legend_param = list(
             title = "|Cor|"
@@ -1865,19 +1876,49 @@ outcome_hm <- function(cmat) {
     )
 }
 
-all_raw_cmat <- outcome_cmat(all_raw_pl_data)
-oom_adj_cmat <- outcome_cmat(oom_adj_pl_data)
-all_adj_cmat <- outcome_cmat(all_adj_pl_data)
+adj_vs_raw_hm <- outcome_hm(all_raw_cmat) %v% outcome_hm(all_adj_cmat) %v% Heatmap(
+    (all_raw_cmat - all_adj_cmat)[, sorted_names],
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    col = circlize::colorRamp2(
+        c(-0.3, 0, 0.3),
+        c("blue", "white", "red")
+    ),
+    heatmap_legend_param = list(
+        title = expression(Delta ~ "Cor") 
+    )
+)
+adj_vs_raw_hm
 
-outcome_hm(all_raw_cmat)
-
-outcome_hm(all_adj_cmat)
-
-outcome_hm(all_raw_cmat - all_adj_cmat)
-
+save_heatmap(
+    adj_vs_raw_hm,
+    fig_path("adj_vs_raw_hm.png", TRUE),
+    width = 2000,
+    height = 1000,
+    res = 150
+)
 
 # Compute correlations and p-values
-outcome_cmat_hmisc <- function(df, thresh = 0.05) {
+
+fdr_matrix2 <- function(mat) {
+    if (!is.matrix(mat) || nrow(mat) != ncol(mat)) stop("Input must be a square matrix")
+    pvals <- mat[upper.tri(mat, diag = FALSE)]
+    if (any(is.na(pvals))) warning("NA values detected in input matrix; results may be affected")
+    p_adjusted <- p.adjust(pvals, method = "fdr")
+    adj_mat <- mat
+    adj_mat[upper.tri(adj_mat, diag = FALSE)] <- p_adjusted
+    adj_mat[lower.tri(adj_mat, diag = FALSE)] <- t(adj_mat)[lower.tri(adj_mat, diag = FALSE)]
+    diag(adj_mat) <- NA
+    return(adj_mat)
+}
+
+
+circlize::colorRamp2(
+    c(0, 1, 5),
+    c("white", "green", "black")
+)
+
+outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE) {
     cmat <- df |>
         dplyr::select(-uid, -mtbi_mechanism) |>
         dummy_cols(
@@ -1888,44 +1929,453 @@ outcome_cmat_hmisc <- function(df, thresh = 0.05) {
         rcorr()
     cmat <- cmat$P
     out_idx <- grepl("^cbcl|^sds", rownames(cmat))
+    #in_model_colours <- c(
+    #    "lightslateblue",
+    #    "darkgray"
+    #)
     in_model_colours <- c(
-        "black",
-        "blue"
+        "red",
+        "blue",
+        "green"
     )
-    cmat_out <- cmat[out_idx, !out_idx]
-        #fdr_matrix()
-    #cmat_out <- cmat[out_idx, !out_idx] |>
-    #    fdr_matrix()
-    cmat_out[cmat_out <= thresh] <- 0  # Set values ≤ 0.05 to 1
-    cmat_out[cmat_out > thresh] <- 1   # Set values > 0.05 to 0
-    cmat_out[cmat_out == 0] <- 99
-    cmat_out[cmat_out == 1] <- 0
-    cmat_out[cmat_out == 99] <- 1
-    col <- function(x) {
-      ifelse(x == 1, in_model_colours[2], in_model_colours[1])
+    if (fdr) {
+        cmat <- fdr_matrix2(cmat)
     }
+    cmat_out <- cmat[out_idx, !out_idx]
+    cmat_out[cmat_out > thresh] <- NA
+    #cmat_out[cmat_out <= thresh] <- -2
+    #cmat_out[cmat_out > thresh] <- 2
+    #cmat_out[cmat_out == -2] <- 1
+    #cmat_out[cmat_out != 1] <- 0
+    #col <- function(x) {
+    #    ifelse(x == 1, in_model_colours[2], in_model_colours[1])
+    #}
+    cmat_out <- cmat_out[, sorted_names]
     hm <- cmat_out |>
         ComplexHeatmap::Heatmap(
             cluster_rows = FALSE,
             cluster_columns = FALSE,
-            col = col,
+            col = circlize::colorRamp2(
+                c(0, 0.001, 0.01, 0.05),
+                c("red2", "purple", "lightblue", "grey")
+            ),
             heatmap_legend_param = list(
-                at = c(0, 1),
+                at = c(0, 0.001, 0.01, 0.05),
+                labels = c(
+                    "p < 0.001",
+                    "p < 0.01",
+                    "p < 0.05",
+                    "n.s."
+                ),
                 color_bar = "discrete",
-                title = paste0("p < ", thresh),
-                labels = c("No", "Yes")
-            )
+                title = paste0("FDR adjusted\np < ", thresh)
+            ),
+            rect_gp = grid::gpar(col = "white"),
+            na_col = "gray22"
         )
     hm
 }
-#outcome_cmat(oom_adj_pl_data)
-#outcome_cmat_hmisc(all_adj_pl_data, 0.00000000000000000000000000000000000000000000000000000000001)
+# FDR adjusted
+fdr_adj_sig_out_cor_hm <- outcome_cmat_hmisc(all_adj_pl_data, 0.05)
+fdr_adj_sig_out_cor_hm
+save_heatmap(
+    fdr_adj_sig_out_cor_hm,
+    fig_path("fdr_adj_sig_out_cor_hm.png", TRUE),
+    width = 2000,
+    height = 600,
+    res = 150
+)
 
-outcome_cmat_hmisc(all_adj_pl_data, 0.05)
+```
 
-outcome_cmat_hmisc(oom_adj_pl_data, 0.05)
+Clearly parent psychopathology is a big deal. 
+But is it truly the psychopathology or a result of catastrophizing?
+We can distinguish by using teacher reports from the BPM.
 
-outcome_cmat_hmisc(all_raw_pl_data, 0.05)
+```{r}
+
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+core_path <- path_maker(here(paste0("data/abcd/core")))
+
+mh_t_bpm <- import("mental-health/mh_t_bpm.csv")
+
+mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+
+all_long_dls <- readRDS(input_path("2025_03_10_all_long_dls.rds"))
+
+mtbi_bpm_t0 <- mh_t_bpm |>
+    filter_timepoint(0) |>
+    filter_subjects(mtbi_subs) |>
+    dplyr::select(
+        "subjectkey",
+        "bpm_t_scr_totalprob_r"
+    ) |>
+    dplyr::rename(
+        "uid" = "subjectkey"
+    ) |>
+    dplyr::mutate(
+        "uid" = paste0("uid_", uid)
+    )
+
+parent_v_teach_plot <- data.frame(
+    x = mtbi_bpm_t0$"bpm_t_scr_totalprob_r", 
+    y = z$"cbcl_total"
+) |>
+    ggplot(aes(x = x, y = y)) +
+    geom_jitter() +
+    geom_smooth(method = "lm") +
+    labs(
+        x = "Teacher Report (BPM) Total Problems", 
+        y = "Parent Report (CBCL) Total Problems",
+        title = "Teacher Report (BPM) vs Parent Report (CBCL) Pre-Imputation"
+    ) +
+    theme_bw()
+
+ggsave(
+    fig_path("parent_v_teach_plot.png", TRUE),
+    parent_v_teach_plot,
+    width = 7,
+    height = 5
+)
+
+raw_with_bpm <- dplyr::inner_join(
+    all_raw_pl_data,
+    mtbi_bpm_t0,
+    by = "uid" 
+)
+
+write_csv(raw_with_bpm, proc_path("raw_with_bpm.csv", TRUE))
+raw_with_bpm <- read_csv(proc_path("2025_04_03_raw_with_bpm.csv"))
+
+raw_with_bpm_no_id <- raw_with_bpm |>
+    dplyr::select(-uid)
+
+raw_with_bpm_imp <- mice::mice(
+    raw_with_bpm_no_id,
+    m = 5,
+    maxit = 10,
+    seed = 42,
+    predictorMatrix = build_pred_mat(raw_with_bpm_no_id, 1)
+)
+
+five_imputed_raw_with_bpm <- complete(
+    raw_with_bpm_imp,
+    action = "long",
+    include = TRUE
+)
+
+write_csv(
+    five_imputed_raw_with_bpm,
+    proc_path("five_imputed_raw_with_bpm.csv", TRUE)
+)
+```
+
+```{r}
+five_imputed_raw_with_bpm <- read_csv(
+    proc_path("2025_04_03_five_imputed_raw_with_bpm.csv")
+)
+
+five_imputed_raw_with_bpm_1 <- dplyr::filter(
+    five_imputed_raw_with_bpm, .imp == 1
+)
+
+five_imputed_raw_with_bpm_2 <- dplyr::filter(
+    five_imputed_raw_with_bpm, .imp == 2
+)
+
+five_imputed_raw_with_bpm_3 <- dplyr::filter(
+    five_imputed_raw_with_bpm, .imp == 3
+)
+
+five_imputed_raw_with_bpm_4 <- dplyr::filter(
+    five_imputed_raw_with_bpm, .imp == 4
+)
+
+five_imputed_raw_with_bpm_5 <- dplyr::filter(
+    five_imputed_raw_with_bpm, .imp == 5
+)
+
+five_imputed_raw_with_bpm_dfs <- list(
+    five_imputed_raw_with_bpm_1,
+    five_imputed_raw_with_bpm_2,
+    five_imputed_raw_with_bpm_3,
+    five_imputed_raw_with_bpm_4,
+    five_imputed_raw_with_bpm_5
+)
+
+saveRDS(
+    five_imputed_raw_with_bpm_dfs,
+    proc_path("five_imputed_raw_with_bpm_dfs.rds", TRUE)
+)
+
+five_imputed_raw_with_bpm_dfs <- readRDS(
+    proc_path("2025_04_03_five_imputed_raw_with_bpm_dfs.rds")
+)
+
+add_parent_pca <- function(df) {
+    neuro_fts <- c(
+        "brain_volume",
+        "cortical_thickness",
+        "cortical_sa",
+        "fmri_cort_subcort_cors"
+    )
+    behav_fts <- c(
+        "cbcl_anxdep",
+        "cbcl_withdep",
+        "cbcl_somatic",
+        "cbcl_social",
+        "cbcl_thought",
+        "cbcl_attention",
+        "cbcl_rulebreak",
+        "cbcl_aggressive",
+        "sds_sleep"
+    )
+    parent_fts <- colnames(df)[grepl("parent", colnames(df))]
+    parent_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(parent_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    df$"parent1" <- parent_pca$x[, 1]
+    neuro_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(neuro_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    df$"neuro1" <- neuro_pca$x[, 1]
+    behav_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(behav_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    df$"behav1" <- -behav_pca$x[, 1]
+    return(df)
+}
+
+pca_imputed_bpm_dfs <- lapply(
+    five_imputed_raw_with_bpm_dfs,
+    function(x) {
+        pca_df <- add_parent_pca(x)
+        pca_df$"parent_exaggerate" <- scale(pca_df$"parent1") - scale(pca_df$"bpm_t_scr_totalprob_r")[,1]
+        pca_df <- pca_df |>
+            dplyr::rename(
+                "bpm_total" = "bpm_t_scr_totalprob_r" 
+            )
+        pca_df
+    }
+)
+
+base_mtbi_l_df <- c(
+    all_long_dls$"base_mtbi_l_dls"[[1]],
+    all_long_dls$"base_mtbi_l_ols"[[1]]
+) |>
+    as.data.frame()
+
+mtbi_bpm_t2 <- mh_t_bpm |>
+    filter_timepoint(2) |>
+    filter_subjects(mtbi_subs) |>
+    dplyr::select(
+        "subjectkey",
+        "bpm_t_scr_totalprob_r"
+    ) |>
+    dplyr::rename(
+        "uid" = "subjectkey"
+    ) |>
+    dplyr::mutate(
+        "uid" = paste0("uid_", uid)
+    )
+
+raw_with_bpm_l <- dplyr::inner_join(
+    base_mtbi_l_df,
+    mtbi_bpm_t2,
+    by = "uid" 
+)
+
+write_csv(raw_with_bpm_l, proc_path("raw_with_bpm_l.csv", TRUE))
+raw_with_bpm_l <- read_csv(proc_path("2025_04_03_raw_with_bpm_l.csv"))
+
+raw_with_bpm_l_no_id <- raw_with_bpm_l |>
+    dplyr::select(-uid)
+
+raw_with_bpm_l_imp <- mice::mice(
+    raw_with_bpm_l_no_id,
+    m = 5,
+    maxit = 10,
+    seed = 42,
+    predictorMatrix = build_pred_mat(raw_with_bpm_l_no_id, 5)
+)
+
+five_imputed_raw_with_bpm_l <- complete(
+    raw_with_bpm_l_imp,
+    action = "long",
+    include = TRUE
+)
+
+write_csv(
+    five_imputed_raw_with_bpm_l,
+    proc_path("five_imputed_raw_with_bpm_l.csv", TRUE)
+)
+
+five_imputed_raw_with_bpm_l <- read_csv(
+    proc_path("2025_04_03_five_imputed_raw_with_bpm_l.csv")
+)
+
+five_imputed_raw_with_bpm_l_1 <- dplyr::filter(
+    five_imputed_raw_with_bpm_l, .imp == 1
+)
+
+five_imputed_raw_with_bpm_l_2 <- dplyr::filter(
+    five_imputed_raw_with_bpm_l, .imp == 2
+)
+
+five_imputed_raw_with_bpm_l_3 <- dplyr::filter(
+    five_imputed_raw_with_bpm_l, .imp == 3
+)
+
+five_imputed_raw_with_bpm_l_4 <- dplyr::filter(
+    five_imputed_raw_with_bpm_l, .imp == 4
+)
+
+five_imputed_raw_with_bpm_l_5 <- dplyr::filter(
+    five_imputed_raw_with_bpm_l, .imp == 5
+)
+
+five_imputed_raw_with_bpm_l_dfs <- list(
+    five_imputed_raw_with_bpm_l_1,
+    five_imputed_raw_with_bpm_l_2,
+    five_imputed_raw_with_bpm_l_3,
+    five_imputed_raw_with_bpm_l_4,
+    five_imputed_raw_with_bpm_l_5
+)
+
+saveRDS(
+    five_imputed_raw_with_bpm_l_dfs,
+    proc_path("five_imputed_raw_with_bpm_l_dfs.rds", TRUE)
+)
+```
+
+```{r}
+five_imputed_raw_with_bpm_l_dfs <- readRDS(
+    proc_path("2025_04_03_five_imputed_raw_with_bpm_l_dfs.rds")
+)
+
+pca_imputed_bpm_l_dfs <- lapply(
+    five_imputed_raw_with_bpm_l_dfs,
+    function(x) {
+        pca_df <- add_parent_pca(x)
+        pca_df$"parent_catastrophize" <- scale(pca_df$"behav1") - scale(pca_df$"bpm_t_scr_totalprob_r")[,1]
+        pca_df <- pca_df |>
+            dplyr::rename(
+                "bpm_total" = "bpm_t_scr_totalprob_r" 
+            )
+        pca_df
+    }
+)
+
+pca_imputed_bpm_l_dfs[[1]]
+
+pca_imputed_bpm_dfs[[5]]
+
+
+pca_imputed_bpm_dfs[[5]] |>
+    ggplot(aes(x = parent_exaggerate, y = bpm_total)) +
+    geom_point() +
+    geom_smooth(method = "lm")
+
+pca_imputed_bpm_dfs[[5]] |>
+    ggplot(aes(x = parent_catastrophize, y = behav1)) +
+    geom_point() +
+    geom_smooth(method = "lm")
+
+
+pca_imputed_bpm_dfs[[5]] |>
+    ggplot(aes(x = parent_catastrophize, y = parent1)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor(
+        aes(
+            label = paste(
+                after_stat(r.label), 
+                after_stat(rr.label), 
+                after_stat(p.label),
+                sep = "~`,`~"
+            )
+        ), 
+        label.x.npc = "left",
+        label.y.npc = "top",
+        size = 5
+    )
+
+add_parent_pca(five_imputed_raw_with_bpm_1) |>
+    ggplot(aes(x = parent1, y = )) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor(
+        aes(
+            label = paste(
+                after_stat(r.label), 
+                after_stat(rr.label), 
+                after_stat(p.label),
+                sep = "~`,`~"
+            )
+        ), 
+        label.x.npc = "left",
+        label.y.npc = "top",
+        size = 5
+    )
+
+add_parent_pca(five_imputed_raw_with_bpm_1) |>
+    ggplot(aes(x = parent1, y = bpm_t_scr_totalprob_r)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor(
+        aes(
+            label = paste(
+                after_stat(r.label), 
+                after_stat(rr.label), 
+                after_stat(p.label),
+                sep = "~`,`~"
+            )
+        ), 
+        label.x.npc = "left",
+        label.y.npc = "top",
+        size = 5
+    )
+
+add_parent_pca(five_imputed_raw_with_bpm_1) |>
+    ggplot(aes(x = behav1, y = bpm_t_scr_totalprob_r)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor(
+        aes(
+            label = paste(
+                after_stat(r.label), 
+                after_stat(rr.label), 
+                after_stat(p.label),
+                sep = "~`,`~"
+            )
+        ), 
+        label.x.npc = "left",
+        label.y.npc = "top",
+        size = 5
+    )
+
+parent_pca <- prcomp(
+    dplyr::select(mtbi_ful_df, dplyr::all_of(neuro_fts)),
+    center = TRUE,
+    scale. = TRUE
+)
+summary(parent_pca)
+```
+
+
+```{r}
+
+#outcome_cmat_hmisc(oom_adj_pl_data, 0.05)
 
 result <- rcorr(as.matrix(df))
 
