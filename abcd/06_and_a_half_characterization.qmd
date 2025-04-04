@@ -1921,7 +1921,7 @@ fdr_matrix2 <- function(mat) {
     return(adj_mat)
 }
 
-outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE) {
+outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE, return_mat = FALSE) {
     cmat <- df |>
         dplyr::select(-uid, -mtbi_mechanism) |>
         dummy_cols(
@@ -1945,11 +1945,14 @@ outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE) {
         cmat <- fdr_matrix2(cmat)
     }
     cmat_out <- cmat[out_idx, !out_idx]
+    cmat_out <- cmat_out[, sorted_gen_names]
     cmat_out[cmat_out > thresh] <- 1
     cmat_out[cmat_out < 0.001] <- 0.0009
     cmat_out[cmat_out > 0.001 & cmat_out < 0.01] <- 0.01
     cmat_out[cmat_out > 0.01 & cmat_out < 0.05] <- 0.05
-    cmat_out <- cmat_out[, sorted_names]
+    if (return_mat) {
+        return(cmat_out)
+    }
     hm <- cmat_out |>
         ComplexHeatmap::Heatmap(
             cluster_rows = FALSE,
@@ -1973,6 +1976,7 @@ outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE) {
         )
     hm
 }
+
 # FDR adjusted
 fdr_adj_sig_out_cor_hm <- outcome_cmat_hmisc(all_adj_pl_data, 0.05)
 fdr_adj_sig_out_cor_hm
@@ -1982,6 +1986,100 @@ save_heatmap(
     fig_path("fdr_adj_sig_out_cor_hm.png", TRUE),
     width = 2000,
     height = 600,
+    res = 150
+)
+
+fdr_adj_sig_out_cmat <- outcome_cmat_hmisc(
+    all_adj_pl_data,
+    return_mat = TRUE
+)
+
+fdr_raw_sig_out_cmat <- outcome_cmat_hmisc(
+    all_raw_pl_data,
+    return_mat = TRUE
+)
+
+colnames(fdr_adj_sig_out_cmat)[apply(fdr_adj_sig_out_cmat, 2, min) != 1]
+
+colnames(fdr_raw_sig_out_cmat)[apply(fdr_raw_sig_out_cmat, 2, min) != 1]
+```
+
+cluster_1
+cluster_2
+cluster_3
+
+activities_last_year
+extracurriculars
+physical_activity
+private_instruction
+
+considerate_y
+helpful_p
+helpful_y
+helps_hurt_p
+
+family_angry_p
+family_criticize_p
+family_criticize_y
+family_fight_p
+family_hit_p
+family_outdo_p
+family_peaceful_p
+family_peaceful_y
+family_throw_p
+family_throw_y
+
+household_income
+
+race_black
+race_white
+
+sex
+
+parent_aggressive
+parent_antisocial
+parent_anxdep
+parent_anxdisord
+parent_attention
+parent_avoidant
+parent_depress
+parent_hyperactive
+parent_perstr
+parent_somatic
+parent_thought
+parent_withdrawn
+
+pubertal_status_p
+pubertal_status_y
+
+same_sex_close_friend
+same_sex_friend
+
+weekday_screentime
+weekend_screentime
+
+
+
+```{r}
+
+
+
+
+
+
+
+
+fdr_raw_sig_out_cor_hm <- outcome_cmat_hmisc(all_raw_pl_data, 0.05)
+
+fdr_sig_out_cor_hm <- fdr_raw_sig_out_cor_hm %v% fdr_adj_sig_out_cor_hm
+
+fdr_sig_out_cor_hm
+
+save_heatmap(
+    fdr_sig_out_cor_hm,
+    fig_path("fdr_sig_out_cor_hm.png", TRUE),
+    width = 2000,
+    height = 1000,
     res = 150
 )
 ```
