@@ -1770,9 +1770,12 @@ stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,
 ```
 
 ```{r}
+
 # feature ranks
 mtbi_gen_fts_in <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in.csv"))
 mtbi_gen_fts_out <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out.csv"))
+
+mtbi_gen_fts_in$"feature"
 
 mtbi_gen_fts_in$"feature" %in% colnames(oom_raw_pl_data)
 
@@ -1846,14 +1849,20 @@ outcome_cmat <- function(df) {
     return(cmat)
 }
 
+sorted_names <- names(sort(colSums(all_adj_cmat), decreasing = TRUE))
+
+sorted_gen_names <- sorted_names[sorted_names %in% mtbi_gen_fts_in$"feature" | grepl("cluster", sorted_names)]
+
+saveRDS(sorted_gen_names, proc_path("sorted_gen_names.rds", TRUE))
+
+sorted_gen_names <- readRDS(proc_path("2025_04_04_sorted_gen_names.rds"))
+
 all_raw_cmat <- outcome_cmat(all_raw_pl_data)
 oom_adj_cmat <- outcome_cmat(oom_adj_pl_data)
 all_adj_cmat <- outcome_cmat(all_adj_pl_data)
 
-sorted_names <- names(sort(colSums(all_adj_cmat), decreasing = TRUE))
-
 outcome_hm <- function(cmat) {
-    cmat <- cmat[, sorted_names]
+    cmat <- cmat[, sorted_gen_names]
     ComplexHeatmap::Heatmap(
         cmat,
         cluster_rows = FALSE,
@@ -1877,7 +1886,7 @@ outcome_hm <- function(cmat) {
 }
 
 adj_vs_raw_hm <- outcome_hm(all_raw_cmat) %v% outcome_hm(all_adj_cmat) %v% Heatmap(
-    (all_raw_cmat - all_adj_cmat)[, sorted_names],
+    (all_raw_cmat - all_adj_cmat)[, sorted_gen_names],
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     col = circlize::colorRamp2(
@@ -1912,12 +1921,6 @@ fdr_matrix2 <- function(mat) {
     return(adj_mat)
 }
 
-
-circlize::colorRamp2(
-    c(0, 1, 5),
-    c("white", "green", "black")
-)
-
 outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE) {
     cmat <- df |>
         dplyr::select(-uid, -mtbi_mechanism) |>
@@ -1942,42 +1945,38 @@ outcome_cmat_hmisc <- function(df, thresh = 0.05, fdr = TRUE) {
         cmat <- fdr_matrix2(cmat)
     }
     cmat_out <- cmat[out_idx, !out_idx]
-    cmat_out[cmat_out > thresh] <- NA
-    #cmat_out[cmat_out <= thresh] <- -2
-    #cmat_out[cmat_out > thresh] <- 2
-    #cmat_out[cmat_out == -2] <- 1
-    #cmat_out[cmat_out != 1] <- 0
-    #col <- function(x) {
-    #    ifelse(x == 1, in_model_colours[2], in_model_colours[1])
-    #}
+    cmat_out[cmat_out > thresh] <- 1
+    cmat_out[cmat_out < 0.001] <- 0.0009
+    cmat_out[cmat_out > 0.001 & cmat_out < 0.01] <- 0.01
+    cmat_out[cmat_out > 0.01 & cmat_out < 0.05] <- 0.05
     cmat_out <- cmat_out[, sorted_names]
     hm <- cmat_out |>
         ComplexHeatmap::Heatmap(
             cluster_rows = FALSE,
             cluster_columns = FALSE,
             col = circlize::colorRamp2(
-                c(0, 0.001, 0.01, 0.05),
+                c(0.001, 0.01, 0.05, 1),
                 c("red2", "purple", "lightblue", "grey")
             ),
             heatmap_legend_param = list(
-                at = c(0, 0.001, 0.01, 0.05),
+                at = c(0.001, 0.01, 0.05, 1),
                 labels = c(
-                    "p < 0.001",
-                    "p < 0.01",
-                    "p < 0.05",
-                    "n.s."
+                    "p <= 0.001",
+                    "p <= 0.01",
+                    "p <= 0.05",
+                    "p > 0.05"
                 ),
                 color_bar = "discrete",
-                title = paste0("FDR adjusted\np < ", thresh)
+                title = paste0("FDR adjusted\np-value")
             ),
-            rect_gp = grid::gpar(col = "white"),
-            na_col = "gray22"
+            rect_gp = grid::gpar(col = "darkgray")
         )
     hm
 }
 # FDR adjusted
 fdr_adj_sig_out_cor_hm <- outcome_cmat_hmisc(all_adj_pl_data, 0.05)
 fdr_adj_sig_out_cor_hm
+
 save_heatmap(
     fdr_adj_sig_out_cor_hm,
     fig_path("fdr_adj_sig_out_cor_hm.png", TRUE),
@@ -1985,8 +1984,181 @@ save_heatmap(
     height = 600,
     res = 150
 )
+```
+
+Trying to actually explain the associations:
+
++ Parent psychopathology features:
+    - parent_thought, parent_attention, parent_depress, parent_aggressive, parent_somatic, parent_anxdep, parent_antisocial, parent_hyperactive, parent_withdrawn, parent_avoidant, parent_anxdisord, parent_intrusive
+    - Curiously, not parent_perstr (personal strength)
++ prosocial behaviours (parent and youth report):
+    - considerate_p, helps_hurt_p, helpful_p, helpful_y, considerate_y
++ family environment:
+    - family_fight_p, family_criticize_p, family_throw_p, family_outdo_p, family_hit_p, family_fight_y, family_angry_p, family_temper_p, family_peaceful_p, family_yell_p
++ extracurriculars, healthy activities:
+    - activities_last_year, physical_activity, private_instruction
++ screentime:
+    - weekday
+    - NOT weekend
+
+Correlations that aren't necessarily all that interesting:
+
++ opp_sex_friend and same_sex_friend with cbcl_withdep
++ headache history with cbcl_somatic
+
+## Parent psychopathology
+
+```{r}
+library(CCA)
+library(CCP)
+
+all_adj_pl_data
+
+# Canonical correlation analysis of parent and child variables
+
+my_cca <- function(df) {
+    parent_vars <- df[, grep("^parent_", names(df))]
+    child_vars  <- df[, grep("^cbcl|^sds", names(df))]
+    parent_std <- scale(parent_vars)
+    child_std  <- scale(child_vars)
+    cca_result <- cancor(parent_std, child_std)
+    print(paste0("COR: ", cca_result$cor))
+    # Canonical weights (linear combination coefficients)
+    print(cca_result$xcoef)  # For parent variables
+    print(cca_result$ycoef)  # For child variables
+    # Canonical variates (scores for each observation)
+    parent_scores <- as.matrix(parent_std) %*% cca_result$xcoef
+    child_scores  <- as.matrix(child_std)  %*% cca_result$ycoef
+    # Visualize the first pair of canonical variates
+    png(fig_path("cca_parent_cbcl.png", TRUE), width = 800, height = 600, res = 100)
+    plot(parent_scores[, 1], child_scores[, 1],
+         xlab = "Parent Canonical Variate 1",
+         ylab = "Child Canonical Variate 1",
+         main = "CCA: First Canonical Correlation Pair")
+    abline(lm(child_scores[, 1] ~ parent_scores[, 1]), col = "red")
+    dev.off()
+    # Significance testing of canonical correlations
+    # Bartlett’s test using CCP package
+    n <- nrow(df)
+    p <- ncol(parent_std)
+    q <- ncol(child_std)
+    rho <- cca_result$cor
+    # Perform significance test
+    p.asym(rho, n, p, q, tstat = "Wilks")
+    # Combine parent and child loadings into a matrix for visualization
+}
+my_cca(all_adj_pl_data)
+
+c(-0.001963822,-0.008706505,-0.014714669,-0.011872099, 0.002856833,-0.006783096, 0.003590260,-0.017103552,-0.005899892)
 
 ```
+
+PCA may help:
+
+
+```{r}
+
+add_parent_pca <- function(df) {
+    parent_fts <- colnames(df)[grepl("parent", colnames(df))]
+    parent_fts <- setdiff(parent_fts, "parent_perstr")
+    behav_fts <- c(
+        "cbcl_anxdep",
+        "cbcl_withdep",
+        "cbcl_somatic",
+        "cbcl_social",
+        "cbcl_thought",
+        "cbcl_attention",
+        "cbcl_rulebreak",
+        "cbcl_aggressive",
+        "sds_sleep"
+    )
+    prosocial_fts <- c(
+        "considerate_p",
+        "helps_hurt_p",
+        "helpful_p",
+        "helpful_y",
+        "considerate_y"
+    )
+    family_fts <- c(
+        "family_fight_p",
+        "family_criticize_p",
+        "family_throw_p",
+        "family_outdo_p",
+        "family_hit_p",
+        "family_fight_y",
+        "family_angry_p",
+        "family_temper_p",
+        "family_peaceful_p",
+        "family_yell_p"
+    )
+    activity_fts <- c(
+        "activities_last_year",
+        "physical_activity",
+        "private_instruction"
+    )
+    parent_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(parent_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    behav_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(behav_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    prosocial_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(prosocial_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    family_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(family_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    activity_pca <- prcomp(
+        dplyr::select(df, dplyr::all_of(activity_fts)),
+        center = TRUE,
+        scale. = TRUE
+    )
+    #df$"parent1" <- parent_pca$x[, 1]
+    #df$"behav1" <- -behav_pca$x[, 1]
+    return(
+        list(
+            "parent" = parent_pca,
+            "behav" = behav_pca,
+            "prosocial" = prosocial_pca,
+            "family" = family_pca,
+            "activity" = activity_pca
+        )
+    )
+    return(df)
+}
+
+z <- add_parent_pca(all_adj_pl_data)
+
+z$"parent" |> screeplot(type = "lines", main = "Scree Plot")
+
+z$"behav" |> screeplot(type = "lines", main = "Scree Plot")
+
+z$"prosocial" |> screeplot(type = "lines", main = "Scree Plot")
+
+z$"family" |> screeplot(type = "lines", main = "Scree Plot")
+
+z$"activity" |> screeplot(type = "lines", main = "Scree Plot")
+
+
+z$"parent" |> biplot(main = "PCA Biplot")
+
+
+
+```
+
+
+
+
+
+
 
 Clearly parent psychopathology is a big deal. 
 But is it truly the psychopathology or a result of catastrophizing?
@@ -2115,46 +2287,6 @@ saveRDS(
 five_imputed_raw_with_bpm_dfs <- readRDS(
     proc_path("2025_04_03_five_imputed_raw_with_bpm_dfs.rds")
 )
-
-add_parent_pca <- function(df) {
-    neuro_fts <- c(
-        "brain_volume",
-        "cortical_thickness",
-        "cortical_sa",
-        "fmri_cort_subcort_cors"
-    )
-    behav_fts <- c(
-        "cbcl_anxdep",
-        "cbcl_withdep",
-        "cbcl_somatic",
-        "cbcl_social",
-        "cbcl_thought",
-        "cbcl_attention",
-        "cbcl_rulebreak",
-        "cbcl_aggressive",
-        "sds_sleep"
-    )
-    parent_fts <- colnames(df)[grepl("parent", colnames(df))]
-    parent_pca <- prcomp(
-        dplyr::select(df, dplyr::all_of(parent_fts)),
-        center = TRUE,
-        scale. = TRUE
-    )
-    df$"parent1" <- parent_pca$x[, 1]
-    neuro_pca <- prcomp(
-        dplyr::select(df, dplyr::all_of(neuro_fts)),
-        center = TRUE,
-        scale. = TRUE
-    )
-    df$"neuro1" <- neuro_pca$x[, 1]
-    behav_pca <- prcomp(
-        dplyr::select(df, dplyr::all_of(behav_fts)),
-        center = TRUE,
-        scale. = TRUE
-    )
-    df$"behav1" <- -behav_pca$x[, 1]
-    return(df)
-}
 
 pca_imputed_bpm_dfs <- lapply(
     five_imputed_raw_with_bpm_dfs,
