@@ -1853,7 +1853,7 @@ full_oom_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_oom_list_1.rds"))
 
 full_data_list_1
 
-dl_no_demo <- full_data_list_1[-c(4, 6:9)] 
+dl_no_demo <- full_data_list_1[-c(2, 4, 6:9)] # excluding mTBI mechanism from analysis
 dl_demo <- full_data_list_1[c(4, 6:9)]
 
 dl_demo
@@ -1865,6 +1865,21 @@ saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
 ```{r}
 # CHECKPOINT
 dl_corrected <- readRDS(proc_path("2025_03_26_dl_corrected.rds")) # now with age!
+
+
+names(dl_corrected)
+
+as.data.frame(c(dl_corrected, dl_demo)) |>
+    ggplot(aes(x = sex, y = mtbi_mem_daze)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE)
+
+as.data.frame(c(dl_corrected, dl_demo)) |>
+    ggplot(aes(x = sex, y = brain_volume)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    theme_bw()
+
 ```
 
 ```{r}

@@ -1770,16 +1770,9 @@ stat_cor(aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,
 ```
 
 ```{r}
-
 # feature ranks
 mtbi_gen_fts_in <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in.csv"))
 mtbi_gen_fts_out <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out.csv"))
-
-mtbi_gen_fts_in$"feature"
-
-mtbi_gen_fts_in$"feature" %in% colnames(oom_raw_pl_data)
-
-setdiff(mtbi_gen_fts_in$"feature", colnames(oom_raw_pl_data))
 
 # A combination of the raw inputs, but adjusted outputs
 mtbi_all_adj <- c(dl_corrected, dl_demo, adj_oom_list)
@@ -1854,9 +1847,14 @@ sorted_names <- names(sort(colSums(all_adj_cmat), decreasing = TRUE))
 sorted_gen_names <- sorted_names[sorted_names %in% mtbi_gen_fts_in$"feature" | grepl("cluster", sorted_names)]
 
 saveRDS(sorted_gen_names, proc_path("sorted_gen_names.rds", TRUE))
+```
 
+```{r}
+# CHECKPOINT
 sorted_gen_names <- readRDS(proc_path("2025_04_04_sorted_gen_names.rds"))
+```
 
+```{r}
 all_raw_cmat <- outcome_cmat(all_raw_pl_data)
 oom_adj_cmat <- outcome_cmat(oom_adj_pl_data)
 all_adj_cmat <- outcome_cmat(all_adj_pl_data)
@@ -1908,7 +1906,6 @@ save_heatmap(
 )
 
 # Compute correlations and p-values
-
 fdr_matrix2 <- function(mat) {
     if (!is.matrix(mat) || nrow(mat) != ncol(mat)) stop("Input must be a square matrix")
     pvals <- mat[upper.tri(mat, diag = FALSE)]
@@ -2004,71 +2001,102 @@ colnames(fdr_adj_sig_out_cmat)[apply(fdr_adj_sig_out_cmat, 2, min) != 1]
 colnames(fdr_raw_sig_out_cmat)[apply(fdr_raw_sig_out_cmat, 2, min) != 1]
 ```
 
-cluster_1
-cluster_2
-cluster_3
+Factors that are significant in unadjusted data:
+- cluster:
+    - cluster_1
+    - cluster_2
+    - cluster_3
+- activities:
+    - activities_last_year
+    - extracurriculars
+    - physical_activity
+    - private_instruction
+- prosocial:
+    - considerate_y
+    - helpful_p
+    - helpful_y
+    - helps_hurt_p
+- family environment:
+    - family_angry_p
+    - family_criticize_p
+    - family_criticize_y
+    - family_fight_p
+    - family_hit_p
+    - family_outdo_p
+    - family_peaceful_p
+    - family_peaceful_y
+    - family_throw_p
+    - family_throw_y
+- household_income
+- race:
+    - race_black
+    - race_white
+- sex
+- parent psych:
+    - parent_aggressive
+    - parent_antisocial
+    - parent_anxdep
+    - parent_anxdisord
+    - parent_attention
+    - parent_avoidant
+    - parent_depress
+    - parent_hyperactive
+    - parent_perstr
+    - parent_somatic
+    - parent_thought
+    - parent_withdrawn
+- pubertal status:
+    - pubertal_status_p
+    - pubertal_status_y
+- number of friends:
+    - same_sex_close_friend
+    - same_sex_friend
+- screentime:
+    - weekday_screentime
+    - weekend_screentime
 
-activities_last_year
-extracurriculars
-physical_activity
-private_instruction
+Factors that are significant in adjusted data:
+- parent psych:
+    - parent_thought
+    - parent_attention
+    - parent_depress
+    - parent_aggressive
+    - parent_somatic
+    - parent_anxdep
+    - parent_antisocial
+    - parent_hyperactive
+    - parent_withdrawn
+    - parent_avoidant
+    - parent_anxdisord
+- prosocial:
+    - helps_hurt_p
+    - helpful_p
+    - helpful_y
+    - considerate_y
+- cluster:
+    - cluster_1
+    - cluster_2
+- family env:
+    - family_fight_p
+    - family_criticize_p
+    - family_throw_p
+    - family_outdo_p
+    - family_hit_p
+    - family_angry_p
+    - family_peaceful_p
+- activities:
+    - activities_last_year
+    - physical_activity
+    - private_instruction
+- screentime:
+    - weekday_screentime
+- number of friends:
+    - same_sex_friend
 
-considerate_y
-helpful_p
-helpful_y
-helps_hurt_p
-
-family_angry_p
-family_criticize_p
-family_criticize_y
-family_fight_p
-family_hit_p
-family_outdo_p
-family_peaceful_p
-family_peaceful_y
-family_throw_p
-family_throw_y
-
-household_income
-
-race_black
-race_white
-
-sex
-
-parent_aggressive
-parent_antisocial
-parent_anxdep
-parent_anxdisord
-parent_attention
-parent_avoidant
-parent_depress
-parent_hyperactive
-parent_perstr
-parent_somatic
-parent_thought
-parent_withdrawn
-
-pubertal_status_p
-pubertal_status_y
-
-same_sex_close_friend
-same_sex_friend
-
-weekday_screentime
-weekend_screentime
 
 
 
 ```{r}
-
-
-
-
-
-
-
-
 fdr_raw_sig_out_cor_hm <- outcome_cmat_hmisc(all_raw_pl_data, 0.05)
 
 fdr_sig_out_cor_hm <- fdr_raw_sig_out_cor_hm %v% fdr_adj_sig_out_cor_hm
@@ -2103,6 +2131,93 @@ Correlations that aren't necessarily all that interesting:
 
 + opp_sex_friend and same_sex_friend with cbcl_withdep
 + headache history with cbcl_somatic
+
+
+## Attempting SEM
+
+This is only using features from the demographic adjusted situation:
+
+```{r}
+
+model <- '
+# Latent Constructs
+
+## Parent Psychopathology
+parent_psych =~  parent_thought + parent_attention + parent_depress +
+                 parent_aggressive + parent_somatic + parent_anxdep +
+                 parent_antisocial + parent_hyperactive + parent_withdrawn +
+                 parent_avoidant + parent_anxdisord
+
+## Prosocial Behavior
+prosocial =~ helps_hurt_p + helpful_p + helpful_y + considerate_y
+
+## Family Environment
+family_env =~ family_fight_p + family_criticize_p + family_throw_p + 
+              family_outdo_p + family_hit_p + family_angry_p + 
+              family_peaceful_p
+
+## Activity Engagement
+activity_engage =~ activities_last_year + physical_activity + private_instruction
+
+## Internalizing Problems
+internalizing =~ cbcl_anxdep + cbcl_withdep + cbcl_somatic
+
+## Externalizing Problems
+externalizing =~ cbcl_rulebreak + cbcl_aggressive
+
+## Cognitive/Dysregulation
+dysregulation =~ cbcl_attention + cbcl_thought + cbcl_social
+
+# Regress outcome variables on predictors
+
+internalizing ~ parent_psych + family_env + prosocial + activity_engage + 
+                same_sex_friend + weekday_screentime
+
+externalizing ~ parent_psych + family_env + prosocial + activity_engage + 
+                same_sex_friend + weekday_screentime
+
+dysregulation ~ parent_psych + family_env + prosocial + activity_engage + 
+                same_sex_friend + weekday_screentime
+
+sds_sleep ~ parent_psych + family_env + prosocial + activity_engage + 
+            same_sex_friend + weekday_screentime
+
+# Optional: control for cluster
+internalizing ~ cluster_1 + cluster_2
+externalizing ~ cluster_1 + cluster_2
+dysregulation ~ cluster_1 + cluster_2
+sds_sleep ~ cluster_1 + cluster_2
+'
+
+library(lavaan)
+
+all_adj_pl_data_dummy <- all_adj_pl_data  |>
+    dummy_cols(
+        select_columns = c("race", "mtbi_mechanism", "cluster"),
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(-uid) |>
+    scale()
+
+fit <- sem(
+    model,
+    data = all_adj_pl_data_dummy,
+    missing = "ML"
+)
+
+summary(fit, fit.measures = TRUE, standardized = TRUE)
+
+
+```
+
+
+
+
+
+
+
+
 
 ## Parent psychopathology
 
@@ -2644,5 +2759,9 @@ mtbi_only_adj_out_cor[out_idx, !out_idx] |>
     abs() |>
     ComplexHeatmap::Heatmap()
 
+
+```
+
+```{r}
 
 ```
