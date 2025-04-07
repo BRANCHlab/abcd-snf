@@ -1849,6 +1849,7 @@ How would correcting for those variables influence the meta clustering results?
 
 ```{r}
 full_data_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_data_list_1.rds"))
+full_oom_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_oom_list_1.rds"))
 
 full_data_list_1
 
@@ -1863,7 +1864,6 @@ saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-#dl_corrected <- readRDS(proc_path("2025_02_13_dl_corrected.rds"))
 dl_corrected <- readRDS(proc_path("2025_03_26_dl_corrected.rds")) # now with age!
 ```
 
@@ -1888,6 +1888,29 @@ saveRDS(corrected_config, proc_path("corrected_config.rds", TRUE))
 
 corrected_config <- readRDS(proc_path("2025_03_26_corrected_config.rds"))
 
+c(dl_corrected, dl_demo) |>
+    as.data.frame() |>
+    dummy_cols(
+        select_columns = c("race", "mtbi_mechanism"),
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = FALSE
+    ) |>
+    dplyr::select(-"uid") |>
+    dplyr::relocate(
+        "race_white",
+        "race_black",
+        "race_hispanic",
+        "race_other",
+        "age",
+        "pubertal_status_p",
+        "pubertal_status_y",
+        "household_income",
+        "sex",
+        .after = last_col()
+    ) |>
+    cor() |>
+    Heatmap(cluster_rows = FALSE, cluster_columns = FALSE)
+
 progressr::with_progress({
 demo_adj_sol_df <- batch_snf(
     dl = dl_corrected,
@@ -1902,32 +1925,34 @@ saveRDS(demo_adj_sol_df, proc_path("demo_adj_sol_df.rds", TRUE))
 ```{r}
 # HERE 2025_04_02
 # CHECKPOINT
-demo_adj_sol_df <- readRDS(proc_path("2025_02_13_demo_adj_sol_df.rds"))
+demo_adj_sol_df <- readRDS(proc_path("2025_04_02_demo_adj_sol_df.rds"))
 ```
 
 ```{r}
-demo_adj_ari <- calc_aris(demo_adj_sol_df)
+demo_adj_ari <- calc_aris(demo_adj_sol_df, verbose = TRUE)
 saveRDS(demo_adj_ari, proc_path("demo_adj_ari.rds", TRUE))
 
 demo_adj_ari_order <- get_matrix_order(demo_adj_ari)
 write_csv(data.frame(demo_adj_ari_order), proc_path("demo_adj_ari_order.csv", TRUE))
-
 ```
 
 ```{r}
 # CHECKPOINT
-demo_adj_ari <- readRDS(proc_path("2025_02_14_demo_adj_ari.rds"))
-demo_adj_ari_order <- unlist(read_csv(proc_path("2025_02_14_demo_adj_ari_order.csv")))
+demo_adj_ari <- readRDS(proc_path("2025_04_07_demo_adj_ari.rds"))
+demo_adj_ari_order <- unlist(read_csv(proc_path("2025_04_07_demo_adj_ari_order.csv")))
 names(demo_adj_ari_order) <- NULL
 ```
 
 ```{r}
 adj_oom_list <- linear_adjust(full_oom_list_1, dl_demo)
-
 saveRDS(adj_oom_list, proc_path("adj_oom_list.rds", TRUE))
+```
 
-adj_oom_list <- readRDS(proc_path("2025_03_17_adj_oom_list.rds"))
+```{r}
+adj_oom_list <- readRDS(proc_path("2025_04_07_adj_oom_list.rds"))
+```
 
+```{r}
 # Extend solutions from adjusted inputs to unadjusted outcomes
 demo_adj_ext_sol_df <- extend_solutions(
     demo_adj_sol_df,
@@ -1950,8 +1975,8 @@ saveRDS(demo_double_adj_ext_sol_df, proc_path("demo_double_adj_ext_sol_df.rds", 
 ```
 
 ```{r}
-demo_adj_ext_sol_df <- readRDS(proc_path("2025_02_14_demo_adj_ext_sol_df.rds"))
-demo_double_adj_ext_sol_df <- readRDS(proc_path("2025_02_14_demo_double_adj_ext_sol_df.rds"))
+demo_adj_ext_sol_df <- readRDS(proc_path("2025_04_07_demo_adj_ext_sol_df.rds"))
+demo_double_adj_ext_sol_df <- readRDS(proc_path("2025_04_07_demo_double_adj_ext_sol_df.rds"))
 
 base_adj_ari_hm <- meta_cluster_heatmap(
     demo_adj_ari,
@@ -1967,21 +1992,18 @@ demo_double_adj_esdf <- as.data.frame(demo_double_adj_ext_sol_df)
 demo_double_adj_esdf$"impairment_separation" <- -log10(demo_double_adj_esdf$"mean_pval")
 
 demo_adj_split_vec <- c(
-    50,
-    74,
-    127,
-    297,
-    490,
-    642,
-    755
+    88,
+    142,
+    440,
+    760,
+    822,
+    905,
+    950
 )
-
 write_csv(data.frame(demo_adj_split_vec), proc_path("demo_adj_split_vec.csv", TRUE))
-
-demo_adj_split_vec <- read_csv(proc_path("2025_02_14_demo_adj_split_vec.csv")) |>
+demo_adj_split_vec <- read_csv(proc_path("2025_04_07_demo_adj_split_vec.csv")) |>
     unlist() |>
     as.numeric()
-
 full_demo_adj_ari_hm <- meta_cluster_heatmap(
     aris = demo_adj_ari,
     order = demo_adj_ari_order,
@@ -2003,6 +2025,41 @@ full_demo_adj_ari_hm <- meta_cluster_heatmap(
     )
 )
 full_demo_adj_ari_hm
+
+demo_double_adj_esdf$"impairment_separation"
+
+mixed_adj_esdf <- demo_adj_esdf
+
+mixed_adj_esdf$"adj_impairment_separation" <- demo_double_adj_esdf$"impairment_separation"
+
+# The double adjustment does not yield and interesting meta clusters
+mixed_adj_ari_hm <- meta_cluster_heatmap(
+    aris = demo_adj_ari,
+    order = demo_adj_ari_order,
+    data = mixed_adj_esdf,
+    min_colour = "black",
+    split_vector = demo_adj_split_vec,
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation",
+        "Adjusted Impairment Separation" = "adj_impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            mixed_adj_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        ),
+        "Adjusted Impairment Separation" = colour_scale(
+            mixed_adj_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+mixed_adj_ari_hm
 
 # The double adjustment does not yield and interesting meta clusters
 full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
@@ -2035,10 +2092,29 @@ save_heatmap(
     res = 100
 )
 
+save_heatmap(
+    heatmap = mixed_adj_ari_hm,
+    path = fig_path("mixed_adj_ari_hm.png", TRUE),
+    width = 950,
+    height = 900,
+    res = 100
+)
+
 demo_adj_mc_sol_df <- label_meta_clusters(
     demo_adj_ext_sol_df,
     order = demo_adj_ari_order,
     split_vector = demo_adj_split_vec
+)
+
+double_demo_adj_mc_sol_df <- label_meta_clusters(
+    demo_double_adj_ext_sol_df,
+    order = demo_adj_ari_order,
+    split_vector = demo_adj_split_vec
+)
+
+double_demo_adj_rep_solutions <- get_representative_solutions(
+    demo_adj_ari,
+    double_demo_adj_mc_sol_df
 )
 
 demo_adj_rep_solutions <- get_representative_solutions(
@@ -2046,21 +2122,43 @@ demo_adj_rep_solutions <- get_representative_solutions(
     demo_adj_mc_sol_df
 )
 
-demo_adj_rep_solutions
+double_demo_adj_top_solution <- double_demo_adj_rep_solutions |>
+    dplyr::filter(mc == "D")
 
 demo_adj_top_solution <- demo_adj_rep_solutions |>
-    dplyr::filter(mc == "E")
+    dplyr::filter(mc == "D")
 
+saveRDS(double_demo_adj_top_solution, proc_path("double_demo_adj_top_solution.rds", TRUE))
 saveRDS(demo_adj_top_solution, proc_path("demo_adj_top_solution.rds", TRUE))
 
-demo_adj_top_solution <- readRDS(proc_path("2025_02_14_demo_adj_top_solution.rds"))
+double_demo_adj_top_solution <- readRDS(proc_path("2025_04_07_double_demo_adj_top_solution.rds"))
+demo_adj_top_solution <- readRDS(proc_path("2025_04_07_demo_adj_top_solution.rds"))
 
 demo_adj_plot_list <- auto_plot(
     demo_adj_top_solution,
     dl = c(dl_corrected, dl_demo, full_oom_list_1)
 )
 
-demo_adj_plot_list$"cortical_sa"
+double_demo_adj_plot_list <- auto_plot(
+    double_demo_adj_top_solution,
+    dl = c(dl_corrected, dl_demo, adj_oom_list)
+)
+
+c(dl_corrected, dl_demo, adj_oom_list) |>
+    as.data.frame() |>
+    dplyr::select(-"uid", -"mtbi_mechanism", -"race") |>
+    cor() |> 
+    Heatmap()
+
+dl_corrected
+
+demo_adj_plot_list$"cbcl_anxdep"
+
+double_demo_adj_plot_list$"cbcl_aggressive"
+
+double_demo_adj_plot_list$"household_income"
+
+double_demo_adj_plot_list$"brain_volume"
 
 demo_adj_pl_ranked <- demo_adj_plot_list[sorted_in_and_out]
 
