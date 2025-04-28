@@ -414,13 +414,6 @@ lm_short_fit <- function(df, ft1, ft2) {
     pooled_results <- pool(as.mira(models))
     return(summary(pooled_results))
 }
-
-
-
-
-
-
-
 ```
 
 Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
@@ -445,7 +438,6 @@ long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
 # The pool of all baseline uninjured subjects
 # N = 9349
 base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
-
 ```
 
 Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
@@ -583,6 +575,347 @@ These are all taken from the same data collection period as well!
 ### Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
 
 Can perhaps skip this and just make use of the classifier.
+
+```{r}
+long_mtbi_0_dls <- all_long_dls$"long_mtbi_0_dls"
+long_mtbi_0_ols <- all_long_dls$"long_mtbi_0_ols"
+
+long_mtbi_l_dls <- all_long_dls$"long_mtbi_l_dls"
+long_mtbi_l_ols <- all_long_dls$"long_mtbi_l_ols"
+```
+
+
+```{r}
+long_config <- snf_config(
+    long_mtbi_0_dls[[1]],
+    n_solutions = 200,
+    cnt_dist_fns = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    dsc_dist_fns = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    ord_dist_fns = list(
+        "standard_norm_euclidean" = sn_euclidean_distance
+    ),
+    use_default_dist_fns = TRUE
+)
+
+saveRDS(long_config, proc_path("long_config.rds", TRUE))
+```
+
+
+```{r}
+# CHECKPOINT
+long_config <- readRDS(proc_path("2025_04_28_long_config.rds"))
+```
+
+```{r}
+progressr::with_progress({long_mtbi_0_sol_df_s1 <- batch_snf(dl = long_mtbi_0_dls[[1]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_0_sol_df_s1, proc_path("long_mtbi_0_sol_df_s1.rds", TRUE))
+progressr::with_progress({long_mtbi_0_sol_df_s2 <- batch_snf(dl = long_mtbi_0_dls[[2]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_0_sol_df_s2, proc_path("long_mtbi_0_sol_df_s2.rds", TRUE))
+progressr::with_progress({long_mtbi_0_sol_df_s3 <- batch_snf(dl = long_mtbi_0_dls[[3]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_0_sol_df_s3, proc_path("long_mtbi_0_sol_df_s3.rds", TRUE))
+progressr::with_progress({long_mtbi_0_sol_df_s4 <- batch_snf(dl = long_mtbi_0_dls[[4]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_0_sol_df_s4, proc_path("long_mtbi_0_sol_df_s4.rds", TRUE))
+progressr::with_progress({long_mtbi_0_sol_df_s5 <- batch_snf(dl = long_mtbi_0_dls[[5]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_0_sol_df_s5, proc_path("long_mtbi_0_sol_df_s5.rds", TRUE))
+progressr::with_progress({long_mtbi_l_sol_df_s1 <- batch_snf(dl = long_mtbi_l_dls[[1]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_l_sol_df_s1, proc_path("long_mtbi_l_sol_df_s1.rds", TRUE))
+progressr::with_progress({long_mtbi_l_sol_df_s2 <- batch_snf(dl = long_mtbi_l_dls[[2]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_l_sol_df_s2, proc_path("long_mtbi_l_sol_df_s2.rds", TRUE))
+progressr::with_progress({long_mtbi_l_sol_df_s3 <- batch_snf(dl = long_mtbi_l_dls[[3]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_l_sol_df_s3, proc_path("long_mtbi_l_sol_df_s3.rds", TRUE))
+progressr::with_progress({long_mtbi_l_sol_df_s4 <- batch_snf(dl = long_mtbi_l_dls[[4]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_l_sol_df_s4, proc_path("long_mtbi_l_sol_df_s4.rds", TRUE))
+progressr::with_progress({long_mtbi_l_sol_df_s5 <- batch_snf(dl = long_mtbi_l_dls[[5]], sc = long_config, processes = "max")})
+saveRDS(long_mtbi_l_sol_df_s5, proc_path("long_mtbi_l_sol_df_s5.rds", TRUE))
+```
+
+```{r}
+long_mtbi_0_sol_df_s1 <- readRDS(proc_path("2025_04_28_long_mtbi_0_sol_df_s1.rds"))
+long_mtbi_0_sol_df_s2 <- readRDS(proc_path("2025_04_28_long_mtbi_0_sol_df_s2.rds"))
+long_mtbi_0_sol_df_s3 <- readRDS(proc_path("2025_04_28_long_mtbi_0_sol_df_s3.rds"))
+long_mtbi_0_sol_df_s4 <- readRDS(proc_path("2025_04_28_long_mtbi_0_sol_df_s4.rds"))
+long_mtbi_0_sol_df_s5 <- readRDS(proc_path("2025_04_28_long_mtbi_0_sol_df_s5.rds"))
+
+long_mtbi_0_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            long_mtbi_0_sol_df_s1,
+            long_mtbi_0_sol_df_s2,
+            long_mtbi_0_sol_df_s3,
+            long_mtbi_0_sol_df_s4,
+            long_mtbi_0_sol_df_s5
+        ),
+        list(reset_indices = TRUE)
+    )
+)
+saveRDS(long_mtbi_0_sol_df, proc_path("long_mtbi_0_sol_df.rds", TRUE))
+```
+
+```{r}
+long_mtbi_0_ari <- calc_aris(long_mtbi_0_sol_df, processes = "max")
+saveRDS(long_mtbi_0_ari, proc_path("long_mtbi_0_ari.rds", TRUE))
+
+long_mtbi_0_ari_order <- get_matrix_order(long_mtbi_0_ari)
+write_csv(data.frame(long_mtbi_0_ari_order), proc_path("long_mtbi_0_ari_order.csv", TRUE))
+```
+
+```{r}
+long_mtbi_l_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s1.rds"))
+long_mtbi_l_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s2.rds"))
+long_mtbi_l_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s3.rds"))
+long_mtbi_l_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s4.rds"))
+long_mtbi_l_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s5.rds"))
+
+long_mtbi_l_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            long_mtbi_l_sol_df_s1,
+            long_mtbi_l_sol_df_s2,
+            long_mtbi_l_sol_df_s3,
+            long_mtbi_l_sol_df_s4,
+            long_mtbi_l_sol_df_s5
+        ),
+        list(reset_indices = TRUE)
+    )
+)
+saveRDS(long_mtbi_l_sol_df, proc_path("long_mtbi_l_sol_df.rds", TRUE))
+long_mtbi_l_ari <- calc_aris(long_mtbi_l_sol_df, processes = "max")
+saveRDS(long_mtbi_l_ari, proc_path("long_mtbi_l_ari.rds", TRUE))
+long_mtbi_l_ari_order <- get_matrix_order(long_mtbi_l_ari)
+write_csv(data.frame(long_mtbi_l_ari_order), proc_path("long_mtbi_l_ari_order.csv", TRUE))
+# HERE I AM 2025_04_28
+```
+
+```{r}
+# CHECKPOINT
+long_mtbi_0_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df.rds"))
+long_mtbi_0_ari <- readRDS(proc_path("2025_02_18_long_mtbi_0_ari.rds"))
+long_mtbi_0_ari_order <- unlist(read_csv(proc_path("2025_02_18_long_mtbi_0_ari_order.csv")))
+names(long_mtbi_0_ari_order) <- NULL
+
+long_mtbi_l_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df.rds"))
+long_mtbi_l_ari <- readRDS(proc_path("2025_02_18_long_mtbi_l_ari.rds"))
+long_mtbi_l_ari_order <- unlist(read_csv(proc_path("2025_02_18_long_mtbi_l_ari_order.csv")))
+names(long_mtbi_l_ari_order) <- NULL
+```
+
+```{r}
+# Solo imputation 1
+long_mtbi_0_ext_sol_df_s1 <- extend_solutions(
+    long_mtbi_0_sol_df[1:200, ],
+    dl = long_mtbi_0_dls[[1]],
+    target_dl = long_mtbi_0_ols[[1]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_0_ext_sol_df_s1, proc_path("long_mtbi_0_ext_sol_df_s1.rds", TRUE))
+# Solo imputation 2
+long_mtbi_0_ext_sol_df_s2 <- extend_solutions(
+    long_mtbi_0_sol_df[201:400, ],
+    dl = long_mtbi_0_dls[[2]],
+    target_dl = long_mtbi_0_ols[[2]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_0_ext_sol_df_s2, proc_path("long_mtbi_0_ext_sol_df_s2.rds", TRUE))
+# Solo imputation 3
+long_mtbi_0_ext_sol_df_s3 <- extend_solutions(
+    long_mtbi_0_sol_df[401:600, ],
+    dl = long_mtbi_0_dls[[3]],
+    target_dl = long_mtbi_0_ols[[3]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_0_ext_sol_df_s3, proc_path("long_mtbi_0_ext_sol_df_s3.rds", TRUE))
+# Solo imputation 4
+long_mtbi_0_ext_sol_df_s4 <- extend_solutions(
+    long_mtbi_0_sol_df[601:800, ],
+    dl = long_mtbi_0_dls[[4]],
+    target_dl = long_mtbi_0_ols[[4]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_0_ext_sol_df_s4, proc_path("long_mtbi_0_ext_sol_df_s4.rds", TRUE))
+# Solo imputation 5
+long_mtbi_0_ext_sol_df_s5 <- extend_solutions(
+    long_mtbi_0_sol_df[801:1000, ],
+    dl = long_mtbi_0_dls[[5]],
+    target_dl = long_mtbi_0_ols[[5]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_0_ext_sol_df_s5, proc_path("long_mtbi_0_ext_sol_df_s5.rds", TRUE))
+```
+
+```{r}
+# Solo imputation 1
+long_mtbi_l_ext_sol_df_s1 <- extend_solutions(
+    long_mtbi_l_sol_df[1:200, ],
+    dl = long_mtbi_l_dls[[1]],
+    target_dl = long_mtbi_l_ols[[1]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_l_ext_sol_df_s1, proc_path("long_mtbi_l_ext_sol_df_s1.rds", TRUE))
+# Solo imputation 2
+long_mtbi_l_ext_sol_df_s2 <- extend_solutions(
+    long_mtbi_l_sol_df[201:400, ],
+    dl = long_mtbi_l_dls[[2]],
+    target_dl = long_mtbi_l_ols[[2]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_l_ext_sol_df_s2, proc_path("long_mtbi_l_ext_sol_df_s2.rds", TRUE))
+# Solo imputation 3
+long_mtbi_l_ext_sol_df_s3 <- extend_solutions(
+    long_mtbi_l_sol_df[401:600, ],
+    dl = long_mtbi_l_dls[[3]],
+    target_dl = long_mtbi_l_ols[[3]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_l_ext_sol_df_s3, proc_path("long_mtbi_l_ext_sol_df_s3.rds", TRUE))
+# Solo imputation 4
+long_mtbi_l_ext_sol_df_s4 <- extend_solutions(
+    long_mtbi_l_sol_df[601:800, ],
+    dl = long_mtbi_l_dls[[4]],
+    target_dl = long_mtbi_l_ols[[4]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_l_ext_sol_df_s4, proc_path("long_mtbi_l_ext_sol_df_s4.rds", TRUE))
+# Solo imputation 5
+long_mtbi_l_ext_sol_df_s5 <- extend_solutions(
+    long_mtbi_l_sol_df[801:1000, ],
+    dl = long_mtbi_l_dls[[5]],
+    target_dl = long_mtbi_l_ols[[5]],
+    min_pval = 1e-10,
+    processes = "max"
+)
+saveRDS(long_mtbi_l_ext_sol_df_s5, proc_path("long_mtbi_l_ext_sol_df_s5.rds", TRUE))
+```
+
+```{r}
+long_mtbi_0_ext_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s1.rds"))
+long_mtbi_0_ext_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s2.rds"))
+long_mtbi_0_ext_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s3.rds"))
+long_mtbi_0_ext_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s4.rds"))
+long_mtbi_0_ext_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s5.rds"))
+
+long_mtbi_0_ext_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            long_mtbi_0_ext_sol_df_s1,
+            long_mtbi_0_ext_sol_df_s2,
+            long_mtbi_0_ext_sol_df_s3,
+            long_mtbi_0_ext_sol_df_s4,
+            long_mtbi_0_ext_sol_df_s5
+        ),
+        list(reset_indices = TRUE)
+    )
+)
+
+long_mtbi_l_ext_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s1.rds"))
+long_mtbi_l_ext_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s2.rds"))
+long_mtbi_l_ext_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s3.rds"))
+long_mtbi_l_ext_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s4.rds"))
+long_mtbi_l_ext_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s5.rds"))
+
+long_mtbi_l_ext_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            long_mtbi_l_ext_sol_df_s1,
+            long_mtbi_l_ext_sol_df_s2,
+            long_mtbi_l_ext_sol_df_s3,
+            long_mtbi_l_ext_sol_df_s4,
+            long_mtbi_l_ext_sol_df_s5
+        ),
+        list(reset_indices = TRUE)
+    )
+)
+
+saveRDS(long_mtbi_0_ext_sol_df, proc_path("long_mtbi_0_ext_sol_df.rds", TRUE))
+saveRDS(long_mtbi_l_ext_sol_df, proc_path("long_mtbi_l_ext_sol_df.rds", TRUE))
+
+long_mtbi_0_ext_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df.rds"))
+long_mtbi_l_ext_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df.rds"))
+```
+
+```{r}
+long_0_hm <- meta_cluster_heatmap(long_mtbi_0_ari, order = long_mtbi_0_ari_order)
+long_l_hm <- meta_cluster_heatmap(long_mtbi_l_ari, order = long_mtbi_l_ari_order)
+
+long_mtbi_0_esdf <- as.data.frame(long_mtbi_0_ext_sol_df)
+long_mtbi_l_esdf <- as.data.frame(long_mtbi_l_ext_sol_df)
+
+long_mtbi_0_esdf$"impairment_separation" <- -log10(long_mtbi_0_esdf$"mean_pval")
+long_mtbi_l_esdf$"impairment_separation" <- -log10(long_mtbi_l_esdf$"mean_pval")
+
+full_long_mtbi_0_ari_hm <- meta_cluster_heatmap(
+    aris = long_mtbi_0_ari,
+    order = long_mtbi_0_ari_order,
+    data = long_mtbi_0_esdf,
+    min_colour = "black",
+    split_vector = c(
+        569,
+        698,
+        778
+    ),
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            long_mtbi_0_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+full_long_mtbi_0_ari_hm
+
+full_long_mtbi_l_ari_hm <- meta_cluster_heatmap(
+    aris = long_mtbi_l_ari,
+    order = long_mtbi_l_ari_order,
+    data = long_mtbi_l_esdf,
+    min_colour = "black",
+    split_vector = c(
+        710,
+        900
+    ),
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            long_mtbi_l_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+full_long_mtbi_l_ari_hm
+```
+
+Neither option resulted in particularly similar cluster solution to the original mTBI sample.
+Suggests that there may be something unique to the kids who had their injury at a much earlier timepoint.
+
+
+
 
 ### Q4. Classifier built from baseline mTBI data: informative?
 
@@ -969,393 +1302,9 @@ long_mtbi_0_i1_cluster_df
 long_mtbi_l_i1_cluster_df
 ```
 
-## Regular meta clustering
+#------------------------------------------------------------------------------
 
-
-```{r}
-# CHECKPOINT
-long_mtbi_0_dls <- all_long_dls$"long_mtbi_0_dls"
-long_mtbi_l_dls <- all_long_dls$"long_mtbi_l_dls"
-
-long_mtbi_0_ols <- all_long_dls$"long_mtbi_0_ols"
-long_mtbi_l_ols <- all_long_dls$"long_mtbi_l_ols"
-```
-
-```{r}
-long_config <- snf_config(
-    long_mtbi_0_dls[[1]],
-    n_solutions = 200,
-    cnt_dist_fns = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    dsc_dist_fns = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    ord_dist_fns = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    use_default_dist_fns = TRUE
-)
-
-saveRDS(long_config, proc_path("long_config.rds", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-long_config <- readRDS(proc_path("2025_02_18_long_config.rds"))
-```
-
-```{r}
-long_mtbi_0_sol_df_s1 <- batch_snf(
-    dl = long_mtbi_0_dls[[1]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_sol_df_s1, proc_path("long_mtbi_0_sol_df_s1.rds", TRUE))
-
-long_mtbi_0_sol_df_s2 <- batch_snf(
-    dl = long_mtbi_0_dls[[2]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_sol_df_s2, proc_path("long_mtbi_0_sol_df_s2.rds", TRUE))
-
-long_mtbi_0_sol_df_s3 <- batch_snf(
-    dl = long_mtbi_0_dls[[3]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_sol_df_s3, proc_path("long_mtbi_0_sol_df_s3.rds", TRUE))
-
-long_mtbi_0_sol_df_s4 <- batch_snf(
-    dl = long_mtbi_0_dls[[4]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_sol_df_s4, proc_path("long_mtbi_0_sol_df_s4.rds", TRUE))
-
-long_mtbi_0_sol_df_s5 <- batch_snf(
-    dl = long_mtbi_0_dls[[5]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_sol_df_s5, proc_path("long_mtbi_0_sol_df_s5.rds", TRUE))
-```
-
-```{r}
-long_mtbi_l_sol_df_s1 <- batch_snf(
-    dl = long_mtbi_l_dls[[1]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_sol_df_s1, proc_path("long_mtbi_l_sol_df_s1.rds", TRUE))
-
-long_mtbi_l_sol_df_s2 <- batch_snf(
-    dl = long_mtbi_l_dls[[2]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_sol_df_s2, proc_path("long_mtbi_l_sol_df_s2.rds", TRUE))
-
-long_mtbi_l_sol_df_s3 <- batch_snf(
-    dl = long_mtbi_l_dls[[3]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_sol_df_s3, proc_path("long_mtbi_l_sol_df_s3.rds", TRUE))
-
-long_mtbi_l_sol_df_s4 <- batch_snf(
-    dl = long_mtbi_l_dls[[4]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_sol_df_s4, proc_path("long_mtbi_l_sol_df_s4.rds", TRUE))
-
-long_mtbi_l_sol_df_s5 <- batch_snf(
-    dl = long_mtbi_l_dls[[5]],
-    sc = long_config,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_sol_df_s5, proc_path("long_mtbi_l_sol_df_s5.rds", TRUE))
-```
-
-```{r}
-long_mtbi_0_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df_s1.rds"))
-long_mtbi_0_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df_s2.rds"))
-long_mtbi_0_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df_s3.rds"))
-long_mtbi_0_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df_s4.rds"))
-long_mtbi_0_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df_s5.rds"))
-
-long_mtbi_0_sol_df <- do.call(
-    "rbind",
-    c(
-        list(
-            long_mtbi_0_sol_df_s1,
-            long_mtbi_0_sol_df_s2,
-            long_mtbi_0_sol_df_s3,
-            long_mtbi_0_sol_df_s4,
-            long_mtbi_0_sol_df_s5
-        ),
-        list(reset_indices = TRUE)
-    )
-)
-saveRDS(long_mtbi_0_sol_df, proc_path("long_mtbi_0_sol_df.rds", TRUE))
-
-long_mtbi_0_ari <- calc_aris(long_mtbi_0_sol_df, processes = "max")
-saveRDS(long_mtbi_0_ari, proc_path("long_mtbi_0_ari.rds", TRUE))
-
-long_mtbi_0_ari_order <- get_matrix_order(long_mtbi_0_ari)
-write_csv(data.frame(long_mtbi_0_ari_order), proc_path("long_mtbi_0_ari_order.csv", TRUE))
-```
-
-```{r}
-long_mtbi_l_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s1.rds"))
-long_mtbi_l_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s2.rds"))
-long_mtbi_l_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s3.rds"))
-long_mtbi_l_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s4.rds"))
-long_mtbi_l_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df_s5.rds"))
-
-long_mtbi_l_sol_df <- do.call(
-    "rbind",
-    c(
-        list(
-            long_mtbi_l_sol_df_s1,
-            long_mtbi_l_sol_df_s2,
-            long_mtbi_l_sol_df_s3,
-            long_mtbi_l_sol_df_s4,
-            long_mtbi_l_sol_df_s5
-        ),
-        list(reset_indices = TRUE)
-    )
-)
-saveRDS(long_mtbi_l_sol_df, proc_path("long_mtbi_l_sol_df.rds", TRUE))
-long_mtbi_l_ari <- calc_aris(long_mtbi_l_sol_df, processes = "max")
-saveRDS(long_mtbi_l_ari, proc_path("long_mtbi_l_ari.rds", TRUE))
-long_mtbi_l_ari_order <- get_matrix_order(long_mtbi_l_ari)
-write_csv(data.frame(long_mtbi_l_ari_order), proc_path("long_mtbi_l_ari_order.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-long_mtbi_0_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_0_sol_df.rds"))
-long_mtbi_0_ari <- readRDS(proc_path("2025_02_18_long_mtbi_0_ari.rds"))
-long_mtbi_0_ari_order <- unlist(read_csv(proc_path("2025_02_18_long_mtbi_0_ari_order.csv")))
-names(long_mtbi_0_ari_order) <- NULL
-
-long_mtbi_l_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_l_sol_df.rds"))
-long_mtbi_l_ari <- readRDS(proc_path("2025_02_18_long_mtbi_l_ari.rds"))
-long_mtbi_l_ari_order <- unlist(read_csv(proc_path("2025_02_18_long_mtbi_l_ari_order.csv")))
-names(long_mtbi_l_ari_order) <- NULL
-```
-
-```{r}
-# Solo imputation 1
-long_mtbi_0_ext_sol_df_s1 <- extend_solutions(
-    long_mtbi_0_sol_df[1:200, ],
-    dl = long_mtbi_0_dls[[1]],
-    target_dl = long_mtbi_0_ols[[1]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_ext_sol_df_s1, proc_path("long_mtbi_0_ext_sol_df_s1.rds", TRUE))
-# Solo imputation 2
-long_mtbi_0_ext_sol_df_s2 <- extend_solutions(
-    long_mtbi_0_sol_df[201:400, ],
-    dl = long_mtbi_0_dls[[2]],
-    target_dl = long_mtbi_0_ols[[2]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_ext_sol_df_s2, proc_path("long_mtbi_0_ext_sol_df_s2.rds", TRUE))
-# Solo imputation 3
-long_mtbi_0_ext_sol_df_s3 <- extend_solutions(
-    long_mtbi_0_sol_df[401:600, ],
-    dl = long_mtbi_0_dls[[3]],
-    target_dl = long_mtbi_0_ols[[3]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_ext_sol_df_s3, proc_path("long_mtbi_0_ext_sol_df_s3.rds", TRUE))
-# Solo imputation 4
-long_mtbi_0_ext_sol_df_s4 <- extend_solutions(
-    long_mtbi_0_sol_df[601:800, ],
-    dl = long_mtbi_0_dls[[4]],
-    target_dl = long_mtbi_0_ols[[4]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_ext_sol_df_s4, proc_path("long_mtbi_0_ext_sol_df_s4.rds", TRUE))
-# Solo imputation 5
-long_mtbi_0_ext_sol_df_s5 <- extend_solutions(
-    long_mtbi_0_sol_df[801:1000, ],
-    dl = long_mtbi_0_dls[[5]],
-    target_dl = long_mtbi_0_ols[[5]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_0_ext_sol_df_s5, proc_path("long_mtbi_0_ext_sol_df_s5.rds", TRUE))
-```
-
-```{r}
-# Solo imputation 1
-long_mtbi_l_ext_sol_df_s1 <- extend_solutions(
-    long_mtbi_l_sol_df[1:200, ],
-    dl = long_mtbi_l_dls[[1]],
-    target_dl = long_mtbi_l_ols[[1]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_ext_sol_df_s1, proc_path("long_mtbi_l_ext_sol_df_s1.rds", TRUE))
-# Solo imputation 2
-long_mtbi_l_ext_sol_df_s2 <- extend_solutions(
-    long_mtbi_l_sol_df[201:400, ],
-    dl = long_mtbi_l_dls[[2]],
-    target_dl = long_mtbi_l_ols[[2]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_ext_sol_df_s2, proc_path("long_mtbi_l_ext_sol_df_s2.rds", TRUE))
-# Solo imputation 3
-long_mtbi_l_ext_sol_df_s3 <- extend_solutions(
-    long_mtbi_l_sol_df[401:600, ],
-    dl = long_mtbi_l_dls[[3]],
-    target_dl = long_mtbi_l_ols[[3]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_ext_sol_df_s3, proc_path("long_mtbi_l_ext_sol_df_s3.rds", TRUE))
-# Solo imputation 4
-long_mtbi_l_ext_sol_df_s4 <- extend_solutions(
-    long_mtbi_l_sol_df[601:800, ],
-    dl = long_mtbi_l_dls[[4]],
-    target_dl = long_mtbi_l_ols[[4]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_ext_sol_df_s4, proc_path("long_mtbi_l_ext_sol_df_s4.rds", TRUE))
-# Solo imputation 5
-long_mtbi_l_ext_sol_df_s5 <- extend_solutions(
-    long_mtbi_l_sol_df[801:1000, ],
-    dl = long_mtbi_l_dls[[5]],
-    target_dl = long_mtbi_l_ols[[5]],
-    min_pval = 1e-10,
-    processes = "max"
-)
-saveRDS(long_mtbi_l_ext_sol_df_s5, proc_path("long_mtbi_l_ext_sol_df_s5.rds", TRUE))
-```
-
-```{r}
-long_mtbi_0_ext_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s1.rds"))
-long_mtbi_0_ext_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s2.rds"))
-long_mtbi_0_ext_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s3.rds"))
-long_mtbi_0_ext_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s4.rds"))
-long_mtbi_0_ext_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df_s5.rds"))
-
-long_mtbi_0_ext_sol_df <- do.call(
-    "rbind",
-    c(
-        list(
-            long_mtbi_0_ext_sol_df_s1,
-            long_mtbi_0_ext_sol_df_s2,
-            long_mtbi_0_ext_sol_df_s3,
-            long_mtbi_0_ext_sol_df_s4,
-            long_mtbi_0_ext_sol_df_s5
-        ),
-        list(reset_indices = TRUE)
-    )
-)
-
-long_mtbi_l_ext_sol_df_s1 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s1.rds"))
-long_mtbi_l_ext_sol_df_s2 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s2.rds"))
-long_mtbi_l_ext_sol_df_s3 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s3.rds"))
-long_mtbi_l_ext_sol_df_s4 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s4.rds"))
-long_mtbi_l_ext_sol_df_s5 <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df_s5.rds"))
-
-long_mtbi_l_ext_sol_df <- do.call(
-    "rbind",
-    c(
-        list(
-            long_mtbi_l_ext_sol_df_s1,
-            long_mtbi_l_ext_sol_df_s2,
-            long_mtbi_l_ext_sol_df_s3,
-            long_mtbi_l_ext_sol_df_s4,
-            long_mtbi_l_ext_sol_df_s5
-        ),
-        list(reset_indices = TRUE)
-    )
-)
-
-saveRDS(long_mtbi_0_ext_sol_df, proc_path("long_mtbi_0_ext_sol_df.rds", TRUE))
-saveRDS(long_mtbi_l_ext_sol_df, proc_path("long_mtbi_l_ext_sol_df.rds", TRUE))
-
-long_mtbi_0_ext_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_0_ext_sol_df.rds"))
-long_mtbi_l_ext_sol_df <- readRDS(proc_path("2025_02_18_long_mtbi_l_ext_sol_df.rds"))
-```
-
-```{r}
-long_0_hm <- meta_cluster_heatmap(long_mtbi_0_ari, order = long_mtbi_0_ari_order)
-long_l_hm <- meta_cluster_heatmap(long_mtbi_l_ari, order = long_mtbi_l_ari_order)
-
-long_mtbi_0_esdf <- as.data.frame(long_mtbi_0_ext_sol_df)
-long_mtbi_l_esdf <- as.data.frame(long_mtbi_l_ext_sol_df)
-
-long_mtbi_0_esdf$"impairment_separation" <- -log10(long_mtbi_0_esdf$"mean_pval")
-long_mtbi_l_esdf$"impairment_separation" <- -log10(long_mtbi_l_esdf$"mean_pval")
-
-full_long_mtbi_0_ari_hm <- meta_cluster_heatmap(
-    aris = long_mtbi_0_ari,
-    order = long_mtbi_0_ari_order,
-    data = long_mtbi_0_esdf,
-    min_colour = "black",
-    split_vector = c(
-        569,
-        698,
-        778
-    ),
-    top_hm = list(
-        "Impairment Separation" = "impairment_separation"
-    ),
-    top_bar = list(
-        "Number of Clusters" = "nclust"
-    ),
-    annotation_colours = list(
-        "Impairment Separation" = colour_scale(
-            long_mtbi_0_esdf$"impairment_separation",
-            min_colour = "gray7",
-            max_colour = "limegreen"
-        )
-    )
-)
-full_long_mtbi_0_ari_hm
-
-full_long_mtbi_l_ari_hm <- meta_cluster_heatmap(
-    aris = long_mtbi_l_ari,
-    order = long_mtbi_l_ari_order,
-    data = long_mtbi_l_esdf,
-    min_colour = "black",
-    split_vector = c(
-        710,
-        900
-    ),
-    top_hm = list(
-        "Impairment Separation" = "impairment_separation"
-    ),
-    top_bar = list(
-        "Number of Clusters" = "nclust"
-    ),
-    annotation_colours = list(
-        "Impairment Separation" = colour_scale(
-            long_mtbi_l_esdf$"impairment_separation",
-            min_colour = "gray7",
-            max_colour = "limegreen"
-        )
-    )
-)
-full_long_mtbi_l_ari_hm
-```
-
-Neither option resulted in particularly similar cluster solution to the original mTBI sample.
-Suggests that there may be something unique to the kids who had their injury at a much earlier timepoint.
+### Meta clustering the longitudinal timepoint for baseline concussion group
 
 ```{r}
 # CHECKPOINT
@@ -1574,6 +1523,7 @@ save_heatmap(
 ```
 
 So the baseline mTBI subjects do seem to have it!
+
 
 ## Moving on: Change in outcomes
 

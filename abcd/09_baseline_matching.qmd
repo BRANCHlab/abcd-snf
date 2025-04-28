@@ -120,6 +120,7 @@ d_vars <- paste(
     "household_income",
     "race",
     "sex",
+    "age",
     "pubertal_status_p",
     "pubertal_status_y",
     sep = " + "
@@ -371,47 +372,109 @@ write_csv(
 
 ```{r}
 matched_unij_d_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_d_s.csv")
+    sub_path("2025_04_28_matched_unij_d_s.csv")
 )
 matched_unij_p_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_p_s.csv")
+    sub_path("2025_04_28_matched_unij_p_s.csv")
 )
 matched_unij_o_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_o_s.csv")
+    sub_path("2025_04_28_matched_unij_o_s.csv")
 )
 matched_unij_d_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_d_p.csv")
+    sub_path("2025_04_28_matched_unij_d_p.csv")
 )
 matched_unij_p_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_p_p.csv")
+    sub_path("2025_04_28_matched_unij_p_p.csv")
 )
 matched_unij_o_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_o_p.csv")
+    sub_path("2025_04_28_matched_unij_o_p.csv")
 )
 matched_unij_dp_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_dp_s.csv")
+    sub_path("2025_04_28_matched_unij_dp_s.csv")
 )
 matched_unij_do_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_do_s.csv")
+    sub_path("2025_04_28_matched_unij_do_s.csv")
 )
 matched_unij_op_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_op_s.csv")
+    sub_path("2025_04_28_matched_unij_op_s.csv")
 )
 matched_unij_dp_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_dp_p.csv")
+    sub_path("2025_04_28_matched_unij_dp_p.csv")
 )
 matched_unij_do_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_do_p.csv")
+    sub_path("2025_04_28_matched_unij_do_p.csv")
 )
 matched_unij_op_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_op_p.csv")
+    sub_path("2025_04_28_matched_unij_op_p.csv")
 )
 matched_unij_dpo_s <- read_subjects(
-    sub_path("2025_02_14_matched_unij_dpo_s.csv")
+    sub_path("2025_04_28_matched_unij_dpo_s.csv")
 )
 matched_unij_dpo_p <- read_subjects(
-    sub_path("2025_02_14_matched_unij_dpo_p.csv")
+    sub_path("2025_04_28_matched_unij_dpo_p.csv")
 )
+```
+
+```{r}
+
+matched_subjects <- list(
+    "d_s" = matched_unij_d_s,
+    "p_s" = matched_unij_p_s,
+    "o_s" = matched_unij_o_s,
+    "d_p" = matched_unij_d_p,
+    "p_p" = matched_unij_p_p,
+    "o_p" = matched_unij_o_p,
+    "dp_s" = matched_unij_dp_s,
+    "do_s" = matched_unij_do_s,
+    "op_s" = matched_unij_op_s,
+    "dp_p" = matched_unij_dp_p,
+    "do_p" = matched_unij_do_p,
+    "op_p" = matched_unij_op_p,
+    "dpo_s" = matched_unij_dpo_s,
+    "dpo_p" = matched_unij_dpo_p
+)
+
+intersect(matched_unij_dpo_p, matched_unij_d_s)
+
+match_mat <- matrix(ncol = length(matched_subjects), nrow = length(matched_subjects))
+for (i in seq_along(matched_subjects)) {
+    for (j in seq_along(matched_subjects)) {
+        match_mat[i, j] <- length(intersect(matched_subjects[[i]], matched_subjects[[j]]))
+        match_mat[j, i] <- match_mat[i, j]
+    }
+}
+match_mat <- match_mat / 437 * 100
+
+mat_names <- names(matched_subjects)
+mat_names <- gsub("_s", " (Unpooled)", mat_names)
+mat_names <- gsub("_p", " (Pooled)", mat_names)
+mat_names <- gsub("dpo", "D, P, O", mat_names)
+mat_names <- gsub("dp", "D, P", mat_names)
+mat_names <- gsub("do", "D, O", mat_names)
+mat_names <- gsub("op", "O, P", mat_names)
+mat_names <- gsub("d \\(", "D (", mat_names)
+mat_names <- gsub("o \\(", "O (", mat_names)
+mat_names <- gsub("p \\(", "P (", mat_names)
+mat_names
+
+rownames(match_mat) <- mat_names
+colnames(match_mat) <- mat_names
+
+match_mat_hm <- ComplexHeatmap::Heatmap(
+    match_mat,
+    heatmap_legend_param = list(
+        title = "% Subject\nOverlap"
+    )
+)
+
+save_heatmap(
+    heatmap = match_mat_hm,
+    path = fig_path("match_mat_hm.png", TRUE),
+    width = 550,
+    height = 500,
+    res = 100
+)
+
 ```
 
 ## Subsetting matched unijured data and out of model lists
@@ -517,6 +580,9 @@ saveRDS(random_unij_ol_s1, proc_path("random_unij_ol_s1.rds", TRUE))
 saveRDS(random_unij_ol_p1, proc_path("random_unij_ol_p1.rds", TRUE))
 ```
 
+In the chunk below, age was not originally part of the matching criteria.
+However, the all.equal checks show that the extracted matched samples are unchanged when age is added in, so re-clustering is unnecessary.
+
 ```{r}
 # CHECKPOINT
 matched_unij_dl_d_s <- readRDS(proc_path("2025_02_14_matched_unij_dl_d_s.rds"))
@@ -552,6 +618,74 @@ matched_unij_ol_dpo_p <- readRDS(proc_path("2025_02_14_matched_unij_ol_dpo_p.rds
 matched_unij_ol_dpo_s <- readRDS(proc_path("2025_02_14_matched_unij_ol_dpo_s.rds"))
 random_unij_ol_s1 <- readRDS(proc_path("2025_02_14_random_unij_ol_s1.rds"))
 random_unij_ol_p1 <- readRDS(proc_path("2025_02_14_random_unij_ol_p1.rds"))
+
+matched_unij_dl_d_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_d_s.rds"))
+matched_unij_dl_p_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_p_s.rds"))
+matched_unij_dl_o_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_o_s.rds"))
+matched_unij_dl_d_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_d_p.rds"))
+matched_unij_dl_p_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_p_p.rds"))
+matched_unij_dl_o_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_o_p.rds"))
+matched_unij_dl_dp_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_dp_s.rds"))
+matched_unij_dl_do_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_do_s.rds"))
+matched_unij_dl_op_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_op_s.rds"))
+matched_unij_dl_dp_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_dp_p.rds"))
+matched_unij_dl_do_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_do_p.rds"))
+matched_unij_dl_op_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_op_p.rds"))
+matched_unij_dl_dpo_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_dpo_p.rds"))
+matched_unij_dl_dpo_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_dl_dpo_s.rds"))
+random_unij_dl_s1_2 <- readRDS(proc_path("2025_04_28_random_unij_dl_s1.rds"))
+random_unij_dl_p1_2 <- readRDS(proc_path("2025_04_28_random_unij_dl_p1.rds"))
+
+matched_unij_ol_d_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_d_s.rds"))
+matched_unij_ol_p_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_p_s.rds"))
+matched_unij_ol_o_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_o_s.rds"))
+matched_unij_ol_d_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_d_p.rds"))
+matched_unij_ol_p_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_p_p.rds"))
+matched_unij_ol_o_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_o_p.rds"))
+matched_unij_ol_dp_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_dp_s.rds"))
+matched_unij_ol_do_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_do_s.rds"))
+matched_unij_ol_op_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_op_s.rds"))
+matched_unij_ol_dp_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_dp_p.rds"))
+matched_unij_ol_do_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_do_p.rds"))
+matched_unij_ol_op_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_op_p.rds"))
+matched_unij_ol_dpo_p_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_dpo_p.rds"))
+matched_unij_ol_dpo_s_2 <- readRDS(proc_path("2025_04_28_matched_unij_ol_dpo_s.rds"))
+random_unij_ol_s1_2 <- readRDS(proc_path("2025_04_28_random_unij_ol_s1.rds"))
+random_unij_ol_p1_2 <- readRDS(proc_path("2025_04_28_random_unij_ol_p1.rds"))
+
+all.equal(matched_unij_dl_d_s, matched_unij_dl_d_s_2)
+all.equal(matched_unij_dl_p_s, matched_unij_dl_p_s_2)
+all.equal(matched_unij_dl_o_s, matched_unij_dl_o_s_2)
+all.equal(matched_unij_dl_d_p, matched_unij_dl_d_p_2)
+all.equal(matched_unij_dl_p_p, matched_unij_dl_p_p_2)
+all.equal(matched_unij_dl_o_p, matched_unij_dl_o_p_2)
+all.equal(matched_unij_dl_dp_s, matched_unij_dl_dp_s_2)
+all.equal(matched_unij_dl_do_s, matched_unij_dl_do_s_2)
+all.equal(matched_unij_dl_op_s, matched_unij_dl_op_s_2)
+all.equal(matched_unij_dl_dp_p, matched_unij_dl_dp_p_2)
+all.equal(matched_unij_dl_do_p, matched_unij_dl_do_p_2)
+all.equal(matched_unij_dl_op_p, matched_unij_dl_op_p_2)
+all.equal(matched_unij_dl_dpo_p, matched_unij_dl_dpo_p_2)
+all.equal(matched_unij_dl_dpo_s, matched_unij_dl_dpo_s_2)
+all.equal(random_unij_dl_s1, random_unij_dl_s1_2)
+all.equal(random_unij_dl_p1, random_unij_dl_p1_2)
+
+all.equal(matched_unij_ol_d_s, matched_unij_ol_d_s_2)
+all.equal(matched_unij_ol_p_s, matched_unij_ol_p_s_2)
+all.equal(matched_unij_ol_o_s, matched_unij_ol_o_s_2)
+all.equal(matched_unij_ol_d_p, matched_unij_ol_d_p_2)
+all.equal(matched_unij_ol_p_p, matched_unij_ol_p_p_2)
+all.equal(matched_unij_ol_o_p, matched_unij_ol_o_p_2)
+all.equal(matched_unij_ol_dp_s, matched_unij_ol_dp_s_2)
+all.equal(matched_unij_ol_do_s, matched_unij_ol_do_s_2)
+all.equal(matched_unij_ol_op_s, matched_unij_ol_op_s_2)
+all.equal(matched_unij_ol_dp_p, matched_unij_ol_dp_p_2)
+all.equal(matched_unij_ol_do_p, matched_unij_ol_do_p_2)
+all.equal(matched_unij_ol_op_p, matched_unij_ol_op_p_2)
+all.equal(matched_unij_ol_dpo_p, matched_unij_ol_dpo_p_2)
+all.equal(matched_unij_ol_dpo_s, matched_unij_ol_dpo_s_2)
+all.equal(random_unij_ol_s1, random_unij_ol_s1_2)
+all.equal(random_unij_ol_p1, random_unij_ol_p1_2)
 ```
 
 ## metaSNF
@@ -650,8 +784,6 @@ matched_unij_sm_d_s <- readRDS(proc_path("2025_02_15_matched_unij_sm_d_s.rds"))
 random_unij_sm_s1 <- readRDS(proc_path("2025_02_15_random_unij_sm_s1.rds"))
 random_unij_sm_p1 <- readRDS(proc_path("2025_02_15_random_unij_sm_p1.rds"))
 ```
-
-
 
 ```{r}
 matched_unij_esm_dpo_s <- extend_solutions(
@@ -786,6 +918,7 @@ saveRDS(random_unij_esm_p1, proc_path("random_unij_esm_p1.rds", TRUE))
 ```
 
 ```{r}
+# CHECKPOINT - extended solutions data frames
 matched_unij_esm_d_s <- readRDS(proc_path("2025_02_15_matched_unij_esm_d_s.rds"))
 matched_unij_esm_p_s <- readRDS(proc_path("2025_02_15_matched_unij_esm_p_s.rds"))
 matched_unij_esm_o_s <- readRDS(proc_path("2025_02_15_matched_unij_esm_o_s.rds"))
@@ -835,7 +968,34 @@ matched_unij_esm_list <- readRDS(
 
 ```{r}
 
-matched_unij_esm_list
+duplicated(matched_unij_esm_list)
+
+vec <- matched_unij_esm_list
+
+dup_indices <- which(duplicated(vec))
+
+dup_indices
+
+for (i in dup_indices) {
+    cat(names(vec)[i], " is equal to:\n", sep = "")
+    for (j in seq_along(vec)) {
+        if (identical(vec[[i]], vec[[j]]) & i != j) {
+            cat("    - ", names(vec)[j], "\n")
+        }
+    }
+}
+
+for (i in seq_along(vec)) {
+    for (j in seq_along(vec)) {
+
+    }
+}
+
+
+intersect(vec, vec)
+
+intersect(c(1, 2, 3), c(2, 3, 4))
+
 
 # Tight requirement: -log10(pval) > 4
 matched_unij_esm_3c_list <- lapply(

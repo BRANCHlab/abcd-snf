@@ -1854,6 +1854,7 @@ full_oom_list_1 <- readRDS(input_path("2025_02_12_mtbi_full_oom_list_1.rds"))
 full_data_list_1
 
 dl_no_demo <- full_data_list_1[-c(2, 4, 6:9)] # excluding mTBI mechanism from analysis
+
 dl_demo <- full_data_list_1[c(4, 6:9)]
 
 dl_demo
@@ -1865,7 +1866,6 @@ saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
 ```{r}
 # CHECKPOINT
 dl_corrected <- readRDS(proc_path("2025_03_26_dl_corrected.rds")) # now with age!
-
 
 names(dl_corrected)
 
@@ -1879,7 +1879,6 @@ as.data.frame(c(dl_corrected, dl_demo)) |>
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) +
     theme_bw()
-
 ```
 
 ```{r}
@@ -2007,18 +2006,19 @@ demo_double_adj_esdf <- as.data.frame(demo_double_adj_ext_sol_df)
 demo_double_adj_esdf$"impairment_separation" <- -log10(demo_double_adj_esdf$"mean_pval")
 
 demo_adj_split_vec <- c(
-    88,
+    87,
     142,
     440,
-    760,
-    822,
+    770,
+    820,
     905,
-    950
+    947
 )
 write_csv(data.frame(demo_adj_split_vec), proc_path("demo_adj_split_vec.csv", TRUE))
-demo_adj_split_vec <- read_csv(proc_path("2025_04_07_demo_adj_split_vec.csv")) |>
+demo_adj_split_vec <- read_csv(proc_path("2025_04_28_demo_adj_split_vec.csv")) |>
     unlist() |>
     as.numeric()
+
 full_demo_adj_ari_hm <- meta_cluster_heatmap(
     aris = demo_adj_ari,
     order = demo_adj_ari_order,
@@ -2078,7 +2078,7 @@ mixed_adj_ari_hm
 
 # The double adjustment does not yield and interesting meta clusters
 full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
-    aris = demo_adj_ari,
+    x = demo_adj_ari,
     order = demo_adj_ari_order,
     data = demo_double_adj_esdf,
     min_colour = "black",
@@ -2103,7 +2103,7 @@ save_heatmap(
     heatmap = full_demo_double_adj_ari_hm,
     path = fig_path("full_demo_double_adj_ari_hm.png", TRUE),
     width = 950,
-    height = 900,
+    height = 700,
     res = 100
 )
 
