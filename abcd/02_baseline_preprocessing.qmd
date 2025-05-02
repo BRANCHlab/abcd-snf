@@ -3,8 +3,8 @@
 This chapter contains:
 1. Removal of neuroimaging data failing QC
 2. Train/test split
-3. Mice imputation
-4. Organization of imputed data into exported R lists
+3. Mice imputation of missing data
+4. Organization of imputed data into `data_list` class objects (from the `metasnf` package)
 
 ## Importing Extracted Data
 
@@ -91,6 +91,7 @@ sds_unij <- read("2025_02_07_sds_unij.csv")
 ## Neuroimaging quality control
 
 Subset neuroimaging data to those subjects who pass neuroimaging QC and PC.
+The QC and PC functions used below, such as `qc_smri()`, return a named list containing vectors of subjects who passed, explicitly failed, or failed by having missing values.
 
 ```{r}
 # QC data
@@ -117,6 +118,7 @@ rsfmri_pc_mtbi <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 0, subjects = mtbi_subs, met
 rsfmri_qc_unij <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 0, subjects = unij_subs, metric = "qc")
 rsfmri_pc_unij <- qc_rsfmri(mri_y_qc_raw_rsfmr, t = 0, subjects = unij_subs, metric = "pc")
 
+# Vectors of those who passed QC and PC
 smri_pass <- c(
     intersect(smri_qc_mtbi$"pass", smri_pc_mtbi$"pass"),
     intersect(smri_qc_unij$"pass", smri_pc_unij$"pass")
@@ -132,6 +134,7 @@ rsfmri_pass <- c(
     intersect(rsfmri_qc_unij$"pass", rsfmri_pc_unij$"pass")
 )
 
+# Reducing extracted data to just those who passed QC and PC
 sm_subc_v_qc_mtbi <- filter(sm_subc_v_mtbi, subjectkey %in% smri_pass)
 sm_cort_t_qc_mtbi <- filter(sm_cort_t_mtbi, subjectkey %in% smri_pass)
 sm_cort_sa_qc_mtbi <- filter(sm_cort_sa_mtbi, subjectkey %in% smri_pass)
@@ -202,6 +205,7 @@ test_filter <- function(df) {
     return(filtered_df)
 }
 
+# Storing all mTBI data frames in a list
 mtbi_df_list <- list(
     "as_mem_daze_mtbi" = as_mem_daze_mtbi,
     "as_mechanism_mtbi" = as_mechanism_mtbi,
@@ -231,6 +235,7 @@ mtbi_df_list <- list(
     "sds_mtbi" = sds_mtbi
 )
 
+# Storing all uninjured data frames in a list
 unij_df_list <- list(
     "d_interview_age_unij" = d_interview_age_unij,
     "d_sex_unij" = d_sex_unij,
@@ -255,6 +260,7 @@ unij_df_list <- list(
     "sds_unij" = sds_unij
 )
 
+# Splitting the mTBI list of data frames into training and test set versions
 mtbi_train_df_list <- lapply(mtbi_df_list, train_filter)
 mtbi_test_df_list <- lapply(mtbi_df_list, test_filter)
 ```
@@ -274,6 +280,7 @@ Resulting in 10 versions of the mTBI data and 10 versions of the unijured data.
 First, each group has their extracted dataframes merged into a single one for imputation.
 
 ```{r}
+# `merge_df_list()` converts lists of data frames into a single data frame
 mtbi_train_df <- metasnf::merge_df_list(
     mtbi_train_df_list,
     uid = "subjectkey",
@@ -304,8 +311,7 @@ mtbi_test_df <- data.frame(read_csv(proc_path("2025_02_07_mtbi_test_df.csv")))
 unij_df <- data.frame(read_csv(proc_path("2025_02_07_unij_df.csv")))
 ```
 
-
-A check of which columns have missing data.
+A preliminary check of which columns have missing data.
 
 ```{r}
 missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_train_df)) > 0))
@@ -314,7 +320,7 @@ missing_colnames_mtbi
 missing_colnames_unij <- names(which(colSums(is.na(unij_df)) > 0))
 missing_colnames_unij
 
-# Remove the subjectkey variable
+# Remove the subjectkey variable and convert character features into factors
 mtbi_train_df_no_subs <- char_to_fac(mtbi_train_df[, -1])
 mtbi_test_df_no_subs <- char_to_fac(mtbi_test_df[, -1])
 unij_df_no_subs <- char_to_fac(unij_df[, -1])
