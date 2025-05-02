@@ -66,6 +66,8 @@ long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
 base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
 
 non_matched_subs <- setdiff(base_unij_subs, matched_subs)
+
+base_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
 ```
 
 Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
@@ -77,7 +79,6 @@ matched_that_became_mtbi <- sum(matched_subs %in% long_mtbi_subs)
 unmatched_that_became_mtbi <- sum(non_matched_subs %in% long_mtbi_subs)
 matched_that_remained_unij <- sum(!matched_subs %in% long_mtbi_subs)
 unmatched_that_remained_unij <- sum(!non_matched_subs %in% long_mtbi_subs)
-
 
 odds_ratio <- function(de, he, dn, hn) {
     numerator <- de / he
@@ -112,6 +113,7 @@ Now I'll double check to see if there were any attributes of subjects that were 
 
 ```{r}
 long_mtbi_0_dl <- all_long_dls$"long_mtbi_0_dls"[[1]]
+
 base_unij_0_dl <- all_dls$"unij_pooled_data_lists"[[1]]
 
 long_unij_0_dl <- base_unij_0_dl |>
@@ -124,6 +126,7 @@ long_unij_0_dl <- base_unij_0_dl |>
 
 long_unij_df <- as.data.frame(long_unij_0_dl)
 long_mtbi_df <- as.data.frame(long_mtbi_0_dl)
+base_unij_df <- as.data.frame(base_unij_0_dl)
 
 long_unij_df$"mtbi" <- 0
 long_mtbi_df$"mtbi" <- 1
@@ -184,28 +187,9 @@ kendall_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_kendall.rds"))
 spearman_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_spearman.rds"))
 pearson_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_pearson.rds"))
 
-
-many_sin <- function() {
-    x <- runif(1)
-    for (i in 1:1000000) {
-        x <- abs(sin(x))
-        x <- signif(x, 10)
-    }
-    x
-}
-
-round(10000 * many_sin(runif(1), 1000000))
-
-rnorm(1)
-
-
-
-
-
 kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"]
 spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"]
 pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"]
-
 
 ComplexHeatmap::Heatmap(kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"])
 
@@ -219,10 +203,6 @@ kendall_mat[names(sort(-abs(kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), 
 spearman_mat[names(sort(-abs(spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
 
 pearson_mat[names(sort(-abs(pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
-
-
-
-
 
 ComplexHeatmap::Heatmap(z3)
 
@@ -1053,112 +1033,221 @@ Suggests that there may be something unique to the kids who had their injury at 
 
 ### Q4. Classifier built from baseline mTBI data: informative?
 
-```{r}
-library(caret)
-library(randomForest)
-
-# Classifying data using baseline as well as longitudinal features
-long_mtbi_0_dls <- all_long_dls$"long_mtbi_0_dls"
-long_mtbi_l_dls <- all_long_dls$"long_mtbi_l_dls"
-long_mtbi_0_ols <- all_long_dls$"long_mtbi_0_ols"
-long_mtbi_l_ols <- all_long_dls$"long_mtbi_l_ols"
-
-base_unij_l_dls <- all_long_dls$"base_unij_l_dls"
-base_unij_l_ols <- all_long_dls$"base_unij_l_ols"
-
-dls_to_dfs <- function(dls) {
-    lapply(
-        seq_along(dls),
-        function(x) {
-            as.data.frame(dls[[x]])
-        }
-    )
-}
-
-long_mtbi_0_dfs <- dls_to_dfs(long_mtbi_0_dls)
-nrow(long_mtbi_0_dfs[[1]])
-long_mtbi_l_dfs <- dls_to_dfs(long_mtbi_l_dls)
-nrow(long_mtbi_l_dfs[[1]])
-base_unij_l_dfs <- dls_to_dfs(base_unij_l_dls)
-nrow(base_unij_l_dfs[[1]])
-
-long_mtbi_0_df <- long_mtbi_0_dfs[[1]]
-long_mtbi_l_df <- long_mtbi_l_dfs[[1]]
-base_unij_l_df <- base_unij_l_dfs[[1]]
-
-train_scale_df <- read_csv(proc_path("2025_02_17_train_scale_df.csv"))
-
-# T0 temporal DF
-temporal_df <- readRDS(proc_path("2025_02_17_temporal_df.rds"))
-
-# T2 temporal DF
-temporal_df2 <- readRDS(proc_path("2025_02_17_temporal_df2.rds"))
-
-subtype_classifier <- readRDS(model_path("2025_02_17_subtype_classifier.rds"))
-```
-
 Assigning predicted clusters to three groups:
 
 1. Longitudinal mTBI, pre-injury data
 2. Longitudinal mTBI, post-injury data
-3. Baseline uninjured group, ssimilarly post-injury data for context to see how it divvies up
+3. Baseline uninjured group at T0
+4. Longitudinal uninjured group at T0
+5. Longitudinal uninjured group at T2
 
 ```{r}
-train_scale_df <- train_scale_df |>
-    dplyr::select(-cluster)
+library(caret)
+library(randomForest)
 
 long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
 long_unij_subs <- paste0("uid_", long_unij_subs)
 
-long_mtbi_0_df <- long_mtbi_0_df[, colnames(train_scale_df)]
-long_mtbi_l_df <- long_mtbi_l_df[, colnames(train_scale_df)]
-long_unij_l_df <- base_unij_l_df[, colnames(train_scale_df)] |>
-    dplyr::filter(uid %in% long_unij_subs)
+# Classifying data using baseline as well as longitudinal features
+long_mtbi_0_dl <- all_long_dls$"long_mtbi_0_dls"[[1]]
+long_mtbi_0_ol <- all_long_dls$"long_mtbi_0_ols"[[1]]
 
-temporal_df <- temporal_df |>
-    dplyr::filter(!uid %in% long_mtbi_0_df$"uid")
-temporal_df2 <- temporal_df2 |>
-    dplyr::filter(!uid %in% long_mtbi_l_df$"uid")
-temporal_df2 <- temporal_df2 |>
-    dplyr::filter(!uid %in% long_unij_l_df$"uid")
+long_mtbi_l_dl <- all_long_dls$"long_mtbi_l_dls"[[1]]
+long_mtbi_l_ol <- all_long_dls$"long_mtbi_l_ols"[[1]]
 
-scaling_df_0 <- dplyr::bind_rows(
-    temporal_df,
-    long_mtbi_0_df[, colnames(temporal_df)]
+base_unij_0_dl <- all_dls$"unij_pooled_data_lists"[[1]]
+base_unij_0_ol <- all_dls$"unij_pooled_oom_lists"[[1]]
+
+# These are not all necessary unij still!
+base_unij_l_dl <- all_long_dls$"base_unij_l_dls"[[1]]
+base_unij_l_ol <- all_long_dls$"base_unij_l_ols"[[1]]
+
+# Converting the sets of data lists into sets of data frames
+long_mtbi_0_dl_df <- as.data.frame(long_mtbi_0_dl)
+long_mtbi_0_ol_df <- as.data.frame(long_mtbi_0_ol)
+nrow(long_mtbi_0_dl_df) # N = 220
+
+long_mtbi_l_dl_df <- as.data.frame(long_mtbi_l_dl)
+long_mtbi_l_ol_df <- as.data.frame(long_mtbi_l_ol)
+nrow(long_mtbi_l_dl_df) # N = 220
+
+base_unij_0_dl_df <- as.data.frame(base_unij_0_dl)
+base_unij_0_ol_df <- as.data.frame(base_unij_0_ol)
+nrow(base_unij_0_dl_df) # N = 9349
+
+base_unij_l_dl_df <- as.data.frame(base_unij_l_dl)
+base_unij_l_ol_df <- as.data.frame(base_unij_l_ol)
+nrow(base_unij_0_dl_df) # N = 9349
+
+long_unij_0_dl_df <- dplyr::filter(base_unij_0_dl_df, uid %in% long_unij_subs)
+long_unij_0_ol_df <- dplyr::filter(base_unij_0_ol_df, uid %in% long_unij_subs)
+nrow(long_unij_0_dl_df) # N = 9349
+
+long_unij_l_dl_df <- dplyr::filter(base_unij_l_dl_df, uid %in% long_unij_subs)
+long_unij_l_ol_df <- dplyr::filter(base_unij_l_ol_df, uid %in% long_unij_subs)
+nrow(long_unij_0_dl_df) # N = 9349
+
+comparison_dl_dfs <- list(
+    "long_mtbi_0_dl_df" = long_mtbi_0_dl_df,
+    "long_mtbi_l_dl_df" = long_mtbi_l_dl_df,
+    "base_unij_0_dl_df" = base_unij_0_dl_df,
+    "base_unij_l_dl_df" = base_unij_l_dl_df,
+    "long_unij_0_dl_df" = long_unij_0_dl_df,
+    "long_unij_l_dl_df" = long_unij_l_dl_df
 )
 
-scaling_df_2 <- dplyr::bind_rows(
-    temporal_df2,
-    long_mtbi_l_df[, colnames(temporal_df2)],
-    long_unij_l_df[, colnames(temporal_df2)]
+comparison_ol_dfs <- list(
+    "long_mtbi_0_ol_df" = long_mtbi_0_ol_df,
+    "long_mtbi_l_ol_df" = long_mtbi_l_ol_df,
+    "base_unij_0_ol_df" = base_unij_0_ol_df,
+    "base_unij_l_ol_df" = base_unij_l_ol_df,
+    "long_unij_0_ol_df" = long_unij_0_ol_df,
+    "long_unij_l_ol_df" = long_unij_l_ol_df
 )
 
-scale_cols <- colnames(temporal_df)[2:ncol(temporal_df)]
-scaling_df_0[scale_cols] <- sapply(scaling_df_0[scale_cols], scale)
-scaling_df_2[scale_cols] <- sapply(scaling_df_2[scale_cols], scale)
+saveRDS(comparison_dl_dfs, proc_path("comparison_dl_dfs.rds", TRUE))
+saveRDS(comparison_ol_dfs, proc_path("comparison_ol_dfs.rds", TRUE))
+```
 
-long_mtbi_0_scaled_df <- long_mtbi_0_df |>
-    dplyr::select(-dplyr::all_of(scale_cols)) |>
-    dplyr::inner_join(scaling_df_0, by = "uid") |>
-    data.frame()
+```{r}
+comparison_dl_dfs <- readRDS(proc_path("2025_05_02_comparison_dl_dfs.rds"))
+comparison_ol_dfs <- readRDS(proc_path("2025_05_02_comparison_ol_dfs.rds"))
+```
 
-long_mtbi_l_scaled_df <- long_mtbi_l_df |>
-    dplyr::select(-dplyr::all_of(scale_cols)) |>
-    dplyr::inner_join(scaling_df_2, by = "uid") |>
-    data.frame()
+```{r}
+classifier_fts <- readRDS(proc_path("2025_05_02_classifier_fts.rds"))
 
-long_unij_l_scaled_df <- long_unij_l_df |>
-    dplyr::select(-dplyr::all_of(scale_cols)) |>
-    dplyr::inner_join(scaling_df_2, by = "uid") |>
-    data.frame()
+classifier_ft_dl_dfs <- lapply(
+    comparison_dl_dfs,
+    function(x) {
+        x[, classifier_fts]
+    }
+)
+```
 
-write_csv(long_mtbi_0_scaled_df, proc_path("long_mtbi_0_scaled_df.csv", TRUE))
-write_csv(long_mtbi_l_scaled_df, proc_path("long_mtbi_l_scaled_df.csv", TRUE))
-write_csv(long_unij_l_scaled_df, proc_path("long_unij_l_scaled_df.csv", TRUE))
+In earlier chapters, some longitudinal data was reprocessed (date stamp 2025-03-10) to account for a previous extraction error in dMRI longitudinal data. 
+That error does not impact the `temporal_df2` object, which was built from directly extracted (no imputed) data in chapter 7.
 
-long_mtbi_0_scaled_df <- read_csv(proc_path("2025_04_29_long_mtbi_0_scaled_df.csv"))
-long_mtbi_l_scaled_df <- read_csv(proc_path("2025_04_29_long_mtbi_l_scaled_df.csv"))
-long_unij_l_scaled_df <- read_csv(proc_path("2025_04_29_long_unij_l_scaled_df.csv"))
+```{r}
+# Extracted temporally sensitive features for all ABCD subjects at T0 and T2
+temporal_0_df <- readRDS(proc_path("2025_02_17_temporal_df.rds"))
+temporal_2_df <- readRDS(proc_path("2025_02_17_temporal_df2.rds"))
+
+subtype_classifier <- readRDS(model_path("2025_02_17_subtype_classifier.rds"))
+```
+
+The scaling process that occurs below is described as follows.
+Consider the data frame `long_mtbi_0_df`, which contains feature values for the longitudinal mTBI sample at baseline data collection timepoint.
+A subset of the columns in `long_mtbi_0_df` are identified as temporally sensitive:
+
+- brain_volume
+- cortical_thickness
+- cortical_sa
+- pubertal_status_p
+- pubertal_status_y
+- age
+- weekend_screentime
+- weekday_screentime
+
+Our goal is to re-scale these columns within `long_mtbi_0_df` based on the entire set of ABCD values of that feature for that time point.
+The raw extracted set of ABCD values for those temporally sensitive features are found in `temporal_0_df` (for T0 values), and `temporal_2_df` (for T2 values).
+However, scaling those data frames alone is insufficient, as we would not be making use of the missing values that we have imputed.
+To account for this, we start by replacing the temporally sensitive features in `temporal_0_df` for the observations in `long_mtbi_0_df` with the values in `long_mtbi_0_df`.
+That is, we inject our cleaned, imputed values for those temporally sensitive features and overwrite the raw extracted ones.
+Then, we scale `temporal_0_df`.
+Finally, we extract our scaled values back into the original `long_mtbi_0_df`.
+This process is made slightly more complicated by doing this process for all the baseline concussion and uninjured sampes simultaneously.
+
+```{r}
+# Cleaning up the UID column of the temporally sensitive feature data frames
+temporal_0_df$"uid" <- gsub("uid_", "", temporal_0_df$"uid")
+temporal_2_df$"uid" <- gsub("uid_", "", temporal_2_df$"uid")
+
+# Remove the UID column
+temporal_cols <- colnames(temporal_0_df)
+                
+"long_mtbi_0_dl_df" = long_mtbi_0_dl_df,
+"long_mtbi_l_dl_df" = long_mtbi_l_dl_df,
+"base_unij_0_dl_df" = base_unij_0_dl_df,
+"base_unij_l_dl_df" = base_unij_l_dl_df,
+"long_unij_0_dl_df" = long_unij_0_dl_df,
+"long_unij_l_dl_df" = long_unij_l_dl_df
+
+
+long_mtbi_subs
+
+# A superset of long_unij_subs
+base_unij_subs
+
+long_unij_subs
+
+```
+
+There is notably some overlap between the long_mtbi group and the base_unij group.
+As such, we handle the sub-in and scale for the different groups here separately.
+
+```{r}
+
+swap_with_scaled <- function(reference_df, df_to_scale, scaling_cols) {
+    reference_df <- reference_df |>
+        dplyr::filter(!uid %in% df_to_scale$"uid")
+    scaling_fts <- setdiff(scaling_cols, "uid")
+    stacked_df <- rbind(
+        reference_df,
+        df_to_scale[, scaling_cols]
+    )
+    stacked_df[scaling_fts] <- sapply(stacked_df[scaling_fts], scale)
+    rescaled_df <- df_to_scale |>
+        dplyr::select(-dplyr::all_of(scaling_fts)) |>
+        dplyr::inner_join(stacked_df, by = "uid") |>
+        data.frame()
+    return(rescaled_df)
+}
+
+base_unij_0_time_scaled <- swap_with_scaled(
+    temporal_0_df,
+    comparison_dl_dfs$"base_unij_0_dl_df",
+    temporal_cols
+)
+long_mtbi_0_time_scaled <- swap_with_scaled(
+    temporal_0_df,
+    comparison_dl_dfs$"long_mtbi_0_dl_df",
+    temporal_cols
+)
+long_unij_0_time_scaled <- swap_with_scaled(
+    temporal_0_df,
+    comparison_dl_dfs$"long_unij_0_dl_df",
+    temporal_cols
+)
+base_unij_l_time_scaled <- swap_with_scaled(
+    temporal_2_df,
+    comparison_dl_dfs$"base_unij_l_dl_df",
+    temporal_cols
+)
+long_mtbi_l_time_scaled <- swap_with_scaled(
+    temporal_2_df,
+    comparison_dl_dfs$"long_mtbi_l_dl_df",
+    temporal_cols
+)
+long_unij_l_time_scaled <- swap_with_scaled(
+    temporal_2_df,
+    comparison_dl_dfs$"long_unij_l_dl_df",
+    temporal_cols
+)
+
+saveRDS(base_unij_0_time_scaled, proc_path("base_unij_0_time_scaled.rds", TRUE))
+saveRDS(long_mtbi_0_time_scaled, proc_path("long_mtbi_0_time_scaled.rds", TRUE))
+saveRDS(long_unij_0_time_scaled, proc_path("long_unij_0_time_scaled.rds", TRUE))
+saveRDS(base_unij_l_time_scaled, proc_path("base_unij_l_time_scaled.rds", TRUE))
+saveRDS(long_mtbi_l_time_scaled, proc_path("long_mtbi_l_time_scaled.rds", TRUE))
+saveRDS(long_unij_l_time_scaled, proc_path("long_unij_l_time_scaled.rds", TRUE))
+
+base_unij_0_time_scaled <- readRDS(proc_path("2025_05_02_base_unij_0_time_scaled.rds"))
+long_mtbi_0_time_scaled <- readRDS(proc_path("2025_05_02_long_mtbi_0_time_scaled.rds"))
+long_unij_0_time_scaled <- readRDS(proc_path("2025_05_02_long_unij_0_time_scaled.rds"))
+base_unij_l_time_scaled <- readRDS(proc_path("2025_05_02_base_unij_l_time_scaled.rds"))
+long_mtbi_l_time_scaled <- readRDS(proc_path("2025_05_02_long_mtbi_l_time_scaled.rds"))
+long_unij_l_time_scaled <- readRDS(proc_path("2025_05_02_long_unij_l_time_scaled.rds"))
 
 make_pred_df <- function(df) {
     clean_df <- prep_data(df)
@@ -1166,9 +1255,21 @@ make_pred_df <- function(df) {
     return(df)
 }
 
-long_mtbi_0_pred_df <- make_pred_df(long_mtbi_0_scaled_df)
-long_mtbi_l_pred_df <- make_pred_df(long_mtbi_l_scaled_df)
-long_unij_l_pred_df <- make_pred_df(long_unij_l_scaled_df)
+base_unij_0_pred_df <- make_pred_df(base_unij_0_time_scaled)
+long_mtbi_0_pred_df <- make_pred_df(long_mtbi_0_time_scaled)
+long_unij_0_pred_df <- make_pred_df(long_unij_0_time_scaled)
+base_unij_l_pred_df <- make_pred_df(base_unij_l_time_scaled)
+long_mtbi_l_pred_df <- make_pred_df(long_mtbi_l_time_scaled)
+long_unij_l_pred_df <- make_pred_df(long_unij_l_time_scaled)
+
+write_csv(base_unij_0_pred_df, proc_path("base_unij_0_pred_df.csv", TRUE))
+write_csv(long_mtbi_0_pred_df, proc_path("long_mtbi_0_pred_df.csv", TRUE))
+write_csv(long_unij_0_pred_df, proc_path("long_unij_0_pred_df.csv", TRUE))
+write_csv(base_unij_l_pred_df, proc_path("base_unij_l_pred_df.csv", TRUE))
+write_csv(long_mtbi_l_pred_df, proc_path("long_mtbi_l_pred_df.csv", TRUE))
+write_csv(long_unij_l_pred_df, proc_path("long_unij_l_pred_df.csv", TRUE))
+
+# HERE 2025-05-02
 
 write_csv(long_mtbi_0_pred_df, proc_path("long_mtbi_0_pred_df.csv", TRUE))
 write_csv(long_mtbi_l_pred_df, proc_path("long_mtbi_l_pred_df.csv", TRUE))
@@ -1278,25 +1379,28 @@ mtbi_gen_long <- na.omit(mtbi_gen_long)
 n <- nrow(long_mtbi_0_i1_cluster_df)
 
 long_mtbi_0_data_df <- dplyr::inner_join(
-    long_mtbi_0_i1_cluster_df,
+    long_mtbi_0_cluster_df,
     as.data.frame(c(long_mtbi_0_dls[[1]], long_mtbi_0_ols[[1]])),
     by = "uid"
 )
 
 long_mtbi_l_data_df <- dplyr::inner_join(
-    long_mtbi_l_i1_cluster_df,
+    long_mtbi_l_cluster_df,
     as.data.frame(c(long_mtbi_l_dls[[1]], long_mtbi_l_ols[[1]])),
     by = "uid"
 )
 
-base_unij_l_data_df <- dplyr::inner_join(
-    base_unij_l_i1_cluster_df,
-    as.data.frame(c(base_unij_l_dls[[1]], base_unij_l_ols[[1]])),
+base_unij_0_data_df <- dplyr::inner_join(
+    base_unij_0_cluster_df,
+    as.data.frame(c(base_unij_0_dls[[1]], base_unij_0_ols[[1]])),
     by = "uid"
 )
 
-long_mtbi_l_data_df
-
+#base_unij_l_data_df <- dplyr::inner_join(
+#    base_unij_l_cluster_df,
+#    as.data.frame(c(base_unij_l_dls[[1]], base_unij_l_ols[[1]])),
+#    by = "uid"
+#)
 
 concordance_w_mtbi <- function(data_df, n = 220) {
     set.seed(42)
@@ -1323,10 +1427,11 @@ concordance_w_mtbi <- function(data_df, n = 220) {
                 ) |>
                 dplyr::filter(!grepl("mtbi", feature))
             concordance <- sum(joint_df$"match") / nrow(joint_df)
-            print(concordance)
         }
     )
 }
+
+long_mtbi_0_data_df
 
 concordance_w_mtbi(long_mtbi_0_data_df)
 
