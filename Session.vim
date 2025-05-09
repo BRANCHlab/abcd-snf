@@ -13,15 +13,14 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +37 abcd/07_subtype_classifier.qmd
-badd +7 abcd/01_baseline_extraction.qmd
-badd +372 abcd/02_baseline_preprocessing.qmd
+badd +201 ~/Documents/abcd-snf-article/typst_manuscript.typ
+badd +1324 abcd/08_longitudinal_analyses.qmd
+badd +1 ~/Documents/prash/time/time.csv
 argglobal
 %argdel
-$argadd abcd/07_subtype_classifier.qmd
-edit abcd/07_subtype_classifier.qmd
+edit abcd/08_longitudinal_analyses.qmd
 argglobal
-balt abcd/01_baseline_extraction.qmd
+balt ~/Documents/prash/time/time.csv
 setlocal fdm=marker
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -30,12 +29,12 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-let s:l = 29 - ((13 * winheight(0) + 22) / 44)
+let s:l = 1324 - ((22 * winheight(0) + 22) / 45)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 29
-normal! 0
+keepjumps 1324
+normal! 018|
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf

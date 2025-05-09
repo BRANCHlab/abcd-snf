@@ -596,4 +596,3 @@ png_save <- function(img, path, w = 1250, h = 1000, r = 125) {
     print(img)
     grDevices::dev.off()
 }
-
