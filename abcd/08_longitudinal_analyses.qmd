@@ -1044,7 +1044,9 @@ Assigning predicted clusters to the following 5 groups:
 ```{r}
 library(caret)
 library(randomForest)
+```
 
+```{r}
 long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
 long_unij_subs <- paste0("uid_", long_unij_subs)
 
@@ -1061,7 +1063,9 @@ base_unij_0_ol <- all_dls$"unij_pooled_oom_lists"[[1]]
 # These are not all necessary unij still!
 base_unij_l_dl <- all_long_dls$"base_unij_l_dls"[[1]]
 base_unij_l_ol <- all_long_dls$"base_unij_l_ols"[[1]]
+```
 
+```{r}
 # Converting the sets of data lists into sets of data frames
 long_mtbi_0_dl_df <- as.data.frame(long_mtbi_0_dl)
 long_mtbi_0_ol_df <- as.data.frame(long_mtbi_0_ol)
@@ -1314,7 +1318,9 @@ long_unij_l_cluster_df <- dplyr::select(
     uid,
     cluster
 )
+```
 
+```{r}
 # Proportion of each cluster in the data frame
 cluster_props <- function(cluster_df) {
     cluster_df$"cluster" |>
@@ -1324,11 +1330,13 @@ cluster_props <- function(cluster_df) {
 }
 
 cluster_props(base_unij_0_cluster_df) # 24.8, 37.2, 38.0
-cluster_props(long_mtbi_0_cluster_df) # 17.3, 50.0, 32.7
-cluster_props(long_unij_0_cluster_df) # 23.7, 38.1, 38.2
 cluster_props(base_unij_l_cluster_df) # 22.8, 30.4, 46.8
-cluster_props(long_mtbi_l_cluster_df) # 16.4, 44.1, 39.5
+
+cluster_props(long_unij_0_cluster_df) # 23.7, 38.1, 38.2
 cluster_props(long_unij_l_cluster_df) # 21.3, 31.3, 47.4
+
+cluster_props(long_mtbi_0_cluster_df) # 17.3, 50.0, 32.7
+cluster_props(long_mtbi_l_cluster_df) # 16.4, 44.1, 39.5
 
 # Compare with the original full solution proportions
 mtbi_ful_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
@@ -1340,49 +1348,122 @@ cluster_props(mtbi_ful_df) # 33.2, 35.9, 30.9
 classifier_df <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))
 classifier_fts <- classifier_df$"classifier_fts"
 outcome_fts <- readRDS(proc_path("2025_02_13_outputs.rds"))
-relevant_fts <- c(classifier_fts, outcomes)
+relevant_fts <- c(classifier_fts, outcome_fts)
 
-export_wrapped_plots <- function(df, dl, ol, name) {
+export_wrapped_plots <- function(df,
+                                 dl,
+                                 ol,
+                                 name,
+                                 feature_set = NULL,
+                                 w = 45,
+                                 h = 30,
+                                 rows = NULL,
+                                 cols = NULL,
+                                 dpi = 100,
+                                 export = TRUE) {
     plot_list <- auto_plot(
         cluster_df = data.frame(df),
         dl = c(dl, ol)
     )
-    wrapped_plots <- wrap_plots(plot_list[relevant_fts])
-    ggsave(
-        fig_path(name, TRUE),
-        width = 45,
-        height = 30,
-        dpi = 100
+    wrapped_plots <- wrap_plots(
+        plot_list[feature_set],
+        nrow = rows,
+        ncol = cols,
     )
+    if (export) {
+        ggsave(
+            fig_path(name, TRUE),
+            width = w,
+            height = h,
+            dpi = dpi
+        )
+    } else {
+        return(plot_list)
+    }
 }
 
 export_wrapped_plots(
     df = long_mtbi_0_cluster_df,
     dl = long_mtbi_0_dl,
     ol = long_mtbi_0_ol,
+    feature_set = relevant_fts,
     name = "long_mtbi_0_pred_scaled_plot.png"
 )
-
 export_wrapped_plots(
     df = long_mtbi_l_cluster_df,
     dl = long_mtbi_l_dl,
     ol = long_mtbi_l_ol,
+    feature_set = relevant_fts,
     name = "long_mtbi_l_pred_scaled_plot.png"
 )
-
 export_wrapped_plots(
     df = base_unij_0_cluster_df,
     dl = base_unij_0_dl,
     ol = base_unij_0_ol,
+    feature_set = relevant_fts,
     name = "base_unij_0_pred_scaled_plot.png"
+)
+export_wrapped_plots(
+    df = base_unij_l_cluster_df,
+    dl = base_unij_l_dl,
+    ol = base_unij_l_ol,
+    feature_set = relevant_fts,
+    name = "base_unij_l_pred_scaled_plot.png"
+)
+
+
+# Just top 10 features
+sorted_inputs <- readRDS(proc_path("2025_02_12_sorted_inputs.rds"))
+top_fts <- intersect(
+    c(sorted_inputs[1:10], outcome_fts),
+    relevant_fts
+)
+
+saveRDS(top_fts, proc_path("top_fts.rds", TRUE))
+top_fts <- readRDS(proc_path("2025_05_12_top_fts.rds"))
+
+export_wrapped_plots(
+    df = long_mtbi_0_cluster_df,
+    dl = long_mtbi_0_dl,
+    ol = long_mtbi_0_ol,
+    feature_set = top_fts,
+    rows = 2,
+    w = 30,
+    h = 7,
+    name = "long_mtbi_0_pred_scaled_plot_top_fts.png"
+)
+export_wrapped_plots(
+    df = long_mtbi_l_cluster_df,
+    dl = long_mtbi_l_dl,
+    ol = long_mtbi_l_ol,
+    feature_set = top_fts,
+    rows = 2,
+    w = 30,
+    h = 7,
+    name = "long_mtbi_l_pred_scaled_plot_top_fts.png"
+)
+export_wrapped_plots(
+    df = base_unij_0_cluster_df,
+    dl = base_unij_0_dl,
+    ol = base_unij_0_ol,
+    feature_set = top_fts,
+    rows = 2,
+    w = 30,
+    h = 7,
+    name = "base_unij_0_pred_scaled_plot_top_fts.png"
 )
 
 export_wrapped_plots(
     df = base_unij_l_cluster_df,
     dl = base_unij_l_dl,
     ol = base_unij_l_ol,
-    name = "base_unij_l_pred_scaled_plot.png"
+    feature_set = top_fts,
+    rows = 2,
+    w = 30,
+    h = 7,
+    name = "base_unij_l_pred_scaled_plot_top_fts.png"
 )
+
 
 long_unij_0_dl <- base_unij_0_dl |>
     dlapply(
@@ -1426,12 +1507,179 @@ export_wrapped_plots(
     ol = long_unij_l_ol,
     name = "long_unij_l_pred_scaled_plot.png"
 )
+
+export_wrapped_plots(
+    df = long_unij_0_cluster_df,
+    dl = long_unij_0_dl,
+    ol = long_unij_0_ol,
+    feature_set = top_fts,
+    rows = 2,
+    w = 30,
+    h = 7,
+    name = "long_unij_0_pred_scaled_plot_top_fts.png"
+)
+
+export_wrapped_plots(
+    df = long_unij_l_cluster_df,
+    dl = long_unij_l_dl,
+    ol = long_unij_l_ol,
+    feature_set = top_fts,
+    rows = 2,
+    w = 30,
+    h = 7,
+    name = "long_unij_l_pred_scaled_plot_top_fts.png"
+)
+
+```
+
+Just inputs:
+
+```{r}
+
+top_ins <- sorted_inputs[1:10]
+
+export_wrapped_plots(
+    df = long_mtbi_0_cluster_df,
+    dl = long_mtbi_0_dl,
+    ol = long_mtbi_0_ol,
+    feature_set = top_ins,
+    cols = 1,
+    h = 27,
+    w = 5,
+    dpi = 80,
+    name = "long_mtbi_0_pred_scaled_plot_top_ins.png"
+)
+export_wrapped_plots(
+    df = long_mtbi_l_cluster_df,
+    dl = long_mtbi_l_dl,
+    ol = long_mtbi_l_ol,
+    feature_set = top_ins,
+    cols = 1,
+    h = 27,
+    w = 5,
+    dpi = 80,
+    name = "long_mtbi_l_pred_scaled_plot_top_ins.png"
+)
+export_wrapped_plots(
+    df = base_unij_0_cluster_df,
+    dl = base_unij_0_dl,
+    ol = base_unij_0_ol,
+    feature_set = top_ins,
+    cols = 1,
+    h = 27,
+    w = 5,
+    dpi = 80,
+    name = "base_unij_0_pred_scaled_plot_top_ins.png"
+)
+export_wrapped_plots(
+    df = base_unij_l_cluster_df,
+    dl = base_unij_l_dl,
+    ol = base_unij_l_ol,
+    feature_set = top_ins,
+    cols = 1,
+    h = 27,
+    w = 5,
+    dpi = 80,
+    name = "base_unij_l_pred_scaled_plot_top_ins.png"
+)
+export_wrapped_plots(
+    df = long_unij_0_cluster_df,
+    dl = long_unij_0_dl,
+    ol = long_unij_0_ol,
+    feature_set = top_ins,
+    cols = 1,
+    h = 27,
+    w = 5,
+    dpi = 80,
+    name = "long_unij_0_pred_scaled_plot_top_ins.png"
+)
+export_wrapped_plots(
+    df = long_unij_l_cluster_df,
+    dl = long_unij_l_dl,
+    ol = long_unij_l_ol,
+    feature_set = top_ins,
+    cols = 1,
+    h = 27,
+    w = 5,
+    dpi = 80,
+    name = "long_unij_l_pred_scaled_plot_top_ins.png"
+)
+```
+
+Just outputs:
+
+```{r}
+export_wrapped_plots(
+    df = long_mtbi_0_cluster_df,
+    dl = long_mtbi_0_dl,
+    ol = long_mtbi_0_ol,
+    feature_set = outcome_fts,
+    cols = 1,
+    h = 24,
+    w = 3,
+    dpi = 80,
+    name = "long_mtbi_0_pred_scaled_plot_outcome_fts.png"
+)
+export_wrapped_plots(
+    df = long_mtbi_l_cluster_df,
+    dl = long_mtbi_l_dl,
+    ol = long_mtbi_l_ol,
+    feature_set = outcome_fts,
+    cols = 1,
+    h = 24,
+    w = 3,
+    dpi = 80,
+    name = "long_mtbi_l_pred_scaled_plot_outcome_fts.png"
+)
+export_wrapped_plots(
+    df = base_unij_0_cluster_df,
+    dl = base_unij_0_dl,
+    ol = base_unij_0_ol,
+    feature_set = outcome_fts,
+    cols = 1,
+    h = 24,
+    w = 3,
+    dpi = 80,
+    name = "base_unij_0_pred_scaled_plot_outcome_fts.png"
+)
+export_wrapped_plots(
+    df = base_unij_l_cluster_df,
+    dl = base_unij_l_dl,
+    ol = base_unij_l_ol,
+    feature_set = outcome_fts,
+    cols = 1,
+    h = 24,
+    w = 3,
+    dpi = 80,
+    name = "base_unij_l_pred_scaled_plot_outcome_fts.png"
+)
+export_wrapped_plots(
+    df = long_unij_0_cluster_df,
+    dl = long_unij_0_dl,
+    ol = long_unij_0_ol,
+    feature_set = outcome_fts,
+    cols = 1,
+    h = 24,
+    w = 3,
+    dpi = 80,
+    name = "long_unij_0_pred_scaled_plot_outcome_fts.png"
+)
+export_wrapped_plots(
+    df = long_unij_l_cluster_df,
+    dl = long_unij_l_dl,
+    ol = long_unij_l_ol,
+    feature_set = outcome_fts,
+    cols = 1,
+    h = 24,
+    w = 3,
+    dpi = 80,
+    name = "long_unij_l_pred_scaled_plot_outcome_fts.png"
+)
 ```
 
 Statistical analysis: bootstrapped similarity to baseline mTBI solution
 
 ```{r}
-
 mtbi_gen_fts_in_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_in_long.csv"))
 mtbi_gen_fts_out_long <- read_csv(proc_path("2025_02_13_mtbi_gen_fts_out_long.csv"))
 mtbi_gen_long <- rbind(
@@ -1439,8 +1687,6 @@ mtbi_gen_long <- rbind(
     mtbi_gen_fts_out_long
 )
 mtbi_gen_long <- na.omit(mtbi_gen_long)
-
-n <- nrow(long_mtbi_0_i1_cluster_df)
 
 long_mtbi_0_data_df <- dplyr::inner_join(
     long_mtbi_0_cluster_df,
@@ -1540,38 +1786,30 @@ topologizer <- function(df) {
     return(summary_df)
 }
 
-# HERE 2025-05-09
-
-concordance_w_mtbi <- function(data_df, n = NULL, iters = 10) {
+concordance_w_mtbi <- function(data_df, n = NULL, iters = 10, procs = 1) {
     if (is.null(n)) {
         n <- nrow(data_df)
     }
-    lapply(
+    p <- progressr::progressor(steps = iters)
+    future::plan(
+        future::multisession,
+        workers = procs
+    )
+    res <- future.apply::future_lapply(
         1:iters,
-        function(x) {
+        future.seed = TRUE,
+        function(x, p) {
             start <- Sys.time()
             bootstrap_sample <- sample(n, replace = TRUE)
-            cat("[1]: ", Sys.time() - start, "\n", sep = "")
-            start <- Sys.time()
             sampled_df <- data_df[bootstrap_sample, ]
-            cat("[1.1]: ", Sys.time() - start, "\n", sep = "")
-            start <- Sys.time()
-            Rprof("profile_output.txt")
             tops_df <- topologizer(sampled_df)
-            Rprof(NULL)
-            cat("[1.2]: ", Sys.time() - start, "\n", sep = "")
-            start <- Sys.time()
             gen_tops_df <- generalizable_features(tops_df, compare_fn_a)
-            cat("[2]: ", Sys.time() - start, "\n", sep = "")
-            start <- Sys.time()
             gen_tops_df_long <- gen_tops_df |>
                 pivot_longer(
                     cols = -feature,
                     names_to = "comparison",
                     values_to = "order_sample"
                 )
-            cat("[3]: ", Sys.time() - start, "\n", sep = "")
-            start <- Sys.time()
             joint_df <- dplyr::left_join(
                 mtbi_gen_long, # reference data frame
                 gen_tops_df_long, # sampled data frame
@@ -1581,129 +1819,84 @@ concordance_w_mtbi <- function(data_df, n = NULL, iters = 10) {
                     match = ifelse(order_sample == order, 1, 0)
                 ) |>
                 dplyr::filter(!grepl("mtbi", feature))
-            cat("[4]: ", Sys.time() - start, "\n", sep = "")
-            start <- Sys.time()
+            p()
             concordance <- sum(joint_df$"match") / nrow(joint_df)
-            cat("[5]: ", Sys.time() - start, "\n", sep = "")
-        }
+            return(concordance)
+        },
+        p = p
     )
+    future::plan(future::sequential)
+    return(unlist(res))
 }
+
+# HERE
 
 set.seed(42)
-long_mtbi_0_pred_conc <- concordance_w_mtbi(long_mtbi_0_data_df, iters = 1)
+start <- Sys.time()
+progressr::with_progress({
+    long_mtbi_0_pred_conc <- concordance_w_mtbi(long_mtbi_0_data_df, iters = 1000, procs = 100)
+})
+long_mtbi_0_pred_conc
+print(Sys.time() - start)
+saveRDS(long_mtbi_0_pred_conc, proc_path("long_mtbi_0_pred_conc.rds", TRUE))
 
-long_mtbi_l_pred_conc <- concordance_w_mtbi(long_mtbi_l_data_df)
-
-base_unij_l_pred_conc <- concordance_w_mtbi(base_unij_l_data_df)
-
+set.seed(42)
+start <- Sys.time()
+progressr::with_progress({
+    long_mtbi_l_pred_conc <- concordance_w_mtbi(long_mtbi_l_data_df, iters = 1000, procs = 100)
+})
+long_mtbi_l_pred_conc
+print(Sys.time() - start)
+saveRDS(long_mtbi_l_pred_conc, proc_path("long_mtbi_l_pred_conc.rds", TRUE))
 ```
-
-To check concordance between T0 and T2 is simple.
-
-But how about by permutation testing?
-
-Say I am trying to say the concordance is significantly different between T0 and T2.
-
-I'm trying to say that two things are basically the same thing.
 
 ```{r}
-matched_pls_dfs <- readRDS(proc_path("2025_02_15_matched_pl_dfs.rds"))
+long_mtbi_0_pred_conc <- readRDS(proc_path("2025_05_12_long_mtbi_0_pred_conc.rds"))
+long_mtbi_l_pred_conc <- readRDS(proc_path("2025_05_12_long_mtbi_l_pred_conc.rds"))
 
-concordance_between_dfs <- function(df1, df2, feature_set) {
-    tops_df1 <- topologizer(df1)
-    tops_df2 <- topologizer(df2)
-    gen_tops_df1 <- generalizable_features(tops_df1, compare_fn_a)
-    gen_tops_df2 <- generalizable_features(tops_df2, compare_fn_a)
-    gen_tops_df_long1 <- gen_tops_df1 |>
-        pivot_longer(
-            cols = -feature,
-            names_to = "comparison",
-            values_to = "order"
-        )
-    gen_tops_df_long2 <- gen_tops_df2 |>
-        pivot_longer(
-            cols = -feature,
-            names_to = "comparison",
-            values_to = "order"
-        )
-    joint_df <- dplyr::left_join(
-        gen_tops_df_long1,
-        gen_tops_df_long2,
-        by = c("feature", "comparison")
-    ) |>
-        dplyr::filter(feature %in% feature_set) |>
-        dplyr::mutate(
-            match = ifelse(order.x == order.y, 1, 0)
-        )
-    concordance <- sum(joint_df$"match") / nrow(joint_df)
-    return(concordance)
-}
+mean(na.omit(long_mtbi_0_pred_conc))
 
-concordance_between_dfs(
-    long_mtbi_0_data_df,
-    long_mtbi_l_data_df,
-    feature_set = relevant_fts
+mean(na.omit(long_mtbi_l_pred_conc))
+
+sims_pre <- na.omit(long_mtbi_0_pred_conc)
+sims_post <- na.omit(long_mtbi_l_pred_conc)
+
+ci_solo_pre <- quantile(sims_pre, probs = c(0.025, 0.975))
+mean(sims_pre) # 0.7797065
+ci_solo_pre # 0.7073171, 0.8455285
+
+ci_solo_post <- quantile(sims_post, probs = c(0.025, 0.975))
+mean(sims_post) # 0.829507
+ci_solo_post #0 .7623984, 0.8861789
+
+
+
+set.seed(42)
+bootstrapped_diffs <- lapply(
+    1:10000,
+    function(x) {
+        sampled_sim_post <- sample(sims_post, size = 1)
+        sampled_sim_pre <- sample(sims_pre, size = 1)
+        sampled_sim_post - sampled_sim_pre
+    }
 )
+mean_diff <- mean(unlist(bootstrapped_diffs))
+ci <- quantile(unlist(bootstrapped_diffs), probs = c(0.025, 0.975))
+mean_diff * 100 # 5.03
+ci * 100 # [-0.04878049, 0.14634146]
 
-concordance_between_time <- function(data_df_t0, data_df_t2, n = 220) {
-    set.seed(42)
-    lapply(
-        1:10,
-        function(x) {
-            permutation <- sample(n, replace = FALSE)
-            t0_picks <- permutation[1:110]
-            t2_picks <- permutation[111:220]
-            sampled_df_t0 <- data_df_t0[t0_picks, ]
-            sampled_df_t2 <- data_df_t2[t2_picks, ]
-            sample_df <- rbind(sampled_df_t0, sampled_df_t2)
-            tops_df <- topologizer(sampled_df)
-            gen_tops_df <- generalizable_features(tops_df, compare_fn_a)
-            gen_tops_df_long <- gen_tops_df |>
-                pivot_longer(
-                    cols = -feature,
-                    names_to = "comparison",
-                    values_to = "order_sample"
-                )
-            joint_df <- dplyr::left_join(
-                mtbi_gen_long,
-                gen_tops_df_long,
-                by = c("feature", "comparison")
-            ) |>
-                dplyr::mutate(
-                    match = ifelse(order_sample == order, 1, 0)
-                ) |>
-                dplyr::filter(!grepl("mtbi", feature))
-            concordance <- sum(joint_df$"match") / nrow(joint_df)
-            print(concordance)
-        }
-    )
-}
-
-long_mtbi_l_tops_df <- topologizer(long_mtbi_l_data_df)
-long_mtbi_l_gen_tops_df <- generalizable_features(long_mtbi_l_tops_df, compare_fn_a)
-long_mtbi_l_gen_tops_df_long <- long_mtbi_l_gen_tops_df |>
-    pivot_longer(
-        cols = -feature,
-        names_to = "comparison",
-        values_to = "order_sample"
-    )
-
-long_gen_x <- dplyr::left_join(
-    mtbi_gen_long,
-    long_mtbi_l_gen_tops_df_long,
-    by = c("feature", "comparison")
-) 
-
-long_gen_x
-
-mtbi_gen_long
-
-long_mtbi_0_i1_cluster_df
-
-long_mtbi_l_i1_cluster_df
 ```
 
-#------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 ### Meta clustering the longitudinal timepoint for baseline concussion group
 
