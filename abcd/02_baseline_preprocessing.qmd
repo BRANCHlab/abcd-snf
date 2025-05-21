@@ -2,9 +2,10 @@
 
 This chapter contains:
 1. Removal of neuroimaging data failing QC
-2. Train/test split
-3. Mice imputation of missing data
-4. Organization of imputed data into `data_list` class objects (from the `metasnf` package)
+2. Random removal of siblings
+3. Train/test split
+4. Mice imputation of missing data
+5. Organization of imputed data into `data_list` class objects (from the `metasnf` package)
 
 ## Importing Extracted Data
 
@@ -178,6 +179,136 @@ rm_gord_cor_qc_unij <- read("2025_02_07_rm_gord_cor_qc_unij.csv")
 rm_subc_cor_qc_unij <- read("2025_02_07_rm_subc_cor_qc_unij.csv")
 ```
 
+## Siblings analysis
+
+We choose not to eliminate siblings from this stage of the analysis.
+Within our concussion sample of size N = 437, as well as in randomly subsetted uninjured samples, the number of within group siblings that pose a threat to artificially inflating a cluster is typically no more than 2-4.
+Removing siblings randomly across all observations would lead to a large loss of data.
+Removing siblings on a per-group basis would disproportionately impact the uninjured group, as the mTBI group has a much lower number of siblings.
+
+```{r}
+all_subs_df <- data.frame(
+    subjectkey = c(mtbi_subs, unij_subs),
+    group = c(rep("mtbi", length(mtbi_subs)), rep("unij", length(unij_subs)))
+) 
+
+nrow(all_subs_df) # 9786 subjects
+
+family_data <- read_csv(core_path("abcd-general/abcd_y_lt.csv")) |>
+    filter_timepoint(t = 0) |>
+    dplyr::inner_join(all_subs_df, by = c("src_subject_id" = "subjectkey"))
+
+siblings_df <- family_data$"rel_family_id" |>
+    table() |>
+    data.frame() |>
+    dplyr::rename("rel_family_id" = "Var1")
+siblings_df$"rel_family_id" <- as.numeric(as.character(siblings_df$"rel_family_id"))
+
+examining_sibs_df <- dplyr::full_join(family_data, siblings_df, by = "rel_family_id")
+
+# 118/437 kids in the mTBI group have a sibling (27%)
+examining_sibs_df |>
+    dplyr::filter(group == "mtbi", Freq > 1)
+
+# 2873/9339 kids in the uninjured group have a sibling (31%)
+examining_sibs_df |>
+    dplyr::filter(group == "unij", Freq > 1)
+
+# Very few kids in a matched random sample of N = 437 have siblings
+z <- examining_sibs_df |>
+    dplyr::filter(group == "unij")
+z[sample(nrow(z))[1:437], ]$"rel_family_id" |>
+    unique() |>
+    length()
+
+# within concussion sample siblings: 434/437 unique family IDs (99.3%)
+examining_sibs_df |>
+    dplyr::filter(group == "mtbi") |>
+    dplyr::select(rel_family_id) |>
+    unlist() |>
+    unique() |>
+    length()
+
+# within concussion sample siblings: 7944/9349 unique family IDs (85.0%)
+examining_sibs_df |>
+    dplyr::filter(group == "unij") |>
+    dplyr::select(rel_family_id) |>
+    unlist() |>
+    unique() |>
+    length()
+
+# Randomly dropping leads to mTBI group of typically ~380 (dropping nearly 50+ observations)
+shuffle_and_drop_siblings <- function(df) {
+    df <- df[sample(nrow(df)), ] 
+    #df <- arrange(df, desc(group))
+    df <- df[!duplicated(df$"rel_family_id"), ]
+    return(df)
+}
+shuffle_and_drop_siblings(family_data)$"group" |> table()
+```
+
+Getting rid of siblings randomly will lose a large amount of the concussion sample.
+57/437 concussion sample children have at least one sibling, but the majority of those siblings are in the uninjured group (434/437 unique family IDs when looking exclusively in the mTBI sample).
+Getting rid of siblings in a within groups fashion will change the percentage of children in the uninjured group who have a sibling and perhaps make the two groups less representative of each other.
+An alternative option may be to simply drop siblings immediately prior to clustering (but after matching) to keep things simple.
+
+## Accounting for family ID / site, and scanner information
+
+Note that there are 22 unique site values: https://neurostars.org/t/abcd-family-nested-within-site-or-scanner-id-how-to-deal-with-inaccuracies/18664
+
+```{r}
+mri_y_adm_info <- read_csv(core_path("imaging/mri_y_adm_info.csv"))
+abcd_y_lt <- read_csv(core_path("abcd-general/abcd_y_lt.csv"))
+
+scanner_id_mtbi <- get_scanner_id(mri_y_adm_info, mtbi_subs, t = 0)
+scanner_id_unij <- get_scanner_id(mri_y_adm_info, unij_subs, t = 0)
+family_id_mtbi <- get_family_id(abcd_y_lt, mtbi_subs, t = 0)
+family_id_unij <- get_family_id(abcd_y_lt, unij_subs, t = 0)
+
+write_csv(scanner_id_mtbi, input_path("scanner_id_mtbi.csv", TRUE))
+write_csv(scanner_id_unij, input_path("scanner_id_unij.csv", TRUE)) 
+write_csv(family_id_mtbi, input_path("family_id_mtbi.csv", TRUE))
+write_csv(family_id_unij, input_path("family_id_unij.csv", TRUE))
+```
+
+
+```{r}
+# CHECKPOINT
+scanner_id_mtbi <- read_csv(input_path("2025_05_21_scanner_id_mtbi.csv"))
+scanner_id_unij <- read_csv(input_path("2025_05_21_scanner_id_unij.csv"))
+family_id_mtbi <- read_csv(input_path("2025_05_21_family_id_mtbi.csv"))
+family_id_unij <- read_csv(input_path("2025_05_21_family_id_unij.csv"))
+```
+
+
+```{r}
+library(mice)
+# 1. Create a simple toy dataset
+set.seed(123)
+data <- data.frame(
+  age = c(10, 11, 12, NA, 10, 11, 12, NA, 11, 10),
+  iq  = c(100, 105, 110, 115, NA, 102, NA, 108, 111, 100),
+  scanner_id = c("S1", "S1", "S2", NA, "S2", "S1", NA, "S2", "S1", NA)
+)
+# Turn scanner_id into a factor (common in MICE usage)
+data$scanner_id <- as.factor(data$scanner_id)
+# View missing data summary
+ini <- mice(data, maxit = 0)
+meth <- ini$method
+pred <- ini$predictorMatrix
+# Don't impute scanner_id
+meth["scanner_id"] <- ""
+# Predict age and iq using each other (you could add scanner_id if desired)
+pred["age", ] <- c(0, 1, 0)  # Predict age using iq only
+pred["iq", ]  <- c(1, 0, 0)  # Predict iq using age only
+imp <- mice(data, method = meth, predictorMatrix = pred, m = 5, seed = 42)
+completed_data <- complete(imp, action = "long", include = TRUE)
+# View completed data
+print(completed_data)
+# Compare original and completed data side-by-side
+cbind(original = data$scanner_id, imputed = completed_data$scanner_id)
+```
+
 ## Train/Test Split
 
 To avoid having training and testing data inform each other during imputation, we assign the splits prior to the imputation.
@@ -194,16 +325,6 @@ write_subjects(mtbi_test, sub_path("mtbi_test_subs.csv", TRUE))
 
 mtbi_train_subs <- read_subjects(sub_path("2025_02_07_mtbi_train_subs.csv"))
 mtbi_test_subs <- read_subjects(sub_path("2025_02_07_mtbi_test_subs.csv"))
-
-train_filter <- function(df) {
-    filtered_df <- dplyr::filter(df, df$"subjectkey" %in% mtbi_train_subs)
-    return(filtered_df)
-}
-
-test_filter <- function(df) {
-    filtered_df <- dplyr::filter(df, df$"subjectkey" %in% mtbi_test_subs)
-    return(filtered_df)
-}
 
 # Storing all mTBI data frames in a list
 mtbi_df_list <- list(
@@ -232,7 +353,9 @@ mtbi_df_list <- list(
     "p_fam_fn_mtbi" = p_fam_fn_mtbi,
     "p_parent_psych_mtbi" = p_parent_psych_mtbi,
     "cbcl_mtbi" = cbcl_mtbi,
-    "sds_mtbi" = sds_mtbi
+    "sds_mtbi" = sds_mtbi,
+    "family_id" = family_id_mtbi,
+    "scanner_id" = scanner_id_mtbi
 )
 
 # Storing all uninjured data frames in a list
@@ -257,10 +380,22 @@ unij_df_list <- list(
     "p_fam_fn_unij" = p_fam_fn_unij,
     "p_parent_psych_unij" = p_parent_psych_unij,
     "cbcl_unij" = cbcl_unij,
-    "sds_unij" = sds_unij
+    "sds_unij" = sds_unij,
+    "family_id" = family_id_unij,
+    "scanner_id" = scanner_id_unij
 )
 
 # Splitting the mTBI list of data frames into training and test set versions
+train_filter <- function(df) {
+    filtered_df <- dplyr::filter(df, df$"subjectkey" %in% mtbi_train_subs)
+    return(filtered_df)
+}
+
+test_filter <- function(df) {
+    filtered_df <- dplyr::filter(df, df$"subjectkey" %in% mtbi_test_subs)
+    return(filtered_df)
+}
+
 mtbi_train_df_list <- lapply(mtbi_df_list, train_filter)
 mtbi_test_df_list <- lapply(mtbi_df_list, test_filter)
 ```
@@ -306,9 +441,9 @@ write_csv(unij_df, proc_path("unij_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_train_df <- data.frame(read_csv(proc_path("2025_02_07_mtbi_train_df.csv")))
-mtbi_test_df <- data.frame(read_csv(proc_path("2025_02_07_mtbi_test_df.csv")))
-unij_df <- data.frame(read_csv(proc_path("2025_02_07_unij_df.csv")))
+mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_21_mtbi_train_df.csv")))
+mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_21_mtbi_test_df.csv")))
+unij_df <- data.frame(read_csv(proc_path("2025_05_21_unij_df.csv")))
 ```
 
 A preliminary check of which columns have missing data.
@@ -325,6 +460,18 @@ mtbi_train_df_no_subs <- char_to_fac(mtbi_train_df[, -1])
 mtbi_test_df_no_subs <- char_to_fac(mtbi_test_df[, -1])
 unij_df_no_subs <- char_to_fac(unij_df[, -1])
 
+# Set family ID and scanner ID also as factors
+mtbi_train_df_no_subs$"family_id" <- as.factor(mtbi_train_df_no_subs$"family_id")
+mtbi_train_df_no_subs$"scanner_id" <- as.factor(mtbi_train_df_no_subs$"scanner_id")
+
+mtbi_test_df_no_subs$"family_id" <- as.factor(mtbi_test_df_no_subs$"family_id")
+mtbi_test_df_no_subs$"scanner_id" <- as.factor(mtbi_test_df_no_subs$"scanner_id")
+
+unij_df_no_subs$"family_id" <- as.factor(unij_df_no_subs$"family_id")
+unij_df_no_subs$"scanner_id" <- as.factor(unij_df_no_subs$"scanner_id")
+```
+
+```{r}
 # Function that checks which variables have the biggest correlations
 pairwise_correlations <- function(df, threshold = 0) {
     # Remove missing data to help calculate correlations
@@ -401,15 +548,10 @@ build_pred_mat <- function(df, n_predictors = 1) {
 ###############################################################################
 # Imputation - mTBI train
 ###############################################################################
-# Doesn't run (system is computationally singular)
-imputed_mtbi <- futuremice(
-    mtbi_train_df_no_subs,
-    m = 5,
-    maxit = 10,
-    parallelseed = 42
-)
 
 mtbi_train_pred_mat <- build_pred_mat(mtbi_train_df_no_subs, 1)
+
+mtbi_train_pred_mat
 
 write.table(mtbi_train_pred_mat, proc_path("mtbi_train_pred_mat.txt", TRUE))
 

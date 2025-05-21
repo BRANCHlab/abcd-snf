@@ -1,9 +1,9 @@
 # Baseline Data Extraction
 
-This file contains:
+This file achieves the following goals:
 
-- Identification of mTBI and uninjured children at the baseline timepoint
-- Extraction of features values for subsequent subtyping of those children
+1. Identification of concussion and uninjured children as of the baseline timepoint
+2. Extraction of features values for those children
 
 ## Loading packages
 
@@ -21,13 +21,13 @@ library(visdat)
 ## Path set-up
 
 The `path_maker()` function returns other functions that can turn relative paths into absolute ones.
-The functions returned by `path_maker()` also have a `date` parameter which attatch as a prefix the current date to a file name.
+The functions returned by `path_maker()` also have a `date` parameter which attach as a prefix the current date to a file name.
 
 ```{r}
-core_path <- path_maker(here(paste0("data/abcd/core")))
-input_path <- path_maker(here(paste0("data/abcd/inputs")))
-sub_path <- path_maker(here(paste0("data/abcd/subjects")))
-fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+core_path <- abcdutils::path_maker(here::here("data/abcd/core"))
+input_path <- abcdutils::path_maker(here::here("data/abcd/inputs"))
+sub_path <- abcdutils::path_maker(here::here("data/abcd/subjects"))
+fig_path <- abcdutils::path_maker(here::here("data/abcd/results/figures"))
 
 import <- function(path) {
     return(abcd_load(core_path(path)))
@@ -91,7 +91,7 @@ mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
 ph_p_sds <- import("physical-health/ph_p_sds.csv")
 ```
 
-## Subjects
+## Subject identification
 
 All information required for identifying children at a chronic stage (> 3 months) following mTBI as of baseline data collection is available in the `ph_p_otbi.csv` file.
 To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
@@ -106,7 +106,7 @@ The structure of the Ohio State TBI screen as used for ABCD data collection was 
 * Any alteration in mental state
 * Focal neurological deficits
 
-but none of the following:
+But none of the following:
 
 * LOC over 30 minutes
 * A Glasgow Coma Scale score below 13
@@ -128,11 +128,11 @@ For my analyses, I assume these edge cases are not common enough to meaningfully
 
 ```{r}
 # 11864 total children included in baseline TBI data
-ph_p_otbi |>
-    filter_timepoint(0) |>
+ph_p_otbi |>                   # concussion data set
+    filter_timepoint(0) |>     # baseline data
     nrow()
 
-# mTBI subjects (latest mTBI at least 3 months prior to baseline collection
+# mTBI subjects (latest mTBI at least 3 months prior to baseline collection)
 # N = 437
 mtbi_subs <- get_mtbi_subjects(ph_p_otbi, abcd_y_lt, min_mpi = 3, t = 0)
 
