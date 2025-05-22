@@ -128,8 +128,8 @@ For my analyses, I assume these edge cases are not common enough to meaningfully
 
 ```{r}
 # 11864 total children included in baseline TBI data
-ph_p_otbi |>                   # concussion data set
-    filter_timepoint(0) |>     # baseline data
+ph_p_otbi |>
+    filter_timepoint(0) |>
     nrow()
 
 # mTBI subjects (latest mTBI at least 3 months prior to baseline collection)
@@ -145,11 +145,11 @@ unij_subs <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0)
 
 write_csv(mtbi_subs, sub_path("mtbi_subs.csv", date = TRUE))
 write_csv(unij_subs, sub_path("unij_subs.csv", date = TRUE))
+```
 
-# Note that the longitudinal subjects have not been filtered in any way based on
-#  whether or not they also had an mTBI at baseline or another timepoint
-mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
-unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+```{r}
+mtbi_subs <- read_subjects(sub_path("2025_05_22_mtbi_subs.csv"))
+unij_subs <- read_subjects(sub_path("2025_05_22_unij_subs.csv"))
 
 length(mtbi_subs)
 length(unij_subs)
@@ -177,17 +177,39 @@ A few more intermediate columns need to be added to isolate these variables for 
 #### Feeling dazed
 
 ```{r}
-as_mtbi_mem_daze_mtbi <- get_mtbi_mem_daze(ph_p_otbi, abcd_y_lt, mtbi_subs, t = 0)
-tibble(as_mtbi_mem_daze_mtbi)
-write_csv(as_mtbi_mem_daze_mtbi, input_path("as_mem_daze_mtbi.csv", date = TRUE))
+mtbi_as_mem_daze <- get_mtbi_mem_daze(
+    ph_p_otbi,
+    abcd_y_lt,
+    mtbi_subs,
+    t = 0
+    )
+
+tibble(mtbi_as_mem_daze)
+
+write_csv(
+    as_mtbi_mem_daze_mtbi,
+    input_path("as_mem_daze_mtbi.csv", date = TRUE)
+)
+
 ```
 
 #### Mechanism of injury
 
 ```{r}
-as_mechanism_mtbi <- get_mtbi_mechanism(ph_p_otbi, abcd_y_lt, mtbi_subs, t = 0)
+as_mechanism_mtbi <- get_mtbi_mechanism(
+    ph_p_otbi,
+    abcd_y_lt,
+    mtbi_subs,
+    t = 0
+)
+
 tibble(as_mechanism_mtbi)
-write_csv(as_mechanism_mtbi, input_path("as_mechanism_mtbi.csv", date = TRUE))
+
+write_csv(
+    as_mechanism_mtbi,
+    input_path("as_mechanism_mtbi.csv", date = TRUE)
+)
+
 ```
 
 #### Loss of consciousness

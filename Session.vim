@@ -13,8 +13,8 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +35 abcd/01_baseline_extraction.qmd
-badd +248 abcd/02_baseline_preprocessing.qmd
+badd +207 abcd/01_baseline_extraction.qmd
+badd +57 abcd/02_baseline_preprocessing.qmd
 badd +1 abcd/03_longitudinal_extraction.qmd
 badd +1 abcd/04_longitudinal_preprocessing.qmd
 badd +1 abcd/05_descriptive_analyses.qmd
@@ -27,8 +27,8 @@ badd +1 abcd/09_baseline_matching.qmd
 badd +214 ~/Documents/abcd-prepost-cbcl-rsi/ses_imputation.Rmd
 badd +26 ~/Documents/abcd-prepost-cbcl-rsi/README.md
 badd +40 ~/Documents/abcd-prepost-cbcl-rsi/combat_harmonization.Rmd
-badd +93 ~/Documents/prash/journal/prash.md
-badd +6 ~/Documents/prash/time/time.csv
+badd +1 ~/Documents/prash/journal/prash.md
+badd +2 ~/Documents/prash/time/time.csv
 argglobal
 %argdel
 $argadd abcd/01_baseline_extraction.qmd
@@ -42,7 +42,7 @@ $argadd abcd/06_baseline_mtbi_snf.qmd
 $argadd abcd/07_subtype_classifier.qmd
 $argadd abcd/08_longitudinal_analyses.qmd
 $argadd abcd/09_baseline_matching.qmd
-edit abcd/02_baseline_preprocessing.qmd
+edit abcd/01_baseline_extraction.qmd
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
@@ -62,11 +62,7 @@ set winwidth=1
 exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
 exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-if bufexists(fnamemodify("abcd/02_baseline_preprocessing.qmd", ":p")) | buffer abcd/02_baseline_preprocessing.qmd | else | edit abcd/02_baseline_preprocessing.qmd | endif
-if &buftype ==# 'terminal'
-  silent file abcd/02_baseline_preprocessing.qmd
-endif
-balt abcd/01_baseline_extraction.qmd
+balt ~/Documents/prash/time/time.csv
 setlocal foldmethod=marker
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -75,12 +71,12 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 195 - ((18 * winheight(0) + 27) / 55)
+let s:l = 207 - ((42 * winheight(0) + 27) / 55)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 195
-normal! 033|
+keepjumps 207
+normal! 0
 wincmd w
 argglobal
 if bufexists(fnamemodify("abcd/02_baseline_preprocessing.qmd", ":p")) | buffer abcd/02_baseline_preprocessing.qmd | else | edit abcd/02_baseline_preprocessing.qmd | endif
@@ -96,7 +92,7 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 210 - ((24 * winheight(0) + 27) / 55)
+let s:l = 210 - ((8 * winheight(0) + 27) / 55)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
