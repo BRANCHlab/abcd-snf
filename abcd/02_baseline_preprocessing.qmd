@@ -33,6 +33,10 @@ unij_subs <- read_subjects(sub_path("2025_05_22_unij_subs.csv"))
 read <- function(path) {
     read_csv(input_path(path))
 }
+
+import <- function(path) {
+    return(abcdutils::abcd_load(core_path(path)))
+}
 ```
 
 ```{r}
@@ -65,7 +69,8 @@ mtbi_sm_cort_sa        <- read("2025_05_22_mtbi_sm_cort_sa.csv")
 mtbi_sm_cort_t         <- read("2025_05_22_mtbi_sm_cort_t.csv")
 mtbi_sm_subc_v         <- read("2025_05_22_mtbi_sm_subc_v.csv")
 mtbi_family            <- read("2025_05_22_mtbi_family.csv")
-mtbi_scanner           <- read("2025_05_22_mtbi_scanner.csv")
+mtbi_scanner           <- read("2025_05_26_mtbi_scanner.csv")
+mtbi_site              <- read("2025_05_23_mtbi_site.csv")
 
 # Uninjured subjects
 unij_cbcl              <- read("2025_05_22_unij_cbcl.csv")
@@ -90,7 +95,9 @@ unij_sm_cort_sa        <- read("2025_05_22_unij_sm_cort_sa.csv")
 unij_sm_cort_t         <- read("2025_05_22_unij_sm_cort_t.csv")
 unij_sm_subc_v         <- read("2025_05_22_unij_sm_subc_v.csv")
 unij_family            <- read("2025_05_22_unij_family.csv")
-unij_scanner           <- read("2025_05_22_unij_scanner.csv")
+unij_scanner           <- read("2025_05_26_unij_scanner.csv")
+unij_site              <- read("2025_05_23_unij_site.csv")
+
 ```
 
 ## Neuroimaging quality control
@@ -258,7 +265,7 @@ mtbi_df_list <- list(
     "mtbi_p_sports"          = mtbi_p_sports,
     "mtbi_rm_gord_cor_qc"    = mtbi_rm_gord_cor_qc,
     "mtbi_rm_subc_cor_qc"    = mtbi_rm_subc_cor_qc,
-    #"mtbi_scanner"           = mtbi_scanner,
+    "mtbi_scanner"           = mtbi_scanner,
     "mtbi_sds"               = mtbi_sds,
     "mtbi_sm_cort_sa_qc"     = mtbi_sm_cort_sa_qc,
     "mtbi_sm_cort_t_qc"      = mtbi_sm_cort_t_qc,
@@ -284,7 +291,7 @@ unij_df_list <- list(
     "unij_p_sports"          = unij_p_sports,
     "unij_rm_gord_cor_qc"    = unij_rm_gord_cor_qc,
     "unij_rm_subc_cor_qc"    = unij_rm_subc_cor_qc,
-    #"unij_scanner"           = unij_scanner,
+    "unij_scanner"           = unij_scanner,
     "unij_sds"               = unij_sds,
     "unij_sm_cort_sa_qc"     = unij_sm_cort_sa_qc,
     "unij_sm_cort_t_qc"      = unij_sm_cort_t_qc,
@@ -347,35 +354,21 @@ write_csv(unij_df, proc_path("unij_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_23_mtbi_train_df.csv")))
-mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_23_mtbi_test_df.csv")))
-unij_df <- data.frame(read_csv(proc_path("2025_05_23_unij_df.csv")))
+mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_train_df.csv")))
+mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_test_df.csv")))
+unij_df <- data.frame(read_csv(proc_path("2025_05_26_unij_df.csv")))
 ```
 
-A preliminary check of which columns have missing data.
+A preliminary check of which columns have missing data:
 
 ```{r}
-missing_colnames_mtbi <- names(which(colSums(is.na(mtbi_train_df)) > 0))
-missing_colnames_mtbi
-
-missing_colnames_unij <- names(which(colSums(is.na(unij_df)) > 0))
-missing_colnames_unij
-
-# Remove the subjectkey variable and convert character features into factors
-mtbi_train_df_no_subs <- char_to_fac(mtbi_train_df[, -1])
-mtbi_test_df_no_subs <- char_to_fac(mtbi_test_df[, -1])
-unij_df_no_subs <- char_to_fac(unij_df[, -1])
-
-# Set family ID and scanner ID also as factors
-mtbi_train_df_no_subs$"scanner_id" <- as.factor(mtbi_train_df_no_subs$"scanner_id")
-
-mtbi_test_df_no_subs$"scanner_id" <- as.factor(mtbi_test_df_no_subs$"scanner_id")
-
-unij_df_no_subs$"scanner_id" <- as.factor(unij_df_no_subs$"scanner_id")
+missing_columns <- function(x) names(which(colSums(is.na(x)) > 0))
+missing_columns(mtbi_train_df)
+missing_columns(unij_df)
 ```
 
 ```{r}
-# Function that checks which variables have the biggest correlations
+# Function that checks which variables have the biggest correlations# {{{
 pairwise_correlations <- function(df, threshold = 0) {
     # Remove missing data to help calculate correlations
     df <- na.omit(df)
@@ -446,232 +439,210 @@ build_pred_mat <- function(df, n_predictors = 1) {
     print(paste0("Dropping: ", paste(vars_to_drop, collapse = ", ")))
     pred_mat[, vars_to_drop] <- 0
     return(pred_mat)
+}# }}}
+# pred_mat_exclusions controls how many of the top most correlated variables
+# are excluded as predictors from the predictor matrix.
+run_imputation <- function(df,
+                           pred_mat_exclusions = 0,
+                           visit_sequence = NULL,
+                           parallel = FALSE) {
+    df <- dplyr::select(df, -"subjectkey")
+    df <- char_to_fac(df)
+    if (!is.null(visit_sequence)) {
+        df <- df[, visit_sequence[visit_sequence %in% colnames(df)]]
+    } else {
+        df <- df[, sample(colnames(df))]
+    }
+    # Construct predictor matrix
+    pred_mat <- build_pred_mat(df, pred_mat_exclusions)
+    # Construct methods vector and set scanner_id to ""
+    if (!parallel) {
+        imputed <- mice(
+            df,
+            m = 5,
+            maxit = 10,
+            predictorMatrix = pred_mat
+        )
+    } else {
+        imputed <- futuremice(
+            df,
+            m = 5,
+            maxit = 10,
+            parallelseed = 42,
+            n.core = 5,
+            predictorMatrix = pred_mat
+        )
+    }
+    return(
+        list(
+            visit_sequence = colnames(df),
+            pred_mat = pred_mat,
+            imputed = imputed
+        )
+    )
 }
 
-###############################################################################
-# Imputation - mTBI train
-###############################################################################
-mtbi_train_pred_mat <- build_pred_mat(mtbi_train_df_no_subs, 1)
-#mtbi_train_pred_mat["scanner_id", ] <- 0
-write.table(mtbi_train_pred_mat, proc_path("mtbi_train_pred_mat.txt", TRUE))
-mtbi_train_pred_mat <- as.matrix(read.table(proc_path("2025_05_23_mtbi_train_pred_mat.txt")))
-storage.mode(mtbi_train_pred_mat) <- "double"
-#ini <- mice(mtbi_train_df_no_subs, maxit = 0)
-#meth <- ini$"method"
-#meth["scanner_id"] <- ""
+# mTBI train
+set.seed(42)
+mtbi_train_imputed <- run_imputation(mtbi_train_df, 1)
+saveRDS(mtbi_train_imputed, proc_path("mtbi_train_imputed.rds", TRUE))
 
-# Runs
+complete(mtbi_train_imputed$"imputed", action = "long", include = FALSE) |>
+    missing_columns()
 
-colnames(mtbi_train_df_no_subs)[66]
+# Copy visit sequence
+mtbi_train_imputed <- readRDS(proc_path("2025_05_26_mtbi_train_imputed.rds"))
+vs <- mtbi_train_imputed$"visit_sequence"
 
-ComplexHeatmap::Heatmap(mtbi_train_pred_mat)
+#mTBI test
+set.seed(42)
+mtbi_test_imputed <- run_imputation(mtbi_test_df, 42, vs)
+saveRDS(mtbi_test_imputed, proc_path("mtbi_test_imputed.rds", TRUE))
+complete(mtbi_test_imputed$"imputed", action = "long", include = FALSE) |>
+    missing_columns()
 
-mtbi_train_df_no_subs
-
-mtbi_train_pred_mat <- build_pred_mat(mtbi_train_df_no_subs, 60)
+#Uninjured
+set.seed(42)
 start <- Sys.time()
-#mtbi_train_imputed <- futuremice(
-mtbi_train_imputed <- mice(
-    mtbi_train_df_no_subs,
-    m = 5,
-    #n.core = 5,
-    maxit = 10,
-    #method = meth,
-    #parallelseed = 42,
-    predictorMatrix = mtbi_train_pred_mat
-)
+unij_imputed <- run_imputation(unij_df, 1, vs, FALSE)
 print(Sys.time() - start)
 
+saveRDS(unij_imputed, proc_path("unij_imputed.rds", TRUE))
+complete(unij_imputed$"imputed", action = "long", include = FALSE) |>
+    missing_columns()
 
-mtbi_train_df_no_subs$"scanner_id" |> table(useNA = "always")
-
-complete(mtbi_train_imputed, action = "long")$"scanner_id" |> table(useNA = "always")
-
-saveRDS(mtbi_train_imputed, file = proc_path("mtbi_train_imputed_0.rds", TRUE))
-mtbi_train_imputed <- readRDS(proc_path("2025_05_23_mtbi_train_imputed_0.rds"))
+# mTBI/uninjured pooled
+mtbi_unij_vars_df <- mtbi_train_df[, colnames(unij_df)]
+pool_df <- rbind(mtbi_unij_vars_df, unij_df)
+pool_imputed <- run_imputation(pool_df, 1, vs)
+saveRDS(pool_imputed, file = proc_path("pool_imputed.rds", TRUE))
 ```
 
 ```{r}
-#
-# mTBI solo imputed data
-five_imputed_mtbi_train <- complete(
-    imputed_mtbi_train,
+mtbi_train_imputed <- readRDS(proc_path("2025_05_26_mtbi_train_imputed.rds"))
+mtbi_test_imputed <- readRDS(proc_path("2025_05_26_mtbi_test_imputed.rds"))
+unij_imputed <- readRDS(proc_path("2025_05_26_unij_imputed.rds"))
+pool_imputed <- readRDS(proc_path("2025_05_26_pool_imputed.rds"))
+```
+
+```{r}
+png_save <- function(img, path, w = 1250, h = 1000, r = 125) {
+    grDevices::png(
+        filename = path,
+        width = w,
+        height = h,
+        res = r
+    )
+    print(img)
+    grDevices::dev.off()
+}
+
+save_density_plots <- function(features, imputed, prefix = "") {
+    for (feature in features) {
+        print(feature)
+        plot <- tryCatch(
+            {
+                plot <- mice::densityplot(imputed, as.formula(paste0("~ ", feature)))
+            },
+            error = function(e) {
+                plot <- mice::xyplot(imputed, as.formula(paste0("~ ", feature)))
+            }
+        )
+        png_save(
+            plot,
+            fig_path(paste0(prefix, "density_plot_", feature, ".png"), TRUE),
+            w = 400,
+            h = 400
+        )
+    }
+}
+
+save_density_plots(
+    missing_columns(mtbi_train_df),
+    mtbi_train_imputed$"imputed",
+    "mtbi_train_"
+)
+
+save_density_plots(
+    missing_columns(mtbi_test_df),
+    mtbi_test_imputed$"imputed",
+    "mtbi_test_"
+)
+
+save_density_plots(
+    missing_columns(unij_df),
+    unij_imputed$"imputed",
+    "unij_"
+)
+
+save_density_plots(
+    missing_columns(pool_df),
+    pool_imputed$"imputed",
+    "pool_"
+)
+```
+
+```{r}
+mtbi_train_complete <- complete(
+    mtbi_train_imputed$"imputed",
     action = "long",
     include = TRUE
 )
-#
-# Write and recover
-write_csv(
-    five_imputed_mtbi_train,
-    input_path("five_imputed_mtbi_train.csv", TRUE)
+mtbi_test_complete <- complete(
+    mtbi_test_imputed$"imputed",
+    action = "long",
+    include = TRUE
 )
+unij_complete <- complete(
+    unij_imputed$"imputed",
+    action = "long",
+    include = TRUE
+)
+pool_complete <- complete(
+    pool_imputed$"imputed",
+    action = "long",
+    include = TRUE
+)
+```
+
+```{r}
+mtbi_train_complete$"subjectkey" <- rep(mtbi_train_subs, 6)
+mtbi_test_complete$"subjectkey" <- rep(mtbi_test_subs, 6)
+unij_complete$"subjectkey" <- rep(unij_subs, 6)
+pool_subs <- c(mtbi_train_subs, unij_subs)
+pool_complete$"subjectkey" <- rep(pool_subs, 6)
+
+write_csv(
+    mtbi_train_complete,
+    input_path("mtbi_train_complete.csv", TRUE)
+)
+write_csv(
+    mtbi_test_complete,
+    input_path("mtbi_test_complete.csv", TRUE)
+)
+write_csv(
+    unij_complete,
+    input_path("unij_complete.csv", TRUE)
+)
+write_csv(
+    pool_complete,
+    input_path("pool_complete.csv", TRUE)
+)
+```
+
+```{r}
 # CHECKPOINT
-five_imputed_mtbi_train <- read_csv(
-    input_path("2025_02_07_five_imputed_mtbi_train.csv")
+mtbi_train_complete <- read_csv(
+    input_path("2025_05_26_mtbi_train_complete.csv")
 )
-```
-
-```{r}
-###############################################################################
-# Imputation - mTBI test
-###############################################################################
-mtbi_test_pred_mat <- build_pred_mat(mtbi_test_df_no_subs, 28)
-write.table(mtbi_test_pred_mat, proc_path("mtbi_test_pred_mat.txt", TRUE))
-mtbi_test_pred_mat <- as.matrix(read.table(proc_path("2025_02_07_mtbi_test_pred_mat.txt")))
-storage.mode(mtbi_test_pred_mat) <- "double"
-imputed_mtbi_test <- futuremice(
-    mtbi_test_df_no_subs,
-    m = 5,
-    n.core = 5,
-    maxit = 10,
-    parallelseed = 42,
-    predictorMatrix = mtbi_test_pred_mat
+mtbi_test_complete <- read_csv(
+    input_path("2025_05_26_mtbi_test_complete.csv")
 )
-
-saveRDS(imputed_mtbi_test, file = proc_path("baseline_imputed_mtbi_test.rds", TRUE))
-imputed_mtbi_test <- readRDS(proc_path("2025_02_07_baseline_imputed_mtbi_test.rds"))
-
-# mTBI solo imputed data
-five_imputed_mtbi_test <- complete(
-    imputed_mtbi_test,
-    action = "long",
-    include = TRUE
+unij_complete <- read_csv(
+    input_path("2025_05_26_unij_complete.csv")
 )
-#
-# Write and recover
-write_csv(
-    five_imputed_mtbi_test,
-    input_path("five_imputed_mtbi_test.csv", TRUE)
-)
-# CHECKPOINT
-five_imputed_mtbi_test <- read_csv(
-    input_path("2025_02_07_five_imputed_mtbi_test.csv")
-)
-
-###############################################################################
-# Imputation - only unijured
-###############################################################################
-unij_pred_mat <- build_pred_mat(unij_df_no_subs, 1)
-# Write and recover
-write.table(unij_pred_mat, proc_path("unij_pred_mat.txt", TRUE))
-unij_pred_mat <- as.matrix(read.table(proc_path("2025_02_07_unij_pred_mat.txt")))
-storage.mode(unij_pred_mat) <- "double"
-imputed_unij <- futuremice(
-    unij_df_no_subs,
-    m = 5,
-    n.core = 5,
-    maxit = 10,
-    parallelseed = 42,
-    predictorMatrix = unij_pred_mat
-)
-
-saveRDS(imputed_unij, file = proc_path("baseline_imputed_unij.rds", TRUE))
-imputed_unij <- readRDS(proc_path("2025_02_07_baseline_imputed_unij.rds"))
-```
-
-```{r}
-# unijured solo imputed data
-five_imputed_unij <- complete(
-    imputed_unij,
-    action = "long",
-    include = TRUE
-)
-#
-# Write and recover
-write_csv(
-    five_imputed_unij,
-    input_path("five_imputed_unij.csv", TRUE)
-)
-#
-five_imputed_unij <- read_csv(
-    input_path("2025_02_07_five_imputed_unij.csv")
-) # 68448 rows (11408 subjects * 6 imputations)
-
-###############################################################################
-# Imputation - mTBI and unijured data stacked on top of each other
-# This will only look at the variables shared between the two groups
-###############################################################################
-mtbi_train_df_u_vars <- mtbi_train_df_no_subs[, colnames(unij_df_no_subs)]
-pooled_df <- rbind(mtbi_train_df_u_vars, unij_df_no_subs)
-pooled_df <- char_to_fac(pooled_df)
-
-pooled_pred_mat <- build_pred_mat(pooled_df, 1)
-# Write and recover
-write.table(pooled_pred_mat, proc_path("pooled_pred_mat.txt", TRUE))
-pooled_pred_mat <- as.matrix(
-    read.table(proc_path("2025_02_07_pooled_pred_mat.txt"))
-)
-storage.mode(pooled_pred_mat) <- "double"
-imputed_pooled <- futuremice(
-    pooled_df,
-    m = 5,
-    n.core = 5,
-    maxit = 10,
-    parallelseed = 42,
-    predictorMatrix = pooled_pred_mat
-)
-
-saveRDS(imputed_pooled, file = proc_path("baseline_imputed_pooled.rds", TRUE))
-imputed_pooled <- readRDS(proc_path("2025_02_07_baseline_imputed_pooled.rds"))
-
-# mTBI solo imputed data
-five_imputed_pooled <- complete(
-    imputed_pooled,
-    action = "long",
-    include = TRUE
-)
-#
-# Write and recover
-write_csv(five_imputed_pooled, input_path("five_imputed_pooled.csv", TRUE))
-five_imputed_pooled <- read_csv(
-    input_path("2025_02_07_five_imputed_pooled.csv")
-)
-```
-
-Formatting the imputed data:
-
-```{r}
-five_imputed_mtbi_train$"subjectkey" <- rep(mtbi_train_subs, 6)
-five_imputed_mtbi_test$"subjectkey" <- rep(mtbi_test_subs, 6)
-five_imputed_unij$"subjectkey" <- rep(unij_subs, 6)
-
-pooled_subs <- c(mtbi_train_subs, unij_subs)
-five_imputed_pooled$"subjectkey" <- rep(pooled_subs, 6)
-
-write_csv(
-    five_imputed_mtbi_train,
-    input_path("five_imputed_mtbi_train_named.csv", TRUE)
-)
-write_csv(
-    five_imputed_mtbi_test,
-    input_path("five_imputed_mtbi_test_named.csv", TRUE)
-)
-write_csv(
-    five_imputed_unij,
-    input_path("five_imputed_unij_named.csv", TRUE)
-)
-write_csv(
-    five_imputed_pooled,
-    input_path("five_imputed_pooled_named.csv", TRUE)
-)
-```
-
-```{r}
-# Write and recover
-five_imputed_mtbi_train <- read_csv(
-    input_path("2025_02_07_five_imputed_mtbi_train_named.csv")
-)
-
-five_imputed_mtbi_test <- read_csv(
-    input_path("2025_02_07_five_imputed_mtbi_test_named.csv")
-)
-
-five_imputed_unij <- read_csv(
-    input_path("2025_02_07_five_imputed_unij_named.csv")
-)
-
-five_imputed_pooled <- read_csv(
-    input_path("2025_02_07_five_imputed_pooled_named.csv")
+pool_complete <- read_csv(
+    input_path("2025_05_26_pool_complete.csv")
 )
 ```
 
@@ -705,29 +676,29 @@ parse_imputations <- function(original_df_list, complete_imputed_df, imps) {
 
 mtbi_train_parsed_imputations <- parse_imputations(
     mtbi_train_df_list,
-    five_imputed_mtbi_train,
+    mtbi_train_complete,
     6
 )
 
 mtbi_test_parsed_imputations <- parse_imputations(
     mtbi_test_df_list,
-    five_imputed_mtbi_test,
+    mtbi_test_complete,
     6
 )
 
 unij_parsed_imputations <- parse_imputations(
     unij_df_list,
-    five_imputed_unij,
+    unij_complete,
     6
 )
 
-pooled_parsed_imputations <- parse_imputations(
+pool_parsed_imputations <- parse_imputations(
     unij_df_list,
-    five_imputed_pooled,
+    pool_complete,
     6
 )
 
-mtbi_pooled_parsed_imputations <- pooled_parsed_imputations |>
+mtbi_pool_parsed_imputations <- pool_parsed_imputations |>
     lapply(
         function(variable) {
             lapply(
@@ -741,7 +712,7 @@ mtbi_pooled_parsed_imputations <- pooled_parsed_imputations |>
         }
     )
 
-unij_pooled_parsed_imps <- pooled_parsed_imputations |>
+unij_pool_parsed_imps <- pool_parsed_imputations |>
     lapply(
         function(variable) {
             lapply(
@@ -764,36 +735,51 @@ list.save(
     input_path("mtbi_test_parsed_imputations.rds", TRUE)
 )
 list.save(
-    mtbi_pooled_parsed_imputations,
-    input_path("mtbi_pooled_parsed_imputations.rds", TRUE)
+    mtbi_pool_parsed_imputations,
+    input_path("mtbi_pool_parsed_imputations.rds", TRUE)
 )
 list.save(
     unij_parsed_imputations,
     input_path("unij_parsed_imputations.rds", TRUE)
 )
 list.save(
-    unij_pooled_parsed_imps,
-    input_path("unij_pooled_parsed_imputations.rds", TRUE)
+    unij_pool_parsed_imps,
+    input_path("unij_pool_parsed_imputations.rds", TRUE)
 )
 ```
 
 Re-reading:
 
 ```{r}
-mtbi_train_parsed_imputations <- list.load(
+
+# HERE I AM
+z1 <- list.load(
     input_path("2025_02_07_mtbi_train_parsed_imputations.rds")
 )
-mtbi_test_parsed_imputations <- list.load(
-    input_path("2025_02_07_mtbi_test_parsed_imputations.rds")
+
+z2 <- list.load(
+    input_path("2025_05_26_mtbi_train_parsed_imputations.rds")
 )
-mtbi_pooled_parsed_imputations <- list.load(
-    input_path("2025_02_07_mtbi_pooled_parsed_imputations.rds")
+
+z[[1]]
+
+mtbi_train_parsed_imputations[[1]]
+
+sort(paste0("mtbi_", names(z1)))
+
+sort(names(z2))
+
+mtbi_test_parsed_imputations <- list.load(
+    input_path("2025_05_26_mtbi_test_parsed_imputations.rds")
+)
+mtbi_pool_parsed_imputations <- list.load(
+    input_path("2025_05_26_mtbi_pool_parsed_imputations.rds")
 )
 unij_parsed_imputations <- list.load(
-    input_path("2025_02_07_unij_parsed_imputations.rds")
+    input_path("2025_05_26_unij_parsed_imputations.rds")
 )
-unij_pooled_parsed_imps <- list.load(
-    input_path("2025_02_07_unij_pooled_parsed_imputations.rds")
+unij_pool_parsed_imps <- list.load(
+    input_path("2025_05_26_unij_pool_parsed_imputations.rds")
 )
 
 names(mtbi_train_parsed_imputations)
@@ -814,33 +800,80 @@ For the sake of brevity, these will be referred to with the following notation:
 
 * m = mTBI
 * u = unijured
-* p = pooled
+* p = pool
 * 0 = original (unimputed)
 * 1-5 = imputed dataset number
 
 ```{r}
-mtbi_train_data_lists <- build_dls(mtbi_train_parsed_imputations)
+
+mtbi_train_parsed_imputations
+
+q1 <- build_dls(z1)
+
+names(z1)
+
+names(z2)
+
+q2 <- build_dls(z2)
+
+
+mtbi_train_parsed_imputations[[1]]
+
+
+build_dls <- function(parsed_imputations) {
+    data_lists <- lapply(
+        seq_len(5),
+        function(x) {
+            data_list(
+                list(
+                    parsed_imputations$"p_fam_fn"[[x + 1]],
+                    "p_fam_fn",
+                    "P",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"p_parent_psych"[[x + 1]],
+                    "p_parent_psych",
+                    "P",
+                    "discrete"
+                ),
+                uid = "subjectkey"
+            )
+        }
+    )
+    names(data_lists) <- paste0("imp_", seq_len(5))
+    return(data_lists)
+}
+
+
+
+
+
+
+
+
+
 mtbi_train_oom_lists <- build_ols(mtbi_train_parsed_imputations)
 mtbi_test_data_lists <- build_dls(mtbi_test_parsed_imputations)
 mtbi_test_oom_lists <- build_ols(mtbi_test_parsed_imputations)
-mtbi_pooled_data_lists <- build_unij_dls(mtbi_pooled_parsed_imputations)
-mtbi_pooled_oom_lists <- build_ols(mtbi_pooled_parsed_imputations)
+mtbi_pool_data_lists <- build_unij_dls(mtbi_pool_parsed_imputations)
+mtbi_pool_oom_lists <- build_ols(mtbi_pool_parsed_imputations)
 unij_data_lists <- build_unij_dls(unij_parsed_imputations)
 unij_oom_lists <- build_ols(unij_parsed_imputations)
-unij_pooled_data_lists <- build_unij_dls(unij_pooled_parsed_imps)
-unij_pooled_oom_lists <- build_ols(unij_pooled_parsed_imps)
+unij_pool_data_lists <- build_unij_dls(unij_pool_parsed_imps)
+unij_pool_oom_lists <- build_ols(unij_pool_parsed_imps)
 
 all_dls <- list(
     "mtbi_train_data_lists" = mtbi_train_data_lists,
     "mtbi_train_oom_lists" = mtbi_train_oom_lists,
     "mtbi_test_data_lists" = mtbi_test_data_lists,
     "mtbi_test_oom_lists" = mtbi_test_oom_lists,
-    "mtbi_pooled_data_lists" = mtbi_pooled_data_lists,
-    "mtbi_pooled_oom_lists" = mtbi_pooled_oom_lists,
+    "mtbi_pool_data_lists" = mtbi_pool_data_lists,
+    "mtbi_pool_oom_lists" = mtbi_pool_oom_lists,
     "unij_data_lists" = unij_data_lists,
     "unij_oom_lists" = unij_oom_lists,
-    "unij_pooled_data_lists" = unij_pooled_data_lists,
-    "unij_pooled_oom_lists" = unij_pooled_oom_lists
+    "unij_pool_data_lists" = unij_pool_data_lists,
+    "unij_pool_oom_lists" = unij_pool_oom_lists
 )
 
 ```
@@ -924,23 +957,4 @@ all_dls <- all_dls |>
     )
 
 saveRDS(all_dls, input_path("all_dls.rds", TRUE))
-```
-
-## Density plots
-
-- Can re-run later
-
-```{r}
-imputed_mtbi_test <- readRDS(proc_path("2025_02_07_baseline_imputed_mtbi_test.rds"))
-imputed_mtbi_train <- readRDS(proc_path("2025_02_07_baseline_imputed_mtbi_train.rds"))
-imputed_unij <- readRDS(proc_path("2025_02_07_baseline_imputed_unij.rds"))
-imputed_pooled <- readRDS(proc_path("2025_02_07_baseline_imputed_pooled.rds"))
-
-mtbi_test_densityplot <- densityplot(imputed_mtbi_test)
-mtbi_train_densityplot <- densityplot(imputed_mtbi_train)
-unij_densityplot <- densityplot(imputed_unij)
-
-png_save(unij_densityplot, fig_path("unij_densityplot.png", TRUE))
-
-pooled_densityplot <- densityplot(imputed_pooled)
 ```

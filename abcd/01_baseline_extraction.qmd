@@ -39,7 +39,7 @@ import <- function(path) {
 ```{r}
 # Ohio TBI screen
 ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
-# Age, family ID
+# Age, family ID, site ID
 abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
 # Pubertal development scale, youth report
 ph_y_pds <- import("physical-health/ph_y_pds.csv")
@@ -159,6 +159,7 @@ write_csv(unij_subs, sub_path("unij_subs.csv", date = TRUE))
 ```
 
 ```{r}
+# CHECKPOINT
 mtbi_subs <- abcdutils::read_subjects(sub_path("2025_05_22_mtbi_subs.csv"))
 unij_subs <- abcdutils::read_subjects(sub_path("2025_05_22_unij_subs.csv"))
 
@@ -1067,10 +1068,13 @@ readr::write_csv(
 Note that there are 22 unique site values: https://neurostars.org/t/abcd-family-nested-within-site-or-scanner-id-how-to-deal-with-inaccuracies/18664
 
 ```{r}
+set.seed(42)
 mtbi_scanner <- abcdutils::get_scanner_id(
-    mri_y_adm_info,
-    mtbi_subs,
-    t = 0
+    mri_y_adm_info = mri_y_adm_info,
+    subjects = mtbi_subs,
+    t = 0,
+    abcd_y_lt = abcd_y_lt,
+    sample_missing = TRUE
 )
 
 dplyr::tibble(mtbi_scanner)
@@ -1080,10 +1084,13 @@ readr::write_csv(
     input_path("mtbi_scanner.csv", date = TRUE)
 )
 
+set.seed(42)
 unij_scanner <- abcdutils::get_scanner_id(
-    mri_y_adm_info,
-    unij_subs,
-    t = 0
+    mri_y_adm_info = mri_y_adm_info,
+    subjects = unij_subs,
+    t = 0,
+    abcd_y_lt = abcd_y_lt,
+    sample_missing = TRUE
 )
 
 dplyr::tibble(unij_scanner)
@@ -1121,5 +1128,35 @@ dplyr::tibble(unij_family)
 readr::write_csv(
     unij_family,
     input_path("unij_family.csv", date = TRUE)
+)
+```
+
+### Site ID
+
+```{r}
+mtbi_site <- abcdutils::get_site_id(
+    abcd_y_lt,
+    mtbi_subs,
+    t = 0
+)
+
+dplyr::tibble(mtbi_site)
+
+readr::write_csv(
+    mtbi_site,
+    input_path("mtbi_site.csv", date = TRUE)
+)
+
+unij_site <- abcdutils::get_site_id(
+    abcd_y_lt,
+    unij_subs,
+    t = 0
+)
+
+dplyr::tibble(unij_site)
+
+readr::write_csv(
+    unij_site,
+    input_path("unij_site.csv", date = TRUE)
 )
 ```
