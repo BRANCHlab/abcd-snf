@@ -1,5 +1,3 @@
-library(metasnf)
-
 build_mtbi_dls <- function(parsed_imputations) {
     data_lists <- lapply(
         seq_len(5),
@@ -73,37 +71,37 @@ build_mtbi_dls <- function(parsed_imputations) {
                 ),
                 list(
                     parsed_imputations$"mtbi_sm_subc_v_qc"[[x + 1]],
-                    "sm_subc_v",
+                    "n_subc_v",
                     "N",
                     "continuous"
                 ),
                 list(
                     parsed_imputations$"mtbi_sm_cort_t_qc"[[x + 1]],
-                    "sm_cort_t",
+                    "n_cort_t",
                     "N",
                     "continuous"
                 ),
                 list(
                     parsed_imputations$"mtbi_sm_cort_sa_qc"[[x + 1]],
-                    "sm_cort_sa",
+                    "n_cort_sa",
                     "N",
                     "continuous"
                 ),
                 list(
                     parsed_imputations$"mtbi_dm_wmnd_qc"[[x + 1]],
-                    "dm_wmnd",
+                    "n_wmnd",
                     "N",
                     "continuous"
                 ),
                 list(
                     parsed_imputations$"mtbi_rm_gord_cor_qc"[[x + 1]],
-                    "rm_gord_cor",
+                    "n_gord_cor",
                     "N",
                     "continuous"
                 ),
                 list(
                     parsed_imputations$"mtbi_rm_subc_cor_qc"[[x + 1]],
-                    "rm_subc_cor",
+                    "n_subc_cor",
                     "N",
                     "continuous"
                 ),
@@ -163,115 +161,115 @@ build_unij_dls <- function(parsed_imputations) {
         function(x) {
             data_list(
                 list(
-                    parsed_imputations$"d_interview_age"[[x + 1]],
+                    parsed_imputations$"unij_d_interview_age"[[x + 1]],
                     "d_age",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"d_sex"[[x + 1]],
+                    parsed_imputations$"unij_d_sex"[[x + 1]],
                     "d_sex",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"d_income"[[x + 1]],
+                    parsed_imputations$"unij_d_income"[[x + 1]],
                     "d_income",
                     "D",
                     "ordinal"
                 ),
                 list(
-                    parsed_imputations$"d_race"[[x + 1]],
+                    parsed_imputations$"unij_d_race"[[x + 1]],
                     "d_race",
                     "D",
                     "categorical"
                 ),
                 list(
-                    parsed_imputations$"d_pubertal_status"[[x + 1]],
+                    parsed_imputations$"unij_d_pubertal_status"[[x + 1]],
                     "d_pubertal",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mh_headaches"[[x + 1]],
+                    parsed_imputations$"unij_mh_headaches"[[x + 1]],
                     "mh_headaches",
                     "MH",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"sm_subc_v_qc"[[x + 1]],
-                    "sm_subc_v",
+                    parsed_imputations$"unij_sm_subc_v_qc"[[x + 1]],
+                    "n_subc_v",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"sm_cort_t_qc"[[x + 1]],
-                    "sm_cort_t",
+                    parsed_imputations$"unij_sm_cort_t_qc"[[x + 1]],
+                    "n_cort_t",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"sm_cort_sa_qc"[[x + 1]],
-                    "sm_cort_sa",
+                    parsed_imputations$"unij_sm_cort_sa_qc"[[x + 1]],
+                    "n_cort_sa",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"dm_wmnd_qc"[[x + 1]],
-                    "dm_wmnd",
+                    parsed_imputations$"unij_dm_wmnd_qc"[[x + 1]],
+                    "n_wmnd",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"rm_gord_cor_qc"[[x + 1]],
-                    "rm_gord_cor",
+                    parsed_imputations$"unij_rm_gord_cor_qc"[[x + 1]],
+                    "n_gord_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"rm_subc_cor_qc"[[x + 1]],
-                    "rm_subc_cor",
+                    parsed_imputations$"unij_rm_subc_cor_qc"[[x + 1]],
+                    "n_subc_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"p_friends"[[x + 1]],
+                    parsed_imputations$"unij_p_friends"[[x + 1]],
                     "p_friends",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"p_screen_time"[[x + 1]],
+                    parsed_imputations$"unij_p_screen_time"[[x + 1]],
                     "p_screen_time",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"p_sports"[[x + 1]],
+                    parsed_imputations$"unij_p_sports"[[x + 1]],
                     "p_sports",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"p_exercise"[[x + 1]],
+                    parsed_imputations$"unij_p_exercise"[[x + 1]],
                     "p_exercise",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"p_prosocial"[[x + 1]],
+                    parsed_imputations$"unij_p_prosocial"[[x + 1]],
                     "p_prosocial",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"p_fam_fn"[[x + 1]],
+                    parsed_imputations$"unij_p_fam_fn"[[x + 1]],
                     "p_fam_fn",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"p_parent_psych"[[x + 1]],
+                    parsed_imputations$"unij_p_parent_psych"[[x + 1]],
                     "p_parent_psych",
                     "P",
                     "discrete"
@@ -284,19 +282,44 @@ build_unij_dls <- function(parsed_imputations) {
     return(data_lists)
 }
 
-build_ols <- function(parsed_imputations) {
+build_unij_ols <- function(parsed_imputations) {
     oom_lists <- lapply(
         seq_len(5),
         function(x) {
             data_list(
                 list(
-                    parsed_imputations$"cbcl"[[x + 1]],
+                    parsed_imputations$"unij_cbcl"[[x + 1]],
                     "cbcl",
                     "B",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"sds"[[x + 1]],
+                    parsed_imputations$"unij_sds"[[x + 1]],
+                    "sds",
+                    "B",
+                    "discrete"
+                ),
+                uid = "subjectkey"
+            )
+        }
+    )
+    names(oom_lists) <- paste0("imp_", seq_len(5))
+    return(oom_lists)
+}
+
+build_mtbi_ols <- function(parsed_imputations) {
+    oom_lists <- lapply(
+        seq_len(5),
+        function(x) {
+            data_list(
+                list(
+                    parsed_imputations$"mtbi_cbcl"[[x + 1]],
+                    "cbcl",
+                    "B",
+                    "discrete"
+                ),
+                list(
+                    parsed_imputations$"mtbi_sds"[[x + 1]],
                     "sds",
                     "B",
                     "discrete"

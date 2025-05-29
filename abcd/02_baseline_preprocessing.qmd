@@ -751,24 +751,9 @@ list.save(
 Re-reading:
 
 ```{r}
-
-# HERE I AM
-z1 <- list.load(
-    input_path("2025_02_07_mtbi_train_parsed_imputations.rds")
-)
-
-z2 <- list.load(
+mtbi_train_parsed_imputations <- list.load(
     input_path("2025_05_26_mtbi_train_parsed_imputations.rds")
 )
-
-z[[1]]
-
-mtbi_train_parsed_imputations[[1]]
-
-sort(paste0("mtbi_", names(z1)))
-
-sort(names(z2))
-
 mtbi_test_parsed_imputations <- list.load(
     input_path("2025_05_26_mtbi_test_parsed_imputations.rds")
 )
@@ -805,75 +790,33 @@ For the sake of brevity, these will be referred to with the following notation:
 * 1-5 = imputed dataset number
 
 ```{r}
+source("abcd/helper_functions.R")
 
-mtbi_train_parsed_imputations
+mtbi_train_data_lists <- build_mtbi_dls(mtbi_train_parsed_imputations)
+mtbi_train_oom_lists  <- build_mtbi_ols(mtbi_train_parsed_imputations)
 
-q1 <- build_dls(z1)
+mtbi_test_data_lists  <- build_mtbi_dls(mtbi_test_parsed_imputations)
+mtbi_test_oom_lists   <- build_mtbi_ols(mtbi_test_parsed_imputations)
 
-names(z1)
+mtbi_pool_data_lists  <- build_unij_dls(mtbi_pool_parsed_imputations)
+mtbi_pool_oom_lists   <- build_unij_ols(mtbi_pool_parsed_imputations)
 
-names(z2)
-
-q2 <- build_dls(z2)
-
-
-mtbi_train_parsed_imputations[[1]]
-
-
-build_dls <- function(parsed_imputations) {
-    data_lists <- lapply(
-        seq_len(5),
-        function(x) {
-            data_list(
-                list(
-                    parsed_imputations$"p_fam_fn"[[x + 1]],
-                    "p_fam_fn",
-                    "P",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"p_parent_psych"[[x + 1]],
-                    "p_parent_psych",
-                    "P",
-                    "discrete"
-                ),
-                uid = "subjectkey"
-            )
-        }
-    )
-    names(data_lists) <- paste0("imp_", seq_len(5))
-    return(data_lists)
-}
-
-
-
-
-
-
-
-
-
-mtbi_train_oom_lists <- build_ols(mtbi_train_parsed_imputations)
-mtbi_test_data_lists <- build_dls(mtbi_test_parsed_imputations)
-mtbi_test_oom_lists <- build_ols(mtbi_test_parsed_imputations)
-mtbi_pool_data_lists <- build_unij_dls(mtbi_pool_parsed_imputations)
-mtbi_pool_oom_lists <- build_ols(mtbi_pool_parsed_imputations)
-unij_data_lists <- build_unij_dls(unij_parsed_imputations)
-unij_oom_lists <- build_ols(unij_parsed_imputations)
-unij_pool_data_lists <- build_unij_dls(unij_pool_parsed_imps)
-unij_pool_oom_lists <- build_ols(unij_pool_parsed_imps)
+unij_data_lists       <- build_unij_dls(unij_parsed_imputations)
+unij_oom_lists        <- build_unij_ols(unij_parsed_imputations)
+unij_pool_data_lists  <- build_unij_dls(unij_pool_parsed_imps)
+unij_pool_oom_lists   <- build_unij_ols(unij_pool_parsed_imps)
 
 all_dls <- list(
     "mtbi_train_data_lists" = mtbi_train_data_lists,
-    "mtbi_train_oom_lists" = mtbi_train_oom_lists,
-    "mtbi_test_data_lists" = mtbi_test_data_lists,
-    "mtbi_test_oom_lists" = mtbi_test_oom_lists,
-    "mtbi_pool_data_lists" = mtbi_pool_data_lists,
-    "mtbi_pool_oom_lists" = mtbi_pool_oom_lists,
-    "unij_data_lists" = unij_data_lists,
-    "unij_oom_lists" = unij_oom_lists,
-    "unij_pool_data_lists" = unij_pool_data_lists,
-    "unij_pool_oom_lists" = unij_pool_oom_lists
+    "mtbi_train_oom_lists"  = mtbi_train_oom_lists,
+    "mtbi_test_data_lists"  = mtbi_test_data_lists,
+    "mtbi_test_oom_lists"   = mtbi_test_oom_lists,
+    "mtbi_pool_data_lists"  = mtbi_pool_data_lists,
+    "mtbi_pool_oom_lists"   = mtbi_pool_oom_lists,
+    "unij_data_lists"       = unij_data_lists,
+    "unij_oom_lists"        = unij_oom_lists,
+    "unij_pool_data_lists"  = unij_pool_data_lists,
+    "unij_pool_oom_lists"   = unij_pool_oom_lists
 )
 
 ```
@@ -882,66 +825,66 @@ all_dls <- list(
 
 ```{r}
 name_changes <- c(
-    "mtbi_mechanism" = "latest_mtbi_mechanism",
-    "mtbi_mem_daze" = "latest_mtbi_mem_daze",
-    "mtbi_loc" = "latest_mtbi_loc",
-    "mtbi_age" = "latest_mtbi_age",
-    "age" = "interview_age",
-    "parent_thought" = "asr_scr_thought_r",
-    "parent_aggressive" = "asr_scr_aggressive_r",
-    "parent_antisocial" = "asr_scr_antisocial_r",
-    "parent_hyperactive" = "asr_scr_hyperactive_r",
-    "parent_attention" = "asr_scr_attention_r",
-    "parent_anxdep" = "asr_scr_anxdep_r",
-    "parent_depress" = "asr_scr_depress_r",
-    "parent_withdrawn" = "asr_scr_withdrawn_r",
-    "parent_avoidant" = "asr_scr_avoidant_r",
-    "parent_anxdisord" = "asr_scr_anxdisord_r",
-    "parent_somatic" = "asr_scr_somatic_r",
-    "parent_intrusive" = "asr_scr_intrusive_r",
-    "parent_perstr" = "asr_scr_perstr_r",
-    "sds_sleep" = "sds_p_ss_total",
-    "cbcl_somatic" = "cbcl_scr_syn_somatic_r",
-    "cbcl_social" = "cbcl_scr_syn_social_r",
-    "cbcl_anxdep" = "cbcl_scr_syn_anxdep_r",
-    "cbcl_thought" = "cbcl_scr_syn_thought_r",
-    "cbcl_attention" = "cbcl_scr_syn_attention_r",
-    "cbcl_withdep" = "cbcl_scr_syn_withdep_r",
-    "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r",
-    "cbcl_rulebreak" = "cbcl_scr_syn_rulebreak_r",
-    "family_fight_y" = "q1_fight_y",
-    "family_angry_y" = "q2_angry_y",
-    "family_throw_y" = "q3_throw_y",
-    "family_temper_y" = "q4_temper_y",
-    "family_criticize_y" = "q5_criticize_y",
-    "family_hit_y" = "q6_hit_y",
-    "family_peaceful_y" = "q7_peaceful_y",
-    "family_outdo_y" = "q8_outdo_y",
-    "family_yell_y" = "q9_yell_y",
-    "family_fight_p" = "q1_fight_p",
-    "family_angry_p" = "q2_angry_p",
-    "family_throw_p" = "q3_throw_p",
-    "family_temper_p" = "q4_temper_p",
-    "family_criticize_p" = "q5_criticize_p",
-    "family_hit_p" = "q6_hit_p",
-    "family_peaceful_p" = "q7_peaceful_p",
-    "family_outdo_p" = "q8_outdo_p",
-    "family_yell_p" = "q9_yell_p",
-    "headache_history" = "headache",
-    "previous_mtbis" = "mtbi_count",
-    "brain_volume" = "smri_vol_scs_wholeb",
-    "cortical_thickness" = "smri_thick_cdk_mean",
-    "cortical_sa" = "smri_area_cdk_total",
-    "major_wm_ndi" = "dmri_rsirnd_fib_allfib",
-    "pericortical_wm_ndi" = "dmri_rsirndwm_cdk_mean",
-    "fmri_cort_cors" = "avg_gord_cor",
+    "age"                    = "interview_age",
+    "brain_volume"           = "smri_vol_scs_wholeb",
+    "cbcl_aggressive"        = "cbcl_scr_syn_aggressive_r",
+    "cbcl_anxdep"            = "cbcl_scr_syn_anxdep_r",
+    "cbcl_attention"         = "cbcl_scr_syn_attention_r",
+    "cbcl_rulebreak"         = "cbcl_scr_syn_rulebreak_r",
+    "cbcl_social"            = "cbcl_scr_syn_social_r",
+    "cbcl_somatic"           = "cbcl_scr_syn_somatic_r",
+    "cbcl_thought"           = "cbcl_scr_syn_thought_r",
+    "cbcl_withdep"           = "cbcl_scr_syn_withdep_r",
+    "cortical_sa"            = "smri_area_cdk_total",
+    "cortical_thickness"     = "smri_thick_cdk_mean",
+    "family_angry_p"         = "q2_angry_p",
+    "family_angry_y"         = "q2_angry_y",
+    "family_criticize_p"     = "q5_criticize_p",
+    "family_criticize_y"     = "q5_criticize_y",
+    "family_fight_p"         = "q1_fight_p",
+    "family_fight_y"         = "q1_fight_y",
+    "family_hit_p"           = "q6_hit_p",
+    "family_hit_y"           = "q6_hit_y",
+    "family_outdo_p"         = "q8_outdo_p",
+    "family_outdo_y"         = "q8_outdo_y",
+    "family_peaceful_p"      = "q7_peaceful_p",
+    "family_peaceful_y"      = "q7_peaceful_y",
+    "family_temper_p"        = "q4_temper_p",
+    "family_temper_y"        = "q4_temper_y",
+    "family_throw_p"         = "q3_throw_p",
+    "family_throw_y"         = "q3_throw_y",
+    "family_yell_p"          = "q9_yell_p",
+    "family_yell_y"          = "q9_yell_y",
+    "fmri_cort_cors"         = "avg_gord_cor",
     "fmri_cort_subcort_cors" = "avg_subc_cor",
-    "same_sex_friend" = "ss_friend",
-    "opp_sex_friend" = "os_friend",
-    "same_sex_close_friend" = "ss_close_friend",
-    "opp_sex_close_friend" = "os_close_friend",
-    "weekend_screentime" = "screentime_wknd_hrs",
-    "weekday_screentime" = "screentime_wkday_hrs"
+    "headache_history"       = "headache",
+    "major_wm_ndi"           = "dmri_rsirnd_fib_allfib",
+    "mtbi_age"               = "latest_mtbi_age",
+    "mtbi_loc"               = "latest_mtbi_loc",
+    "mtbi_mechanism"         = "latest_mtbi_mechanism",
+    "mtbi_mem_daze"          = "latest_mtbi_mem_daze",
+    "opp_sex_close_friend"   = "os_close_friend",
+    "opp_sex_friend"         = "os_friend",
+    "parent_aggressive"      = "asr_scr_aggressive_r",
+    "parent_antisocial"      = "asr_scr_antisocial_r",
+    "parent_anxdep"          = "asr_scr_anxdep_r",
+    "parent_anxdisord"       = "asr_scr_anxdisord_r",
+    "parent_attention"       = "asr_scr_attention_r",
+    "parent_avoidant"        = "asr_scr_avoidant_r",
+    "parent_depress"         = "asr_scr_depress_r",
+    "parent_hyperactive"     = "asr_scr_hyperactive_r",
+    "parent_intrusive"       = "asr_scr_intrusive_r",
+    "parent_perstr"          = "asr_scr_perstr_r",
+    "parent_somatic"         = "asr_scr_somatic_r",
+    "parent_thought"         = "asr_scr_thought_r",
+    "parent_withdrawn"       = "asr_scr_withdrawn_r",
+    "pericortical_wm_ndi"    = "dmri_rsirndwm_cdk_mean",
+    "previous_mtbis"         = "mtbi_count",
+    "same_sex_close_friend"  = "ss_close_friend",
+    "same_sex_friend"        = "ss_friend",
+    "sds_sleep"              = "sds_p_ss_total",
+    "weekday_screentime"     = "screentime_wkday_hrs",
+    "weekend_screentime"     = "screentime_wknd_hrs"
 )
 
 all_dls <- all_dls |>
