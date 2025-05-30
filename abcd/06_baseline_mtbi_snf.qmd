@@ -960,8 +960,6 @@ progressr::with_progress({
 
 saveRDS(mtbi_sol_df, proc_path("mtbi_sol_df.rds", TRUE))
 
-#------------------------------------------------------------------------------
-# HERE 2025-05-29
 mtbi_sol_df <- readRDS(proc_path("2025_05_29_mtbi_sol_df.rds"))
 ```
 
@@ -995,17 +993,20 @@ nrow(mtbi_ext_sol_df_3c) # 52 of them
 mtbi_ari_3c <- calc_aris(mtbi_ext_sol_df_3c)
 
 saveRDS(mtbi_ari_3c, proc_path("mtbi_ari_3c.rds", TRUE))
+```
 
+```{r}
+# CHECKPOINT
+mtbi_ext_sol_df_3c <- readRDS(proc_path("2025_05_29_mtbi_ext_sol_df_3c.rds"))
 mtbi_ari_3c <- readRDS(proc_path("2025_05_29_mtbi_ari_3c.rds"))
+mtbi_der_solution <- readRDS(proc_path("2025_05_28_mtbi_der_solution.rds"))
+```
 
+Here I identify the cluster solution from the derivation + validation samples that is the most similar to the derivation sample solution in terms of its distribution of derivation sample observations.
+
+```{r}
 mtbi_ari_order_3c <- get_matrix_order(mtbi_ari_3c)
-
 mtbi_esdf_3c <- as.data.frame(mtbi_ext_sol_df_3c)
-
-setdiff(
-    colnames(mtbi_der_solution),
-    colnames(mtbi_ext_sol_df_3c)
-)
 
 drop_subs <- function(ext_solutions_df, subjects) {
     ext_solutions_df[, !colnames(ext_solutions_df) %in% subjects]
@@ -1042,72 +1043,281 @@ save_heatmap(
 
 validation_heatmap
 
-# 117, 16, 176, 81, 42
+# 117 is the most similar solution to the top derivation set solution
+mtbi_top_solution <- mtbi_ext_sol_df_3c[mtbi_ext_sol_df_3c$"solution" == 117, ]
+mtbi_top_solution <- cluster_label_swap(mtbi_top_solution, 2, 3)
+mtbi_top_solution <- cluster_label_swap(mtbi_top_solution, 1, 2)
 
-most_similar_solution <- mtbi_ext_sol_df_3c[mtbi_ext_sol_df_3c$"solution" == 117, ]
-z <- auto_plot(
-    most_similar_solution,
+saveRDS(mtbi_top_solution, proc_path("mtbi_top_solution.rds", TRUE))
+```
+
+```{r}
+mtbi_top_solution <- readRDS(proc_path("2025_05_30_mtbi_top_solution.rds"))
+
+mtbi_top_pl <- auto_plot(
+    mtbi_top_solution,
     dl = c(mtbi_dl_1, mtbi_ol_1),
     verbose = TRUE
 )
 
-z$"race"
+saveRDS(mtbi_top_pl, proc_path("mtbi_top_pl.rds", TRUE))
 
-# HERE 2025-05-29
+mtbi_top_pl <- readRDS(proc_path("2025_05_30_mtbi_top_pl.rds"))
+```
 
+Checking to see if there are site effects:
+
+```{r}
+mtbi_site <- read_csv(input_path("2025_05_23_mtbi_site.csv"))
+mtbi_site$"uid" <- paste0("uid_", mtbi_site$"subjectkey")
+mtbi_top_pl_df <- auto_plot(
+    mtbi_top_solution,
+    dl = c(mtbi_dl_1, mtbi_ol_1),
+    verbose = TRUE,
+    return_plots = FALSE
+) |> as.data.frame()
+mtbi_top_pl_df_w_site <- dplyr::inner_join(
+    mtbi_top_pl_df,
+    mtbi_site,
+    by = "uid"
+)
+
+mtbi_top_pl_df_w_site$"site_id" <- factor(mtbi_top_pl_df_w_site$"site_id")
+
+# Demonstration that site is not a significant predictor of cluster membership
+# using multinomial logistic regression of only 3 features
+df <- mtbi_top_pl_df_w_site
+covariates <- "sex + brain_volume + household_income"
+formula_no_site <- as.formula(paste("cluster ~", covariates))
+formula_with_site <- as.formula(paste("cluster ~", covariates, "+ site_id"))
+mod_no_site <- multinom(formula_no_site, data = df)
+mod_with_site <- multinom(formula_with_site, data = df)
+anova(mod_no_site, mod_with_site, test = "Chisq")
+```
+
+Concordance between the derivation and full samples:
+
+```{r}
+
+mtbi_der_df <- auto_plot(
+    mtbi_der_solution,
+    dl = c(train_dl_u4, train_ol_u4),
+    return_plots = FALSE
+)
+
+mtbi_ful_df <- auto_plot(
+    mtbi_top_solution,
+    dl = c(mtbi_dl_1, mtbi_ol_1),
+    return_plots = FALSE
+)
+
+val_cluster_df <- mtbi_top_solution |>
+    t() |>
+    dplyr::rename(
+        "cluster" = "s117"
+    ) |>
+    dplyr::filter(
+        uid %in% paste0("uid_", mtbi_test_subs$"subjectkey")
+    )
+
+mtbi_val_df <- auto_plot(
+    cluster_df = val_cluster_df,
+    dl = c(test_dl_u1, test_ol_u1),
+    return_plots = FALSE
+)
+
+saveRDS(mtbi_val_df, proc_path("mtbi_val_df.rds", TRUE))
+saveRDS(mtbi_der_df, proc_path("mtbi_der_df.rds", TRUE))
+saveRDS(mtbi_ful_df, proc_path("mtbi_ful_df.rds", TRUE))
+
+mtbi_val_df <- readRDS(proc_path("2025_05_30_mtbi_val_df.rds"))
+mtbi_der_df <- readRDS(proc_path("2025_05_30_mtbi_der_df.rds"))
+mtbi_ful_df <- readRDS(proc_path("2025_05_30_mtbi_ful_df.rds"))
 ```
 
 ```{r}
-for (i in seq_along(ifts)) {
-    cat(i, ": ", ifts[i], "\n", sep = "")
-}
-
-z <- auto_plot(
-    mtbi_solution,
+# Regular plot lists:
+mtbi_der_df_pl <- auto_plot(
+    mtbi_der_solution,
+    dl = c(train_dl_u4, train_ol_u4)
+)
+mtbi_ful_df_pl <- auto_plot(
+    mtbi_top_solution,
     dl = c(mtbi_dl_1, mtbi_ol_1)
 )
+mtbi_val_df_pl <- auto_plot(
+    cluster_df = val_cluster_df,
+    dl = c(test_dl_u1, test_ol_u1)
+)
+```
 
-z$"weekend_screentime"
+```{r}
+source("abcd/helper_functions.R")
 
-mtbi_full_mc_3c_rep_solutions
+mtbi_val_tops <- topologizer(mtbi_val_df)
+mtbi_der_tops <- topologizer(mtbi_der_df)
+mtbi_ful_tops <- topologizer(mtbi_ful_df)
 
-for (i in seq_len(nrow(mtbi_full_mc_3c_rep_solutions))) {
-    print(i)
-    current_row <- mtbi_full_mc_3c_rep_solutions[i, ]
-    if (i %in% c(1, 3, 4)) {
-        current_row <- cluster_label_swap(current_row, 2, 3)
-    }
-    if (i == 2) {
-        current_row <- cluster_label_swap(current_row, 1, 3)
-        current_row <- cluster_label_swap(current_row, 2, 3)
-    }
-    plot_list <- auto_plot(
-        current_row,
-        dl = c(full_data_list_1, full_oom_list_1)
-    )
-    plot_list <- plot_list[sorted_in_and_out]
-    full_mc_3c_rep_solutions_plot <- wrap_plots(plot_list)
-    ggsave(
-        fig_path(paste0("mtbi_full_mc_3c_rep_solutions_all_plots_", i, ".png"), TRUE),
-        full_mc_3c_rep_solutions_plot,
-        width = 45,
-        height = 30,
-        dpi = 50
-    )
-}
+write_csv(mtbi_der_tops, proc_path("mtbi_der_tops.csv", TRUE))
+write_csv(mtbi_ful_tops, proc_path("mtbi_ful_tops.csv", TRUE))
+write_csv(mtbi_val_tops, proc_path("mtbi_val_tops.csv", TRUE))
 
-# The first one (MC E) is very similar to the derivation set version
-mtbi_full_top_3c <- mtbi_full_mc_3c_rep_solutions[1, ]
-mtbi_full_top_3c <- cluster_label_swap(mtbi_full_top_3c, 2, 3)
-mtbi_full_top_3c$"mc" <- "Full"
-
-saveRDS(mtbi_full_top_3c, proc_path("mtbi_full_top_3c.rds", TRUE))
 ```
 
 ```{r}
 # CHECKPOINT
-mtbi_full_top_3c <- readRDS(proc_path("2025_02_13_mtbi_full_top_3c.rds"))
+mtbi_der_tops <- read_csv(proc_path("2025_05_30_mtbi_der_tops.csv"))
+mtbi_ful_tops <- read_csv(proc_path("2025_05_30_mtbi_ful_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2025_05_30_mtbi_val_tops.csv"))
 ```
+
+```{r}
+f_der_tops <- format_tops(mtbi_der_tops)
+f_val_tops <- format_tops(mtbi_val_tops)
+f_ful_tops <- format_tops(mtbi_ful_tops)
+
+head(joint_ranks_with_out)
+
+f_der_tops$"set" <- "D"
+f_val_tops$"set" <- "V"
+f_ful_tops$"set" <- "F"
+
+all_tops <- do.call(rbind, list(f_der_tops, f_val_tops, f_ful_tops)) |>
+    dplyr::rename("feature" = "Feature")
+
+mtbi_der_top_solution_nmi_v_pval_rank <- read_csv(
+    proc_path("2025_05_27_mtbi_der_top_solution_nmi_v_pval_rank.csv")
+)
+
+# Constructing a data frame of feature ranks that accounts for how
+# mechanism and race were dummied
+joint_ranks <- mtbi_der_top_solution_nmi_v_pval_rank |>
+    data.frame() |>
+    dplyr::select(feature, joint_rank)
+joint_ranks <- rbind(
+    joint_ranks,
+    data.frame(
+        feature = c("race_black", "race_white", "race_hispanic", "race_other"),
+        joint_rank = joint_ranks[joint_ranks$"feature" == "race", "joint_rank"]
+    )
+)
+joint_ranks <- rbind(
+    joint_ranks,
+    data.frame(
+        feature = c(
+            "mtbi_mechanism_fall_hit",
+            "mtbi_mechanism_hosp_er",
+            "mtbi_mechanism_multi",
+            "mtbi_mechanism_other_loc",
+            "mtbi_mechanism_vehicle",
+            "mtbi_mechanism_violent"
+        ),
+        joint_rank = joint_ranks[joint_ranks$"feature" == "mtbi_mechanism", "joint_rank"]
+    )
+)
+joint_ranks <- dplyr::filter(joint_ranks, !feature %in% c("mtbi_mechanism", "race"))
+joint_ranks <- arrange(joint_ranks, joint_rank)
+joint_ranks <- rbind(
+    data.frame(feature = ofts, joint_rank = nrow(joint_ranks) + 1),
+    joint_ranks
+) |> data.frame()
+joint_ranks
+
+write_csv(joint_ranks, proc_path("joint_ranks.csv", TRUE))
+
+joint_ranks <- read_csv(proc_path("2025_05_30_joint_ranks.csv"))
+
+sorted_tops <- dplyr::full_join(all_tops, joint_ranks) |>
+    dplyr::mutate(set = factor(set, levels = c("D", "V", "F"))) |>
+    dplyr::arrange(joint_rank, feature, set)
+
+write_csv(sorted_tops, proc_path("sorted_tops.csv", TRUE))
+
+sorted_tops <- read_csv(proc_path("2025_05_30_sorted_tops.csv"))
+
+knitr::kable(
+    sorted_tops,
+    format = "markdown",
+    digits = 3, format.args = list(scientific = FALSE)
+) |>
+    writeLines(proc_path("mtbi_sorted_tops.txt", TRUE)) # 2025-05-30
+
+mtbi_der_tops <- read_csv(proc_path("2025_05_30_mtbi_der_tops.csv"))
+mtbi_ful_tops <- read_csv(proc_path("2025_05_30_mtbi_ful_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2025_05_30_mtbi_val_tops.csv"))
+
+mtbi_der_tops$"set" <- "D"
+mtbi_val_tops$"set" <- "V"
+mtbi_ful_tops$"set" <- "F"
+
+all_tops_raw <- do.call(
+    rbind,
+    list(mtbi_der_tops, mtbi_ful_tops, mtbi_val_tops)
+)
+
+all_der_tops_raw <- dplyr::full_join(
+    joint_ranks,
+    mtbi_der_tops,
+    by = "feature"
+)
+
+all_val_tops_raw <- dplyr::full_join(
+    joint_ranks,
+    mtbi_val_tops,
+    by = "feature"
+)
+
+all_ful_tops_raw <- dplyr::full_join(
+    joint_ranks,
+    mtbi_ful_tops,
+    by = "feature"
+)
+
+
+all_tops_raw <- do.call(
+    rbind,
+    list(all_der_tops_raw, all_val_tops_raw, all_ful_tops_raw)
+) |>
+    dplyr::mutate(set = factor(set, levels = c("D", "V", "F"))) |>
+    dplyr::arrange(joint_rank, feature, set)
+
+all_tops_raw_manual_adj <- all_tops_raw
+all_tops_raw_manual_adj$"row" <- rownames(all_tops_raw_manual_adj)
+# This entry has NA ES between C2 and C3 race_black, but both clusters are
+# have 0 membership race_black membership
+all_tops_raw_manual_adj[14, "c23_es"] <- 0
+# Similar situation for mtbi mechanism multi
+all_tops_raw_manual_adj[127, "c12_es"] <- 0
+all_tops_raw_manual_adj[128, "c13_es"] <- 0
+# Missing "V" set label
+all_tops_raw_manual_adj[132, "set"] <- "V"
+# mtbi mechanism other loc simply not present in V
+all_tops_raw_manual_adj[132, c("c12_es", "c13_es", "c23_es")] <- 0
+all_tops_raw_manual_adj[132, "es"] <- "or"
+all_tops_raw_manual_adj[132, "summary"] <- "1 = 2 = 3"
+# mtbi mechanism violent
+all_tops_raw_manual_adj[137, "c13_es"] <- 0
+all_tops_raw_manual_adj |>
+    dplyr::select(-dplyr::contains("_l"), -dplyr::contains("_u")) |>
+    dplyr::filter(dplyr::if_any(dplyr::everything(), is.na))
+
+saveRDS(all_tops_raw_manual_adj, proc_path("all_tops_raw_manual_adj.rds", TRUE))
+
+all_tops_raw_manual_adj <- readRDS(proc_path("2025_05_30_all_tops_raw_manual_adj.rds"))
+
+all_tops_raw_manual_adj |>dplyr::filter(feature == "race_black")
+
+mtbi_gen_fts_table <- generalizable_features(all_tops_raw_manual_adj, compare_fn_a, 0.2)
+
+saveRDS(mtbi_gen_fts_table, proc_path("mtbi_gen_fts_table.rds", TRUE))
+
+mtbi_gen_fts_table <- readRDS(proc_path("2025_05_30_mtbi_gen_fts_table.rds"))
+
+mtbi_gen_fts_table
+
+# HERE 2025-05-30
+```
+
 
 ```{r}
 mtbi_full_top_3c_manhattan <- mc_manhattan_plot(
@@ -1494,238 +1704,9 @@ quick_save(wpo, "wpo", w = 7, h = 22)
 # Summary of the validation (table)
 
 ```{r}
-mtbi_der_df <- readRDS(proc_path("2025_02_12_mtbi_top_solution_plot_df.rds"))
-
-mtbi_ful_df <- auto_plot(
-    mtbi_full_top_3c,
-    dl = c(full_data_list_1, full_oom_list_1),
-    return_plots = FALSE
-)
-
-mtbi_val_df <- auto_plot(
-    cluster_df = val_cluster_df,
-    dl = c(test_data_list_s1, test_oom_list_s1),
-    return_plots = FALSE
-) 
-
-colnames(mtbi_der_df)
-colnames(mtbi_val_df)
-colnames(mtbi_ful_df)
-
-mtbi_der_df <- mtbi_der_df[, -2]
-mtbi_val_df <- mtbi_val_df[, -2]
-mtbi_ful_df <- mtbi_ful_df[, -2]
-
-saveRDS(mtbi_der_df, proc_path("mtbi_der_df.rds", TRUE))
-saveRDS(mtbi_ful_df, proc_path("mtbi_ful_df.rds", TRUE))
-saveRDS(mtbi_val_df, proc_path("mtbi_val_df.rds", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-mtbi_der_df <- readRDS(proc_path("2025_02_13_mtbi_der_df.rds"))
-
-mtbi_ful_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
-
-mtbi_ful_df$"cluster" |> table()
-
-mtbi_val_df <- readRDS(proc_path("2025_02_13_mtbi_val_df.rds"))
-```
-
-```{r}
-mtbi_der_tops <- topologizer(mtbi_der_df)
-mtbi_ful_tops <- topologizer(mtbi_ful_df)
-mtbi_val_tops <- topologizer(mtbi_val_df)
-
-write_csv(mtbi_der_tops, proc_path("mtbi_der_tops.csv", TRUE))
-write_csv(mtbi_ful_tops, proc_path("mtbi_ful_tops.csv", TRUE))
-write_csv(mtbi_val_tops, proc_path("mtbi_val_tops.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-mtbi_der_tops <- read_csv(proc_path("2024_11_26_mtbi_der_tops.csv"))
-mtbi_ful_tops <- read_csv(proc_path("2024_11_26_mtbi_ful_tops.csv"))
-mtbi_val_tops <- read_csv(proc_path("2024_11_26_mtbi_val_tops.csv"))
-```
-
-```{r}
-# Prepping the ordering of the tops features
-mtbi_top_solution_nmi_v_pval_rank <- read_csv(
-    proc_path("2025_02_12_mtbi_top_solution_nmi_v_pval_rank.csv")
-)
-
-joint_ranks <- mtbi_top_solution_nmi_v_pval_rank |>
-    data.frame() |>
-    dplyr::select(feature, joint_rank)
-joint_ranks <- rbind(
-    joint_ranks,
-    data.frame(
-        feature = c(
-            "race_black",
-            "race_white",
-            "race_hispanic",
-            "race_other"
-        ),
-        joint_rank = joint_ranks[joint_ranks$"feature" == "race", "joint_rank"]
-    )
-)
-joint_ranks <- rbind(
-    joint_ranks,
-    data.frame(
-        feature = c(
-            "mtbi_mechanism_fall_hit",
-            "mtbi_mechanism_hosp_er",
-            "mtbi_mechanism_multi",
-            "mtbi_mechanism_other_loc",
-            "mtbi_mechanism_vehicle",
-            "mtbi_mechanism_violent"
-        ),
-        joint_rank = joint_ranks[joint_ranks$"feature" == "mtbi_mechanism", "joint_rank"]
-    )
-)
-joint_ranks <- dplyr::filter(joint_ranks, !feature %in% c("mtbi_mechanism", "race"))
-
-joint_ranks <- arrange(joint_ranks, joint_rank)
-
-joint_ranks
-
-write_csv(joint_ranks, proc_path("joint_ranks.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-joint_ranks <- read_csv(proc_path("2025_02_13_joint_ranks.csv"))
-```
-
-
-```{r}
-joint_ranks_with_out <- rbind(
-    data.frame(
-        feature = outputs,
-        joint_rank = nrow(joint_ranks) + 1
-    ),
-    joint_ranks
-) |> data.frame()
-
-f_der_tops <- data.frame(format_tops(mtbi_der_tops))
-f_val_tops <- data.frame(format_tops(mtbi_val_tops))
-f_ful_tops <- data.frame(format_tops(mtbi_ful_tops))
-
-all_der_tops <- dplyr::full_join(
-    joint_ranks_with_out,
-    f_der_tops,
-    by = join_by("feature" == "Feature")
-) |>
-    dplyr::select(-joint_rank) |>
-    dplyr::rename("Feature" = "feature")
-
-all_val_tops <- dplyr::full_join(
-    joint_ranks_with_out,
-    f_val_tops,
-    by = join_by("feature" == "Feature")
-) |>
-    dplyr::select(-joint_rank) |>
-    dplyr::rename("Feature" = "feature")
-
-all_ful_tops <- dplyr::full_join(
-    joint_ranks_with_out,
-    f_ful_tops,
-    by = join_by("feature" == "Feature")
-) |>
-    dplyr::select(-joint_rank) |>
-    dplyr::rename("Feature" = "feature")
-
-write_csv(all_der_tops, proc_path("mtbi_all_der_tops.csv", TRUE))
-write_csv(all_val_tops, proc_path("mtbi_all_val_tops.csv", TRUE))
-write_csv(all_ful_tops, proc_path("mtbi_all_ful_tops.csv", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-all_der_tops <- read_csv(proc_path("2025_02_13_mtbi_all_der_tops.csv"))
-all_val_tops <- read_csv(proc_path("2025_02_13_mtbi_all_val_tops.csv"))
-all_ful_tops <- read_csv(proc_path("2025_02_13_mtbi_all_ful_tops.csv"))
-```
-
-```{r}
-all_der_tops$"Set" <- "D"
-all_val_tops$"Set" <- "V"
-all_ful_tops$"Set" <- "F"
-
-all_der_tops$rank <- seq_len(nrow(all_der_tops))
-all_val_tops$rank <- seq_len(nrow(all_val_tops))
-all_ful_tops$rank <- seq_len(nrow(all_ful_tops))
-
-all_tops <- do.call(rbind, list(all_der_tops, all_val_tops, all_ful_tops))
-
-all_tops <- arrange(all_tops, rank) |>
-    relocate(Set, .after = "Feature") |>
-    dplyr::select(-rank)
-
-write_csv(all_tops, proc_path("all_tops.csv", TRUE))
-
-all_tops <- read_csv(proc_path("2025_02_13_all_tops.csv"))
-
-knitr::kable(all_tops, format = "markdown", digits = 3, format.args = list(scientific = FALSE)) |>
-    writeLines(proc_path("mtbi_full_tops.txt", TRUE)) # 2025-02-13
-
-xtable(all_tops)
-```
-
-```{r}
-mtbi_der_tops$"set" <- "D"
-mtbi_ful_tops$"set" <- "V"
-mtbi_val_tops$"set" <- "F"
-
-all_der_tops_raw <- dplyr::full_join(
-    joint_ranks_with_out,
-    mtbi_der_tops,
-    by = "feature"
-) |>
-    dplyr::select(-joint_rank)
-
-all_val_tops_raw <- dplyr::full_join(
-    joint_ranks_with_out,
-    mtbi_val_tops,
-    by = "feature"
-) |>
-    dplyr::select(-joint_rank)
-
-all_ful_tops_raw <- dplyr::full_join(
-    joint_ranks_with_out,
-    mtbi_ful_tops,
-    by = "feature"
-) |>
-    dplyr::select(-joint_rank)
-
-all_der_tops_raw$rank <- seq_len(nrow(all_der_tops_raw))
-all_val_tops_raw$rank <- seq_len(nrow(all_val_tops_raw))
-all_ful_tops_raw$rank <- seq_len(nrow(all_ful_tops_raw))
-
-all_tops_raw <- do.call(
-    rbind,
-    list(
-        all_der_tops_raw,
-        all_val_tops_raw,
-        all_ful_tops_raw
-    )
-)
-
-all_tops_raw$"set" <- factor(
-    all_tops_raw$"set",
-    levels = c("D", "V", "F")
-)
-
-options(width = 200)
-
-all_tops_raw <- all_tops_raw |> arrange(rank, set)
-
-write_csv(all_tops_raw, proc_path("all_tops_raw.csv", TRUE))
-```
-
-```{r}
 all_tops_raw <- read_csv(proc_path("2025_02_13_all_tops_raw.csv"))
+
+all_tops_raw |> glimpse()
 
 gen_df_a <- generalizable_features(all_tops_raw, compare_fn_a, 0.2)
 gen_df_b <- generalizable_features(all_tops_raw, compare_fn_b)
@@ -1736,6 +1717,8 @@ identical(gen_df_a, gen_df_b)
 write_csv(gen_df_a, proc_path("mtbi_gen_fts.csv", TRUE))
 
 mtbi_gen_fts <- data.frame(read_csv(proc_path("2025_02_13_mtbi_gen_fts.csv")))
+
+mtbi_gen_fts
 
 mtbi_gen_fts_in <- mtbi_gen_fts |>
     dplyr::filter(

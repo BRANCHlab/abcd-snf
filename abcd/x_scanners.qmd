@@ -1,0 +1,124 @@
+```{r}
+library(ggplot2)
+library(abcdutils)
+
+core_path <- abcdutils::path_maker(here::here("data/abcd/core"))
+
+import <- function(path) {
+    return(abcdutils::abcd_load(core_path(path)))
+}
+
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+
+mri_y_adm_info <- import("imaging/mri_y_adm_info.csv")
+
+# Assign scanner
+get_scanner_id(
+    mri_y_adm_info = mri_y_adm_info,
+    abcd_y_lt = abcd_y_lt,
+    t = 0,
+    sample_missing = TRUE
+)
+
+# Access scanner mapping data
+scanner_map_t0 <- assign_site_scanner(
+    mri_y_adm_info = mri_y_adm_info,
+    abcd_y_lt = abcd_y_lt,
+    t = 0,
+    return_scanner_map = TRUE
+)$"scanner_map"
+scanner_map_t0
+
+scanner_map_t2 <- assign_site_scanner(
+    mri_y_adm_info = mri_y_adm_info,
+    abcd_y_lt = abcd_y_lt,
+    t = 2,
+    return_scanner_map = TRUE
+)$"scanner_map"
+scanner_map_t2
+
+scanner_map_t4 <- assign_site_scanner(
+    mri_y_adm_info = mri_y_adm_info,
+    abcd_y_lt = abcd_y_lt,
+    t = 4,
+    return_scanner_map = TRUE
+)$"scanner_map"
+scanner_map_t4
+
+full_df_t0 <- data.frame()
+for (site in seq_len(nrow(scanner_map_t0))) {
+    scanners <- scanner_map_t0[site, ]$"scanners"
+    weights <- scanner_map_t0[site, ]$"weights"
+    site_id <- scanner_map_t0[site, ]$"site_id"
+    for (scanner in seq_along(scanners)) {
+        temp_df <- data.frame(
+            site_id = site_id,
+            scanner = scanners[[scanner]],
+            weight = weights[[scanner]],
+            t = 0
+        )
+        full_df_t0 <- rbind(full_df_t0, temp_df)
+        print(temp_df)
+    }
+}
+print(full_df_t0)
+
+
+full_df_t2 <- data.frame()
+for (site in seq_len(nrow(scanner_map_t2))) {
+    scanners <- scanner_map_t0[site, ]$"scanners"
+    weights <- scanner_map_t0[site, ]$"weights"
+    site_id <- scanner_map_t0[site, ]$"site_id"
+    for (scanner in seq_along(scanners)) {
+        temp_df <- data.frame(
+            site_id = site_id,
+            scanner = scanners[[scanner]],
+            weight = weights[[scanner]],
+            t = 2
+        )
+        full_df <- rbind(full_df, temp_df)
+        print(temp_df)
+    }
+}
+print(full_df_t2)
+
+full_df_t4 <- data.frame()
+for (site in seq_len(nrow(scanner_map_t4))) {
+    scanners <- scanner_map_t0[site, ]$"scanners"
+    weights <- scanner_map_t0[site, ]$"weights"
+    site_id <- scanner_map_t0[site, ]$"site_id"
+    for (scanner in seq_along(scanners)) {
+        temp_df <- data.frame(
+            site_id = site_id,
+            scanner = scanners[[scanner]],
+            weight = weights[[scanner]],
+            t = 4
+        )
+        full_df <- rbind(full_df, temp_df)
+        print(temp_df)
+    }
+}
+print(full_df_t4)
+
+full_df_t0
+
+df <- dplyr::bind_rows(full_df_t0)
+
+df
+
+df$"site_id" <- factor(df$"site_id")
+
+plot <- ggplot(df, aes(x = site_id, y = weight, fill = scanner)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(x = "Site", y = "Proportion of scans") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+plot
+
+ggsave(
+    "scanner_distribution_t0.png",
+    plot = plot,
+    width = 10,
+    height = 6
+)
+```
