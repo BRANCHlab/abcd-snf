@@ -619,3 +619,57 @@ png_save <- function(img, path, w = 1250, h = 1000, r = 125) {
     print(img)
     grDevices::dev.off()
 }
+
+# tri-plot helper function
+tri_plot <- function(pl,
+                     feature,
+                     ft_name = NULL,
+                     scale_fill_labels = NULL,
+                     ylims = NULL) {
+    if (is.null(ft_name)) {
+        ft_name <- feature
+    }
+    ###########################################################################
+    p1 <- pl[[1]][[feature]] +
+        ggplot2::theme(
+            legend.position = "none",
+            axis.title.y = ggplot2::element_text(size = 16)
+        )
+    ###########################################################################
+    p2 <- pl[[2]][[feature]] +
+        ggplot2::theme(
+            legend.position = "none",
+            axis.title.y = ggplot2::element_blank()
+        ) 
+    ###########################################################################
+    p3 <- pl[[3]][[feature]] +
+        ggplot2::theme(
+            axis.title.y = ggplot2::element_blank()
+        )
+    ###########################################################################
+    if (class(pl[[3]][[feature]]$layers[[1]]$geom)[[1]] == "GeomBar") {
+        p3 <- p3 + ggplot2::labs(fill = ft_name)
+    } else {
+        p1 <- p1 + ggplot2::labs(y = ft_name)
+    }
+    if (!is.null(scale_fill_labels)) {
+        p3 <- p3 + ggplot2::scale_fill_discrete(labels = scale_fill_labels)
+    }
+    if (!is.null(ylims)) {
+        p1 <- p1 + ggplot2::ylim(ylims[[1]], ylims[[2]])
+        p2 <- p2 + ggplot2::ylim(ylims[[1]], ylims[[2]])
+        p3 <- p3 + ggplot2::ylim(ylims[[1]], ylims[[2]])
+    }
+    ###########################################################################
+    patch_plot <- list(p1, p2, p3)
+    patch_plot <- lapply(
+        patch_plot,
+        function(x) {
+            x <- x + ggplot2::labs(x = "Cluster") +
+                ggplot2::theme(text = ggplot2::element_text(size = 16))
+        }
+    )
+    names(patch_plot) <- c("derivation", "validation", "full")
+    return(wrap_plots(patch_plot))
+}
+
