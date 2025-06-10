@@ -447,7 +447,8 @@ build_pred_mat <- function(df, n_predictors = 1) {
 run_imputation <- function(df,
                            pred_mat_exclusions = 0,
                            visit_sequence = NULL,
-                           parallel = FALSE) {
+                           parallel = FALSE,
+                           ...) {
     df <- dplyr::select(df, -"subjectkey")
     df <- char_to_fac(df)
     if (!is.null(visit_sequence)) {
@@ -463,7 +464,8 @@ run_imputation <- function(df,
             df,
             m = 5,
             maxit = 10,
-            predictorMatrix = pred_mat
+            predictorMatrix = pred_mat,
+            ...
         )
     } else {
         imputed <- futuremice(
@@ -472,7 +474,8 @@ run_imputation <- function(df,
             maxit = 10,
             parallelseed = 42,
             n.core = 5,
-            predictorMatrix = pred_mat
+            predictorMatrix = pred_mat,
+            ...
         )
     }
     return(
