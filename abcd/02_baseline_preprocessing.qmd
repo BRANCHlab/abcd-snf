@@ -1094,9 +1094,83 @@ drop_random_siblings <- function(abcd_y_lt, subjects) {
     sibling_df <- abcd_y_lt |>
         filter_timepoint(t = 0) |>
         dplyr::select(subjectkey, rel_family_id) |>
-        filter_subjects()
+        filter_subjects(subjects)
+    sibling_df <- sibling_df[sample(nrow(sibling_df)), ]
+    is_dup_family <- duplicated(sibling_df$"rel_family_id")
+    siblings_removed <- sibling_df[!is_dup_family, ]
+    return(siblings_removed$"subjectkey")
 }
 
 
+set.seed(42)
+mtbi_no_sibs_subs <- drop_random_siblings(abcd_y_lt, mtbi_subs)
 
+mtbi_der_no_sibs_subs <- mtbi_train_subs[mtbi_train_subs %in% mtbi_no_sibs_subs]
+mtbi_val_no_sibs_subs <- mtbi_test_subs[mtbi_test_subs %in% mtbi_no_sibs_subs]
+
+set.seed(42)
+unij_no_sibs_subs <- drop_random_siblings(abcd_y_lt, unij_subs)
+
+length(mtbi_train_subs)       # N = 354 originally
+length(mtbi_der_no_sibs_subs) # N = 352 after sibling removal
+
+length(mtbi_test_subs)        # N = 83 originally
+length(mtbi_val_no_sibs_subs) # N = 82 after sibling removal
+
+length(unij_subs)         # N = 9349 originally
+length(unij_no_sibs_subs) # N = 7944 after sibling removal
+
+saveRDS(mtbi_no_sibs_subs,     sub_path("mtbi_no_sibs_subs.rds", TRUE))
+saveRDS(mtbi_der_no_sibs_subs, sub_path("mtbi_der_no_sibs_subs.rds", TRUE))
+saveRDS(mtbi_val_no_sibs_subs, sub_path("mtbi_val_no_sibs_subs.rds", TRUE))
+saveRDS(unij_no_sibs_subs,     sub_path("unij_no_sibs_subs.rds", TRUE))
+
+mtbi_no_sibs_subs <- readRDS(sub_path("2025_06_11_mtbi_no_sibs_subs.rds"))
+mtbi_der_no_sibs_subs <- readRDS(sub_path("2025_06_11_mtbi_der_no_sibs_subs.rds"))
+mtbi_val_no_sibs_subs <- readRDS(sub_path("2025_06_11_mtbi_val_no_sibs_subs.rds"))
+unij_no_sibs_subs <- readRDS(sub_path("2025_06_11_unij_no_sibs_subs.rds"))
+
+
+all_dls_h <- readRDS(proc_path("2025_06_11_all_dls_h.rds"))
+
+names(all_dls_h)
+
+mtbi_der_no_sibs_subs
+
+batch_uid_replace <- function(list_of_dls, uids) {
+    uids <- paste0("uid_", uids)
+    list_of_dls_new <- lapply(
+        list_of_dls,
+        function(dl) {
+            new_dl <- dlapply(
+                dl,
+                function(x) {
+                    x$"data" <- x$"data"[x$"data"$"uid" %in% uids, ]
+                    return(x)
+                }
+            )
+            return(new_dl)
+        }
+    )
+    return(list_of_dls_new)
+}
+
+all_dls_h_no_sibs <- all_dls_h
+
+all_dls_h_no_sibs[["mtbi_der_u_dls"]] <- batch_uid_replace(all_dls_h_no_sibs[["mtbi_der_u_dls"]], mtbi_der_no_sibs_subs)
+all_dls_h_no_sibs[["mtbi_der_u_ols"]] <- batch_uid_replace(all_dls_h_no_sibs[["mtbi_der_u_ols"]], mtbi_der_no_sibs_subs)
+
+all_dls_h_no_sibs[["mtbi_val_u_dls"]] <- batch_uid_replace(all_dls_h_no_sibs[["mtbi_val_u_dls"]], mtbi_val_no_sibs_subs)
+all_dls_h_no_sibs[["mtbi_val_u_ols"]] <- batch_uid_replace(all_dls_h_no_sibs[["mtbi_val_u_ols"]], mtbi_val_no_sibs_subs)
+
+all_dls_h_no_sibs[["mtbi_der_p_dls"]] <- batch_uid_replace(all_dls_h_no_sibs[["mtbi_der_p_dls"]], mtbi_der_no_sibs_subs)
+all_dls_h_no_sibs[["mtbi_der_p_ols"]] <- batch_uid_replace(all_dls_h_no_sibs[["mtbi_der_p_ols"]], mtbi_der_no_sibs_subs)
+
+all_dls_h_no_sibs[["unij_all_u_dls"]] <- batch_uid_replace(all_dls_h_no_sibs[["unij_all_u_dls"]], unij_no_sibs_subs)
+all_dls_h_no_sibs[["unij_all_u_ols"]] <- batch_uid_replace(all_dls_h_no_sibs[["unij_all_u_ols"]], unij_no_sibs_subs)
+
+all_dls_h_no_sibs[["unij_all_p_dls"]] <- batch_uid_replace(all_dls_h_no_sibs[["unij_all_p_dls"]], unij_no_sibs_subs)
+all_dls_h_no_sibs[["unij_all_p_ols"]] <- batch_uid_replace(all_dls_h_no_sibs[["unij_all_p_ols"]], unij_no_sibs_subs)
+
+saveRDS(all_dls_h_no_sibs, proc_path("all_dls_h_no_sibs.rds", TRUE))
 ```
