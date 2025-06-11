@@ -4,145 +4,145 @@ build_mtbi_dls <- function(parsed_imputations) {
         function(x) {
             data_list(
                 list(
-                    parsed_imputations$"mtbi_as_mem_daze"[[x + 1]],
+                    parsed_imputations$"as_mem_daze"[[x + 1]],
                     "as_mem_daze",
                     "AS",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_as_mechanism"[[x + 1]],
+                    parsed_imputations$"as_mechanism"[[x + 1]],
                     "as_mechanism",
                     "AS",
                     "categorical"
                 ),
                 list(
-                    parsed_imputations$"mtbi_as_loc"[[x + 1]],
+                    parsed_imputations$"as_loc"[[x + 1]],
                     "as_loc",
                     "AS",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_d_interview_age"[[x + 1]],
+                    parsed_imputations$"d_interview_age"[[x + 1]],
                     "d_age",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_d_mtbi_age"[[x + 1]],
+                    parsed_imputations$"d_mtbi_age"[[x + 1]],
                     "d_mtbi_age",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_d_sex"[[x + 1]],
+                    parsed_imputations$"d_sex"[[x + 1]],
                     "d_sex",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_d_income"[[x + 1]],
+                    parsed_imputations$"d_income"[[x + 1]],
                     "d_income",
                     "D",
                     "ordinal"
                 ),
                 list(
-                    parsed_imputations$"mtbi_d_race"[[x + 1]],
+                    parsed_imputations$"d_race"[[x + 1]],
                     "d_race",
                     "D",
                     "categorical"
                 ),
                 list(
-                    parsed_imputations$"mtbi_d_pubertal_status"[[x + 1]],
+                    parsed_imputations$"d_pubertal_status"[[x + 1]],
                     "d_pubertal",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_mh_headaches"[[x + 1]],
+                    parsed_imputations$"mh_headaches"[[x + 1]],
                     "mh_headaches",
                     "MH",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_mh_mtbi_count"[[x + 1]],
+                    parsed_imputations$"mh_mtbi_count"[[x + 1]],
                     "mh_mtbi_count",
                     "MH",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_sm_subc_v_qc"[[x + 1]],
+                    parsed_imputations$"sm_subc_v_qc"[[x + 1]],
                     "n_subc_v",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"mtbi_sm_cort_t_qc"[[x + 1]],
+                    parsed_imputations$"sm_cort_t_qc"[[x + 1]],
                     "n_cort_t",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"mtbi_sm_cort_sa_qc"[[x + 1]],
+                    parsed_imputations$"sm_cort_sa_qc"[[x + 1]],
                     "n_cort_sa",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"mtbi_dm_wmnd_qc"[[x + 1]],
+                    parsed_imputations$"dm_wmnd_qc"[[x + 1]],
                     "n_wmnd",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"mtbi_rm_gord_cor_qc"[[x + 1]],
+                    parsed_imputations$"rm_gord_cor_qc"[[x + 1]],
                     "n_gord_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"mtbi_rm_subc_cor_qc"[[x + 1]],
+                    parsed_imputations$"rm_subc_cor_qc"[[x + 1]],
                     "n_subc_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_friends"[[x + 1]],
+                    parsed_imputations$"p_friends"[[x + 1]],
                     "p_friends",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_screen_time"[[x + 1]],
+                    parsed_imputations$"p_screen_time"[[x + 1]],
                     "p_screen_time",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_sports"[[x + 1]],
+                    parsed_imputations$"p_sports"[[x + 1]],
                     "p_sports",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_exercise"[[x + 1]],
+                    parsed_imputations$"p_exercise"[[x + 1]],
                     "p_exercise",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_prosocial"[[x + 1]],
+                    parsed_imputations$"p_prosocial"[[x + 1]],
                     "p_prosocial",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_fam_fn"[[x + 1]],
+                    parsed_imputations$"p_fam_fn"[[x + 1]],
                     "p_fam_fn",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"mtbi_p_parent_psych"[[x + 1]],
+                    parsed_imputations$"p_parent_psych"[[x + 1]],
                     "p_parent_psych",
                     "P",
                     "discrete"
@@ -161,115 +161,115 @@ build_unij_dls <- function(parsed_imputations) {
         function(x) {
             data_list(
                 list(
-                    parsed_imputations$"unij_d_interview_age"[[x + 1]],
+                    parsed_imputations$"d_interview_age"[[x + 1]],
                     "d_age",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_d_sex"[[x + 1]],
+                    parsed_imputations$"d_sex"[[x + 1]],
                     "d_sex",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_d_income"[[x + 1]],
+                    parsed_imputations$"d_income"[[x + 1]],
                     "d_income",
                     "D",
                     "ordinal"
                 ),
                 list(
-                    parsed_imputations$"unij_d_race"[[x + 1]],
+                    parsed_imputations$"d_race"[[x + 1]],
                     "d_race",
                     "D",
                     "categorical"
                 ),
                 list(
-                    parsed_imputations$"unij_d_pubertal_status"[[x + 1]],
+                    parsed_imputations$"d_pubertal_status"[[x + 1]],
                     "d_pubertal",
                     "D",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_mh_headaches"[[x + 1]],
+                    parsed_imputations$"mh_headaches"[[x + 1]],
                     "mh_headaches",
                     "MH",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_sm_subc_v_qc"[[x + 1]],
+                    parsed_imputations$"sm_subc_v_qc"[[x + 1]],
                     "n_subc_v",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"unij_sm_cort_t_qc"[[x + 1]],
+                    parsed_imputations$"sm_cort_t_qc"[[x + 1]],
                     "n_cort_t",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"unij_sm_cort_sa_qc"[[x + 1]],
+                    parsed_imputations$"sm_cort_sa_qc"[[x + 1]],
                     "n_cort_sa",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"unij_dm_wmnd_qc"[[x + 1]],
+                    parsed_imputations$"dm_wmnd_qc"[[x + 1]],
                     "n_wmnd",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"unij_rm_gord_cor_qc"[[x + 1]],
+                    parsed_imputations$"rm_gord_cor_qc"[[x + 1]],
                     "n_gord_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"unij_rm_subc_cor_qc"[[x + 1]],
+                    parsed_imputations$"rm_subc_cor_qc"[[x + 1]],
                     "n_subc_cor",
                     "N",
                     "continuous"
                 ),
                 list(
-                    parsed_imputations$"unij_p_friends"[[x + 1]],
+                    parsed_imputations$"p_friends"[[x + 1]],
                     "p_friends",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_p_screen_time"[[x + 1]],
+                    parsed_imputations$"p_screen_time"[[x + 1]],
                     "p_screen_time",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_p_sports"[[x + 1]],
+                    parsed_imputations$"p_sports"[[x + 1]],
                     "p_sports",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_p_exercise"[[x + 1]],
+                    parsed_imputations$"p_exercise"[[x + 1]],
                     "p_exercise",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_p_prosocial"[[x + 1]],
+                    parsed_imputations$"p_prosocial"[[x + 1]],
                     "p_prosocial",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_p_fam_fn"[[x + 1]],
+                    parsed_imputations$"p_fam_fn"[[x + 1]],
                     "p_fam_fn",
                     "P",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_p_parent_psych"[[x + 1]],
+                    parsed_imputations$"p_parent_psych"[[x + 1]],
                     "p_parent_psych",
                     "P",
                     "discrete"
@@ -282,44 +282,19 @@ build_unij_dls <- function(parsed_imputations) {
     return(data_lists)
 }
 
-build_unij_ols <- function(parsed_imputations) {
+build_ols <- function(parsed_imputations) {
     oom_lists <- lapply(
         seq_len(5),
         function(x) {
             data_list(
                 list(
-                    parsed_imputations$"unij_cbcl"[[x + 1]],
+                    parsed_imputations$"cbcl"[[x + 1]],
                     "cbcl",
                     "B",
                     "discrete"
                 ),
                 list(
-                    parsed_imputations$"unij_sds"[[x + 1]],
-                    "sds",
-                    "B",
-                    "discrete"
-                ),
-                uid = "subjectkey"
-            )
-        }
-    )
-    names(oom_lists) <- paste0("imp_", seq_len(5))
-    return(oom_lists)
-}
-
-build_mtbi_ols <- function(parsed_imputations) {
-    oom_lists <- lapply(
-        seq_len(5),
-        function(x) {
-            data_list(
-                list(
-                    parsed_imputations$"mtbi_cbcl"[[x + 1]],
-                    "cbcl",
-                    "B",
-                    "discrete"
-                ),
-                list(
-                    parsed_imputations$"mtbi_sds"[[x + 1]],
+                    parsed_imputations$"sds"[[x + 1]],
                     "sds",
                     "B",
                     "discrete"
@@ -354,6 +329,8 @@ compare_fn_b <- function(d, sig, thresh = 0.2) {
         TRUE ~ NA
     )
 }
+
+missing_columns <- function(x) names(which(colSums(is.na(x)) > 0))
 
 generalizable_features <- function(tops_df, comparison_fn, t = 0.2) {
     # Remove unnecessary columns
@@ -620,6 +597,25 @@ png_save <- function(img, path, w = 1250, h = 1000, r = 125) {
     grDevices::dev.off()
 }
 
+save_density_plots <- function(features, imputed, prefix = "") {
+    for (feature in features) {
+        print(feature)
+        plot <- tryCatch(
+            {
+                plot <- mice::densityplot(imputed, as.formula(paste0("~ ", feature)))
+            },
+            error = function(e) {
+                plot <- mice::xyplot(imputed, as.formula(paste0("~ ", feature)))
+            }
+        )
+        png_save(
+            plot,
+            fig_path(paste0(prefix, "density_plot_", feature, ".png"), TRUE),
+            w = 400,
+            h = 400
+        )
+    } }
+
 # tri-plot helper function
 tri_plot <- function(pl,
                      feature,
@@ -672,4 +668,5 @@ tri_plot <- function(pl,
     names(patch_plot) <- c("derivation", "validation", "full")
     return(wrap_plots(patch_plot))
 }
+
 

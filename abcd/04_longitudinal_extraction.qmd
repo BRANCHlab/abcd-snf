@@ -226,15 +226,45 @@ mtbi_subs <- read_subjects(sub_path("2025_05_22_mtbi_subs.csv"))
 unij_subs <- read_subjects(sub_path("2025_05_22_unij_subs.csv"))
 ```
 
+It is possible to have been filtered into this stage without actually having T2 data collected by virtue of having T1 data collected.
+
+```{r}
+subjects_with_t2_data <- abcd_y_lt |> 
+    filter_timepoint(2) |>
+    dplyr::select(subjectkey, eventname, site_id_l)
+
+has_t2_data <- function(subs) {
+    subs %in% subjects_with_t2_data$"subjectkey"
+}
+
+mtbi_subs_wt2 <- mtbi_subs[has_t2_data(mtbi_subs)]
+unij_subs_wt2 <- unij_subs[has_t2_data(unij_subs)]
+lmtb_subs_wt2 <- lmtb_subs[has_t2_data(lmtb_subs)]
+lunj_subs_wt2 <- lunj_subs[has_t2_data(lunj_subs)]
+
+saveRDS(mtbi_subs_wt2, sub_path("mtbi_subs_wt2.rds", TRUE))
+saveRDS(unij_subs_wt2, sub_path("unij_subs_wt2.rds", TRUE))
+saveRDS(lmtb_subs_wt2, sub_path("lmtb_subs_wt2.rds", TRUE))
+saveRDS(lunj_subs_wt2, sub_path("lunj_subs_wt2.rds", TRUE))
+```
+
+```{r}
+# CHECKPOINT
+mtbi_subs_wt2 <- readRDS(sub_path("2025_06_10_mtbi_subs_wt2.rds"))
+unij_subs_wt2 <- readRDS(sub_path("2025_06_10_unij_subs_wt2.rds"))
+lmtb_subs_wt2 <- readRDS(sub_path("2025_06_10_lmtb_subs_wt2.rds"))
+lunj_subs_wt2 <- readRDS(sub_path("2025_06_10_lunj_subs_wt2.rds"))
+```
+
 Checking when each injured subject should have their injury info collected:
 
 ```{r}
 # subs who should have their injury information collected from t1
-t1_latest <- lmtb_subs[!lmtb_subs %in% mtbi_subs_t2]
-length(t1_latest) # N = 92
+t1_latest <- lmtb_subs_wt2[!lmtb_subs_wt2 %in% mtbi_subs_t2]
+length(t1_latest) # N = 90
 
 # subs who should have their injury information collected from t2
-t2_latest <- lmtb_subs[lmtb_subs %in% mtbi_subs_t2]
+t2_latest <- lmtb_subs_wt2[lmtb_subs_wt2 %in% mtbi_subs_t2]
 length(t2_latest) # N = 128
 ```
 
@@ -358,7 +388,7 @@ Demographic variables included in the analyses are:
 # A: longitudinal mTBI, baseline timepoint
 lmtb_d_interview_age_0 <- get_interview_age(
     abcd_y_lt,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 0,
     as_years = FALSE
 )
@@ -368,7 +398,7 @@ iwrite(lmtb_d_interview_age_0, "lmtb_d_interview_age_0.csv")
 # B: longitudinal mTBI, longitudinal timepoint
 lmtb_d_interview_age_l <- get_interview_age(
     abcd_y_lt,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 2,
     as_years = FALSE
 )
@@ -378,7 +408,7 @@ iwrite(lmtb_d_interview_age_l, "lmtb_d_interview_age_l.csv")
 # C: baseline mTBI, longitudinal timepoint
 mtbi_d_interview_age_l <- get_interview_age(
     abcd_y_lt,
-    mtbi_subs,
+    mtbi_subs_wt2,
     t = 2,
     as_years = FALSE
 )
@@ -388,7 +418,7 @@ iwrite(mtbi_d_interview_age_l, "mtbi_d_interview_age_l.csv")
 # baseline uninjured, longitudinal timepoint
 unij_d_interview_age_l <- get_interview_age(
     abcd_y_lt,
-    unij_subs,
+    unij_subs_wt2,
     t = 2,
     as_years = FALSE
 )
@@ -431,7 +461,12 @@ We already have sex for the baseline mTBI and baseline unijured groups.
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_d_sex_0 <- get_sex(gish_p_gi, lmtb_subs, t = 0, as_numeric = TRUE)
+lmtb_d_sex_0 <- get_sex(
+    gish_p_gi,
+    lmtb_subs_wt2,
+    t = 0,
+    as_numeric = TRUE
+)
 tibble(lmtb_d_sex_0)
 iwrite(lmtb_d_sex_0, "lmtb_d_sex_0.csv")
 ```
@@ -440,22 +475,22 @@ iwrite(lmtb_d_sex_0, "lmtb_d_sex_0.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_d_income_0 <- get_income(abcd_p_demo, lmtb_subs, t = 0)
+lmtb_d_income_0 <- get_income(abcd_p_demo, lmtb_subs_wt2, t = 0)
 tibble(lmtb_d_income_0)
 iwrite(lmtb_d_income_0, "lmtb_d_income_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_d_income_l <- get_income(abcd_p_demo, lmtb_subs, t = 2)
+lmtb_d_income_l <- get_income(abcd_p_demo, lmtb_subs_wt2, t = 2)
 tibble(lmtb_d_income_l)
 iwrite(lmtb_d_income_l, "lmtb_d_income_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_d_income_l <- get_income(abcd_p_demo, mtbi_subs, t = 2)
+mtbi_d_income_l <- get_income(abcd_p_demo, mtbi_subs_wt2, t = 2)
 tibble(mtbi_d_income_l)
 iwrite(mtbi_d_income_l, "mtbi_d_income_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_d_income_l <- get_income(abcd_p_demo, unij_subs, t = 2)
+unij_d_income_l <- get_income(abcd_p_demo, unij_subs_wt2, t = 2)
 tibble(unij_d_income_l)
 iwrite(unij_d_income_l, "unij_d_income_l.csv")
 ```
@@ -468,7 +503,7 @@ Data only present at baseline.
 # A: longitudinal mTBI, baseline timepoint
 lmtb_d_race_0 <- get_race(
     abcd_p_demo,
-    lmtb_subs,
+    lmtb_subs_wt2,
     asian_as_other = TRUE,
     t = 0
 )
@@ -481,14 +516,14 @@ iwrite(lmtb_d_race_0, "lmtb_d_race_0.csv")
 ```{r}
 lmtb_d_pubertal_status_p_0 <- get_pubertal_status_p(
     ph_p_pds,
-    lmtb_subs,
+    lmtb_subs_wt2,
     max_value = 3,
     t = 0
 )
 
 lmtb_d_pubertal_status_y_0 <- get_pubertal_status_y(
     ph_y_pds,
-    lmtb_subs,
+    lmtb_subs_wt2,
     max_value = 3,
     t = 0
 )
@@ -503,13 +538,13 @@ iwrite(lmtb_d_pubertal_status_0, "lmtb_d_pubertal_status_0.csv")
 
 lmtb_d_pubertal_status_p_l <- get_pubertal_status_p(
     ph_p_pds,
-    lmtb_subs,
+    lmtb_subs_wt2,
     max_value = 4,
     t = 2
 )
 lmtb_d_pubertal_status_y_l <- get_pubertal_status_y(
     ph_y_pds,
-    lmtb_subs,
+    lmtb_subs_wt2,
     max_value = 4,
     t = 2
 )
@@ -524,14 +559,14 @@ iwrite(lmtb_d_pubertal_status_l, "lmtb_d_pubertal_status_l.csv")
 
 mtbi_d_pubertal_status_p_l <- get_pubertal_status_p(
     ph_p_pds,
-    mtbi_subs,
+    mtbi_subs_wt2,
     max_value = 4,
     t = 2
 )
 
 mtbi_d_pubertal_status_y_l <- get_pubertal_status_y(
     ph_y_pds,
-    mtbi_subs,
+    mtbi_subs_wt2,
     max_value = 4,
     t = 2
 )
@@ -546,14 +581,14 @@ iwrite(mtbi_d_pubertal_status_l, "mtbi_d_pubertal_status_l.csv")
 
 unij_d_pubertal_status_p_l <- get_pubertal_status_p(
     ph_p_pds,
-    unij_subs,
+    unij_subs_wt2,
     max_value = 4,
     t = 2
 )
 
 unij_d_pubertal_status_y_l <- get_pubertal_status_y(
     ph_y_pds,
-    unij_subs,
+    unij_subs_wt2,
     max_value = 4,
     t = 2
 )
@@ -578,22 +613,22 @@ Medical history variables of interest include:
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_mh_headaches_0 <- get_headaches(ph_p_mhx, lmtb_subs, t = 0)
+lmtb_mh_headaches_0 <- get_headaches(ph_p_mhx, lmtb_subs_wt2, t = 0)
 tibble(lmtb_mh_headaches_0)
 iwrite(lmtb_mh_headaches_0, "lmtb_mh_headaches_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_mh_headaches_l <- get_headaches(ph_p_mhx, lmtb_subs, t = 2)
+lmtb_mh_headaches_l <- get_headaches(ph_p_mhx, lmtb_subs_wt2, t = 2)
 tibble(lmtb_mh_headaches_l)
 iwrite(lmtb_mh_headaches_l, "lmtb_mh_headaches_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_mh_headaches_l <- get_headaches(ph_p_mhx, mtbi_subs, t = 2)
+mtbi_mh_headaches_l <- get_headaches(ph_p_mhx, mtbi_subs_wt2, t = 2)
 tibble(mtbi_mh_headaches_l)
 iwrite(mtbi_mh_headaches_l, "mtbi_mh_headaches_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_mh_headaches_l <- get_headaches(ph_p_mhx, unij_subs, t = 2)
+unij_mh_headaches_l <- get_headaches(ph_p_mhx, unij_subs_wt2, t = 2)
 tibble(unij_mh_headaches_l)
 iwrite(unij_mh_headaches_l, "unij_mh_headaches_l.csv")
 ```
@@ -605,7 +640,7 @@ iwrite(unij_mh_headaches_l, "unij_mh_headaches_l.csv")
 lmtb_mh_mtbi_count_t1 <- get_mtbi_count(
     ph_p_otbi,
     abcd_y_lt,
-    lmtb_subs,
+    lmtb_subs_wt2,
     cutoff = 6,
     t = 1
 )
@@ -614,7 +649,7 @@ lmtb_mh_mtbi_count_t1 <- get_mtbi_count(
 lmtb_mh_mtbi_count_t2 <- get_mtbi_count(
     ph_p_otbi,
     abcd_y_lt,
-    lmtb_subs,
+    lmtb_subs_wt2,
     cutoff = 6,
     t = 2
 )
@@ -643,22 +678,22 @@ iwrite(lmtb_mh_mtbi_count_l, "lmtb_mh_mtbi_count_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_sm_subc_v_0 <- get_subc_v(mri_y_smr_vol_aseg, lmtb_subs, t = 0)
+lmtb_sm_subc_v_0 <- get_subc_v(mri_y_smr_vol_aseg, lmtb_subs_wt2, t = 0)
 tibble(lmtb_sm_subc_v_0)
 iwrite(lmtb_sm_subc_v_0, "lmtb_sm_subc_v_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_sm_subc_v_l <- get_subc_v(mri_y_smr_vol_aseg, lmtb_subs, t = 2)
+lmtb_sm_subc_v_l <- get_subc_v(mri_y_smr_vol_aseg, lmtb_subs_wt2, t = 2)
 tibble(lmtb_sm_subc_v_l)
 iwrite(lmtb_sm_subc_v_l, "lmtb_sm_subc_v_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_sm_subc_v_l <- get_subc_v(mri_y_smr_vol_aseg, mtbi_subs, t = 2)
+mtbi_sm_subc_v_l <- get_subc_v(mri_y_smr_vol_aseg, mtbi_subs_wt2, t = 2)
 tibble(mtbi_sm_subc_v_l)
 iwrite(mtbi_sm_subc_v_l, "mtbi_sm_subc_v_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_sm_subc_v_l <- get_subc_v(mri_y_smr_vol_aseg, unij_subs, t = 2)
+unij_sm_subc_v_l <- get_subc_v(mri_y_smr_vol_aseg, unij_subs_wt2, t = 2)
 tibble(unij_sm_subc_v_l)
 iwrite(unij_sm_subc_v_l, "unij_sm_subc_v_l.csv")
 ```
@@ -671,22 +706,22 @@ Because there happens to be a few more participants with calculated Desikan parc
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_sm_cort_t_0 <- get_cort_t(mri_y_smr_thk_dsk, lmtb_subs, t = 0)
+lmtb_sm_cort_t_0 <- get_cort_t(mri_y_smr_thk_dsk, lmtb_subs_wt2, t = 0)
 tibble(lmtb_sm_cort_t_0)
 iwrite(lmtb_sm_cort_t_0, "lmtb_sm_cort_t_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_sm_cort_t_l <- get_cort_t(mri_y_smr_thk_dsk, lmtb_subs, t = 2)
+lmtb_sm_cort_t_l <- get_cort_t(mri_y_smr_thk_dsk, lmtb_subs_wt2, t = 2)
 tibble(lmtb_sm_cort_t_l)
 iwrite(lmtb_sm_cort_t_l, "lmtb_sm_cort_t_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_sm_cort_t_l <- get_cort_t(mri_y_smr_thk_dsk, mtbi_subs, t = 2)
+mtbi_sm_cort_t_l <- get_cort_t(mri_y_smr_thk_dsk, mtbi_subs_wt2, t = 2)
 tibble(mtbi_sm_cort_t_l)
 iwrite(mtbi_sm_cort_t_l, "mtbi_sm_cort_t_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_sm_cort_t_l <- get_cort_t(mri_y_smr_thk_dsk, unij_subs, t = 2)
+unij_sm_cort_t_l <- get_cort_t(mri_y_smr_thk_dsk, unij_subs_wt2, t = 2)
 tibble(unij_sm_cort_t_l)
 iwrite(unij_sm_cort_t_l, "unij_sm_cort_t_l.csv")
 ```
@@ -695,22 +730,22 @@ iwrite(unij_sm_cort_t_l, "unij_sm_cort_t_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_sm_cort_sa_0 <- get_cort_sa(mri_y_smr_area_dsk, lmtb_subs, t = 0)
+lmtb_sm_cort_sa_0 <- get_cort_sa(mri_y_smr_area_dsk, lmtb_subs_wt2, t = 0)
 tibble(lmtb_sm_cort_sa_0)
 iwrite(lmtb_sm_cort_sa_0, "lmtb_sm_cort_sa_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_sm_cort_sa_l <- get_cort_sa(mri_y_smr_area_dsk, lmtb_subs, t = 2)
+lmtb_sm_cort_sa_l <- get_cort_sa(mri_y_smr_area_dsk, lmtb_subs_wt2, t = 2)
 tibble(lmtb_sm_cort_sa_l)
 iwrite(lmtb_sm_cort_sa_l, "lmtb_sm_cort_sa_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_sm_cort_sa_l <- get_cort_sa(mri_y_smr_area_dsk, mtbi_subs, t = 2)
+mtbi_sm_cort_sa_l <- get_cort_sa(mri_y_smr_area_dsk, mtbi_subs_wt2, t = 2)
 tibble(mtbi_sm_cort_sa_l)
 iwrite(mtbi_sm_cort_sa_l, "mtbi_sm_cort_sa_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_sm_cort_sa_l <- get_cort_sa(mri_y_smr_area_dsk, unij_subs, t = 2)
+unij_sm_cort_sa_l <- get_cort_sa(mri_y_smr_area_dsk, unij_subs_wt2, t = 2)
 tibble(unij_sm_cort_sa_l)
 iwrite(unij_sm_cort_sa_l, "unij_sm_cort_sa_l.csv")
 ```
@@ -724,7 +759,7 @@ iwrite(unij_sm_cort_sa_l, "unij_sm_cort_sa_l.csv")
 lmtb_dm_wmnd_0 <- get_wmnd(
     mri_y_rsi_rnd_at,
     mri_y_rsi_rnd_wm_dsk,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 0
 )
 tibble(lmtb_dm_wmnd_0)
@@ -734,7 +769,7 @@ iwrite(lmtb_dm_wmnd_0, "lmtb_dm_wmnd_0.csv")
 lmtb_dm_wmnd_l <- get_wmnd(
     mri_y_rsi_rnd_at,
     mri_y_rsi_rnd_wm_dsk,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 2
 )
 tibble(lmtb_dm_wmnd_l)
@@ -744,7 +779,7 @@ iwrite(lmtb_dm_wmnd_l, "lmtb_dm_wmnd_l.csv")
 mtbi_dm_wmnd_l <- get_wmnd(
     mri_y_rsi_rnd_at,
     mri_y_rsi_rnd_wm_dsk,
-    mtbi_subs,
+    mtbi_subs_wt2,
     t = 2
 )
 tibble(mtbi_dm_wmnd_l)
@@ -754,7 +789,7 @@ iwrite(mtbi_dm_wmnd_l, "mtbi_dm_wmnd_l.csv")
 unij_dm_wmnd_l <- get_wmnd(
     mri_y_rsi_rnd_at,
     mri_y_rsi_rnd_wm_dsk,
-    unij_subs,
+    unij_subs_wt2,
     t = 2
 )
 tibble(unij_dm_wmnd_l)
@@ -772,22 +807,22 @@ We are interested in the following rs-fMRI measures:
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_rm_gord_cor_0 <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, lmtb_subs, t = 0)
+lmtb_rm_gord_cor_0 <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, lmtb_subs_wt2, t = 0)
 tibble(lmtb_rm_gord_cor_0)
 iwrite(lmtb_rm_gord_cor_0, "lmtb_rm_gord_cor_0.csv")
 
 #: B: longitudinal mTBI, longitudinal timepoint
-lmtb_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, lmtb_subs, t = 2)
+lmtb_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, lmtb_subs_wt2, t = 2)
 tibble(lmtb_rm_gord_cor_l)
 iwrite(lmtb_rm_gord_cor_l, "lmtb_rm_gord_cor_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, mtbi_subs, t = 2)
+mtbi_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, mtbi_subs_wt2, t = 2)
 tibble(mtbi_rm_gord_cor_l)
 iwrite(mtbi_rm_gord_cor_l, "mtbi_rm_gord_cor_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, unij_subs, t = 2)
+unij_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, unij_subs_wt2, t = 2)
 tibble(unij_rm_gord_cor_l)
 iwrite(unij_rm_gord_cor_l, "unij_rm_gord_cor_l.csv")
 ```
@@ -796,22 +831,22 @@ iwrite(unij_rm_gord_cor_l, "unij_rm_gord_cor_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_rm_subc_cor_0 <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, lmtb_subs, t = 0)
+lmtb_rm_subc_cor_0 <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, lmtb_subs_wt2, t = 0)
 tibble(lmtb_rm_subc_cor_0)
 iwrite(lmtb_rm_subc_cor_0, "lmtb_rm_subc_cor_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, lmtb_subs, t = 2)
+lmtb_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, lmtb_subs_wt2, t = 2)
 tibble(lmtb_rm_subc_cor_l)
 iwrite(lmtb_rm_subc_cor_l, "lmtb_rm_subc_cor_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, mtbi_subs, t = 2)
+mtbi_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, mtbi_subs_wt2, t = 2)
 tibble(mtbi_rm_subc_cor_l)
 iwrite(mtbi_rm_subc_cor_l, "mtbi_rm_subc_cor_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, unij_subs, t = 2)
+unij_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, unij_subs_wt2, t = 2)
 tibble(unij_rm_subc_cor_l)
 iwrite(unij_rm_subc_cor_l, "unij_rm_subc_cor_l.csv")
 ```
@@ -827,7 +862,7 @@ Psychosocial factors of interest include:
 lmtb_p_friends_0 <- get_friends(
     mh_y_or,
     gish_p_gi,
-    lmtb_subs,
+    lmtb_subs_wt2,
     discretize = TRUE,
     t = 0
 )
@@ -838,7 +873,7 @@ iwrite(lmtb_p_friends_0, "lmtb_p_friends_0.csv")
 lmtb_p_friends_l <- get_friends(
     mh_y_or,
     gish_p_gi,
-    lmtb_subs,
+    lmtb_subs_wt2,
     discretize = TRUE,
     t = 2
 )
@@ -849,7 +884,7 @@ iwrite(lmtb_p_friends_l, "lmtb_p_friends_l.csv")
 mtbi_p_friends_l <- get_friends(
     mh_y_or,
     gish_p_gi,
-    mtbi_subs,
+    mtbi_subs_wt2,
     discretize = TRUE,
     t = 2
 )
@@ -860,7 +895,7 @@ iwrite(mtbi_p_friends_l, "mtbi_p_friends_l.csv")
 unij_p_friends_l <- get_friends(
     mh_y_or,
     gish_p_gi,
-    unij_subs,
+    unij_subs_wt2,
     discretize = TRUE,
     t = 2
 )
@@ -874,22 +909,22 @@ iwrite(unij_p_friends_l, "unij_p_friends_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_p_screen_time_0 <- get_screen_time(nt_p_stq, lmtb_subs, t = 0)
+lmtb_p_screen_time_0 <- get_screen_time(nt_p_stq, lmtb_subs_wt2, t = 0)
 tibble(lmtb_p_screen_time_0)
 iwrite(lmtb_p_screen_time_0, "lmtb_p_screen_time_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_p_screen_time_l <- get_screen_time(nt_p_stq, lmtb_subs, t = 2)
+lmtb_p_screen_time_l <- get_screen_time(nt_p_stq, lmtb_subs_wt2, t = 2)
 tibble(lmtb_p_screen_time_l)
 iwrite(lmtb_p_screen_time_l, "lmtb_p_screen_time_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_p_screen_time_l <- get_screen_time(nt_p_stq, mtbi_subs, t = 2)
+mtbi_p_screen_time_l <- get_screen_time(nt_p_stq, mtbi_subs_wt2, t = 2)
 tibble(mtbi_p_screen_time_l)
 iwrite(mtbi_p_screen_time_l, "mtbi_p_screen_time_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_p_screen_time_l <- get_screen_time(nt_p_stq, unij_subs, t = 2)
+unij_p_screen_time_l <- get_screen_time(nt_p_stq, unij_subs_wt2, t = 2)
 tibble(unij_p_screen_time_l)
 iwrite(unij_p_screen_time_l, "unij_p_screen_time_l.csv")
 ```
@@ -900,7 +935,7 @@ iwrite(unij_p_screen_time_l, "unij_p_screen_time_l.csv")
 # A: longitudinal mTBI, baseline timepoint
 lmtb_p_sports_0 <- get_sports_and_activities(
     ph_p_saiq,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 0,
     discretize = TRUE
 )
@@ -910,7 +945,7 @@ iwrite(lmtb_p_sports_0, "lmtb_p_sports_0.csv")
 # B: longitudinal mTBI, longitudinal timepoint
 lmtb_p_sports_l <- get_sports_and_activities(
     ph_p_saiq,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 2,
     discretize = TRUE
 )
@@ -920,7 +955,7 @@ iwrite(lmtb_p_sports_l, "lmtb_p_sports_l.csv")
 # C: baseline mTBI, longitudinal timepoint
 mtbi_p_sports_l <- get_sports_and_activities(
     ph_p_saiq,
-    mtbi_subs,
+    mtbi_subs_wt2,
     t = 2,
     discretize = TRUE
 )
@@ -930,7 +965,7 @@ iwrite(mtbi_p_sports_l, "mtbi_p_sports_l.csv")
 # D: baseline uninjured, longitudinal timepoint
 unij_p_sports_l <- get_sports_and_activities(
     ph_p_saiq,
-    unij_subs,
+    unij_subs_wt2,
     t = 2,
     discretize = TRUE
 )
@@ -942,22 +977,22 @@ iwrite(unij_p_sports_l, "unij_p_sports_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_p_exercise_0 <- get_exercise(ph_y_yrb, lmtb_subs, t = 0)
+lmtb_p_exercise_0 <- get_exercise(ph_y_yrb, lmtb_subs_wt2, t = 0)
 tibble(lmtb_p_exercise_0)
 iwrite(lmtb_p_exercise_0, "lmtb_p_exercise_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_p_exercise_l <- get_exercise(ph_y_yrb, lmtb_subs, t = 2)
+lmtb_p_exercise_l <- get_exercise(ph_y_yrb, lmtb_subs_wt2, t = 2)
 tibble(lmtb_p_exercise_l)
 iwrite(lmtb_p_exercise_l, "lmtb_p_exercise_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_p_exercise_l <- get_exercise(ph_y_yrb, mtbi_subs, t = 2)
+mtbi_p_exercise_l <- get_exercise(ph_y_yrb, mtbi_subs_wt2, t = 2)
 tibble(mtbi_p_exercise_l)
 iwrite(mtbi_p_exercise_l, "mtbi_p_exercise_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_p_exercise_l <- get_exercise(ph_y_yrb, unij_subs, t = 2)
+unij_p_exercise_l <- get_exercise(ph_y_yrb, unij_subs_wt2, t = 2)
 tibble(unij_p_exercise_l)
 iwrite(unij_p_exercise_l, "unij_p_exercise_l.csv")
 ```
@@ -966,8 +1001,8 @@ iwrite(unij_p_exercise_l, "unij_p_exercise_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_p_prosocial_p_0 <- get_prosocial_behaviour_p(ce_p_psb, lmtb_subs, t = 0)
-lmtb_p_prosocial_y_0 <- get_prosocial_behaviour_y(ce_y_psb, lmtb_subs, t = 0)
+lmtb_p_prosocial_p_0 <- get_prosocial_behaviour_p(ce_p_psb, lmtb_subs_wt2, t = 0)
+lmtb_p_prosocial_y_0 <- get_prosocial_behaviour_y(ce_y_psb, lmtb_subs_wt2, t = 0)
 lmtb_p_prosocial_0 <- dplyr::inner_join(
     lmtb_p_prosocial_p_0,
     lmtb_p_prosocial_y_0
@@ -976,8 +1011,8 @@ tibble(lmtb_p_prosocial_0)
 iwrite(lmtb_p_prosocial_0, "lmtb_p_prosocial_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_p_prosocial_p_l <- get_prosocial_behaviour_p(ce_p_psb, lmtb_subs, t = 2)
-lmtb_p_prosocial_y_l <- get_prosocial_behaviour_y(ce_y_psb, lmtb_subs, t = 2)
+lmtb_p_prosocial_p_l <- get_prosocial_behaviour_p(ce_p_psb, lmtb_subs_wt2, t = 2)
+lmtb_p_prosocial_y_l <- get_prosocial_behaviour_y(ce_y_psb, lmtb_subs_wt2, t = 2)
 lmtb_p_prosocial_l <- dplyr::inner_join(
     lmtb_p_prosocial_p_l,
     lmtb_p_prosocial_y_l
@@ -986,8 +1021,8 @@ tibble(lmtb_p_prosocial_l)
 iwrite(lmtb_p_prosocial_l, "lmtb_p_prosocial_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_p_prosocial_p_l <- get_prosocial_behaviour_p(ce_p_psb, mtbi_subs, t = 2)
-mtbi_p_prosocial_y_l <- get_prosocial_behaviour_y(ce_y_psb, mtbi_subs, t = 2)
+mtbi_p_prosocial_p_l <- get_prosocial_behaviour_p(ce_p_psb, mtbi_subs_wt2, t = 2)
+mtbi_p_prosocial_y_l <- get_prosocial_behaviour_y(ce_y_psb, mtbi_subs_wt2, t = 2)
 mtbi_p_prosocial_l <- dplyr::inner_join(
     mtbi_p_prosocial_p_l,
     mtbi_p_prosocial_y_l
@@ -996,8 +1031,8 @@ tibble(mtbi_p_prosocial_l)
 iwrite(mtbi_p_prosocial_l, "mtbi_p_prosocial_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_p_prosocial_p_l <- get_prosocial_behaviour_p(ce_p_psb, unij_subs, t = 2)
-unij_p_prosocial_y_l <- get_prosocial_behaviour_y(ce_y_psb, unij_subs, t = 2)
+unij_p_prosocial_p_l <- get_prosocial_behaviour_p(ce_p_psb, unij_subs_wt2, t = 2)
+unij_p_prosocial_y_l <- get_prosocial_behaviour_y(ce_y_psb, unij_subs_wt2, t = 2)
 unij_p_prosocial_l <- dplyr::inner_join(
     unij_p_prosocial_p_l,
     unij_p_prosocial_y_l
@@ -1010,22 +1045,22 @@ iwrite(unij_p_prosocial_l, "unij_p_prosocial_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_p_fam_fn_0 <- get_family_function(ce_y_fes, ce_p_fes, lmtb_subs, t = 0)
+lmtb_p_fam_fn_0 <- get_family_function(ce_y_fes, ce_p_fes, lmtb_subs_wt2, t = 0)
 tibble(lmtb_p_fam_fn_0)
 iwrite(lmtb_p_fam_fn_0, "lmtb_p_fam_fn_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_p_fam_fn_l <- get_family_function(ce_y_fes, ce_p_fes, lmtb_subs, t = 2)
+lmtb_p_fam_fn_l <- get_family_function(ce_y_fes, ce_p_fes, lmtb_subs_wt2, t = 2)
 tibble(lmtb_p_fam_fn_l)
 iwrite(lmtb_p_fam_fn_l, "lmtb_p_fam_fn_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_p_fam_fn_l <- get_family_function(ce_y_fes, ce_p_fes, mtbi_subs, t = 2)
+mtbi_p_fam_fn_l <- get_family_function(ce_y_fes, ce_p_fes, mtbi_subs_wt2, t = 2)
 tibble(mtbi_p_fam_fn_l)
 iwrite(mtbi_p_fam_fn_l, "mtbi_p_fam_fn_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_p_fam_fn_l <- get_family_function(ce_y_fes, ce_p_fes, unij_subs, t = 2)
+unij_p_fam_fn_l <- get_family_function(ce_y_fes, ce_p_fes, unij_subs_wt2, t = 2)
 tibble(unij_p_fam_fn_l)
 iwrite(unij_p_fam_fn_l, "unij_p_fam_fn_l.csv")
 ```
@@ -1036,7 +1071,7 @@ iwrite(unij_p_fam_fn_l, "unij_p_fam_fn_l.csv")
 # A: longitudinal mTBI, baseline timepoint
 lmtb_p_parent_psych_0 <- get_parent_psychopathology(
     mh_p_asr,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 0,
     raw = TRUE
 )
@@ -1046,7 +1081,7 @@ iwrite(lmtb_p_parent_psych_0, "lmtb_p_parent_psych_0.csv")
 # B: longitudinal mTBI, longitudinal timepoint
 lmtb_p_parent_psych_l <- get_parent_psychopathology(
     mh_p_asr,
-    lmtb_subs,
+    lmtb_subs_wt2,
     t = 2,
     raw = TRUE
 )
@@ -1056,7 +1091,7 @@ iwrite(lmtb_p_parent_psych_l, "lmtb_p_parent_psych_l.csv")
 # C: baseline mTBI, longitudinal timepoint
 mtbi_p_parent_psych_l <- get_parent_psychopathology(
     mh_p_asr,
-    mtbi_subs,
+    mtbi_subs_wt2,
     t = 2,
     raw = TRUE
 )
@@ -1066,7 +1101,7 @@ iwrite(mtbi_p_parent_psych_l, "mtbi_p_parent_psych_l.csv")
 # D: baseline uninjured, longitudinal timepoint
 unij_p_parent_psych_l <- get_parent_psychopathology(
     mh_p_asr,
-    unij_subs,
+    unij_subs_wt2,
     t = 2,
     raw = TRUE
 )
@@ -1082,22 +1117,22 @@ These are collected at both baseline and longitudinal timepoints.
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_cbcl_0 <- get_cbcl_syndrome_scale(mh_p_cbcl, lmtb_subs, t = 0, raw = TRUE)
+lmtb_cbcl_0 <- get_cbcl_syndrome_scale(mh_p_cbcl, lmtb_subs_wt2, t = 0, raw = TRUE)
 tibble(lmtb_cbcl_0)
 iwrite(lmtb_cbcl_0, "lmtb_cbcl_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, lmtb_subs, t = 2, raw = TRUE)
+lmtb_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, lmtb_subs_wt2, t = 2, raw = TRUE)
 tibble(lmtb_cbcl_l)
 iwrite(lmtb_cbcl_l, "lmtb_cbcl_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, mtbi_subs, t = 2, raw = TRUE)
+mtbi_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, mtbi_subs_wt2, t = 2, raw = TRUE)
 tibble(mtbi_cbcl_l)
 iwrite(mtbi_cbcl_l, "mtbi_cbcl_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, unij_subs, t = 2, raw = TRUE)
+unij_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, unij_subs_wt2, t = 2, raw = TRUE)
 tibble(unij_cbcl_l)
 iwrite(unij_cbcl_l, "unij_cbcl_l.csv")
 ```
@@ -1107,22 +1142,22 @@ iwrite(unij_cbcl_l, "unij_cbcl_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_sds_0 <- get_sleep_disturbance(ph_p_sds, lmtb_subs, t = 0)
+lmtb_sds_0 <- get_sleep_disturbance(ph_p_sds, lmtb_subs_wt2, t = 0)
 tibble(lmtb_sds_0)
 iwrite(lmtb_sds_0, "lmtb_sds_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_sds_l <- get_sleep_disturbance(ph_p_sds, lmtb_subs, t = 2)
+lmtb_sds_l <- get_sleep_disturbance(ph_p_sds, lmtb_subs_wt2, t = 2)
 tibble(lmtb_sds_l)
 iwrite(lmtb_sds_l, "lmtb_sds_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_sds_l <- get_sleep_disturbance(ph_p_sds, mtbi_subs, t = 2)
+mtbi_sds_l <- get_sleep_disturbance(ph_p_sds, mtbi_subs_wt2, t = 2)
 tibble(mtbi_sds_l)
 iwrite(mtbi_sds_l, "mtbi_sds_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_sds_l <- get_sleep_disturbance(ph_p_sds, unij_subs, t = 2)
+unij_sds_l <- get_sleep_disturbance(ph_p_sds, unij_subs_wt2, t = 2)
 tibble(unij_sds_l)
 iwrite(unij_sds_l, "unij_sds_l.csv")
 ```
@@ -1136,7 +1171,7 @@ iwrite(unij_sds_l, "unij_sds_l.csv")
 set.seed(42)
 lmtb_scanner_0 <- get_scanner_id(
     mri_y_adm_info = mri_y_adm_info,
-    subjects = lmtb_subs,
+    subjects = lmtb_subs_wt2,
     t = 0,
     abcd_y_lt = abcd_y_lt,
     sample_missing = TRUE
@@ -1148,7 +1183,7 @@ iwrite(lmtb_scanner_0, "lmtb_scanner_0.csv")
 set.seed(42)
 lmtb_scanner_l <- get_scanner_id(
     mri_y_adm_info = mri_y_adm_info,
-    subjects = lmtb_subs,
+    subjects = lmtb_subs_wt2,
     t = 2,
     abcd_y_lt = abcd_y_lt,
     sample_missing = TRUE
@@ -1160,7 +1195,7 @@ iwrite(lmtb_scanner_l, "lmtb_scanner_l.csv")
 set.seed(42)
 mtbi_scanner_l <- get_scanner_id(
     mri_y_adm_info = mri_y_adm_info,
-    subjects = mtbi_subs,
+    subjects = mtbi_subs_wt2,
     t = 2,
     abcd_y_lt = abcd_y_lt,
     sample_missing = TRUE
@@ -1172,7 +1207,7 @@ iwrite(mtbi_scanner_l, "mtbi_scanner_l.csv")
 set.seed(42)
 unij_scanner_l <- get_scanner_id(
     mri_y_adm_info = mri_y_adm_info,
-    subjects = unij_subs,
+    subjects = unij_subs_wt2,
     t = 2,
     abcd_y_lt = abcd_y_lt,
     sample_missing = TRUE
@@ -1187,7 +1222,7 @@ Timepoint does not apply to family ID.
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_family <- get_family_id(abcd_y_lt, lmtb_subs, t = 0)
+lmtb_family <- get_family_id(abcd_y_lt, lmtb_subs_wt2, t = 0)
 tibble(lmtb_family)
 iwrite(lmtb_family, "lmtb_family.csv")
 ```
@@ -1196,22 +1231,22 @@ iwrite(lmtb_family, "lmtb_family.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_site_0 <- get_site_id(abcd_y_lt, lmtb_subs, t = 0)
+lmtb_site_0 <- get_site_id(abcd_y_lt, lmtb_subs_wt2, t = 0)
 tibble(lmtb_site_0)
 iwrite(lmtb_site_0, "lmtb_site_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_site_l <- get_site_id(abcd_y_lt, lmtb_subs, t = 2)
+lmtb_site_l <- get_site_id(abcd_y_lt, lmtb_subs_wt2, t = 2)
 tibble(lmtb_site_l)
 iwrite(lmtb_site_l, "lmtb_site_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_site_l <- get_site_id(abcd_y_lt, mtbi_subs, t = 2)
+mtbi_site_l <- get_site_id(abcd_y_lt, mtbi_subs_wt2, t = 2)
 tibble(mtbi_site_l)
 iwrite(mtbi_site_l, "mtbi_site_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_site_l <- get_site_id(abcd_y_lt, unij_subs, t = 2)
+unij_site_l <- get_site_id(abcd_y_lt, unij_subs_wt2, t = 2)
 tibble(unij_site_l)
 iwrite(unij_site_l, "unij_site_l.csv")
 ```

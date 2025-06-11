@@ -364,12 +364,12 @@ unij_df <- data.frame(read_csv(proc_path("2025_05_26_unij_df.csv")))
 A preliminary check of which columns have missing data:
 
 ```{r}
-missing_columns <- function(x) names(which(colSums(is.na(x)) > 0))
 missing_columns(mtbi_train_df)
 missing_columns(unij_df)
 ```
 
 ```{r}
+
 # Function that checks which variables have the biggest correlations# {{{
 pairwise_correlations <- function(df, threshold = 0) {
     # Remove missing data to help calculate correlations
@@ -530,36 +530,6 @@ pool_imputed <- readRDS(proc_path("2025_05_26_pool_imputed.rds"))
 ```
 
 ```{r}
-png_save <- function(img, path, w = 1250, h = 1000, r = 125) {
-    grDevices::png(
-        filename = path,
-        width = w,
-        height = h,
-        res = r
-    )
-    print(img)
-    grDevices::dev.off()
-}
-
-save_density_plots <- function(features, imputed, prefix = "") {
-    for (feature in features) {
-        print(feature)
-        plot <- tryCatch(
-            {
-                plot <- mice::densityplot(imputed, as.formula(paste0("~ ", feature)))
-            },
-            error = function(e) {
-                plot <- mice::xyplot(imputed, as.formula(paste0("~ ", feature)))
-            }
-        )
-        png_save(
-            plot,
-            fig_path(paste0(prefix, "density_plot_", feature, ".png"), TRUE),
-            w = 400,
-            h = 400
-        )
-    }
-}
 
 save_density_plots(
     missing_columns(mtbi_train_df),
@@ -904,4 +874,86 @@ all_dls <- all_dls |>
     )
 
 saveRDS(all_dls, input_path("all_dls.rds", TRUE))
+```
+
+# Combat harmonization
+
+```{r}
+all_dls <- readRDS(input_path("2025_05_27_all_dls.rds"))
+```
+
+```{r echo = FALSE}
+library(neuroCombat)
+
+dl <- all_dls$"mtbi_train_data_lists"$"imp_1"
+ol <- all_dls$"mtbi_train_oom_lists"$"imp_1"
+
+summary(dl)
+
+summary(ol)
+
+neuro_components <- c(
+    "n_subc_v",
+    "n_cort_t",
+    "n_cort_sa",
+    "n_wmnd",
+    "n_gord_cor",
+    "n_subc_cor"
+)
+
+covariate_components <- c(
+    "d_age",
+    "d_sex",
+    "d_income",
+    "d_race",
+    "d_pubertal"
+)
+
+neuro_fts <- c(
+    "brain_volume",
+    "cortical_thickness",
+    "cortical_sa",
+    "major_wm_ndi",
+    "pericortical_wm_ndi",
+    "fmri_cort_cors",
+    "fmri_cort_subcort_cors"
+)
+
+neuroimaging_dl <- dl[neuro_components]
+covariate_dl <- c(dl[covariate_components], ol)
+
+neuroimaging_df <- as.data.frame(neuroimaging_dl)
+covariate_df <- as.data.frame(covariate_dl)
+
+
+site_df <- dplyr::mutate(
+    mtbi_site,
+    uid = paste0("uid_", subjectkey)
+) |>
+    dplyr::select(-subjectkey)
+
+all_data <- dplyr::inner_join(neuroimaging_df, covariate_df, by = "uid")
+all_data <- dplyr::inner_join(all_data, site_df, by = "uid")
+
+# 1. data
+my_dat <- t(as.matrix(all_data[, neuro_fts]))
+
+# 2. site variable
+my_batch <- all_data$"site_id"
+
+# 3. covariates
+my_mod <- all_data[, colnames(covariate_df)] |> dplyr::select(-uid)
+
+my_mod |> colnames()
+
+model.matrix(~ ., data = my_mod)
+
+data.harmonized <- neuroCombat(
+    dat = my_dat,     # Data to be harmonized, wide form matrix
+    batch = my_batch, # site ID
+    mod = model.matrix(~ ., data = my_mod) # other covariates to preserve biological variability
+)
+
+data.harmonized
+
 ```
