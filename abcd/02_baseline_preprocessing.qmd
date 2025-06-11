@@ -889,71 +889,214 @@ dl <- all_dls$"mtbi_train_data_lists"$"imp_1"
 ol <- all_dls$"mtbi_train_oom_lists"$"imp_1"
 
 summary(dl)
-
 summary(ol)
 
-neuro_components <- c(
-    "n_subc_v",
-    "n_cort_t",
-    "n_cort_sa",
-    "n_wmnd",
-    "n_gord_cor",
-    "n_subc_cor"
+combat_dl <- function(dl, ol, site_df, mean.only = FALSE) {
+    neuro_components <- c(
+        "n_subc_v",
+        "n_cort_t",
+        "n_cort_sa",
+        "n_wmnd",
+        "n_gord_cor",
+        "n_subc_cor"
+    )
+    covariate_components <- c(
+        "d_age",
+        "d_sex",
+        "d_income",
+        "d_race",
+        "d_pubertal"
+    )
+    neuro_fts <- c(
+        "brain_volume",
+        "cortical_thickness",
+        "cortical_sa",
+        "major_wm_ndi",
+        "pericortical_wm_ndi",
+        "fmri_cort_cors",
+        "fmri_cort_subcort_cors"
+    )
+    neuroimaging_df <- as.data.frame(dl[neuro_components])
+    covariate_df <- as.data.frame(c(dl[covariate_components], ol))
+    site_df <- site_df |>
+        dplyr::mutate(
+            uid = paste0("uid_", subjectkey)
+        ) |>
+        dplyr::select(
+            -subjectkey
+        )
+    all_data <- dplyr::inner_join(neuroimaging_df, covariate_df, by = "uid")
+    all_data <- dplyr::inner_join(all_data, site_df, by = "uid")
+    # 1. data to be harmonized (dat param)
+    # 3. covariates
+    my_mod <- dplyr::select(all_data[, colnames(covariate_df)], -uid)
+    data_harmonized <- neuroCombat(
+        dat = t(
+            as.matrix(all_data[, neuro_fts])
+        ),
+        batch = all_data$"site_id",
+        mod = model.matrix(
+            ~ .,
+            data = my_mod
+        ),
+        mean.only = mean.only
+    )
+    data_harmonized <- data.frame(t(data_harmonized$"dat.combat"))
+    data_harmonized$"uid" <- all_data$"uid"
+    #--------------------------------------------------------------------------
+    # Updating data list
+    harmonized_dl <- dlapply(
+        dl,
+        function(x) {
+            if (any(neuro_fts %in% colnames(x$"data"))) {
+                neuro_idx <- which(neuro_fts %in% colnames(x$"data")) 
+                neuro_fts_in_x <- neuro_fts[neuro_idx]
+                x$"data"[, neuro_fts_in_x] <- data_harmonized[, neuro_fts_in_x]
+            }
+            return(x)
+        }
+    )
+    return(harmonized_dl)
+}
+
+visualize_combat <- function(initial_dl, harmonized_dl, site_df) {
+    site_df <- site_df |>
+        dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+        dplyr::select(-subjectkey)
+    neuro_fts <- c(
+        "brain_volume",
+        "cortical_thickness",
+        "cortical_sa",
+        "major_wm_ndi",
+        "pericortical_wm_ndi",
+        "fmri_cort_cors",
+        "fmri_cort_subcort_cors"
+    )
+    initial_df <- as.data.frame(initial_dl)
+    harmonized_df <- as.data.frame(harmonized_dl)
+    if (!all(initial_df$"uid" == harmonized_dl$"uid")) {
+        stop("Mismatched UIDs.")
+    }
+    initial_df$"group" <- "initial"
+    initial_df <- dplyr::inner_join(initial_df, site_df, by = "uid")
+    harmonized_df$"group" <- "harmonized"
+    harmonized_df <- dplyr::inner_join(harmonized_df, site_df, by = "uid")
+    df <- dplyr::bind_rows(initial_df, harmonized_df)
+    plot_list <- vector("list", length = length(neuro_fts))
+    for (i in seq_along(neuro_fts)) {
+        ft <- neuro_fts[i]
+        plot <- df |>
+            ggplot(
+                aes(
+                    x = .data[["site_id"]],
+                    y = .data[[ft]],
+                    color = .data[["group"]]
+                )
+            ) + 
+            geom_boxplot(
+                outlier.shape = NA,
+                position = position_dodge(width = 0.8)
+            ) +
+            geom_point(
+                position = position_dodge(width = 0.8),
+                alpha = 0.6,
+                size = 1.5
+            ) +
+            labs(
+                x = "Site ID",
+                color = "Group"
+            ) +
+            theme_minimal()
+        plot_list[[i]] <- plot
+    }
+    return(plot_list)
+}
+
+dl_harmonized <- combat_dl(dl, ol)
+
+pl <- visualize_combat(dl, dl_harmonized, mtbi_site)
+
+names(all_dls)
+
+all_dls$"mtbi_der_sh_data_lists"$"imp_1" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_1", all_dls$"mtbi_train_oom_lists"$"imp_1", mtbi_site)
+all_dls$"mtbi_der_sh_data_lists"$"imp_2" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_2", all_dls$"mtbi_train_oom_lists"$"imp_2", mtbi_site)
+all_dls$"mtbi_der_sh_data_lists"$"imp_3" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_3", all_dls$"mtbi_train_oom_lists"$"imp_3", mtbi_site)
+all_dls$"mtbi_der_sh_data_lists"$"imp_4" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_4", all_dls$"mtbi_train_oom_lists"$"imp_4", mtbi_site)
+all_dls$"mtbi_der_sh_data_lists"$"imp_5" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_5", all_dls$"mtbi_train_oom_lists"$"imp_5", mtbi_site)
+
+all_dls$"mtbi_val_sh_data_lists"$"imp_1" <-  combat_dl(all_dls$"mtbi_test_data_lists"$"imp_1", all_dls$"mtbi_test_oom_lists"$"imp_1", mtbi_site, mean.only = TRUE)
+all_dls$"mtbi_val_sh_data_lists"$"imp_2" <-  combat_dl(all_dls$"mtbi_test_data_lists"$"imp_2", all_dls$"mtbi_test_oom_lists"$"imp_2", mtbi_site, mean.only = TRUE)
+all_dls$"mtbi_val_sh_data_lists"$"imp_3" <-  combat_dl(all_dls$"mtbi_test_data_lists"$"imp_3", all_dls$"mtbi_test_oom_lists"$"imp_3", mtbi_site, mean.only = TRUE)
+all_dls$"mtbi_val_sh_data_lists"$"imp_4" <-  combat_dl(all_dls$"mtbi_test_data_lists"$"imp_4", all_dls$"mtbi_test_oom_lists"$"imp_4", mtbi_site, mean.only = TRUE)
+all_dls$"mtbi_val_sh_data_lists"$"imp_5" <-  combat_dl(all_dls$"mtbi_test_data_lists"$"imp_5", all_dls$"mtbi_test_oom_lists"$"imp_5", mtbi_site, mean.only = TRUE)
+
+all_dls$"mtbi_der_ph_data_lists"$"imp_1" <-  combat_dl(all_dls$"mtbi_pool_data_lists"$"imp_1", all_dls$"mtbi_pool_oom_lists"$"imp_1", mtbi_site)
+all_dls$"mtbi_der_ph_data_lists"$"imp_2" <-  combat_dl(all_dls$"mtbi_pool_data_lists"$"imp_2", all_dls$"mtbi_pool_oom_lists"$"imp_2", mtbi_site)
+all_dls$"mtbi_der_ph_data_lists"$"imp_3" <-  combat_dl(all_dls$"mtbi_pool_data_lists"$"imp_3", all_dls$"mtbi_pool_oom_lists"$"imp_3", mtbi_site)
+all_dls$"mtbi_der_ph_data_lists"$"imp_4" <-  combat_dl(all_dls$"mtbi_pool_data_lists"$"imp_4", all_dls$"mtbi_pool_oom_lists"$"imp_4", mtbi_site)
+all_dls$"mtbi_der_ph_data_lists"$"imp_5" <-  combat_dl(all_dls$"mtbi_pool_data_lists"$"imp_5", all_dls$"mtbi_pool_oom_lists"$"imp_5", mtbi_site)
+
+all_dls$"unij_sh_data_lists"$"imp_1" <-  combat_dl(all_dls$"unij_data_lists"$"imp_1", all_dls$"unij_oom_lists"$"imp_1", unij_site)
+all_dls$"unij_sh_data_lists"$"imp_2" <-  combat_dl(all_dls$"unij_data_lists"$"imp_2", all_dls$"unij_oom_lists"$"imp_2", unij_site)
+all_dls$"unij_sh_data_lists"$"imp_3" <-  combat_dl(all_dls$"unij_data_lists"$"imp_3", all_dls$"unij_oom_lists"$"imp_3", unij_site)
+all_dls$"unij_sh_data_lists"$"imp_4" <-  combat_dl(all_dls$"unij_data_lists"$"imp_4", all_dls$"unij_oom_lists"$"imp_4", unij_site)
+all_dls$"unij_sh_data_lists"$"imp_5" <-  combat_dl(all_dls$"unij_data_lists"$"imp_5", all_dls$"unij_oom_lists"$"imp_5", unij_site)
+
+all_dls$"unij_ph_data_lists"$"imp_1" <-  combat_dl(all_dls$"unij_pool_data_lists"$"imp_1", all_dls$"unij_pool_oom_lists"$"imp_1", unij_site)
+all_dls$"unij_ph_data_lists"$"imp_2" <-  combat_dl(all_dls$"unij_pool_data_lists"$"imp_2", all_dls$"unij_pool_oom_lists"$"imp_2", unij_site)
+all_dls$"unij_ph_data_lists"$"imp_3" <-  combat_dl(all_dls$"unij_pool_data_lists"$"imp_3", all_dls$"unij_pool_oom_lists"$"imp_3", unij_site)
+all_dls$"unij_ph_data_lists"$"imp_4" <-  combat_dl(all_dls$"unij_pool_data_lists"$"imp_4", all_dls$"unij_pool_oom_lists"$"imp_4", unij_site)
+all_dls$"unij_ph_data_lists"$"imp_5" <-  combat_dl(all_dls$"unij_pool_data_lists"$"imp_5", all_dls$"unij_pool_oom_lists"$"imp_5", unij_site)
+
+all_dls_h <- all_dls
+
+keep_comps <- c(
+    "mtbi_der_sh_data_lists",
+    "mtbi_train_oom_lists",
+    "mtbi_val_sh_data_lists",
+    "mtbi_test_oom_lists",
+    "mtbi_der_ph_data_lists",
+    "mtbi_pool_oom_lists",
+    "unij_sh_data_lists",
+    "unij_oom_lists",
+    "unij_ph_data_lists",
+    "unij_pool_oom_lists"
 )
 
-covariate_components <- c(
-    "d_age",
-    "d_sex",
-    "d_income",
-    "d_race",
-    "d_pubertal"
+all_dls_h <- all_dls_h[keep_comps]
+
+names(all_dls_h) <- c(
+    "mtbi_der_u_dls",
+    "mtbi_der_u_ols",
+    "mtbi_val_u_dls",
+    "mtbi_val_u_ols",
+    "mtbi_der_p_dls",
+    "mtbi_der_p_ols",
+    "unij_all_u_dls",
+    "unij_all_u_ols",
+    "unij_all_p_dls",
+    "unij_all_p_ols"
 )
 
-neuro_fts <- c(
-    "brain_volume",
-    "cortical_thickness",
-    "cortical_sa",
-    "major_wm_ndi",
-    "pericortical_wm_ndi",
-    "fmri_cort_cors",
-    "fmri_cort_subcort_cors"
-)
+saveRDS(all_dls_h, proc_path("all_dls_h.rds", TRUE))
+```
 
-neuroimaging_dl <- dl[neuro_components]
-covariate_dl <- c(dl[covariate_components], ol)
+# Siblings drop
 
-neuroimaging_df <- as.data.frame(neuroimaging_dl)
-covariate_df <- as.data.frame(covariate_dl)
+```{r}
+import <- function(path) {
+    return(abcdutils::abcd_load(core_path(path)))
+}
+
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+
+drop_random_siblings <- function(abcd_y_lt, subjects) {
+    sibling_df <- abcd_y_lt |>
+        filter_timepoint(t = 0) |>
+        dplyr::select(subjectkey, rel_family_id) |>
+        filter_subjects()
+}
 
 
-site_df <- dplyr::mutate(
-    mtbi_site,
-    uid = paste0("uid_", subjectkey)
-) |>
-    dplyr::select(-subjectkey)
-
-all_data <- dplyr::inner_join(neuroimaging_df, covariate_df, by = "uid")
-all_data <- dplyr::inner_join(all_data, site_df, by = "uid")
-
-# 1. data
-my_dat <- t(as.matrix(all_data[, neuro_fts]))
-
-# 2. site variable
-my_batch <- all_data$"site_id"
-
-# 3. covariates
-my_mod <- all_data[, colnames(covariate_df)] |> dplyr::select(-uid)
-
-my_mod |> colnames()
-
-model.matrix(~ ., data = my_mod)
-
-data.harmonized <- neuroCombat(
-    dat = my_dat,     # Data to be harmonized, wide form matrix
-    batch = my_batch, # site ID
-    mod = model.matrix(~ ., data = my_mod) # other covariates to preserve biological variability
-)
-
-data.harmonized
 
 ```
