@@ -51,13 +51,13 @@ unij_subs_wt2 <- readRDS(sub_path("2025_06_10_unij_subs_wt2.rds"))
 
 ```{r}
 # Just use 1st imputation.
-all_dls <- readRDS(input_path("2025_05_27_all_dls.rds"))
+all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
 
 # Baseline data
-unij_dl <- all_dls$"unij_data_lists"$"imp_1"
+unij_dl <- all_dls_h_ns$"unij_all_u_dls"$"imp_1"
 mtbi_dl <- merge(
-    all_dls$"mtbi_train_data_lists"$"imp_4",
-    all_dls$"mtbi_test_data_lists"$"imp_1"
+    all_dls_h_ns$"mtbi_der_u_dls"$"imp_4",
+    all_dls_h_ns$"mtbi_val_u_dls"$"imp_1"
 )
 ```
 
@@ -726,4 +726,263 @@ all_long_dls <- all_long_dls |>
 
 # 2025-06-10
 saveRDS(all_long_dls, input_path("all_long_dls.rds", TRUE))
+```
+
+```{r}
+all_long_dls <- readRDS(input_path("2025_06_10_all_long_dls.rds"))
+```
+
+# Combat harmonization
+
+```{r echo = FALSE}
+library(neuroCombat)
+
+combat_dl <- function(dl, ol, site_df, mean.only = FALSE) {
+    neuro_components <- c(
+        "n_subc_v",
+        "n_cort_t",
+        "n_cort_sa",
+        "n_wmnd",
+        "n_gord_cor",
+        "n_subc_cor"
+    )
+    covariate_components <- c(
+        "d_age",
+        "d_sex",
+        "d_income",
+        "d_race",
+        "d_pubertal"
+    )
+    neuro_fts <- c(
+        "brain_volume",
+        "cortical_thickness",
+        "cortical_sa",
+        "major_wm_ndi",
+        "pericortical_wm_ndi",
+        "fmri_cort_cors",
+        "fmri_cort_subcort_cors"
+    )
+    neuroimaging_df <- as.data.frame(dl[neuro_components])
+    covariate_df <- as.data.frame(c(dl[covariate_components], ol))
+    site_df <- site_df |>
+        dplyr::mutate(
+            uid = paste0("uid_", subjectkey)
+        ) |>
+        dplyr::select(
+            -subjectkey
+        )
+    all_data <- dplyr::inner_join(neuroimaging_df, covariate_df, by = "uid")
+    all_data <- dplyr::inner_join(all_data, site_df, by = "uid")
+    # 1. data to be harmonized (dat param)
+    # 3. covariates
+    my_mod <- dplyr::select(all_data[, colnames(covariate_df)], -uid)
+    data_harmonized <- neuroCombat(
+        dat = t(
+            as.matrix(all_data[, neuro_fts])
+        ),
+        batch = all_data$"site_id",
+        mod = model.matrix(
+            ~ .,
+            data = my_mod
+        ),
+        mean.only = mean.only
+    )
+    data_harmonized <- data.frame(t(data_harmonized$"dat.combat"))
+    data_harmonized$"uid" <- all_data$"uid"
+    #--------------------------------------------------------------------------
+    # Updating data list
+    harmonized_dl <- dlapply(
+        dl,
+        function(x) {
+            if (any(neuro_fts %in% colnames(x$"data"))) {
+                neuro_idx <- which(neuro_fts %in% colnames(x$"data")) 
+                neuro_fts_in_x <- neuro_fts[neuro_idx]
+                x$"data"[, neuro_fts_in_x] <- data_harmonized[, neuro_fts_in_x]
+            }
+            return(x)
+        }
+    )
+    return(harmonized_dl)
+}
+
+
+visualize_combat <- function(initial_dl, harmonized_dl, site_df) {{{{
+    site_df <- site_df |>
+        dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+        dplyr::select(-subjectkey)
+    neuro_fts <- c(
+        "brain_volume",
+        "cortical_thickness",
+        "cortical_sa",
+        "major_wm_ndi",
+        "pericortical_wm_ndi",
+        "fmri_cort_cors",
+        "fmri_cort_subcort_cors"
+    )
+    initial_df <- as.data.frame(initial_dl)
+    harmonized_df <- as.data.frame(harmonized_dl)
+    if (!all(initial_df$"uid" == harmonized_dl$"uid")) {
+        stop("Mismatched UIDs.")
+    }
+    initial_df$"group" <- "initial"
+    initial_df <- dplyr::inner_join(initial_df, site_df, by = "uid")
+    harmonized_df$"group" <- "harmonized"
+    harmonized_df <- dplyr::inner_join(harmonized_df, site_df, by = "uid")
+    df <- dplyr::bind_rows(initial_df, harmonized_df)
+    plot_list <- vector("list", length = length(neuro_fts))
+    for (i in seq_along(neuro_fts)) {
+        ft <- neuro_fts[i]
+        plot <- df |>
+            ggplot(
+                aes(
+                    x = .data[["site_id"]],
+                    y = .data[[ft]],
+                    color = .data[["group"]]
+                )
+            ) + 
+            geom_boxplot(
+                outlier.shape = NA,
+                position = position_dodge(width = 0.8)
+            ) +
+            geom_point(
+                position = position_dodge(width = 0.8),
+                alpha = 0.6,
+                size = 1.5
+            ) +
+            labs(
+                x = "Site ID",
+                color = "Group"
+            ) +
+            theme_minimal()
+        plot_list[[i]] <- plot
+    }
+    return(plot_list)
+}# }}}
+
+all_long_dls$"lmtb_0_dls"$"imp_1" <- combat_dl(all_long_dls$"lmtb_0_dls"$"imp_1", all_long_dls$"lmtb_0_ols"$"imp_1", lmtb_site_0)
+all_long_dls$"lmtb_0_dls"$"imp_2" <- combat_dl(all_long_dls$"lmtb_0_dls"$"imp_2", all_long_dls$"lmtb_0_ols"$"imp_2", lmtb_site_0)
+all_long_dls$"lmtb_0_dls"$"imp_3" <- combat_dl(all_long_dls$"lmtb_0_dls"$"imp_3", all_long_dls$"lmtb_0_ols"$"imp_3", lmtb_site_0)
+all_long_dls$"lmtb_0_dls"$"imp_4" <- combat_dl(all_long_dls$"lmtb_0_dls"$"imp_4", all_long_dls$"lmtb_0_ols"$"imp_4", lmtb_site_0)
+all_long_dls$"lmtb_0_dls"$"imp_5" <- combat_dl(all_long_dls$"lmtb_0_dls"$"imp_5", all_long_dls$"lmtb_0_ols"$"imp_5", lmtb_site_0)
+
+all_long_dls$"lmtb_l_dls"$"imp_1" <- combat_dl(all_long_dls$"lmtb_l_dls"$"imp_1", all_long_dls$"lmtb_l_ols"$"imp_1", lmtb_site_l)
+all_long_dls$"lmtb_l_dls"$"imp_2" <- combat_dl(all_long_dls$"lmtb_l_dls"$"imp_2", all_long_dls$"lmtb_l_ols"$"imp_2", lmtb_site_l)
+all_long_dls$"lmtb_l_dls"$"imp_3" <- combat_dl(all_long_dls$"lmtb_l_dls"$"imp_3", all_long_dls$"lmtb_l_ols"$"imp_3", lmtb_site_l)
+all_long_dls$"lmtb_l_dls"$"imp_4" <- combat_dl(all_long_dls$"lmtb_l_dls"$"imp_4", all_long_dls$"lmtb_l_ols"$"imp_4", lmtb_site_l)
+all_long_dls$"lmtb_l_dls"$"imp_5" <- combat_dl(all_long_dls$"lmtb_l_dls"$"imp_5", all_long_dls$"lmtb_l_ols"$"imp_5", lmtb_site_l)
+
+all_long_dls$"mtbi_l_dls"$"imp_1" <- combat_dl(all_long_dls$"mtbi_l_dls"$"imp_1", all_long_dls$"mtbi_l_ols"$"imp_1", mtbi_site_l)
+all_long_dls$"mtbi_l_dls"$"imp_2" <- combat_dl(all_long_dls$"mtbi_l_dls"$"imp_2", all_long_dls$"mtbi_l_ols"$"imp_2", mtbi_site_l)
+all_long_dls$"mtbi_l_dls"$"imp_3" <- combat_dl(all_long_dls$"mtbi_l_dls"$"imp_3", all_long_dls$"mtbi_l_ols"$"imp_3", mtbi_site_l)
+all_long_dls$"mtbi_l_dls"$"imp_4" <- combat_dl(all_long_dls$"mtbi_l_dls"$"imp_4", all_long_dls$"mtbi_l_ols"$"imp_4", mtbi_site_l)
+all_long_dls$"mtbi_l_dls"$"imp_5" <- combat_dl(all_long_dls$"mtbi_l_dls"$"imp_5", all_long_dls$"mtbi_l_ols"$"imp_5", mtbi_site_l)
+
+all_long_dls$"unij_l_dls"$"imp_1" <- combat_dl(all_long_dls$"unij_l_dls"$"imp_1", all_long_dls$"unij_l_ols"$"imp_1", unij_site_l)
+all_long_dls$"unij_l_dls"$"imp_2" <- combat_dl(all_long_dls$"unij_l_dls"$"imp_2", all_long_dls$"unij_l_ols"$"imp_2", unij_site_l)
+all_long_dls$"unij_l_dls"$"imp_3" <- combat_dl(all_long_dls$"unij_l_dls"$"imp_3", all_long_dls$"unij_l_ols"$"imp_3", unij_site_l)
+all_long_dls$"unij_l_dls"$"imp_4" <- combat_dl(all_long_dls$"unij_l_dls"$"imp_4", all_long_dls$"unij_l_ols"$"imp_4", unij_site_l)
+all_long_dls$"unij_l_dls"$"imp_5" <- combat_dl(all_long_dls$"unij_l_dls"$"imp_5", all_long_dls$"unij_l_ols"$"imp_5", unij_site_l)
+
+all_long_dls_h <- all_long_dls
+
+names(all_long_dls_h) <- c(
+    "lmtb_0_dls",
+    "lmtb_l_dls",
+    "mtbi_l_dls",
+    "unij_l_dls",
+    "lmtb_0_ols",
+    "lmtb_l_ols",
+    "mtbi_l_ols",
+    "unij_l_ols"
+)
+
+saveRDS(all_long_dls_h, proc_path("all_long_dls_h.rds", TRUE))
+```
+
+# Siblings drop
+
+```{r}
+import <- function(path) {
+    return(abcdutils::abcd_load(core_path(path)))
+}
+
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+
+drop_random_siblings <- function(abcd_y_lt, subjects) {
+    sibling_df <- abcd_y_lt |>
+        filter_timepoint(t = 0) |>
+        dplyr::select(subjectkey, rel_family_id) |>
+        filter_subjects(subjects)
+    sibling_df <- sibling_df[sample(nrow(sibling_df)), ]
+    is_dup_family <- duplicated(sibling_df$"rel_family_id")
+    siblings_removed <- sibling_df[!is_dup_family, ]
+    return(siblings_removed$"subjectkey")
+}
+
+set.seed(42)
+lmtb_subs_wt2_ns <- drop_random_siblings(abcd_y_lt, lmtb_subs_wt2)
+length(lmtb_subs_wt2)    # 218
+length(lmtb_subs_wt2_ns) # 218
+
+set.seed(42)
+lunj_subs_wt2_ns <- drop_random_siblings(abcd_y_lt, lunj_subs_wt2)
+length(lunj_subs_wt2)    # 7678
+length(lunj_subs_wt2_ns) # 6566
+
+set.seed(42)
+mtbi_subs_wt2_ns <- drop_random_siblings(abcd_y_lt, mtbi_subs_wt2)
+length(mtbi_subs_wt2)     # 402
+length(mtbi_subs_wt2_ns)  # 399
+
+set.seed(42)
+unij_subs_wt2_ns <- drop_random_siblings(abcd_y_lt, unij_subs_wt2)
+length(unij_subs_wt2)     # 8615
+length(unij_subs_wt2_ns)  # 7313
+
+saveRDS(lmtb_subs_wt2_ns, sub_path("lmtb_subs_wt2_ns.rds", TRUE))
+saveRDS(lunj_subs_wt2_ns, sub_path("lunj_subs_wt2_ns.rds", TRUE))
+saveRDS(mtbi_subs_wt2_ns, sub_path("mtbi_subs_wt2_ns.rds", TRUE))
+saveRDS(unij_subs_wt2_ns, sub_path("unij_subs_wt2_ns.rds", TRUE))
+
+lmtb_subs_wt2_ns <- readRDS(sub_path("2025_06_12_lmtb_subs_wt2_ns.rds"))
+lunj_subs_wt2_ns <- readRDS(sub_path("2025_06_12_lunj_subs_wt2_ns.rds"))
+mtbi_subs_wt2_ns <- readRDS(sub_path("2025_06_12_mtbi_subs_wt2_ns.rds"))
+unij_subs_wt2_ns <- readRDS(sub_path("2025_06_12_unij_subs_wt2_ns.rds"))
+
+names(all_long_dls_h)
+
+batch_uid_replace <- function(list_of_dls, uids) {
+    uids <- paste0("uid_", uids)
+    list_of_dls_new <- lapply(
+        list_of_dls,
+        function(dl) {
+            new_dl <- dlapply(
+                dl,
+                function(x) {
+                    x$"data" <- x$"data"[x$"data"$"uid" %in% uids, ]
+                    return(x)
+                }
+            )
+            return(new_dl)
+        }
+    )
+    return(list_of_dls_new)
+}
+
+all_long_dls_h_ns <- all_long_dls_h
+
+for (i in names(all_long_dls_h_ns)) {
+    print(i)
+}
+
+all_long_dls_h_ns[["lmtb_0_dls"]] <- batch_uid_replace(all_long_dls_h_ns[["lmtb_0_dls"]], lmtb_subs_wt2_ns)
+all_long_dls_h_ns[["lmtb_l_dls"]] <- batch_uid_replace(all_long_dls_h_ns[["lmtb_l_dls"]], lmtb_subs_wt2_ns)
+all_long_dls_h_ns[["mtbi_l_dls"]] <- batch_uid_replace(all_long_dls_h_ns[["mtbi_l_dls"]], mtbi_subs_wt2_ns)
+all_long_dls_h_ns[["unij_l_dls"]] <- batch_uid_replace(all_long_dls_h_ns[["unij_l_dls"]], unij_subs_wt2_ns)
+all_long_dls_h_ns[["lmtb_0_ols"]] <- batch_uid_replace(all_long_dls_h_ns[["lmtb_0_ols"]], lmtb_subs_wt2_ns)
+all_long_dls_h_ns[["lmtb_l_ols"]] <- batch_uid_replace(all_long_dls_h_ns[["lmtb_l_ols"]], lmtb_subs_wt2_ns)
+all_long_dls_h_ns[["mtbi_l_ols"]] <- batch_uid_replace(all_long_dls_h_ns[["mtbi_l_ols"]], mtbi_subs_wt2_ns)
+all_long_dls_h_ns[["unij_l_ols"]] <- batch_uid_replace(all_long_dls_h_ns[["unij_l_ols"]], unij_subs_wt2_ns)
+
+saveRDS(all_dls_h_ns, proc_path("all_dls_h_ns.rds", TRUE))
 ```

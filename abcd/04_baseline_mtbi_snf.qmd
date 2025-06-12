@@ -29,10 +29,6 @@ proc_path       <- path_maker(here(paste0("data/abcd/results/processed")))
 fig_path        <- path_maker(here(paste0("data/abcd/results/figures")))
 sub_path        <- path_maker(here(paste0("data/abcd/subjects")))
 
-mtbi_subs       <- read_csv(sub_path("2025_05_22_mtbi_subs.csv"))
-mtbi_train_subs <- read_csv(sub_path("2025_05_22_mtbi_train_subs.csv"))
-mtbi_test_subs  <- read_csv(sub_path("2025_05_22_mtbi_test_subs.csv"))
-
 mtbi_ns_subs     <- readRDS(sub_path("2025_06_11_mtbi_no_sibs_subs.rds"))
 mtbi_ns_der_subs <- readRDS(sub_path("2025_06_11_mtbi_der_no_sibs_subs.rds"))
 mtbi_ns_val_subs <- readRDS(sub_path("2025_06_11_mtbi_val_no_sibs_subs.rds"))
@@ -457,7 +453,7 @@ mtbi_der_top_solution <- readRDS(
     proc_path("2025_06_11_mtbi_der_top_solution.rds")
 )
 
-mtbi_der_top_solution$"mc" <- "Derivation MC F"
+mtbi_der_top_solution$"mc" <- "Derivation MC D"
 
 mtbi_der_manhattan <- mc_manhattan_plot(
     mtbi_der_top_solution,
@@ -1028,7 +1024,7 @@ drop_subs <- function(ext_solutions_df, subjects) {
 
 mtbi_ext_sol_df_3c_der_subs <- drop_subs(
     mtbi_ext_sol_df_3c,
-    paste0("uid_", mtbi_test_subs$"subjectkey")
+    paste0("uid_", mtbi_ns_val_subs)
 )
 
 der_and_new_aris <- rbind(
@@ -1416,85 +1412,85 @@ quick_save <- function(plot, path, w = 12, h = 4, dpi = 300) {
 ```
 
 ```{r}
+
 # Not necessarily in ranked order:
 activities_last_year_plot   <- tri_plot(dvf_plots, "activities_last_year",   "Programs Last\nYear (Quartile)"); activities_last_year_plot; Sys.sleep(1)
 age_plot                    <- tri_plot(dvf_plots, "age",                    "Age") ; age_plot; Sys.sleep(1)
 brain_volume_plot           <- tri_plot(dvf_plots, "brain_volume",           "Brain Volume\n(mm³)", ylims = c(900000, 1650000)) ; brain_volume_plot; Sys.sleep(1)
-
-considerate_p_plot          <- tri_plot(dvf_plots, "considerate_p",          "Considerate\n(Parent Report)", c("No", "Yes")) 
-considerate_y_plot          <- tri_plot(dvf_plots, "considerate_y",          "Considerate\n(Youth Report)", c("No", "Yes")) 
-cort_sa_plot                <- tri_plot(dvf_plots, "cortical_sa",            "Cortical Surface\nArea (mm²)", ylims = c(140000, 260000)) 
-cortical_thickness_plot     <- tri_plot(dvf_plots, "cortical_thickness",     "Cortical\nThickness (mm)", ylims = c(2.3, 3.1)) 
-extracurriculars_plot       <- tri_plot(dvf_plots, "extracurriculars",       "Extracurriculars\n(Quartile)") 
-family_angry_p_plot         <- tri_plot(dvf_plots, "family_angry_p",         "Family Angry\n(Parent Report)", c("No", "Yes")) 
-family_angry_y_plot         <- tri_plot(dvf_plots, "family_angry_y",         "Family Angry\n(Youth Report)", c("No", "Yes")) 
-family_criticize_p_plot     <- tri_plot(dvf_plots, "family_criticize_p",     "Family Criticizes\n(Parent Report)", c("No", "Yes")) 
-family_criticize_y_plot     <- tri_plot(dvf_plots, "family_criticize_y",     "Family Criticizes\n(Youth Report)", c("No", "Yes")) 
-family_fight_p_plot         <- tri_plot(dvf_plots, "family_fight_p",         "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes")) 
-family_fight_y_plot         <- tri_plot(dvf_plots, "family_fight_y",         "Family Fights\n(Youth Report)", c("No", "Yes")) 
-family_hit_p_plot           <- tri_plot(dvf_plots, "family_hit_p",           "Family Hitting\n(Parent Report)", c("No", "Yes")) 
-family_hit_y_plot           <- tri_plot(dvf_plots, "family_hit_y",           "Family Hitting\n(Youth Report)", c("No", "Yes")) 
-family_outdo_p_plot         <- tri_plot(dvf_plots, "family_outdo_p",         "Family Outdo\n(Parent Report)", c("No", "Yes")) 
-family_outdo_y_plot         <- tri_plot(dvf_plots, "family_outdo_y",         "Family Outdoing\n(Youth Report)", c("No", "Yes")) 
-family_peaceful_p_plot      <- tri_plot(dvf_plots, "family_peaceful_p",      "Family Peaceful\n(Parent Report)", c("No", "Yes")) 
-family_peaceful_y_plot      <- tri_plot(dvf_plots, "family_peaceful_y",      "Family Peaceful\n(Youth Report)", c("No", "Yes")) 
-family_temper_p_plot        <- tri_plot(dvf_plots, "family_temper_p",        "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes")) 
-family_temper_y_plot        <- tri_plot(dvf_plots, "family_temper_y",        "Family Temper\n(Youth Report)", c("No", "Yes")) 
-family_throw_p_plot         <- tri_plot(dvf_plots, "family_throw_p",         "Family Throwing\n(Parent Report)", c("No", "Yes")) 
-family_throw_y_plot         <- tri_plot(dvf_plots, "family_throw_y",         "Family Throwing\n(Youth Report)", c("No", "Yes")) 
-family_yell_p_plot          <- tri_plot(dvf_plots, "family_yell_p",          "Family Yells\n(Parent Report)", c("No", "Yes")) 
-family_yell_y_plot          <- tri_plot(dvf_plots, "family_yell_y",          "Family Yells\n(Youth Report)", c("No", "Yes")) 
-fmri_cort_cors_plot         <- tri_plot(dvf_plots, "fmri_cort_cors",         "fMRI Cort-\nCort Corrs", ylims = c(-0.1, 0.16)) 
-fmri_cort_subcort_cors_plot <- tri_plot(dvf_plots, "fmri_cort_subcort_cors", "fMRI Cort-\nSubcort Corrs", ylims = c(-0.15, 0.2)) 
-headache_history_plot       <- tri_plot(dvf_plots, "headache_history",       "Headache\nHistory", c("No", "Yes")) 
-helpful_p_plot              <- tri_plot(dvf_plots, "helpful_p",              "Helpful\n(Parent Report)", c("No", "Yes")) 
-helpful_y_plot              <- tri_plot(dvf_plots, "helpful_y",              "Helpful\n(Youth Report)", c("No", "Yes")) 
-helps_hurt_p_plot           <- tri_plot(dvf_plots, "helps_hurt_p",           "Helps Hurt\n(Parent Report)", c("No", "Yes")) 
-helps_hurt_y_plot           <- tri_plot(dvf_plots, "helps_hurt_y",           "Helps Hurt\n(Youth Report)", c("No", "Yes")) 
-household_income_plot       <- tri_plot(dvf_plots, "household_income",       "Household Income") 
-major_wm_ndi_plot           <- tri_plot(dvf_plots, "major_wm_ndi",           "Major WM\nNeurite Density", ylims = c(0.45, 0.85)) 
-mtbi_age_plot               <- tri_plot(dvf_plots, "mtbi_age",               "mTBI Age\n(months)") 
-mtbi_loc_plot               <- tri_plot(dvf_plots, "mtbi_loc",               "mTBI LOC", c("No", "Yes")) 
-mtbi_mechanism_plot         <- tri_plot(dvf_plots, "mtbi_mechanism",         "mTBI Mechanism", c("Fall/Hit", "Hospital/ER", "Multiple Injuries", "Other", "Vehicle", "Violent")) 
-mtbi_mem_daze_plot          <- tri_plot(dvf_plots, "mtbi_mem_daze",          "mTBI mem_daze", c("No", "Yes")) 
-opp_sex_close_friend_plot   <- tri_plot(dvf_plots, "opp_sex_close_friend",   "Opposite-Sex\nClose Friends (Quartile)") 
-opp_sex_friend_plot         <- tri_plot(dvf_plots, "opp_sex_friend",         "Opposite-Sex\nFriends (Quartile)") 
-parent_aggressive_plot      <- tri_plot(dvf_plots, "parent_aggressive",      "Parent\nAggressive", ylims = c(-0.5, 25)) 
-parent_antisocial_plot      <- tri_plot(dvf_plots, "parent_antisocial",      "Parent\nAntisocial", ylims = c(-0.5, 20)) 
-parent_anxdep_plot          <- tri_plot(dvf_plots, "parent_anxdep",          "Parent\nAnxious-Depressed", ylims = c(-0.5, 30)) 
-parent_anxdisord_plot       <- tri_plot(dvf_plots, "parent_anxdisord",       "Parent\nAnxious", ylims = c(-0.5, 13)) 
-parent_attention_plot       <- tri_plot(dvf_plots, "parent_attention",       "Parent Attention", ylims = c(-0.5, 25)) 
-parent_avoidant_plot        <- tri_plot(dvf_plots, "parent_avoidant",        "Parent\nAvoidant", ylims = c(-0.5, 13)) 
-parent_depress_plot         <- tri_plot(dvf_plots, "parent_depress",         "Parent\nDepress", ylims = c(-0.5, 25)) 
-parent_hyperactive_plot     <- tri_plot(dvf_plots, "parent_hyperactive",     "Parent\nHyperactive", ylims = c(-0.5, 12)) 
-parent_intrusive_plot       <- tri_plot(dvf_plots, "parent_intrusive",       "Parent Intrusive", ylims = c(-0.5, 12)) 
-parent_perstr_plot          <- tri_plot(dvf_plots, "parent_perstr",          "Parent\nPersonal Strength") 
-parent_somatic_plot         <- tri_plot(dvf_plots, "parent_somatic",         "Parent\nSomatic", ylims = c(-0.5, 25)) 
-parent_thought_plot         <- tri_plot(dvf_plots, "parent_thought",         "Parent\nThought", ylims = c(-0.5, 13.5)) 
-parent_withdrawn_plot       <- tri_plot(dvf_plots, "parent_withdrawn",       "Parent\nWithdrawn", ylims = c(-0.5, 17)) 
-pericortical_wm_ndi_plot    <- tri_plot(dvf_plots, "pericortical_wm_ndi",    "Pericortical WM\nNeurite Density", ylims = c(0.25, 0.6)) 
-physical_activity_plot      <- tri_plot(dvf_plots, "physical_activity",      "Physical Activity", ylims = c(0, 1.1)) 
-previous_mtbis_plot         <- tri_plot(dvf_plots, "previous_mtbis",         "Previous mTBIs") 
-private_instruction_plot    <- tri_plot(dvf_plots, "private_instruction",    "Private Activities\n(Quartile)") 
-pubertal_status_p_plot      <- tri_plot(dvf_plots, "pubertal_status_p",      "Pubertal Status\n(Parent Report)") 
-pubertal_status_y_plot      <- tri_plot(dvf_plots, "pubertal_status_y",      "Pubertal Status\n(Youth Report)") 
-race_plot                   <- tri_plot(dvf_plots, "race",                   "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White")) 
-same_sex_close_friend_plot  <- tri_plot(dvf_plots, "same_sex_close_friend",  "Same-Sex Close\nFriends (Quartile)") 
-same_sex_friend_plot        <- tri_plot(dvf_plots, "same_sex_friend",        "Same-Sex Friends\n(Quartile)") 
-school_activities_plot      <- tri_plot(dvf_plots, "school_activities",      "School Activities") 
-sex_plot                    <- tri_plot(dvf_plots, "sex",                    "Sex", c("F", "M")) 
-weekday_screentime_plot     <- tri_plot(dvf_plots, "weekday_screentime",     "Weekday\nScreentime (hours)", ylims = c(-0.5, 21)) 
-weekend_screentime_plot     <- tri_plot(dvf_plots, "weekend_screentime",     "Weekend\nScreentime (hours)", ylims = c(-0.5, 21)) 
-# Outcome trip-plots
-cbcl_anxdep_plot            <- tri_plot(dvf_plots, "cbcl_anxdep",            "Anxious-\nDepressed", ylims = c(-0.5, 30))
-cbcl_withdep_plot           <- tri_plot(dvf_plots, "cbcl_withdep",           "Withdrawn-\nDepressed", ylims = c(-0.5, 15))
-cbcl_somatic_plot           <- tri_plot(dvf_plots, "cbcl_somatic",           "Somatic", ylims = c(-0.5, 17))
-cbcl_social_plot            <- tri_plot(dvf_plots, "cbcl_social",            "Social", ylims = c(-0.5, 20))
-cbcl_thought_plot           <- tri_plot(dvf_plots, "cbcl_thought",           "Thought", ylims = c(-0.5, 20))
-cbcl_attention_plot         <- tri_plot(dvf_plots, "cbcl_attention",         "Attention", ylims = c(-0.5, 22))
-cbcl_rulebreak_plot         <- tri_plot(dvf_plots, "cbcl_rulebreak",         "Rule-Breaking", ylims = c(-0.5, 22))
-cbcl_aggressive_plot        <- tri_plot(dvf_plots, "cbcl_aggressive",        "Aggression", ylims = c(-0.5, 32))
-sds_sleep_plot              <- tri_plot(dvf_plots, "sds_sleep",              "Total Sleep\nProblems", ylims = c(20, 100))
+considerate_p_plot          <- tri_plot(dvf_plots, "considerate_p",          "Considerate\n(Parent Report)", c("No", "Yes")) ; considerate_p_plot ; Sys.sleep(1)
+considerate_y_plot          <- tri_plot(dvf_plots, "considerate_y",          "Considerate\n(Youth Report)", c("No", "Yes")) ; considerate_y_plot ; Sys.sleep(1)
+cort_sa_plot                <- tri_plot(dvf_plots, "cortical_sa",            "Cortical Surface\nArea (mm²)", ylims = c(140000, 260000)) ; cort_sa_plot ; Sys.sleep(1)
+cortical_thickness_plot     <- tri_plot(dvf_plots, "cortical_thickness",     "Cortical\nThickness (mm)", ylims = c(2.3, 3.1)) ; cortical_thickness_plot ; Sys.sleep(1)
+extracurriculars_plot       <- tri_plot(dvf_plots, "extracurriculars",       "Extracurriculars\n(Quartile)") ; extracurriculars_plot ; Sys.sleep(1)
+family_angry_p_plot         <- tri_plot(dvf_plots, "family_angry_p",         "Family Angry\n(Parent Report)", c("No", "Yes")) ; family_angry_p_plot ; Sys.sleep(1)
+family_angry_y_plot         <- tri_plot(dvf_plots, "family_angry_y",         "Family Angry\n(Youth Report)", c("No", "Yes")) ; family_angry_y_plot ; Sys.sleep(1)
+family_criticize_p_plot     <- tri_plot(dvf_plots, "family_criticize_p",     "Family Criticizes\n(Parent Report)", c("No", "Yes")) ; family_criticize_p_plot ; Sys.sleep(1)
+family_criticize_y_plot     <- tri_plot(dvf_plots, "family_criticize_y",     "Family Criticizes\n(Youth Report)", c("No", "Yes")) ; family_criticize_y_plot ; Sys.sleep(1)
+family_fight_p_plot         <- tri_plot(dvf_plots, "family_fight_p",         "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes")) ; family_fight_p_plot ; Sys.sleep(1)
+family_fight_y_plot         <- tri_plot(dvf_plots, "family_fight_y",         "Family Fights\n(Youth Report)", c("No", "Yes")) ; family_fight_y_plot ; Sys.sleep(1)
+family_hit_p_plot           <- tri_plot(dvf_plots, "family_hit_p",           "Family Hitting\n(Parent Report)", c("No", "Yes")) ; family_hit_p_plot ; Sys.sleep(1)
+family_hit_y_plot           <- tri_plot(dvf_plots, "family_hit_y",           "Family Hitting\n(Youth Report)", c("No", "Yes")) ; family_hit_y_plot ; Sys.sleep(1)
+family_outdo_p_plot         <- tri_plot(dvf_plots, "family_outdo_p",         "Family Outdo\n(Parent Report)", c("No", "Yes")) ; family_outdo_p_plot ; Sys.sleep(1)
+family_outdo_y_plot         <- tri_plot(dvf_plots, "family_outdo_y",         "Family Outdoing\n(Youth Report)", c("No", "Yes")) ; family_outdo_y_plot ; Sys.sleep(1)
+family_peaceful_p_plot      <- tri_plot(dvf_plots, "family_peaceful_p",      "Family Peaceful\n(Parent Report)", c("No", "Yes")) ; family_peaceful_p_plot ; Sys.sleep(1)
+family_peaceful_y_plot      <- tri_plot(dvf_plots, "family_peaceful_y",      "Family Peaceful\n(Youth Report)", c("No", "Yes")) ; family_peaceful_y_plot ; Sys.sleep(1)
+family_temper_p_plot        <- tri_plot(dvf_plots, "family_temper_p",        "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes")) ; family_temper_p_plot ; Sys.sleep(1)
+family_temper_y_plot        <- tri_plot(dvf_plots, "family_temper_y",        "Family Temper\n(Youth Report)", c("No", "Yes")) ; family_temper_y_plot ; Sys.sleep(1)
+family_throw_p_plot         <- tri_plot(dvf_plots, "family_throw_p",         "Family Throwing\n(Parent Report)", c("No", "Yes")) ; family_throw_p_plot ; Sys.sleep(1)
+family_throw_y_plot         <- tri_plot(dvf_plots, "family_throw_y",         "Family Throwing\n(Youth Report)", c("No", "Yes")) ; family_throw_y_plot ; Sys.sleep(1)
+family_yell_p_plot          <- tri_plot(dvf_plots, "family_yell_p",          "Family Yells\n(Parent Report)", c("No", "Yes")) ; family_yell_p_plot ; Sys.sleep(1)
+family_yell_y_plot          <- tri_plot(dvf_plots, "family_yell_y",          "Family Yells\n(Youth Report)", c("No", "Yes")) ; family_yell_y_plot ; Sys.sleep(1)
+fmri_cort_cors_plot         <- tri_plot(dvf_plots, "fmri_cort_cors",         "fMRI Cort-\nCort Corrs", ylims = c(-0.1, 0.16)) ; fmri_cort_cors_plot ; Sys.sleep(1)
+fmri_cort_subcort_cors_plot <- tri_plot(dvf_plots, "fmri_cort_subcort_cors", "fMRI Cort-\nSubcort Corrs", ylims = c(-0.15, 0.2)) ; fmri_cort_subcort_cors_plot ; Sys.sleep(1)
+headache_history_plot       <- tri_plot(dvf_plots, "headache_history",       "Headache\nHistory", c("No", "Yes")) ; headache_history_plot ; Sys.sleep(1)
+helpful_p_plot              <- tri_plot(dvf_plots, "helpful_p",              "Helpful\n(Parent Report)", c("No", "Yes")) ; helpful_p_plot ; Sys.sleep(1)
+helpful_y_plot              <- tri_plot(dvf_plots, "helpful_y",              "Helpful\n(Youth Report)", c("No", "Yes")) ; helpful_y_plot ; Sys.sleep(1)
+helps_hurt_p_plot           <- tri_plot(dvf_plots, "helps_hurt_p",           "Helps Hurt\n(Parent Report)", c("No", "Yes")) ; helps_hurt_p_plot ; Sys.sleep(1)
+helps_hurt_y_plot           <- tri_plot(dvf_plots, "helps_hurt_y",           "Helps Hurt\n(Youth Report)", c("No", "Yes")) ; helps_hurt_y_plot ; Sys.sleep(1)
+household_income_plot       <- tri_plot(dvf_plots, "household_income",       "Household Income") ; household_income_plot ; Sys.sleep(1)
+major_wm_ndi_plot           <- tri_plot(dvf_plots, "major_wm_ndi",           "Major WM\nNeurite Density", ylims = c(0.45, 0.85)) ; major_wm_ndi_plot ; Sys.sleep(1)
+mtbi_age_plot               <- tri_plot(dvf_plots, "mtbi_age",               "mTBI Age\n(months)") ; mtbi_age_plot ; Sys.sleep(1)
+mtbi_loc_plot               <- tri_plot(dvf_plots, "mtbi_loc",               "mTBI LOC", c("No", "Yes")) ; mtbi_loc_plot ; Sys.sleep(1)
+mtbi_mechanism_plot         <- tri_plot(dvf_plots, "mtbi_mechanism",         "mTBI Mechanism", c("Fall/Hit", "Hospital/ER", "Multiple Injuries", "Other", "Vehicle", "Violent")) ; mtbi_mechanism_plot ; Sys.sleep(1)
+mtbi_mem_daze_plot          <- tri_plot(dvf_plots, "mtbi_mem_daze",          "mTBI mem_daze", c("No", "Yes")) ; mtbi_mem_daze_plot ; Sys.sleep(1)
+opp_sex_close_friend_plot   <- tri_plot(dvf_plots, "opp_sex_close_friend",   "Opposite-Sex\nClose Friends (Quartile)") ; opp_sex_close_friend_plot ; Sys.sleep(1)
+opp_sex_friend_plot         <- tri_plot(dvf_plots, "opp_sex_friend",         "Opposite-Sex\nFriends (Quartile)") ; opp_sex_friend_plot ; Sys.sleep(1)
+parent_aggressive_plot      <- tri_plot(dvf_plots, "parent_aggressive",      "Parent\nAggressive", ylims = c(-0.5, 25)) ; parent_aggressive_plot ; Sys.sleep(1)
+parent_antisocial_plot      <- tri_plot(dvf_plots, "parent_antisocial",      "Parent\nAntisocial", ylims = c(-0.5, 20)) ; parent_antisocial_plot ; Sys.sleep(1)
+parent_anxdep_plot          <- tri_plot(dvf_plots, "parent_anxdep",          "Parent\nAnxious-Depressed", ylims = c(-0.5, 30)) ; parent_anxdep_plot ; Sys.sleep(1)
+parent_anxdisord_plot       <- tri_plot(dvf_plots, "parent_anxdisord",       "Parent\nAnxious", ylims = c(-0.5, 13)) ; parent_anxdisord_plot ; Sys.sleep(1)
+parent_attention_plot       <- tri_plot(dvf_plots, "parent_attention",       "Parent Attention", ylims = c(-0.5, 25)) ; parent_attention_plot ; Sys.sleep(1)
+parent_avoidant_plot        <- tri_plot(dvf_plots, "parent_avoidant",        "Parent\nAvoidant", ylims = c(-0.5, 13)) ; parent_avoidant_plot ; Sys.sleep(1)
+parent_depress_plot         <- tri_plot(dvf_plots, "parent_depress",         "Parent\nDepress", ylims = c(-0.5, 25)) ; parent_depress_plot ; Sys.sleep(1)
+parent_hyperactive_plot     <- tri_plot(dvf_plots, "parent_hyperactive",     "Parent\nHyperactive", ylims = c(-0.5, 12)) ; parent_hyperactive_plot ; Sys.sleep(1)
+parent_intrusive_plot       <- tri_plot(dvf_plots, "parent_intrusive",       "Parent Intrusive", ylims = c(-0.5, 12)) ; parent_intrusive_plot ; Sys.sleep(1)
+parent_perstr_plot          <- tri_plot(dvf_plots, "parent_perstr",          "Parent\nPersonal Strength") ; parent_perstr_plot ; Sys.sleep(1)
+parent_somatic_plot         <- tri_plot(dvf_plots, "parent_somatic",         "Parent\nSomatic", ylims = c(-0.5, 25)) ; parent_somatic_plot ; Sys.sleep(1)
+parent_thought_plot         <- tri_plot(dvf_plots, "parent_thought",         "Parent\nThought", ylims = c(-0.5, 13.5)) ; parent_thought_plot ; Sys.sleep(1)
+parent_withdrawn_plot       <- tri_plot(dvf_plots, "parent_withdrawn",       "Parent\nWithdrawn", ylims = c(-0.5, 17)) ; parent_withdrawn_plot ; Sys.sleep(1)
+pericortical_wm_ndi_plot    <- tri_plot(dvf_plots, "pericortical_wm_ndi",    "Pericortical WM\nNeurite Density", ylims = c(0.25, 0.6)) ; pericortical_wm_ndi_plot ; Sys.sleep(1)
+physical_activity_plot      <- tri_plot(dvf_plots, "physical_activity",      "Physical Activity", ylims = c(0, 1.1)) ; physical_activity_plot ; Sys.sleep(1)
+previous_mtbis_plot         <- tri_plot(dvf_plots, "previous_mtbis",         "Previous mTBIs") ; previous_mtbis_plot ; Sys.sleep(1)
+private_instruction_plot    <- tri_plot(dvf_plots, "private_instruction",    "Private Activities\n(Quartile)") ; private_instruction_plot ; Sys.sleep(1)
+pubertal_status_p_plot      <- tri_plot(dvf_plots, "pubertal_status_p",      "Pubertal Status\n(Parent Report)") ; pubertal_status_p_plot ; Sys.sleep(1)
+pubertal_status_y_plot      <- tri_plot(dvf_plots, "pubertal_status_y",      "Pubertal Status\n(Youth Report)") ; pubertal_status_y_plot ; Sys.sleep(1)
+race_plot                   <- tri_plot(dvf_plots, "race",                   "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White")) ; race_plot ; Sys.sleep(1)
+same_sex_close_friend_plot  <- tri_plot(dvf_plots, "same_sex_close_friend",  "Same-Sex Close\nFriends (Quartile)") ; same_sex_close_friend_plot ; Sys.sleep(1)
+same_sex_friend_plot        <- tri_plot(dvf_plots, "same_sex_friend",        "Same-Sex Friends\n(Quartile)") ; same_sex_friend_plot ; Sys.sleep(1)
+school_activities_plot      <- tri_plot(dvf_plots, "school_activities",      "School Activities") ; school_activities_plot ; Sys.sleep(1)
+sex_plot                    <- tri_plot(dvf_plots, "sex",                    "Sex", c("F", "M")) ; sex_plot ; Sys.sleep(1)
+weekday_screentime_plot     <- tri_plot(dvf_plots, "weekday_screentime",     "Weekday\nScreentime (hours)", ylims = c(-0.5, 21)) ; weekday_screentime_plot ; Sys.sleep(1)
+weekend_screentime_plot     <- tri_plot(dvf_plots, "weekend_screentime",     "Weekend\nScreentime (hours)", ylims = c(-0.5, 21)) ; weekend_screentime_plot ; Sys.sleep(1)
+# Outcome trip-plots; # ; Sys.sleep(1)
+cbcl_anxdep_plot            <- tri_plot(dvf_plots, "cbcl_anxdep",            "Anxious-\nDepressed", ylims = c(-0.5, 30)); cbcl_anxdep_plot ; Sys.sleep(1)
+cbcl_withdep_plot           <- tri_plot(dvf_plots, "cbcl_withdep",           "Withdrawn-\nDepressed", ylims = c(-0.5, 15)); cbcl_withdep_plot ; Sys.sleep(1)
+cbcl_somatic_plot           <- tri_plot(dvf_plots, "cbcl_somatic",           "Somatic", ylims = c(-0.5, 17)); cbcl_somatic_plot ; Sys.sleep(1)
+cbcl_social_plot            <- tri_plot(dvf_plots, "cbcl_social",            "Social", ylims = c(-0.5, 20)); cbcl_social_plot ; Sys.sleep(1)
+cbcl_thought_plot           <- tri_plot(dvf_plots, "cbcl_thought",           "Thought", ylims = c(-0.5, 20)); cbcl_thought_plot ; Sys.sleep(1)
+cbcl_attention_plot         <- tri_plot(dvf_plots, "cbcl_attention",         "Attention", ylims = c(-0.5, 22)); cbcl_attention_plot ; Sys.sleep(1)
+cbcl_rulebreak_plot         <- tri_plot(dvf_plots, "cbcl_rulebreak",         "Rule-Breaking", ylims = c(-0.5, 22)); cbcl_rulebreak_plot ; Sys.sleep(1)
+cbcl_aggressive_plot        <- tri_plot(dvf_plots, "cbcl_aggressive",        "Aggression", ylims = c(-0.5, 32)); cbcl_aggressive_plot ; Sys.sleep(1)
+sds_sleep_plot              <- tri_plot(dvf_plots, "sds_sleep",              "Total Sleep\nProblems", ylims = c(20, 100)); sds_sleep_plot ; Sys.sleep(1)
 #
 
 generalizing_plots <- list(
@@ -1576,9 +1572,14 @@ generalizing_plots <- list(
     "weekend_screentime"     = weekend_screentime_plot
 ) |> lapply(
     function(x) {
-        x[[1]] <- x[[1]] + theme(axis.title.x = element_blank()) 
-        x[[2]] <- x[[2]] + theme(axis.title.x = element_blank()) 
-        x[[3]] <- x[[3]] + theme(axis.title.x = element_blank()) 
+        theme_comps <- theme(
+            axis.title.x = element_blank(),
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14)
+        )
+        x[[1]] <- x[[1]] + theme_comps
+        x[[2]] <- x[[2]] + theme_comps
+        x[[3]] <- x[[3]] + theme_comps
         return(x)
     }
 )
@@ -1589,32 +1590,34 @@ oplots <- generalizing_plots[ofts]
 
 saveRDS(iplots, proc_path("mtbi_iplots.rds", TRUE))
 saveRDS(oplots, proc_path("mtbi_oplots.rds", TRUE))
-iplots <- readRDS(proc_path("2025_06_10_mtbi_iplots.rds"))
-oplots <- readRDS(proc_path("2025_06_10_mtbi_oplots.rds"))
+
+iplots <- readRDS(proc_path("2025_06_12_mtbi_iplots.rds"))
+oplots <- readRDS(proc_path("2025_06_12_mtbi_oplots.rds"))
 
 wp_1 <- wrap_plots(iplots[1:10], ncol = 1)
-quick_save(wp_1, "wp_1", w = 8, h = 20, dpi = 100)
+quick_save(wp_1, "wp_1", w = 7, h = 20, dpi = 100)
 wp_2 <- wrap_plots(iplots[11:20], ncol = 1)
-quick_save(wp_2, "wp_2", w = 5.5, h = 20, dpi = 100)
-wp_3 <- wrap_plots(iplots[21:30], ncol = 1)
-quick_save(wp_3, "wp_3", w = 8, h = 20, dpi = 100)
-wp_4 <- wrap_plots(iplots[31:40], ncol = 1)
-quick_save(wp_4, "wp_4", w = 8, h = 20, dpi = 100)
-wp_5 <- wrap_plots(iplots[41:50], ncol = 1)
-quick_save(wp_5, "wp_5", w = 8, h = 20, dpi = 100)
-wp_6 <- wrap_plots(iplots[51:60], ncol = 1)
-quick_save(wp_6, "wp_6", w = 8, h = 20, dpi = 100)
-wp_7 <- wrap_plots(iplots[61:67], ncol = 1)
-quick_save(wp_7, "wp_7", w = 8, h = 14, dpi = 100)
+quick_save(wp_2, "wp_2", w = 7, h = 20, dpi = 100)
 
+wp_3 <- wrap_plots(iplots[21:30], ncol = 1)
+quick_save(wp_3, "wp_3", w = 7.5, h = 20, dpi = 100)
+
+wp_4 <- wrap_plots(iplots[31:40], ncol = 1)
+quick_save(wp_4, "wp_4", w = 7.5, h = 20, dpi = 100)
+wp_5 <- wrap_plots(iplots[41:50], ncol = 1)
+quick_save(wp_5, "wp_5", w = 7.5, h = 20, dpi = 100)
+wp_6 <- wrap_plots(iplots[51:60], ncol = 1)
+quick_save(wp_6, "wp_6", w = 7.5, h = 20, dpi = 100)
+wp_7 <- wrap_plots(iplots[61:67], ncol = 1)
+quick_save(wp_7, "wp_7", w = 7.5, h = 14, dpi = 100)
 wp_o <- wrap_plots(oplots, ncol = 1)
-quick_save(wp_o, "wp_o", w = 5.5, h = 18)
+quick_save(wp_o, "wp_o", w = 5.5, h = 18, dpi = 100)
 ```
 
 # Summary of the validation (table)
 
 ```{r}
-mtbi_gen_fts_table <- readRDS(proc_path("2025_05_30_mtbi_gen_fts_table.rds"))
+mtbi_gen_fts_table <- readRDS(proc_path("2025_06_11_mtbi_gen_fts_table.rds"))
 rownames(mtbi_gen_fts_table) <- mtbi_gen_fts_table$"feature"
 
 mtbi_gen_fts_table
@@ -1629,7 +1632,7 @@ write_csv(mtbi_gen_fts_table_hits, proc_path("mtbi_gen_fts_table_hits.csv", TRUE
 ```
 
 ```{r}
-mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_06_03_mtbi_gen_fts_table_hits.csv"))
+mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_06_11_mtbi_gen_fts_table_hits.csv"))
 
 mtbi_gen_fts_table_hits
 
@@ -1642,7 +1645,7 @@ mtbi_gen_fts_table_hits_t <- mtbi_gen_fts_table_hits |>
 
 write_csv(mtbi_gen_fts_table_hits_t, proc_path("mtbi_gen_fts_table_hits_t.csv", TRUE))
 
-mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_03_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_11_mtbi_gen_fts_table_hits_t.csv"))
 
 mtbi_gen_fts_table_hits_t |>
     knitr::kable(format = "markdown", align = "lccc") |>
@@ -1659,8 +1662,8 @@ The outcomes (and inputs) appear heavily associated with demographic variables p
 How would correcting for those variables influence the meta clustering results?
 
 ```{r}
-mtbi_dl_1 <- readRDS(input_path("2025_05_29_mtbi_dl_1.rds"))
-mtbi_ol_1 <- readRDS(input_path("2025_05_29_mtbi_ol_1.rds"))
+mtbi_dl_1 <- readRDS(input_path("2025_06_11_mtbi_dl_1.rds"))
+mtbi_ol_1 <- readRDS(input_path("2025_06_11_mtbi_ol_1.rds"))
 
 # excluding mTBI mechanism from analysis, as it is an unadjustable categorical
 # feature
@@ -1670,8 +1673,8 @@ dl_demo <- mtbi_dl_1[c(4, 6:9)]
 saveRDS(dl_demo, proc_path("dl_demo.rds", TRUE))
 saveRDS(dl_no_demo, proc_path("dl_no_demo.rds", TRUE))
 
-dl_demo <- readRDS(proc_path("2025_06_06_dl_demo.rds"))
-dl_no_demo <- readRDS(proc_path("2025_06_06_dl_no_demo.rds"))
+dl_demo <- readRDS(proc_path("2025_06_12_dl_demo.rds"))
+dl_no_demo <- readRDS(proc_path("2025_06_12_dl_no_demo.rds"))
 
 dl_demo
 
@@ -1682,7 +1685,7 @@ saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-dl_corrected <- readRDS(proc_path("2025_06_03_dl_corrected.rds"))
+dl_corrected <- readRDS(proc_path("2025_06_12_dl_corrected.rds"))
 
 names(dl_corrected)
 
@@ -1717,7 +1720,7 @@ corrected_config <- snf_config(
 
 saveRDS(corrected_config, proc_path("corrected_config.rds", TRUE))
 
-corrected_config <- readRDS(proc_path("2025_06_03_corrected_config.rds"))
+corrected_config <- readRDS(proc_path("2025_06_12_corrected_config.rds"))
 
 c(dl_corrected, dl_demo) |>
     as.data.frame() |>
@@ -1746,8 +1749,8 @@ c(dl_corrected, dl_demo) |>
 
 ```{r}
 # CHECKPOINT
-dl_corrected <- readRDS(proc_path("2025_06_03_dl_corrected.rds"))
-corrected_config <- readRDS(proc_path("2025_06_03_corrected_config.rds"))
+dl_corrected <- readRDS(proc_path("2025_06_12_dl_corrected.rds"))
+corrected_config <- readRDS(proc_path("2025_06_12_corrected_config.rds"))
 ```
 
 Meta clustering using the demographic adjusted data list.
@@ -1766,7 +1769,7 @@ saveRDS(demo_adj_sol_df, proc_path("demo_adj_sol_df.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-demo_adj_sol_df <- readRDS(proc_path("2025_06_03_demo_adj_sol_df.rds"))
+demo_adj_sol_df <- readRDS(proc_path("2025_06_12_demo_adj_sol_df.rds"))
 demo_adj_ari <- calc_aris(demo_adj_sol_df, verbose = TRUE, processes = "max")
 saveRDS(demo_adj_ari, proc_path("demo_adj_ari.rds", TRUE))
 ```
@@ -1778,9 +1781,9 @@ saveRDS(demo_adj_ari_order, proc_path("demo_adj_ari_order.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-demo_adj_sol_df <- readRDS(proc_path("2025_06_03_demo_adj_sol_df.rds"))
-demo_adj_ari <- readRDS(proc_path("2025_06_03_demo_adj_ari.rds"))
-demo_adj_ari_order <- readRDS(proc_path("2025_06_06_demo_adj_ari_order.rds"))
+demo_adj_sol_df <- readRDS(proc_path("2025_06_12_demo_adj_sol_df.rds"))
+demo_adj_ari <- readRDS(proc_path("2025_06_12_demo_adj_ari.rds"))
+demo_adj_ari_order <- readRDS(proc_path("2025_06_12_demo_adj_ari_order.rds"))
 ```
 
 Creating a demographic adjusted outcome list to extend against.
@@ -1791,7 +1794,7 @@ saveRDS(adj_oom_list, proc_path("adj_oom_list.rds", TRUE))
 ```
 
 ```{r}
-adj_oom_list <- readRDS(proc_path("2025_06_06_adj_oom_list.rds"))
+adj_oom_list <- readRDS(proc_path("2025_06_12_adj_oom_list.rds"))
 ```
 
 ```{r}
@@ -1803,34 +1806,34 @@ demo_double_adj_ext_sol_df <- extend_solutions(
     min_pval = 1e-10,
     processes = "max"
 )
-saveRDS(demo_double_adj_ext_sol_df, proc_path("demo_double_adj_ext_sol_df.rds", TRUE))
+saveRDS(
+    demo_double_adj_ext_sol_df,
+    proc_path("demo_double_adj_ext_sol_df.rds", TRUE)
+)
 ```
 
 ```{r}
-demo_adj_ext_sol_df <- readRDS(proc_path("2025_06_06_demo_adj_ext_sol_df.rds"))
-demo_double_adj_ext_sol_df <- readRDS(proc_path("2025_06_06_demo_double_adj_ext_sol_df.rds"))
+demo_double_adj_ext_sol_df <- readRDS(
+    proc_path("2025_06_12_demo_double_adj_ext_sol_df.rds")
+)
 
 base_adj_ari_hm <- meta_cluster_heatmap(
     demo_adj_ari,
     order = demo_adj_ari_order
 )
 
-demo_adj_esdf <- as.data.frame(demo_adj_ext_sol_df)
-demo_adj_esdf$"impairment_separation" <- -log10(demo_adj_esdf$"mean_pval")
-
 demo_double_adj_esdf <- as.data.frame(demo_double_adj_ext_sol_df)
 demo_double_adj_esdf$"impairment_separation" <- -log10(demo_double_adj_esdf$"mean_pval")
 
 demo_adj_split_vec <- c(
-    17,
-    82,
-    133,
-    189,
-    244
+    27,
+    95,
+    171,
+    218,
+    266
 )
 saveRDS(demo_adj_split_vec, proc_path("demo_adj_split_vec.rds", TRUE))
-demo_adj_split_vec <- readRDS(proc_path("2025_06_06_demo_adj_split_vec.rds"))
-
+demo_adj_split_vec <- readRDS(proc_path("2025_06_12_demo_adj_split_vec.rds"))
 # The double adjustment does not yield and interesting meta clusters
 full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
     x = demo_adj_ari,
@@ -1874,5 +1877,5 @@ double_demo_adj_rep_solutions <- get_representative_solutions(
     double_demo_adj_mc_sol_df
 )
 
-double_demo_adj_rep_solutions$"mean_pval" # The lowest mean p-value is 0.06
+double_demo_adj_rep_solutions$"mean_pval" # The lowest mean p-value is 0.17
 ```
