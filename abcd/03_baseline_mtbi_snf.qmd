@@ -22,6 +22,7 @@ library(compute.es)
 library(dplyr)
 library(fastDummies)
 library(tidyr)
+library(nnet)
 
 input_path      <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path       <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -177,7 +178,9 @@ saveRDS(mtbi_der_sol_df, proc_path("mtbi_der_sol_df.rds", TRUE))
 
 mtbi_der_ari <- calc_aris(mtbi_der_sol_df, processes = "max")
 saveRDS(mtbi_der_ari, proc_path("mtbi_der_ari.rds", TRUE))
+```
 
+```{r}
 mtbi_der_ari_order <- get_matrix_order(mtbi_der_ari)
 saveRDS(mtbi_der_ari_order, proc_path("mtbi_der_ari_order.rds", TRUE))
 ```
@@ -208,13 +211,15 @@ run_extend_solutions <- function(name, x) {
     )
     extend_solutions(
         mtbi_der_sol_df[(200*(x-1) + 1):(200*x), ],
-        dl = all_dls[[paste0(name, "_dls")]][[imp]],
-        target_dl = all_dls[[paste0(name, "_ols")]][[imp]],
+        dl = all_dls_h_ns[[paste0(name, "_dls")]][[imp]],
+        target_dl = all_dls_h_ns[[paste0(name, "_ols")]][[imp]],
         min_pval = 1e-10,
         processes = "max"
     )
 }
+```
 
+```{r}
 # Unpooled imputations
 mtbi_der_ext_sol_df_u1 <- run_extend_solutions("mtbi_der_u", 1)
 saveRDS(mtbi_der_ext_sol_df_u1, proc_path("mtbi_der_ext_sol_df_u1.rds", TRUE))
@@ -226,7 +231,9 @@ mtbi_der_ext_sol_df_u4 <- run_extend_solutions("mtbi_der_u", 4)
 saveRDS(mtbi_der_ext_sol_df_u4, proc_path("mtbi_der_ext_sol_df_u4.rds", TRUE))
 mtbi_der_ext_sol_df_u5 <- run_extend_solutions("mtbi_der_u", 5)
 saveRDS(mtbi_der_ext_sol_df_u5, proc_path("mtbi_der_ext_sol_df_u5.rds", TRUE))
+```
 
+```{r}
 mtbi_der_ext_sol_df_p1 <- run_extend_solutions("mtbi_der_p", 6)
 saveRDS(mtbi_der_ext_sol_df_p1, proc_path("mtbi_der_ext_sol_df_p1.rds", TRUE))
 mtbi_der_ext_sol_df_p2 <- run_extend_solutions("mtbi_der_p", 7)
@@ -335,19 +342,14 @@ mtbi_der_esdf <- read_csv(proc_path("2025_06_11_mtbi_der_esdf.csv"))
 ```
 
 
-
 ```{r}
 mtbi_der_split_vec <- c(
-    170,
-    497,
-    538,
-    690,
-    758,
-    895,
-    1149,
-    1215,
-    1415,
-    1630
+    251,
+    411,
+    570,
+    924,
+    1180,
+    1425
 )
 saveRDS(mtbi_der_split_vec, proc_path("mtbi_split_vec.rds", TRUE))
 mtbi_der_split_vec <- readRDS(proc_path("2025_06_11_mtbi_split_vec.rds"))
@@ -403,7 +405,7 @@ saveRDS(mtbi_der_mc_sol_df, proc_path("mtbi_der_mc_sol_df.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_der_mc_sol_df <- readRDS(proc_path("2025_05_27_mtbi_der_mc_sol_df.rds"))
+mtbi_der_mc_sol_df <- readRDS(proc_path("2025_06_11_mtbi_der_mc_sol_df.rds"))
 ```
 
 When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have values for all features.
@@ -436,15 +438,15 @@ saveRDS(mtbi_der_rep_solutions, proc_path("mtbi_der_rep_solutions.rds", TRUE))
 
 ```{r}
 mtbi_der_rep_solutions <- readRDS(
-    proc_path("2025_05_27_mtbi_der_rep_solutions.rds")
+    proc_path("2025_06_11_mtbi_der_rep_solutions.rds")
 )
 
 mtbi_der_rep_solutions
 
-# Top solution is meta cluster F, represented by solution 776
-mtbi_der_top_solution <- mtbi_der_ext_sol_df_u4[mtbi_der_ext_sol_df_u4$"solution" == 776, ]
+# Top solution is meta cluster D, represented by solution 717
+mtbi_der_top_solution <- mtbi_der_ext_sol_df_u4[mtbi_der_ext_sol_df_u4$"solution" == 717, ]
 
-mtbi_der_top_solution$"mc" <- "F"
+mtbi_der_top_solution$"mc" <- "D"
 
 saveRDS(mtbi_der_top_solution, proc_path("mtbi_der_top_solution.rds", TRUE))
 ```
@@ -452,15 +454,15 @@ saveRDS(mtbi_der_top_solution, proc_path("mtbi_der_top_solution.rds", TRUE))
 ```{r}
 # CHECKPOINT
 mtbi_der_top_solution <- readRDS(
-    proc_path("2025_05_27_mtbi_der_top_solution.rds")
+    proc_path("2025_06_11_mtbi_der_top_solution.rds")
 )
 
 mtbi_der_top_solution$"mc" <- "Derivation MC F"
 
 mtbi_der_manhattan <- mc_manhattan_plot(
     mtbi_der_top_solution,
-    dl = all_dls$"mtbi_train_data_lists"$"imp_4",
-    target_dl = all_dls$"mtbi_train_oom_lists"$"imp_4",
+    dl = all_dls_h_ns$"mtbi_der_u_dls"$"imp_4",
+    target_dl = all_dls_h_ns$"mtbi_der_u_ols"$"imp_4",
     domain_colours = c(
         "AS" = "#85929e",
         "D" = "#bb8fce",
@@ -483,13 +485,12 @@ ggsave(
 ```
 
 ```{r}
-
 # Initial visualizations
 plot_list <- auto_plot(
     sol_df_row = mtbi_der_top_solution,
     dl = c(
-        all_dls$"mtbi_train_data_lists"$"imp_4",
-        all_dls$"mtbi_train_oom_lists"$"imp_4"
+        all_dls_h_ns$"mtbi_der_u_dls"$"imp_4",
+        all_dls_h_ns$"mtbi_der_u_ols"$"imp_4"
     ),
     verbose = TRUE
 )
@@ -497,6 +498,8 @@ plot_list <- auto_plot(
 plot_list$"sex"
 
 plot_list$"race"
+
+plot_list$"household_income"
 
 # In anticipation of the upcoming cluster swaps
 cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
@@ -518,8 +521,7 @@ cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
     return(swapped_sm)
 }
 
-mtbi_der_top_solution_swp <- cluster_label_swap(mtbi_der_top_solution, 1, 3)
-mtbi_der_top_solution_swp <- cluster_label_swap(mtbi_der_top_solution_swp, 2, 3)
+mtbi_der_top_solution_swp <- cluster_label_swap(mtbi_der_top_solution, 2, 3)
 
 saveRDS(
     mtbi_der_top_solution_swp,
@@ -530,7 +532,7 @@ saveRDS(
 ```{r}
 # CHECKPOINT
 mtbi_der_top_solution_swp <- readRDS(
-    proc_path("2025_05_27_mtbi_der_top_solution_swp.rds")
+    proc_path("2025_06_11_mtbi_der_top_solution_swp.rds")
 )
 ```
 
@@ -538,8 +540,8 @@ mtbi_der_top_solution_swp <- readRDS(
 plot_list <- auto_plot(
     sol_df_row = mtbi_der_top_solution_swp,
     dl = c(
-        all_dls$"mtbi_train_data_lists"$"imp_4",
-        all_dls$"mtbi_train_oom_lists"$"imp_4"
+        all_dls_h_ns$"mtbi_der_u_dls"$"imp_4",
+        all_dls_h_ns$"mtbi_der_u_ols"$"imp_4"
     ),
     verbose = TRUE
 )
@@ -549,9 +551,9 @@ saveRDS(plot_list, fig_path("mtbi_der_top_solution_pl.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-train_dl_u4 <- all_dls$"mtbi_train_data_lists"$"imp_4"
-train_ol_u4 <- all_dls$"mtbi_train_oom_lists"$"imp_4"
-train_io_dl_u4 <- c(train_dl_u4, train_ol_u4)
+der_dl_u4 <- all_dls_h_ns$"mtbi_der_u_dls"$"imp_4"
+der_ol_u4 <- all_dls_h_ns$"mtbi_der_u_ols"$"imp_4" 
+der_io_dl_u4 <- c(der_dl_u4, der_ol_u4)
 ```
 
 ## Feature importance
@@ -560,12 +562,12 @@ train_io_dl_u4 <- c(train_dl_u4, train_ol_u4)
 
 ```{r}
 progressr::with_progress({
-    nmis <- calc_nmis(train_dl_u4, mtbi_der_top_solution_swp)
+    nmis <- calc_nmis(der_dl_u4, mtbi_der_top_solution_swp)
 })
 
-nmi_order <- sort(nmis$"s776", decreasing = TRUE, index.return = TRUE)
+nmi_order <- sort(nmis$"s717", decreasing = TRUE, index.return = TRUE)
 ordered_nmis <- nmis[nmi_order$ix, ]
-ordered_nmis$"nmi_rank" <- rank(-ordered_nmis$"s776", ties.method = "min")
+ordered_nmis$"nmi_rank" <- rank(-ordered_nmis$"s717", ties.method = "min")
 ```
 
 ### Rank by p-values
@@ -602,7 +604,7 @@ mtbi_der_top_solution_nmi_v_pval <- dplyr::full_join(
     by = "feature"
 )
 
-domain_df <- train_dl_u4 |>
+domain_df <- der_dl_u4 |>
     summary("feature") |>
     dplyr::select(name, domain) |>
     dplyr::rename("feature" = "name")
@@ -636,7 +638,7 @@ mtbi_der_top_solution_nmi_v_pval_rank <-
 
 mtbi_der_top_solution_nmi_v_pval_rank <- dplyr::rename(
     mtbi_der_top_solution_nmi_v_pval_rank,
-    "nmi" = "s776"
+    "nmi" = "s717"
 )
 
 mtbi_der_top_solution_nmi_v_pval_rank <- dplyr::select(
@@ -659,7 +661,7 @@ write_csv(
 ```{r}
 # CHECKPOINT
 mtbi_der_top_solution_nmi_v_pval_rank <- read_csv(
-    proc_path("2025_05_27_mtbi_der_top_solution_nmi_v_pval_rank.csv")
+    proc_path("2025_06_11_mtbi_der_top_solution_nmi_v_pval_rank.csv")
 )
 
 options(width=200)
@@ -667,7 +669,7 @@ data.frame(mtbi_der_top_solution_nmi_v_pval_rank)
 ```
 
 ```{r}
-# 2025-05-28
+# 2025-06-11
 # Export input feature ranks
 mtbi_der_top_solution_nmi_v_pval_rank |>
     dplyr::select(joint_rank, dplyr::everything()) |>
@@ -679,7 +681,7 @@ mtbi_der_top_solution_nmi_v_pval_rank |>
 ifts <- mtbi_der_top_solution_nmi_v_pval_rank$"feature"
 
 # Output features
-ofts <- features(train_ol_u4)
+ofts <- features(der_ol_u4)
 
 # All features
 afts <- c(ifts, ofts)
@@ -691,9 +693,9 @@ saveRDS(ofts, proc_path("ofts.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-ifts <- readRDS(proc_path("2025_05_28_ifts.rds"))
-afts <- readRDS(proc_path("2025_05_28_afts.rds"))
-ofts <- readRDS(proc_path("2025_05_28_ofts.rds"))
+ifts <- readRDS(proc_path("2025_06_11_ifts.rds"))
+afts <- readRDS(proc_path("2025_06_11_afts.rds"))
+ofts <- readRDS(proc_path("2025_06_11_ofts.rds"))
 ```
 
 ### Correlation of NMI and p-value
@@ -750,7 +752,7 @@ ggsave(
 ```{r}
 # Some file renaming
 mtbi_der_top_solution_swp <- readRDS(
-    proc_path("2025_05_27_mtbi_der_top_solution_swp.rds")
+    proc_path("2025_06_11_mtbi_der_top_solution_swp.rds")
 )
 
 saveRDS(
@@ -761,14 +763,14 @@ saveRDS(
 
 ```{r}
 # CHECKPOINT 
-mtbi_der_solution <- readRDS(proc_path("2025_05_28_mtbi_der_solution.rds"))
+mtbi_der_solution <- readRDS(proc_path("2025_06_11_mtbi_der_solution.rds"))
 ```
 
 ```{r}
 # Feature plot generation
 mtbi_der_plot_list <- auto_plot(
     sol_df_row = mtbi_der_solution,
-    dl = c(train_dl_u4, train_ol_u4),
+    dl = c(der_dl_u4, der_ol_u4),
     save = fig_path("ap_mtbi_der_mc_f", TRUE),
     verbose = TRUE
 )
@@ -776,7 +778,7 @@ mtbi_der_plot_list <- auto_plot(
 # No save version:
 mtbi_der_plot_list <- auto_plot(
     sol_df_row = mtbi_der_solution,
-    dl = c(train_dl_u4, train_ol_u4),
+    dl = c(der_dl_u4, der_ol_u4),
     verbose = TRUE
 )
 
@@ -785,7 +787,7 @@ saveRDS(mtbi_der_plot_list, fig_path("mtbi_der_plot_list.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_der_plot_list <- readRDS(fig_path("2025_05_28_mtbi_der_plot_list.rds"))
+mtbi_der_plot_list <- readRDS(fig_path("2025_06_11_mtbi_der_plot_list.rds"))
 ```
 
 ### Visualizing top features
@@ -799,62 +801,60 @@ saveRDS(
 )
 
 mtbi_der_ranked_plot_list <- readRDS(
-    fig_path("2025_05_28_mtbi_der_ranked_plot_list.rds")
+    fig_path("2025_06_11_mtbi_der_ranked_plot_list.rds")
 )
 
-mtbi_der_ranked_plots <- wrap_plots(mtbi_der_ranked_plot_list)
-
-ggsave(
-    fig_path("mtbi_der_ranked_plots.png", TRUE),
-    mtbi_der_ranked_plots,
-    width = 45,
-    height = 30,
-    dpi = 50
-)
+#mtbi_der_ranked_plots <- wrap_plots(mtbi_der_ranked_plot_list)
+#ggsave(
+#    fig_path("mtbi_der_ranked_plots.png", TRUE),
+#    mtbi_der_ranked_plots,
+#    width = 45,
+#    height = 30,
+#    dpi = 50
+#)
 ```
 
 ```{r}
-# Building a patchwork of the 20 plots
-
-top_pl <- mtbi_der_ranked_plot_list[1:20]
-for (i in seq_along(top_pl)) {
-    print(paste0(i, ": ", names(top_pl)[i]))
-}
-top_pl$"sex"                    <- top_pl$"sex"                    + labs(fill = "Sex") + scale_fill_discrete(labels = c("F", "M"))
-top_pl$"brain_volume"           <- top_pl$"brain_volume"           + labs(y = expression(paste("Brain Volume ", (mm^3))))
-top_pl$"cortical_sa"            <- top_pl$"cortical_sa"            + labs(y = expression(paste("Cortical Area ", (mm^2))))
-top_pl$"household_income"       <- top_pl$"household_income"       + labs(y = "Household Income")
-top_pl$"race"                   <- top_pl$"race"                   + labs(fill = "Race") + scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
-top_pl$"pubertal_status_p"      <- top_pl$"pubertal_status_p"      + labs(y = "Pubertal Status\n(Parent Report)")
-top_pl$"activities_last_year"   <- top_pl$"activities_last_year"   + labs(y = "Total Activities\nthis Year")
-top_pl$"private_instruction"    <- top_pl$"private_instruction"    + labs(y = "Private Activities")
-top_pl$"extracurriculars"       <- top_pl$"extracurriculars"       + labs(y = "Lifetime\nExtracurriculars")
-top_pl$"parent_thought"         <- top_pl$"parent_thought"         + labs(y = "Parent Thought\nProblems")
-top_pl$"parent_somatic"         <- top_pl$"parent_somatic"         + labs(y = "Parent Somatic\nProblems")
-top_pl$"parent_antisocial"      <- top_pl$"parent_antisocial"      + labs(y = "Parent Antisocial\nProblems")
-top_pl$"weekday_screentime"     <- top_pl$"weekday_screentime"     + labs(y = "Weekday Screentime")
-top_pl$"fmri_cort_subcort_cors" <- top_pl$"fmri_cort_subcort_cors" + labs(y = "Cortical-Subcortical\nNetwork Correlation")
-top_pl$"parent_avoidant"        <- top_pl$"parent_avoidant"        + labs(y = "Parent Avoidant\nProblems")
-top_pl$"weekend_screentime"     <- top_pl$"weekend_screentime"     + labs(y = "Weekend\nScreentime")
-top_pl$"fmri_cort_cors"         <- top_pl$"fmri_cort_cors"         + labs(y = "Cortical-Cortical\nNetwork Correlation")
-top_pl$"parent_aggressive"      <- top_pl$"parent_aggressive"      + labs(y = "Parent Aggressive\nProblems")
-top_pl$"parent_withdrawn"       <- top_pl$"parent_withdrawn"       + labs(y = "Parent Withdrawn\nProblems")
-top_pl$"parent_anxdisord"       <- top_pl$"parent_anxdisord"       + labs(y = "Parent Anxiety\nProblems")
-top_p <- (wrap_plots(top_pl) & labs(x = "Cluster") & theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))) + plot_annotation(tag_levels = '1')
-ggsave(
-    fig_path("mtbi_der_solution_top_20_ifts.png", TRUE),
-    top_p,
-    width = 25,
-    height = 15,
-    dpi = 150
-)
+## Building a patchwork of the 20 plots
+#top_pl <- mtbi_der_ranked_plot_list[1:20]
+#for (i in seq_along(top_pl)) {
+#    print(paste0(i, ": ", names(top_pl)[i]))
+#}
+#top_pl$"sex"                    <- top_pl$"sex"                    + labs(fill = "Sex") + scale_fill_discrete(labels = c("F", "M"))
+#top_pl$"brain_volume"           <- top_pl$"brain_volume"           + labs(y = expression(paste("Brain Volume ", (mm^3))))
+#top_pl$"cortical_sa"            <- top_pl$"cortical_sa"            + labs(y = expression(paste("Cortical Area ", (mm^2))))
+#top_pl$"household_income"       <- top_pl$"household_income"       + labs(y = "Household Income")
+#top_pl$"race"                   <- top_pl$"race"                   + labs(fill = "Race") + scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
+#top_pl$"pubertal_status_p"      <- top_pl$"pubertal_status_p"      + labs(y = "Pubertal Status\n(Parent Report)")
+#top_pl$"activities_last_year"   <- top_pl$"activities_last_year"   + labs(y = "Total Activities\nthis Year")
+#top_pl$"private_instruction"    <- top_pl$"private_instruction"    + labs(y = "Private Activities")
+#top_pl$"extracurriculars"       <- top_pl$"extracurriculars"       + labs(y = "Lifetime\nExtracurriculars")
+#top_pl$"parent_thought"         <- top_pl$"parent_thought"         + labs(y = "Parent Thought\nProblems")
+#top_pl$"parent_somatic"         <- top_pl$"parent_somatic"         + labs(y = "Parent Somatic\nProblems")
+#top_pl$"parent_antisocial"      <- top_pl$"parent_antisocial"      + labs(y = "Parent Antisocial\nProblems")
+#top_pl$"weekday_screentime"     <- top_pl$"weekday_screentime"     + labs(y = "Weekday Screentime")
+#top_pl$"fmri_cort_subcort_cors" <- top_pl$"fmri_cort_subcort_cors" + labs(y = "Cortical-Subcortical\nNetwork Correlation")
+#top_pl$"parent_avoidant"        <- top_pl$"parent_avoidant"        + labs(y = "Parent Avoidant\nProblems")
+#top_pl$"weekend_screentime"     <- top_pl$"weekend_screentime"     + labs(y = "Weekend\nScreentime")
+#top_pl$"fmri_cort_cors"         <- top_pl$"fmri_cort_cors"         + labs(y = "Cortical-Cortical\nNetwork Correlation")
+#top_pl$"parent_aggressive"      <- top_pl$"parent_aggressive"      + labs(y = "Parent Aggressive\nProblems")
+#top_pl$"parent_withdrawn"       <- top_pl$"parent_withdrawn"       + labs(y = "Parent Withdrawn\nProblems")
+#top_pl$"parent_anxdisord"       <- top_pl$"parent_anxdisord"       + labs(y = "Parent Anxiety\nProblems")
+#top_p <- (wrap_plots(top_pl) & labs(x = "Cluster") & theme(plot.margin = unit(c(0.5, 1.5, 0.5, 2), "cm"))) + plot_annotation(tag_levels = '1')
+#ggsave(
+#    fig_path("mtbi_der_solution_top_20_ifts.png", TRUE),
+#    top_p,
+#    width = 25,
+#    height = 15,
+#    dpi = 150
+#)
 ```
 
 ```{r}
 # Data frame used to generate the auto plots
 mtbi_der_solution_plot_df <- auto_plot(
     sol_df_row = mtbi_der_solution,
-    dl = train_io_dl_u4,
+    dl = der_io_dl_u4,
     return_plots = FALSE
 )
 
@@ -863,76 +863,73 @@ saveRDS(mtbi_der_solution_plot_df, proc_path("mtbi_der_solution_plot_df.rds", TR
 
 ```{r}
 # CHECKPOINT
-mtbi_der_solution_plot_df <- readRDS(proc_path("2025_05_29_mtbi_der_solution_plot_df.rds"))
+mtbi_der_solution_plot_df <- readRDS(proc_path("2025_06_11_mtbi_der_solution_plot_df.rds"))
 ```
 
 ```{r}
-ofts_pl <- mtbi_der_ranked_plot_list[ofts]
-
-names(ofts_pl)
-
-clean_names <- c(
-    "CBCL\nAnxious-Depressed",
-    "CBCL\nWithdrawn-Depressed",
-    "CBCL\nSomatic Problems",
-    "CBCL\nSocial Problems",
-    "CBCL\nThought Problems",
-    "CBCL\nAttention Problems",
-    "CBCL\nRule-breaking Problems",
-    "CBCL\nAggression Problems",
-    "SDS Total\nSleeping Problems"
-)
-
-for (i in seq_along(ofts_pl)) {
-    ofts_pl[[i]] <- ofts_pl[[i]] + labs(y = clean_names[[i]], x = "Cluster")
-}
-
-ofts_p <- wrap_plots(ofts_pl) &
-          theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
-
-ofts_p <- ofts_p + plot_annotation(tag_levels = '1')
-
-ggsave(
-    fig_path("mtbi_der_solution_ofts.png", TRUE),
-    ofts_p,
-    width = 14,
-    height = 14,
-    dpi = 150
-)
+#ofts_pl <- mtbi_der_ranked_plot_list[ofts]
+#
+#names(ofts_pl)
+#
+#clean_names <- c(
+#    "CBCL\nAnxious-Depressed",
+#    "CBCL\nWithdrawn-Depressed",
+#    "CBCL\nSomatic Problems",
+#    "CBCL\nSocial Problems",
+#    "CBCL\nThought Problems",
+#    "CBCL\nAttention Problems",
+#    "CBCL\nRule-breaking Problems",
+#    "CBCL\nAggression Problems",
+#    "SDS Total\nSleeping Problems"
+#)
+#
+#for (i in seq_along(ofts_pl)) {
+#    ofts_pl[[i]] <- ofts_pl[[i]] + labs(y = clean_names[[i]], x = "Cluster")
+#}
+#
+#ofts_p <- wrap_plots(ofts_pl) &
+#          theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
+#
+#ofts_p <- ofts_p + plot_annotation(tag_levels = '1')
+#
+#ggsave(
+#    fig_path("mtbi_der_solution_ofts.png", TRUE),
+#    ofts_p,
+#    width = 14,
+#    height = 14,
+#    dpi = 150
+#)
 ```
 
 # Validation
 
 ```{r}
 # CHECKPOINT
-# The data list that generated the top solution
-
 # The first test data set, for example
-test_dl_u1 <- all_dls$"mtbi_test_data_lists"$"imp_1"
-test_dl_u2 <- all_dls$"mtbi_test_data_lists"$"imp_2"
-test_dl_u3 <- all_dls$"mtbi_test_data_lists"$"imp_3"
-test_dl_u4 <- all_dls$"mtbi_test_data_lists"$"imp_4"
-test_dl_u5 <- all_dls$"mtbi_test_data_lists"$"imp_5"
-
-test_ol_u1 <- all_dls$"mtbi_test_oom_lists"$"imp_1"
-test_ol_u2 <- all_dls$"mtbi_test_oom_lists"$"imp_2"
-test_ol_u3 <- all_dls$"mtbi_test_oom_lists"$"imp_3"
-test_ol_u4 <- all_dls$"mtbi_test_oom_lists"$"imp_4"
-test_ol_u5 <- all_dls$"mtbi_test_oom_lists"$"imp_5"
+val_dl_u1 <- all_dls_h_ns$"mtbi_val_u_dls"$"imp_1"
+val_dl_u2 <- all_dls_h_ns$"mtbi_val_u_dls"$"imp_2"
+val_dl_u3 <- all_dls_h_ns$"mtbi_val_u_dls"$"imp_3"
+val_dl_u4 <- all_dls_h_ns$"mtbi_val_u_dls"$"imp_4"
+val_dl_u5 <- all_dls_h_ns$"mtbi_val_u_dls"$"imp_5"
+val_ol_u1 <- all_dls_h_ns$"mtbi_val_u_ols"$"imp_1"
+val_ol_u2 <- all_dls_h_ns$"mtbi_val_u_ols"$"imp_2"
+val_ol_u3 <- all_dls_h_ns$"mtbi_val_u_ols"$"imp_3"
+val_ol_u4 <- all_dls_h_ns$"mtbi_val_u_ols"$"imp_4"
+val_ol_u5 <- all_dls_h_ns$"mtbi_val_u_ols"$"imp_5"
 ```
 
 ```{r}
-mtbi_dl_1 <- merge(train_dl_u4, test_dl_u1)
-mtbi_dl_2 <- merge(train_dl_u4, test_dl_u2)
-mtbi_dl_3 <- merge(train_dl_u4, test_dl_u3)
-mtbi_dl_4 <- merge(train_dl_u4, test_dl_u4)
-mtbi_dl_5 <- merge(train_dl_u4, test_dl_u5)
+mtbi_dl_1 <- merge(der_dl_u4, val_dl_u1)
+mtbi_dl_2 <- merge(der_dl_u4, val_dl_u2)
+mtbi_dl_3 <- merge(der_dl_u4, val_dl_u3)
+mtbi_dl_4 <- merge(der_dl_u4, val_dl_u4)
+mtbi_dl_5 <- merge(der_dl_u4, val_dl_u5)
 
-mtbi_ol_1 <- merge(train_ol_u4, test_ol_u1)
-mtbi_ol_2 <- merge(train_ol_u4, test_ol_u2)
-mtbi_ol_3 <- merge(train_ol_u4, test_ol_u3)
-mtbi_ol_4 <- merge(train_ol_u4, test_ol_u4)
-mtbi_ol_5 <- merge(train_ol_u4, test_ol_u5)
+mtbi_ol_1 <- merge(der_ol_u4, val_ol_u1)
+mtbi_ol_2 <- merge(der_ol_u4, val_ol_u2)
+mtbi_ol_3 <- merge(der_ol_u4, val_ol_u3)
+mtbi_ol_4 <- merge(der_ol_u4, val_ol_u4)
+mtbi_ol_5 <- merge(der_ol_u4, val_ol_u5)
 
 saveRDS(mtbi_dl_1, input_path("mtbi_dl_1.rds", TRUE))
 saveRDS(mtbi_dl_2, input_path("mtbi_dl_2.rds", TRUE))
@@ -949,21 +946,21 @@ saveRDS(mtbi_ol_5, input_path("mtbi_ol_5.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_dl_1 <- readRDS(input_path("2025_05_29_mtbi_dl_1.rds"))
-mtbi_dl_2 <- readRDS(input_path("2025_05_29_mtbi_dl_2.rds"))
-mtbi_dl_3 <- readRDS(input_path("2025_05_29_mtbi_dl_3.rds"))
-mtbi_dl_4 <- readRDS(input_path("2025_05_29_mtbi_dl_4.rds"))
-mtbi_dl_5 <- readRDS(input_path("2025_05_29_mtbi_dl_5.rds"))
+mtbi_dl_1 <- readRDS(input_path("2025_06_11_mtbi_dl_1.rds"))
+mtbi_dl_2 <- readRDS(input_path("2025_06_11_mtbi_dl_2.rds"))
+mtbi_dl_3 <- readRDS(input_path("2025_06_11_mtbi_dl_3.rds"))
+mtbi_dl_4 <- readRDS(input_path("2025_06_11_mtbi_dl_4.rds"))
+mtbi_dl_5 <- readRDS(input_path("2025_06_11_mtbi_dl_5.rds"))
 
-mtbi_ol_1 <- readRDS(input_path("2025_05_29_mtbi_ol_1.rds"))
-mtbi_ol_2 <- readRDS(input_path("2025_05_29_mtbi_ol_2.rds"))
-mtbi_ol_3 <- readRDS(input_path("2025_05_29_mtbi_ol_3.rds"))
-mtbi_ol_4 <- readRDS(input_path("2025_05_29_mtbi_ol_4.rds"))
-mtbi_ol_5 <- readRDS(input_path("2025_05_29_mtbi_ol_5.rds"))
+mtbi_ol_1 <- readRDS(input_path("2025_06_11_mtbi_ol_1.rds"))
+mtbi_ol_2 <- readRDS(input_path("2025_06_11_mtbi_ol_2.rds"))
+mtbi_ol_3 <- readRDS(input_path("2025_06_11_mtbi_ol_3.rds"))
+mtbi_ol_4 <- readRDS(input_path("2025_06_11_mtbi_ol_4.rds"))
+mtbi_ol_5 <- readRDS(input_path("2025_06_11_mtbi_ol_5.rds"))
 ```
 
 ```{r}
-mtbi_config <- readRDS(proc_path("2025_05_27_mtbi_config.rds"))
+mtbi_config <- readRDS(proc_path("2025_06_11_mtbi_config.rds"))
 
 progressr::with_progress({
     mtbi_sol_df <- batch_snf(
@@ -974,8 +971,10 @@ progressr::with_progress({
 })
 
 saveRDS(mtbi_sol_df, proc_path("mtbi_sol_df.rds", TRUE))
+```
 
-mtbi_sol_df <- readRDS(proc_path("2025_05_29_mtbi_sol_df.rds"))
+```{r}
+mtbi_sol_df <- readRDS(proc_path("2025_06_11_mtbi_sol_df.rds"))
 ```
 
 ```{r}
@@ -991,7 +990,7 @@ saveRDS(mtbi_ext_sol_df, proc_path("mtbi_ext_sol_df.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_ext_sol_df <- readRDS(proc_path("2025_05_29_mtbi_ext_sol_df.rds"))
+mtbi_ext_sol_df <- readRDS(proc_path("2025_06_11_mtbi_ext_sol_df.rds"))
 ```
 
 ```{r}
@@ -1001,7 +1000,7 @@ mtbi_ext_sol_df_3c <- mtbi_ext_sol_df |>
 
 saveRDS(mtbi_ext_sol_df_3c, proc_path("mtbi_ext_sol_df_3c.rds", TRUE))
 
-mtbi_ext_sol_df_3c <- readRDS(proc_path("2025_05_29_mtbi_ext_sol_df_3c.rds"))
+mtbi_ext_sol_df_3c <- readRDS(proc_path("2025_06_11_mtbi_ext_sol_df_3c.rds"))
 
 nrow(mtbi_ext_sol_df_3c) # 52 of them
 
@@ -1012,9 +1011,9 @@ saveRDS(mtbi_ari_3c, proc_path("mtbi_ari_3c.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_ext_sol_df_3c <- readRDS(proc_path("2025_05_29_mtbi_ext_sol_df_3c.rds"))
-mtbi_ari_3c <- readRDS(proc_path("2025_05_29_mtbi_ari_3c.rds"))
-mtbi_der_solution <- readRDS(proc_path("2025_05_28_mtbi_der_solution.rds"))
+mtbi_ext_sol_df_3c <- readRDS(proc_path("2025_06_11_mtbi_ext_sol_df_3c.rds"))
+mtbi_ari_3c <- readRDS(proc_path("2025_06_11_mtbi_ari_3c.rds"))
+mtbi_der_solution <- readRDS(proc_path("2025_06_11_mtbi_der_solution.rds"))
 ```
 
 Here I identify the cluster solution from the derivation + validation samples that is the most similar to the derivation sample solution in terms of its distribution of derivation sample observations.
@@ -1038,7 +1037,7 @@ der_and_new_aris <- rbind(
 ) |> 
     calc_aris()
 
-validation_order <- sort(der_and_new_aris["776", ], index.return = TRUE)$"ix"
+validation_order <- sort(der_and_new_aris["717", ], index.return = TRUE)$"ix"
 
 # 3 cluster solutions sorted 
 validation_heatmap <- meta_cluster_heatmap(
@@ -1058,16 +1057,16 @@ save_heatmap(
 
 validation_heatmap
 
-# 117 is the most similar solution to the top derivation set solution
-mtbi_top_solution <- mtbi_ext_sol_df_3c[mtbi_ext_sol_df_3c$"solution" == 117, ]
+# 67 is the most similar solution to the top derivation set solution
+mtbi_top_solution <- mtbi_ext_sol_df_3c[mtbi_ext_sol_df_3c$"solution" == 67, ]
+
 mtbi_top_solution <- cluster_label_swap(mtbi_top_solution, 2, 3)
-mtbi_top_solution <- cluster_label_swap(mtbi_top_solution, 1, 2)
 
 saveRDS(mtbi_top_solution, proc_path("mtbi_top_solution.rds", TRUE))
 ```
 
 ```{r}
-mtbi_top_solution <- readRDS(proc_path("2025_05_30_mtbi_top_solution.rds"))
+mtbi_top_solution <- readRDS(proc_path("2025_06_11_mtbi_top_solution.rds"))
 
 mtbi_top_pl <- auto_plot(
     mtbi_top_solution,
@@ -1075,13 +1074,14 @@ mtbi_top_pl <- auto_plot(
     verbose = TRUE
 )
 
+mtbi_top_pl$"sex"
+
 saveRDS(mtbi_top_pl, proc_path("mtbi_top_pl.rds", TRUE))
 
-mtbi_top_pl <- readRDS(proc_path("2025_05_30_mtbi_top_pl.rds"))
+mtbi_top_pl <- readRDS(proc_path("2025_06_11_mtbi_top_pl.rds"))
 ```
 
 ```{r}
-
 mtbi_top_solution$"mc" <- "Pooled"
 
 mtbi_top_manhattan <- mc_manhattan_plot(
@@ -1145,12 +1145,15 @@ mtbi_top_pl_df_w_site$"site_id" <- factor(mtbi_top_pl_df_w_site$"site_id")
 # Demonstration that site is not a significant predictor of cluster membership
 # using multinomial logistic regression of only 3 features
 df <- mtbi_top_pl_df_w_site
+
 covariates <- "sex + brain_volume + household_income"
+
 formula_no_site <- as.formula(paste("cluster ~", covariates))
 formula_with_site <- as.formula(paste("cluster ~", covariates, "+ site_id"))
+
 mod_no_site <- multinom(formula_no_site, data = df)
 mod_with_site <- multinom(formula_with_site, data = df)
-anova(mod_no_site, mod_with_site, test = "Chisq")
+anova(mod_no_site, mod_with_site, test = "Chisq") # N.S.
 ```
 
 Concordance between the derivation and full samples:
@@ -1158,7 +1161,7 @@ Concordance between the derivation and full samples:
 ```{r}
 mtbi_der_df <- auto_plot(
     mtbi_der_solution,
-    dl = c(train_dl_u4, train_ol_u4),
+    dl = c(der_dl_u4, der_ol_u4),
     return_plots = FALSE
 )
 
@@ -1171,15 +1174,15 @@ mtbi_ful_df <- auto_plot(
 val_cluster_df <- mtbi_top_solution |>
     t() |>
     dplyr::rename(
-        "cluster" = "s117"
+        "cluster" = "s67"
     ) |>
     dplyr::filter(
-        uid %in% paste0("uid_", mtbi_test_subs$"subjectkey")
+        uid %in% paste0("uid_", mtbi_ns_val_subs)
     )
 
 mtbi_val_df <- auto_plot(
     cluster_df = val_cluster_df,
-    dl = c(test_dl_u1, test_ol_u1),
+    dl = c(val_dl_u1, val_ol_u1),
     return_plots = FALSE
 )
 
@@ -1187,16 +1190,16 @@ saveRDS(mtbi_val_df, proc_path("mtbi_val_df.rds", TRUE))
 saveRDS(mtbi_der_df, proc_path("mtbi_der_df.rds", TRUE))
 saveRDS(mtbi_ful_df, proc_path("mtbi_ful_df.rds", TRUE))
 
-mtbi_val_df <- readRDS(proc_path("2025_05_30_mtbi_val_df.rds"))
-mtbi_der_df <- readRDS(proc_path("2025_05_30_mtbi_der_df.rds"))
-mtbi_ful_df <- readRDS(proc_path("2025_05_30_mtbi_ful_df.rds"))
+mtbi_val_df <- readRDS(proc_path("2025_06_11_mtbi_val_df.rds"))
+mtbi_der_df <- readRDS(proc_path("2025_06_11_mtbi_der_df.rds"))
+mtbi_ful_df <- readRDS(proc_path("2025_06_11_mtbi_ful_df.rds"))
 ```
 
 ```{r}
 # Regular plot lists:
 mtbi_der_df_pl <- auto_plot(
     mtbi_der_solution,
-    dl = c(train_dl_u4, train_ol_u4)
+    dl = c(der_dl_u4, der_ol_u4)
 )
 mtbi_ful_df_pl <- auto_plot(
     mtbi_top_solution,
@@ -1204,16 +1207,16 @@ mtbi_ful_df_pl <- auto_plot(
 )
 mtbi_val_df_pl <- auto_plot(
     cluster_df = val_cluster_df,
-    dl = c(test_dl_u1, test_ol_u1)
+    dl = c(val_dl_u1, val_ol_u1)
 )
 
 saveRDS(mtbi_der_df_pl, proc_path("mtbi_der_df_pl.rds", TRUE))
 saveRDS(mtbi_val_df_pl, proc_path("mtbi_val_df_pl.rds", TRUE))
 saveRDS(mtbi_ful_df_pl, proc_path("mtbi_ful_df_pl.rds", TRUE))
 
-mtbi_der_df_pl <- readRDS(proc_path("2025_06_03_mtbi_der_df_pl.rds"))
-mtbi_val_df_pl <- readRDS(proc_path("2025_06_03_mtbi_val_df_pl.rds"))
-mtbi_ful_df_pl <- readRDS(proc_path("2025_06_03_mtbi_ful_df_pl.rds"))
+mtbi_der_df_pl <- readRDS(proc_path("2025_06_11_mtbi_der_df_pl.rds"))
+mtbi_val_df_pl <- readRDS(proc_path("2025_06_11_mtbi_val_df_pl.rds"))
+mtbi_ful_df_pl <- readRDS(proc_path("2025_06_11_mtbi_ful_df_pl.rds"))
 ```
 
 ```{r}
@@ -1226,22 +1229,19 @@ mtbi_ful_tops <- topologizer(mtbi_ful_df)
 write_csv(mtbi_der_tops, proc_path("mtbi_der_tops.csv", TRUE))
 write_csv(mtbi_ful_tops, proc_path("mtbi_ful_tops.csv", TRUE))
 write_csv(mtbi_val_tops, proc_path("mtbi_val_tops.csv", TRUE))
-
 ```
 
 ```{r}
 # CHECKPOINT
-mtbi_der_tops <- read_csv(proc_path("2025_05_30_mtbi_der_tops.csv"))
-mtbi_ful_tops <- read_csv(proc_path("2025_05_30_mtbi_ful_tops.csv"))
-mtbi_val_tops <- read_csv(proc_path("2025_05_30_mtbi_val_tops.csv"))
+mtbi_der_tops <- read_csv(proc_path("2025_06_11_mtbi_der_tops.csv"))
+mtbi_ful_tops <- read_csv(proc_path("2025_06_11_mtbi_ful_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2025_06_11_mtbi_val_tops.csv"))
 ```
 
 ```{r}
 f_der_tops <- format_tops(mtbi_der_tops)
 f_val_tops <- format_tops(mtbi_val_tops)
 f_ful_tops <- format_tops(mtbi_ful_tops)
-
-head(joint_ranks_with_out)
 
 f_der_tops$"set" <- "D"
 f_val_tops$"set" <- "V"
@@ -1251,7 +1251,7 @@ all_tops <- do.call(rbind, list(f_der_tops, f_val_tops, f_ful_tops)) |>
     dplyr::rename("feature" = "Feature")
 
 mtbi_der_top_solution_nmi_v_pval_rank <- read_csv(
-    proc_path("2025_05_27_mtbi_der_top_solution_nmi_v_pval_rank.csv")
+    proc_path("2025_06_11_mtbi_der_top_solution_nmi_v_pval_rank.csv")
 )
 
 # Constructing a data frame of feature ranks that accounts for how
@@ -1286,11 +1286,12 @@ joint_ranks <- rbind(
     data.frame(feature = ofts, joint_rank = nrow(joint_ranks) + 1),
     joint_ranks
 ) |> data.frame()
+
 joint_ranks
 
 write_csv(joint_ranks, proc_path("joint_ranks.csv", TRUE))
 
-joint_ranks <- read_csv(proc_path("2025_05_30_joint_ranks.csv"))
+joint_ranks <- read_csv(proc_path("2025_06_11_joint_ranks.csv"))
 
 sorted_tops <- dplyr::full_join(all_tops, joint_ranks) |>
     dplyr::mutate(set = factor(set, levels = c("D", "V", "F"))) |>
@@ -1298,7 +1299,7 @@ sorted_tops <- dplyr::full_join(all_tops, joint_ranks) |>
 
 write_csv(sorted_tops, proc_path("sorted_tops.csv", TRUE))
 
-sorted_tops <- read_csv(proc_path("2025_05_30_sorted_tops.csv"))
+sorted_tops <- read_csv(proc_path("2025_06_11_sorted_tops.csv"))
 
 knitr::kable(
     sorted_tops,
@@ -1307,9 +1308,9 @@ knitr::kable(
 ) |>
     writeLines(proc_path("mtbi_sorted_tops.txt", TRUE)) # 2025-05-30
 
-mtbi_der_tops <- read_csv(proc_path("2025_05_30_mtbi_der_tops.csv"))
-mtbi_ful_tops <- read_csv(proc_path("2025_05_30_mtbi_ful_tops.csv"))
-mtbi_val_tops <- read_csv(proc_path("2025_05_30_mtbi_val_tops.csv"))
+mtbi_der_tops <- read_csv(proc_path("2025_06_11_mtbi_der_tops.csv"))
+mtbi_ful_tops <- read_csv(proc_path("2025_06_11_mtbi_ful_tops.csv"))
+mtbi_val_tops <- read_csv(proc_path("2025_06_11_mtbi_val_tops.csv"))
 
 mtbi_der_tops$"set" <- "D"
 mtbi_val_tops$"set" <- "V"
@@ -1348,25 +1349,26 @@ all_tops_raw <- do.call(
 all_tops_raw
 ```
 
-Some of the 
+Some of these values have NA effect size comparisons because of empty cell to empty cell comparisons.
+For example, the effect size of having a fall accident between two clusters is NA when neither cluster has any fall accident membership.
+Here, I manually adjust those with 0 ES.
+The confidence intervals are left at NA.
 
 ```{r}
 all_tops_raw_manual_adj <- all_tops_raw
 all_tops_raw_manual_adj$"row" <- rownames(all_tops_raw_manual_adj)
-# This entry has NA ES between C2 and C3 race_black, but both clusters are
-# have 0 membership race_black membership
-all_tops_raw_manual_adj[14, "c23_es"] <- 0
 # Similar situation for mtbi mechanism multi
-all_tops_raw_manual_adj[127, "c12_es"] <- 0
-all_tops_raw_manual_adj[128, "c13_es"] <- 0
+all_tops_raw_manual_adj[196, "c12_es"] <- 0
+all_tops_raw_manual_adj[197, "c13_es"] <- 0
 # Missing "V" set label
-all_tops_raw_manual_adj[132, "set"] <- "V"
+all_tops_raw_manual_adj[201, "set"] <- "V"
 # mtbi mechanism other loc simply not present in V
-all_tops_raw_manual_adj[132, c("c12_es", "c13_es", "c23_es")] <- 0
-all_tops_raw_manual_adj[132, "es"] <- "or"
-all_tops_raw_manual_adj[132, "summary"] <- "1 = 2 = 3"
+all_tops_raw_manual_adj[201, c("c12_es", "c13_es", "c23_es")] <- 0
+all_tops_raw_manual_adj[201, "es"] <- "or"
+# summary missing for all empty cell other loc 
+all_tops_raw_manual_adj[201, "summary"] <- "1 = 2 = 3"
 # mtbi mechanism violent
-all_tops_raw_manual_adj[137, "c13_es"] <- 0
+all_tops_raw_manual_adj[206, "c23_es"] <- 0
 all_tops_raw_manual_adj |>
     dplyr::select(-dplyr::contains("_l"), -dplyr::contains("_u")) |>
     dplyr::filter(dplyr::if_any(dplyr::everything(), is.na))
@@ -1375,21 +1377,21 @@ saveRDS(all_tops_raw_manual_adj, proc_path("all_tops_raw_manual_adj.rds", TRUE))
 ```
 
 ```{r}
-all_tops_raw_manual_adj <- readRDS(proc_path("2025_05_30_all_tops_raw_manual_adj.rds"))
+all_tops_raw_manual_adj <- readRDS(proc_path("2025_06_11_all_tops_raw_manual_adj.rds"))
 
 mtbi_gen_fts_table <- generalizable_features(all_tops_raw_manual_adj, compare_fn_a, 0.2)
 saveRDS(mtbi_gen_fts_table, proc_path("mtbi_gen_fts_table.rds", TRUE))
 ```
 
 ```{r}
-mtbi_gen_fts_table <- readRDS(proc_path("2025_05_30_mtbi_gen_fts_table.rds"))
+mtbi_gen_fts_table <- readRDS(proc_path("2025_06_11_mtbi_gen_fts_table.rds"))
 mtbi_gen_fts_table
 ```
 
 ```{r}
-mtbi_der_df_pl <- readRDS(proc_path("2025_06_03_mtbi_der_df_pl.rds"))
-mtbi_val_df_pl <- readRDS(proc_path("2025_06_03_mtbi_val_df_pl.rds"))
-mtbi_ful_df_pl <- readRDS(proc_path("2025_06_03_mtbi_ful_df_pl.rds"))
+mtbi_der_df_pl <- readRDS(proc_path("2025_06_11_mtbi_der_df_pl.rds"))
+mtbi_val_df_pl <- readRDS(proc_path("2025_06_11_mtbi_val_df_pl.rds"))
+mtbi_ful_df_pl <- readRDS(proc_path("2025_06_11_mtbi_ful_df_pl.rds"))
 
 dvf_plots <- list(
     mtbi_der_df_pl[afts],
@@ -1415,9 +1417,10 @@ quick_save <- function(plot, path, w = 12, h = 4, dpi = 300) {
 
 ```{r}
 # Not necessarily in ranked order:
-activities_last_year_plot   <- tri_plot(dvf_plots, "activities_last_year",   "Programs Last\nYear (Quartile)") 
-age_plot                    <- tri_plot(dvf_plots, "age",                    "Age") 
-brain_volume_plot           <- tri_plot(dvf_plots, "brain_volume",           "Brain Volume\n(mm³)", ylims = c(900000, 1650000)) 
+activities_last_year_plot   <- tri_plot(dvf_plots, "activities_last_year",   "Programs Last\nYear (Quartile)"); activities_last_year_plot; Sys.sleep(1)
+age_plot                    <- tri_plot(dvf_plots, "age",                    "Age") ; age_plot; Sys.sleep(1)
+brain_volume_plot           <- tri_plot(dvf_plots, "brain_volume",           "Brain Volume\n(mm³)", ylims = c(900000, 1650000)) ; brain_volume_plot; Sys.sleep(1)
+
 considerate_p_plot          <- tri_plot(dvf_plots, "considerate_p",          "Considerate\n(Parent Report)", c("No", "Yes")) 
 considerate_y_plot          <- tri_plot(dvf_plots, "considerate_y",          "Considerate\n(Youth Report)", c("No", "Yes")) 
 cort_sa_plot                <- tri_plot(dvf_plots, "cortical_sa",            "Cortical Surface\nArea (mm²)", ylims = c(140000, 260000)) 
