@@ -13,34 +13,73 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +647 abcd/05_longitudinal_preprocessing.qmd
-badd +247 abcd/02_baseline_preprocessing.qmd
-badd +498 abcd/04_longitudinal_extraction.qmd
-badd +3 ~/Documents/prash/time/time.csv
-badd +293 abcd/helper_functions.R
-badd +39 ~/Documents/abcdutils/R/assign_scanner.R
-badd +2 ~/Documents/abcd-snf/abcd/06_descriptive_analyses.qmd
-badd +255 ~/Documents/abcd-snf-article/manuscript.typ
+badd +49 abcd/03_baseline_preprocessing_descriptive_analyses.qmd
+badd +101 ~/Documents/prash/journal/prash.md
+badd +37 abcd/04_baseline_mtbi_snf.qmd
+badd +94 abcd/09_longitudinal_analyses.qmd
+badd +971 abcd/06_longitudinal_preprocessing.qmd
+badd +46 abcd/08_subtype_classifier.qmd
 argglobal
 %argdel
-$argadd abcd/05_longitudinal_preprocessing.qmd
-edit ~/Documents/abcd-snf-article/manuscript.typ
+$argadd abcd/03_baseline_preprocessing_descriptive_analyses.qmd
+edit abcd/09_longitudinal_analyses.qmd
+let s:save_splitbelow = &splitbelow
+let s:save_splitright = &splitright
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
+let &splitbelow = s:save_splitbelow
+let &splitright = s:save_splitright
+wincmd t
+let s:save_winminheight = &winminheight
+let s:save_winminwidth = &winminwidth
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
+exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 argglobal
-balt ~/Documents/abcd-snf/abcd/06_descriptive_analyses.qmd
 setlocal foldmethod=marker
 setlocal foldexpr=0
-setlocal foldmarker=\ //\ {{{,\ //\ }}}
+setlocal foldmarker={{{,}}}
 setlocal foldignore=#
 setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 190 - ((13 * winheight(0) + 22) / 45)
+let s:l = 93 - ((26 * winheight(0) + 27) / 55)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 190
+keepjumps 93
 normal! 0
+wincmd w
+argglobal
+if bufexists(fnamemodify("abcd/09_longitudinal_analyses.qmd", ":p")) | buffer abcd/09_longitudinal_analyses.qmd | else | edit abcd/09_longitudinal_analyses.qmd | endif
+if &buftype ==# 'terminal'
+  silent file abcd/09_longitudinal_analyses.qmd
+endif
+setlocal foldmethod=marker
+setlocal foldexpr=0
+setlocal foldmarker={{{,}}}
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldenable
+let s:l = 66 - ((41 * winheight(0) + 27) / 55)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 66
+normal! 023|
+lcd ~/Documents/prash/journal
+wincmd w
+exe 'vert 1resize ' . ((&columns * 119 + 119) / 239)
+exe 'vert 2resize ' . ((&columns * 119 + 119) / 239)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
@@ -48,6 +87,8 @@ endif
 unlet! s:wipebuf
 set winheight=1 winwidth=20
 let &shortmess = s:shortmess_save
+let &winminheight = s:save_winminheight
+let &winminwidth = s:save_winminwidth
 let s:sx = expand("<sfile>:p:r")."x.vim"
 if filereadable(s:sx)
   exe "source " . fnameescape(s:sx)

@@ -44,282 +44,55 @@ read <- function(path) {
 }
 ```
 
-### Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
-
-```{r}
-matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
-
-# Those who exhibited heterogeneity most similar to the baseline mTBI group
-matched_subs <- uids(matched_unij_nearest_esdf)
-matched_subs <- gsub("uid_", "", matched_subs)
-
-# Those who never sustained a head injury prior to T2
-# N = 7678
-long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
-
-# Those who sustained a head injury between 0 and T2
-# N = 220
-long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
-
-# The pool of all baseline uninjured subjects
-# N = 9349
-base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
-
-non_matched_subs <- setdiff(base_unij_subs, matched_subs)
-
-base_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
-```
-
-Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
-Then I calculate the odds ratio and 95% CI of being in the mTBI sample based on being in the matched group.
-
-```{r}
-# Calculation 1: Explicitly looking for people that ended up in mTBI sample
-matched_that_became_mtbi <- sum(matched_subs %in% long_mtbi_subs)
-unmatched_that_became_mtbi <- sum(non_matched_subs %in% long_mtbi_subs)
-matched_that_remained_unij <- sum(!matched_subs %in% long_mtbi_subs)
-unmatched_that_remained_unij <- sum(!non_matched_subs %in% long_mtbi_subs)
-
-odds_ratio <- function(de, he, dn, hn) {
-    numerator <- de / he
-    denominator <- dn / hn
-    or <- numerator / denominator
-    se_log_or <- sqrt(1/de + 1/he + 1/dn + 1/hn)
-    log_or <- log(or)
-    ci_lower <- exp(log_or - 1.96 * se_log_or)
-    ci_upper <- exp(log_or + 1.96 * se_log_or)
-    return(list(
-        or = or,
-        ci_lower = ci_lower,
-        ci_upper = ci_upper
-    ))
-}
-
-# (D)isease = mTBI, (H)ealthy = unij , (E)xposure = match
-# 0.83 [0.36, 1.89]
-odds_ratio(
-    de = matched_that_became_mtbi,
-    he = matched_that_remained_unij,
-    dn = unmatched_that_became_mtbi,
-    hn = unmatched_that_remained_unij
-)
-```
-
-No significant difference in the proportion of matched uninjured subjects to unmatched uninjured subjects that ended up in the longitudinal mTBI group (1.3% vs. 1.6%, uncorrected Chi-squared test p-value = 0.6565).
-
-### Extra: Correlations with membership in longitudinal mTBI sample
-
-Now I'll double check to see if there were any attributes of subjects that were particularly closely associated with membership in the longitudinal mTBI sample.
-
-```{r}
-long_mtbi_0_dl <- all_long_dls$"long_mtbi_0_dls"[[1]]
-
-base_unij_0_dl <- all_dls$"unij_pooled_data_lists"[[1]]
-
-long_unij_0_dl <- base_unij_0_dl |>
-    dlapply(
-        function(x) {
-            x$"data" <- dplyr::filter(x$"data", uid %in% paste0("uid_", long_unij_subs))
-            return(x)
-        }
-    )
-
-long_unij_df <- as.data.frame(long_unij_0_dl)
-long_mtbi_df <- as.data.frame(long_mtbi_0_dl)
-base_unij_df <- as.data.frame(base_unij_0_dl)
-
-long_unij_df$"mtbi" <- 0
-long_mtbi_df$"mtbi" <- 1
-
-long_corr_df <- rbind(long_unij_df, long_mtbi_df)
-
-saveRDS(long_corr_df, proc_path("long_corr_df.rds", TRUE))
-
-long_corr_df <- readRDS(proc_path("2025_05_01_long_corr_df.rds"))
-
-# Correlation matrix examining how correlated each feature is with being assigned to mTBI group
-prepped_long_corr_df <- long_corr_df |>
-    dplyr::select(-uid) |>
-    dummy_cols(
-        select_columns = "race",
-        remove_selected_columns = TRUE,
-        remove_most_frequent_dummy = TRUE
-    )
-
-# Setup parallel plan
-future::plan("multisession")
-kendall_row <- function(i, data) {
-  sapply(i:ncol(data), function(j) cor(data[[i]], data[[j]], method = "kendall"))
-}
-n <- ncol(prepped_long_corr_df)
-kendall_mat <- matrix(NA, n, n)
-colnames(kendall_mat) <- rownames(kendall_mat) <- colnames(prepped_long_corr_df)
-results <- pbapply::pblapply(1:n, function(i) kendall_row(i, prepped_long_corr_df), cl = future::availableCores())
-for (i in 1:n) {
-  kendall_mat[i, i:n] <- results[[i]]
-  kendall_mat[i:n, i] <- results[[i]]
-}
-
-saveRDS(kendall_mat, proc_path("long_corr_mat_kendall.rds", TRUE))
-
-# Setup parallel plan
-spearman_row <- function(i, data) {
-    sapply(i:ncol(data), function(j) cor(data[[i]], data[[j]], method = "spearman"))
-}
-n <- ncol(prepped_long_corr_df)
-spearman_mat <- matrix(NA, n, n)
-colnames(spearman_mat) <- rownames(spearman_mat) <- colnames(prepped_long_corr_df)
-results <- pbapply::pblapply(1:n, function(i) spearman_row(i, prepped_long_corr_df), cl = future::availableCores())
-for (i in 1:n) {
-  spearman_mat[i, i:n] <- results[[i]]
-  spearman_mat[i:n, i] <- results[[i]]
-}
-
-saveRDS(spearman_mat, proc_path("long_corr_mat_spearman.rds", TRUE))
-
-pearson_mat <- cor(prepped_long_corr_df, method = "pearson")
-
-saveRDS(pearson_mat, proc_path("long_corr_mat_pearson.rds", TRUE))
-```
-
-```{r}
-kendall_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_kendall.rds"))
-spearman_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_spearman.rds"))
-pearson_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_pearson.rds"))
-
-kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"]
-spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"]
-pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"]
-
-ComplexHeatmap::Heatmap(kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"])
-
-ComplexHeatmap::Heatmap(spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"])
-
-ComplexHeatmap::Heatmap(pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"])
-
-kendall_mat[names(sort(-abs(kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
-
-
-spearman_mat[names(sort(-abs(spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
-
-pearson_mat[names(sort(-abs(pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
-
-ComplexHeatmap::Heatmap(z3)
-
-z3 <- long_corr_df |>
-    dplyr::select(-uid) |>
-    dummy_cols(
-        select_columns = "race",
-        remove_selected_columns = TRUE,
-        remove_most_frequent_dummy = TRUE
-    ) |>
-    cor(method = "kendll")
-
-# Only looking at correlations
-mtbi_corr_mat <- long_corr_mat[rownames(long_corr_mat) != "mtbi", "mtbi", drop = FALSE]
-
-mtbi_corr_mat |>
-    ComplexHeatmap::Heatmap()
-
-mtbi_corr_mat |>
-    as.data.frame() |>
-    dplyr::arrange(mtbi)
-
-long_corr_df |>
-    ggplot(aes(x = factor(mtbi), y = major_wm_ndi)) +
-    geom_jitter() +
-    theme_bw()
-
-
-long_corr_clean_df <- long_corr_df |>
-    dplyr::select(-uid) |>
-    dummy_cols(
-        select_columns = "race",
-        remove_selected_columns = TRUE,
-        remove_most_frequent_dummy = TRUE
-    )
-
-pvalue_df <- data.frame()
-for (col in colnames(long_corr_clean_df)) {
-    test_results <- cor.test(long_corr_clean_df$"mtbi", long_corr_clean_df[[col]])
-    pval <- test_results$"p.value"
-    est <- test_results$"estimate"
-    l <- test_results$"conf.int"[1]
-    u <- test_results$"conf.int"[2]
-    pvalue_df <- rbind(
-        pvalue_df,
-        data.frame(
-            feature = col,
-            pval = pval,
-            est = est,
-            l = l,
-            u = u
-        )
-    )
-}
-rownames(pvalue_df) <- NULL
-p_values_bonferroni <- p.adjust(pvalue_df$"pval", method = "bonferroni")
-p_values_fdr <- p.adjust(pvalue_df$"pval", method = "fdr")
-pvalue_df$"pval_bon" <- p_values_bonferroni
-pvalue_df$"pval_fdr" <- p_values_fdr
-pvalue_df <- pvalue_df |>
-    dplyr::arrange(pval) |>
-    dplyr::filter(feature != "mtbi") |>
-    dplyr::select(feature, pval, pval_bon, pval_fdr, est, l, u)
-
-write_csv(pvalue_df, proc_path("pvalue_df.csv", TRUE))
-pvalue_df <- read_csv(proc_path("2025_02_16_pvalue_df.csv"))
-```
-
-Quite a few features there that remain significant even after bonferroni correction.
-There certainly seem to be factors that increase a child's risk of sustaining an mTBI.
-These are all taken from the same data collection period as well!
-
-
-
 ## Q1: Was the baseline clustering informative for LT outcomes?
 
 ```{r}
 # Import data
-mtbi_base_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
-all_long_dls <- readRDS(input_path("2025_03_10_all_long_dls.rds"))
-all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
+#mtbi_base_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
+#all_long_dls <- readRDS(input_path("2025_03_10_all_long_dls.rds"))
+#all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
+
+mtbi_ful_df <- readRDS(proc_path("2025_06_11_mtbi_ful_df.rds"))
+all_long_dls_h_ns <- readRDS(proc_path("2025_06_13_all_long_dls_h_ns.rds"))
+all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
 ```
 
 ```{r}
-base_mtbi_l_ols <- all_long_dls$"base_mtbi_l_ols"
-base_mtbi_l_dls <- all_long_dls$"base_mtbi_l_dls"
+names(all_long_dls_h_ns)
+
+mtbi_l_dls <- all_long_dls_h_ns$"mtbi_l_dls"
+mtbi_l_ols <- all_long_dls_h_ns$"mtbi_l_ols"
 
 # Convert list of data lists into list of data frames for plotting
-base_mtbi_l_ol_dfs <- lapply(base_mtbi_l_ols, as.data.frame)
-base_mtbi_l_dl_dfs <- lapply(base_mtbi_l_dls, as.data.frame)
+mtbi_l_dl_dfs <- lapply(mtbi_l_dls, as.data.frame)
+mtbi_l_ol_dfs <- lapply(mtbi_l_ols, as.data.frame)
 
 # Tag each data frame with its originating imputation
-base_mtbi_l_ol_dfs <- lapply(
+mtbi_l_dl_dfs <- lapply(
     1:5,
     function(x) {
-        base_mtbi_l_ol_dfs[[x]]$"imputation" <- x
-        base_mtbi_l_ol_dfs[[x]]
+        mtbi_l_dl_dfs[[x]]$"imputation" <- x
+        mtbi_l_dl_dfs[[x]]
     }
 )
 
-base_mtbi_l_dl_dfs <- lapply(
+mtbi_l_ol_dfs <- lapply(
     1:5,
     function(x) {
-        base_mtbi_l_dl_dfs[[x]]$"imputation" <- x
-        base_mtbi_l_dl_dfs[[x]]
+        mtbi_l_ol_dfs[[x]]$"imputation" <- x
+        mtbi_l_ol_dfs[[x]]
     }
 )
 
 # Horizontally merge list of data frames
-base_mtbi_l_ol_df <- do.call(rbind, base_mtbi_l_ol_dfs)
-base_mtbi_l_dl_df <- do.call(rbind, base_mtbi_l_dl_dfs)
+mtbi_l_ol_df <- do.call(rbind, mtbi_l_ol_dfs)
+mtbi_l_dl_df <- do.call(rbind, mtbi_l_dl_dfs)
 
-mtbi_base_df2 <- mtbi_base_df |>
+mtbi_ful_df2 <- mtbi_ful_df |>
     dplyr::select(uid, cluster, dplyr::everything())
 # Keep track of baseline data before attaching to longitudinal data
-colnames(mtbi_base_df2) <- paste0(colnames(mtbi_base_df2), "_0")
-mtbi_base_df2 <- mtbi_base_df2 |>
+colnames(mtbi_ful_df2) <- paste0(colnames(mtbi_ful_df2), "_0")
+mtbi_ful_df2 <- mtbi_ful_df2 |>
     dplyr::rename(
         "uid" = "uid_0",
         "cluster" = "cluster_0",
@@ -339,12 +112,12 @@ base_mtbi_l_df <- base_mtbi_l_df |>
         "imputation" = "imputation_l"
     )
 mtbi_long_changes <- dplyr::full_join(
-    mtbi_base_df2,
+    mtbi_ful_df2,
     base_mtbi_l_df,
     by = "uid"
 )
 
-original_names <- gsub("_0", "", colnames(mtbi_base_df2)[-c(1:2)])
+original_names <- gsub("_0", "", colnames(mtbi_ful_df2)[-c(1:2)])
 
 original_names <- original_names[!grepl("mtbi", original_names)]
 
@@ -652,7 +425,238 @@ lm_short_fit <- function(df, ft1, ft2) {
 
 Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
 
-### Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
+## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
+
+```{r}
+matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
+
+# Those who exhibited heterogeneity most similar to the baseline mTBI group
+matched_subs <- uids(matched_unij_nearest_esdf)
+matched_subs <- gsub("uid_", "", matched_subs)
+
+# Those who never sustained a head injury prior to T2
+# N = 7678
+long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
+
+# Those who sustained a head injury between 0 and T2
+# N = 220
+long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
+
+# The pool of all baseline uninjured subjects
+# N = 9349
+base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+
+non_matched_subs <- setdiff(base_unij_subs, matched_subs)
+
+base_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+```
+
+Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
+Then I calculate the odds ratio and 95% CI of being in the mTBI sample based on being in the matched group.
+
+```{r}
+# Calculation 1: Explicitly looking for people that ended up in mTBI sample
+matched_that_became_mtbi <- sum(matched_subs %in% long_mtbi_subs)
+unmatched_that_became_mtbi <- sum(non_matched_subs %in% long_mtbi_subs)
+matched_that_remained_unij <- sum(!matched_subs %in% long_mtbi_subs)
+unmatched_that_remained_unij <- sum(!non_matched_subs %in% long_mtbi_subs)
+
+odds_ratio <- function(de, he, dn, hn) {
+    numerator <- de / he
+    denominator <- dn / hn
+    or <- numerator / denominator
+    se_log_or <- sqrt(1/de + 1/he + 1/dn + 1/hn)
+    log_or <- log(or)
+    ci_lower <- exp(log_or - 1.96 * se_log_or)
+    ci_upper <- exp(log_or + 1.96 * se_log_or)
+    return(list(
+        or = or,
+        ci_lower = ci_lower,
+        ci_upper = ci_upper
+    ))
+}
+
+# (D)isease = mTBI, (H)ealthy = unij , (E)xposure = match
+# 0.83 [0.36, 1.89]
+odds_ratio(
+    de = matched_that_became_mtbi,
+    he = matched_that_remained_unij,
+    dn = unmatched_that_became_mtbi,
+    hn = unmatched_that_remained_unij
+)
+```
+
+No significant difference in the proportion of matched uninjured subjects to unmatched uninjured subjects that ended up in the longitudinal mTBI group (1.3% vs. 1.6%, uncorrected Chi-squared test p-value = 0.6565).
+
+### Extra: Correlations with membership in longitudinal mTBI sample
+
+Now I'll double check to see if there were any attributes of subjects that were particularly closely associated with membership in the longitudinal mTBI sample.
+
+```{r}
+long_mtbi_0_dl <- all_long_dls$"long_mtbi_0_dls"[[1]]
+
+base_unij_0_dl <- all_dls$"unij_pooled_data_lists"[[1]]
+
+long_unij_0_dl <- base_unij_0_dl |>
+    dlapply(
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% paste0("uid_", long_unij_subs))
+            return(x)
+        }
+    )
+
+long_unij_df <- as.data.frame(long_unij_0_dl)
+long_mtbi_df <- as.data.frame(long_mtbi_0_dl)
+base_unij_df <- as.data.frame(base_unij_0_dl)
+
+long_unij_df$"mtbi" <- 0
+long_mtbi_df$"mtbi" <- 1
+
+long_corr_df <- rbind(long_unij_df, long_mtbi_df)
+
+saveRDS(long_corr_df, proc_path("long_corr_df.rds", TRUE))
+
+long_corr_df <- readRDS(proc_path("2025_05_01_long_corr_df.rds"))
+
+# Correlation matrix examining how correlated each feature is with being assigned to mTBI group
+prepped_long_corr_df <- long_corr_df |>
+    dplyr::select(-uid) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+
+# Setup parallel plan
+future::plan("multisession")
+kendall_row <- function(i, data) {
+  sapply(i:ncol(data), function(j) cor(data[[i]], data[[j]], method = "kendall"))
+}
+n <- ncol(prepped_long_corr_df)
+kendall_mat <- matrix(NA, n, n)
+colnames(kendall_mat) <- rownames(kendall_mat) <- colnames(prepped_long_corr_df)
+results <- pbapply::pblapply(1:n, function(i) kendall_row(i, prepped_long_corr_df), cl = future::availableCores())
+for (i in 1:n) {
+  kendall_mat[i, i:n] <- results[[i]]
+  kendall_mat[i:n, i] <- results[[i]]
+}
+
+saveRDS(kendall_mat, proc_path("long_corr_mat_kendall.rds", TRUE))
+
+# Setup parallel plan
+spearman_row <- function(i, data) {
+    sapply(i:ncol(data), function(j) cor(data[[i]], data[[j]], method = "spearman"))
+}
+n <- ncol(prepped_long_corr_df)
+spearman_mat <- matrix(NA, n, n)
+colnames(spearman_mat) <- rownames(spearman_mat) <- colnames(prepped_long_corr_df)
+results <- pbapply::pblapply(1:n, function(i) spearman_row(i, prepped_long_corr_df), cl = future::availableCores())
+for (i in 1:n) {
+  spearman_mat[i, i:n] <- results[[i]]
+  spearman_mat[i:n, i] <- results[[i]]
+}
+
+saveRDS(spearman_mat, proc_path("long_corr_mat_spearman.rds", TRUE))
+
+pearson_mat <- cor(prepped_long_corr_df, method = "pearson")
+
+saveRDS(pearson_mat, proc_path("long_corr_mat_pearson.rds", TRUE))
+```
+
+```{r}
+kendall_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_kendall.rds"))
+spearman_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_spearman.rds"))
+pearson_mat <- readRDS(proc_path("2025_05_01_long_corr_mat_pearson.rds"))
+
+kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"]
+spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"]
+pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"]
+
+ComplexHeatmap::Heatmap(kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"])
+
+ComplexHeatmap::Heatmap(spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"])
+
+ComplexHeatmap::Heatmap(pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"])
+
+kendall_mat[names(sort(-abs(kendall_mat[setdiff(rownames(kendall_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
+
+
+spearman_mat[names(sort(-abs(spearman_mat[setdiff(rownames(spearman_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
+
+pearson_mat[names(sort(-abs(pearson_mat[setdiff(rownames(pearson_mat), "mtbi"), "mtbi"]))), "mtbi"] |> ComplexHeatmap::Heatmap(cluster_rows = FALSE)
+
+ComplexHeatmap::Heatmap(z3)
+
+z3 <- long_corr_df |>
+    dplyr::select(-uid) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    ) |>
+    cor(method = "kendll")
+
+# Only looking at correlations
+mtbi_corr_mat <- long_corr_mat[rownames(long_corr_mat) != "mtbi", "mtbi", drop = FALSE]
+
+mtbi_corr_mat |>
+    ComplexHeatmap::Heatmap()
+
+mtbi_corr_mat |>
+    as.data.frame() |>
+    dplyr::arrange(mtbi)
+
+long_corr_df |>
+    ggplot(aes(x = factor(mtbi), y = major_wm_ndi)) +
+    geom_jitter() +
+    theme_bw()
+
+
+long_corr_clean_df <- long_corr_df |>
+    dplyr::select(-uid) |>
+    dummy_cols(
+        select_columns = "race",
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+
+pvalue_df <- data.frame()
+for (col in colnames(long_corr_clean_df)) {
+    test_results <- cor.test(long_corr_clean_df$"mtbi", long_corr_clean_df[[col]])
+    pval <- test_results$"p.value"
+    est <- test_results$"estimate"
+    l <- test_results$"conf.int"[1]
+    u <- test_results$"conf.int"[2]
+    pvalue_df <- rbind(
+        pvalue_df,
+        data.frame(
+            feature = col,
+            pval = pval,
+            est = est,
+            l = l,
+            u = u
+        )
+    )
+}
+rownames(pvalue_df) <- NULL
+p_values_bonferroni <- p.adjust(pvalue_df$"pval", method = "bonferroni")
+p_values_fdr <- p.adjust(pvalue_df$"pval", method = "fdr")
+pvalue_df$"pval_bon" <- p_values_bonferroni
+pvalue_df$"pval_fdr" <- p_values_fdr
+pvalue_df <- pvalue_df |>
+    dplyr::arrange(pval) |>
+    dplyr::filter(feature != "mtbi") |>
+    dplyr::select(feature, pval, pval_bon, pval_fdr, est, l, u)
+
+write_csv(pvalue_df, proc_path("pvalue_df.csv", TRUE))
+pvalue_df <- read_csv(proc_path("2025_02_16_pvalue_df.csv"))
+```
+
+Quite a few features there that remain significant even after bonferroni correction.
+There certainly seem to be factors that increase a child's risk of sustaining an mTBI.
+These are all taken from the same data collection period as well!
+
+## Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative?
 
 Can perhaps skip this and just make use of the classifier.
 
@@ -1031,7 +1035,7 @@ save_heatmap(
 Neither option resulted in particularly similar cluster solution to the original mTBI sample.
 Suggests that there may be something unique to the kids who had their injury at a much earlier timepoint.
 
-### Q4. Classifier built from baseline mTBI data: informative?
+## Q4. Classifier built from baseline mTBI data: informative?
 
 Assigning predicted clusters to the following 5 groups:
 

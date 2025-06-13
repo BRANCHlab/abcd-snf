@@ -1622,7 +1622,22 @@ rownames(mtbi_gen_fts_table) <- mtbi_gen_fts_table$"feature"
 
 mtbi_gen_fts_table
 
-mtbi_gen_fts_table_hits <- mtbi_gen_fts_table[afts, ] |>
+
+afts_dummy <- afts
+afts_dummy <- append(afts_dummy, "race_black", after = 18)
+afts_dummy <- append(afts_dummy, "race_hispanic", after = 18)
+afts_dummy <- append(afts_dummy, "race_other", after = 18)
+afts_dummy <- append(afts_dummy, "race_white", after = 18)
+afts_dummy <- append(afts_dummy, "mtbi_mechanism_fall_hit", after = 65)
+afts_dummy <- append(afts_dummy, "mtbi_mechanism_hosp_er", after = 65)
+afts_dummy <- append(afts_dummy, "mtbi_mechanism_multi", after = 65)
+afts_dummy <- append(afts_dummy, "mtbi_mechanism_other_loc", after = 65)
+afts_dummy <- append(afts_dummy, "mtbi_mechanism_vehicle", after = 65)
+afts_dummy <- append(afts_dummy, "mtbi_mechanism_violent", after = 65)
+afts_dummy <- afts_dummy[-c(18, 65)]
+afts_dummy
+
+mtbi_gen_fts_table_hits <- mtbi_gen_fts_table[afts_dummy, ] |>
     dplyr::filter(
         c1v2 %in% c(">", "<") | c1v3 %in% c(">", "<") | c2v3 %in% c(">", "<")
     )
@@ -1632,7 +1647,7 @@ write_csv(mtbi_gen_fts_table_hits, proc_path("mtbi_gen_fts_table_hits.csv", TRUE
 ```
 
 ```{r}
-mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_06_11_mtbi_gen_fts_table_hits.csv"))
+mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits.csv"))
 
 mtbi_gen_fts_table_hits
 
@@ -1645,7 +1660,7 @@ mtbi_gen_fts_table_hits_t <- mtbi_gen_fts_table_hits |>
 
 write_csv(mtbi_gen_fts_table_hits_t, proc_path("mtbi_gen_fts_table_hits_t.csv", TRUE))
 
-mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_11_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
 
 mtbi_gen_fts_table_hits_t |>
     knitr::kable(format = "markdown", align = "lccc") |>
