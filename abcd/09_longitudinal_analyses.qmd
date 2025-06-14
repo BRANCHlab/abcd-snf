@@ -87,11 +87,19 @@ mtbi_l_ol_dfs <- lapply(
 # Horizontally merge list of data frames
 mtbi_l_ol_df <- do.call(rbind, mtbi_l_ol_dfs)
 mtbi_l_dl_df <- do.call(rbind, mtbi_l_dl_dfs)
+mtbi_l_df <- dplyr::full_join(
+    mtbi_l_ol_df,
+    mtbi_l_dl_df,
+    by = c("uid", "imputation")
+)
 
-mtbi_ful_df2 <- mtbi_ful_df |>
-    dplyr::select(uid, cluster, dplyr::everything())
+mtbi_l_wt2_ns <- intersect(unique(mtbi_l_df$"uid"), mtbi_ful_df2$"uid")
+mtbi_l_wt2_ns
+
+
 # Keep track of baseline data before attaching to longitudinal data
 colnames(mtbi_ful_df2) <- paste0(colnames(mtbi_ful_df2), "_0")
+
 mtbi_ful_df2 <- mtbi_ful_df2 |>
     dplyr::rename(
         "uid" = "uid_0",
@@ -99,34 +107,32 @@ mtbi_ful_df2 <- mtbi_ful_df2 |>
         "sex" = "sex_0",
         "race" = "race_0"
     )
-
-base_mtbi_l_df <- dplyr::full_join(
-    base_mtbi_l_ol_df,
-    base_mtbi_l_dl_df,
-    by = c("uid", "imputation")
-)
-colnames(base_mtbi_l_df) <- paste0(colnames(base_mtbi_l_df), "_l")
-base_mtbi_l_df <- base_mtbi_l_df |>
+colnames(mtbi_l_df) <- paste0(colnames(mtbi_l_df), "_l")
+mtbi_l_df <- mtbi_l_df |>
     dplyr::rename(
         "uid" = "uid_l",
         "imputation" = "imputation_l"
     )
+
+mtbi_ful_df2 <- dplyr::filter(
+     mtbi_ful_df2,
+     uid %in% mtbi_l_wt2_ns
+)
+mtbi_l_df <- dplyr::filter(
+     mtbi_l_df,
+     uid %in% mtbi_l_wt2_ns
+)
+
 mtbi_long_changes <- dplyr::full_join(
     mtbi_ful_df2,
-    base_mtbi_l_df,
+    mtbi_l_df,
     by = "uid"
 )
 
 original_names <- gsub("_0", "", colnames(mtbi_ful_df2)[-c(1:2)])
-
 original_names <- original_names[!grepl("mtbi", original_names)]
-
 replace_names <- original_names[!grepl("race", original_names)]
-
 replace_names <- replace_names[!grepl("sex", replace_names)]
-
-mtbi_long_changes |> colnames()
-
 for (name in replace_names) {
     print(name)
     long_val <- mtbi_long_changes[[paste0(name, "_l")]]
@@ -136,7 +142,7 @@ for (name in replace_names) {
 mtbi_long_changes$"cluster" <- as.factor(mtbi_long_changes$"cluster")
 
 saveRDS(mtbi_long_changes, proc_path("mtbi_long_changes.rds", TRUE))
-mtbi_long_changes <- readRDS(proc_path("2025_03_25_mtbi_long_changes.rds"))
+mtbi_long_changes <- readRDS(proc_path("2025_06_13_mtbi_long_changes.rds"))
 ```
 
 ```{r}
@@ -181,34 +187,35 @@ gg_long_cor <- function(df, feature, long = TRUE) {
     return(plot)
 }
 
-
-pubertal_status_y_plot <- gg_long_cor(mtbi_long_changes, "pubertal_status_y")
-household_income_plot <- gg_long_cor(mtbi_long_changes, "household_income")
-extracurriculars_plot <- gg_long_cor(mtbi_long_changes, "extracurriculars")
-parent_perstr_plot <- gg_long_cor(mtbi_long_changes, "parent_perstr")
-activities_last_year_plot <- gg_long_cor(mtbi_long_changes, "activities_last_year")
-considerate_y_plot <- gg_long_cor(mtbi_long_changes, "considerate_y")
-# looks kind of like an interaction?
-school_activities_plot <- gg_long_cor(mtbi_long_changes, "school_activities")
-weekend_screentime_plot <- gg_long_cor(mtbi_long_changes, "weekend_screentime")
-family_throw_y_plot <- gg_long_cor(mtbi_long_changes, "family_throw_y")
-
-significant_long_cor_plot <- pubertal_status_y_plot +
-household_income_plot +
-extracurriculars_plot +
-parent_perstr_plot +
-activities_last_year_plot +
-considerate_y_plot +
-school_activities_plot +
-weekend_screentime_plot +
-family_throw_y_plot
-
-ggsave(
-    fig_path("significant_long_cor_plot.png", TRUE),
-    significant_long_cor_plot,
-    width = 15,
-    height = 10
-)
+#pubertal_status_y_plot <- gg_long_cor(mtbi_long_changes, "pubertal_status_y")
+#household_income_plot <- gg_long_cor(mtbi_long_changes, "household_income")
+#extracurriculars_plot <- gg_long_cor(mtbi_long_changes, "extracurriculars")
+#parent_perstr_plot <- gg_long_cor(mtbi_long_changes, "parent_perstr")
+#activities_last_year_plot <- gg_long_cor(mtbi_long_changes, "activities_last_year")
+#considerate_y_plot <- gg_long_cor(mtbi_long_changes, "considerate_y")
+## looks kind of like an interaction?
+#school_activities_plot <- gg_long_cor(mtbi_long_changes, "school_activities")
+#weekend_screentime_plot <- gg_long_cor(mtbi_long_changes, "weekend_screentime")
+#family_throw_y_plot <- gg_long_cor(mtbi_long_changes, "family_throw_y")
+#
+#significant_long_cor_plot <- pubertal_status_y_plot +
+#household_income_plot +
+#extracurriculars_plot +
+#parent_perstr_plot +
+#activities_last_year_plot +
+#considerate_y_plot +
+#school_activities_plot +
+#weekend_screentime_plot +
+#family_throw_y_plot
+#
+#significant_long_cor_plot
+#
+#ggsave(
+#    fig_path("significant_long_cor_plot.png", TRUE),
+#    significant_long_cor_plot,
+#    width = 15,
+#    height = 10
+#)
 
 cbcl_anxdep_plot <- gg_long_cor(mtbi_long_changes, "cbcl_anxdep", 0)
 cbcl_withdep_plot <- gg_long_cor(mtbi_long_changes, "cbcl_withdep", 0)
@@ -220,19 +227,25 @@ cbcl_rulebreak_plot <- gg_long_cor(mtbi_long_changes, "cbcl_rulebreak", 0)
 cbcl_aggressive_plot <- gg_long_cor(mtbi_long_changes, "cbcl_aggressive", 0)
 sds_sleep_plot <- gg_long_cor(mtbi_long_changes, "sds_sleep", 0)
 
-outcome_long_cor_plot <- cbcl_anxdep_plot +
-cbcl_withdep_plot +
-cbcl_somatic_plot +
-cbcl_social_plot +
-cbcl_thought_plot +
-cbcl_attention_plot +
-cbcl_rulebreak_plot +
-cbcl_aggressive_plot +
-sds_sleep_plot
+outcome_long_cor_plots <- wrap_plots(
+    list(
+        cbcl_anxdep_plot,
+        cbcl_withdep_plot,
+        cbcl_somatic_plot,
+        cbcl_social_plot,
+        cbcl_thought_plot,
+        cbcl_attention_plot,
+        cbcl_rulebreak_plot,
+        cbcl_aggressive_plot,
+        sds_sleep_plot
+    )
+)
+
+outcome_long_cor_plots
 
 ggsave(
-    fig_path("outcome_long_cor_plot.png", TRUE),
-    outcome_long_cor_plot,
+    fig_path("outcome_long_cor_plots.png", TRUE),
+    outcome_long_cor_plots,
     width = 15,
     height = 10
 )
@@ -245,21 +258,28 @@ cbcl_thought_plot2 <- gg_long_cor(mtbi_long_changes, "cbcl_thought")
 cbcl_attention_plot2 <- gg_long_cor(mtbi_long_changes, "cbcl_attention")
 cbcl_rulebreak_plot2 <- gg_long_cor(mtbi_long_changes, "cbcl_rulebreak")
 cbcl_aggressive_plot2 <- gg_long_cor(mtbi_long_changes, "cbcl_aggressive")
+
 sds_sleep_plot2 <- gg_long_cor(mtbi_long_changes, "sds_sleep")
 
-outcome_long_cor_plot2 <- cbcl_anxdep_plot2 +
-cbcl_withdep_plot2 +
-cbcl_somatic_plot2 +
-cbcl_social_plot2 +
-cbcl_thought_plot2 +
-cbcl_attention_plot2 +
-cbcl_rulebreak_plot2 +
-cbcl_aggressive_plot2 +
-sds_sleep_plot2
+outcome_long_cor_plots_2 <- wrap_plots(
+    list(
+        cbcl_anxdep_plot2,
+        cbcl_withdep_plot2,
+        cbcl_somatic_plot2,
+        cbcl_social_plot2,
+        cbcl_thought_plot2,
+        cbcl_attention_plot2,
+        cbcl_rulebreak_plot2,
+        cbcl_aggressive_plot2,
+        sds_sleep_plot2
+    )
+)
+
+outcome_long_cor_plots_2
 
 ggsave(
-    fig_path("outcome_long_cor_plot2.png", TRUE),
-    outcome_long_cor_plot2,
+    fig_path("outcome_long_cor_plots_2.png", TRUE),
+    outcome_long_cor_plots_2,
     width = 15,
     height = 10
 )
@@ -380,47 +400,59 @@ pval_df |>
     dplyr::mutate(padj = format(padj, scientific = FALSE, digits = 2)) |>
     dplyr::arrange(padj)
 
-
-
-gg_long_cor(mtbi_long_changes, "parent_perstr")
-
-gg_long_cor(mtbi_long_changes, "pubertal_status_y", 0)
-
-cor_mat
-
 # None are significant
-lm_long_fit(mtbi_long_changes, "cbcl_anxdep")
+cbcl_anxdep_p <- lm_long_fit(mtbi_long_changes, "cbcl_anxdep")
+cbcl_withdep_p <- lm_long_fit(mtbi_long_changes, "cbcl_withdep")
+cbcl_somatic_p <- lm_long_fit(mtbi_long_changes, "cbcl_somatic")
+cbcl_social_p <- lm_long_fit(mtbi_long_changes, "cbcl_social")
+cbcl_thought_p <- lm_long_fit(mtbi_long_changes, "cbcl_thought")
+cbcl_attention_p <- lm_long_fit(mtbi_long_changes, "cbcl_attention")
+cbcl_rulebreak_p <- lm_long_fit(mtbi_long_changes, "cbcl_rulebreak")
+cbcl_aggressive_p <- lm_long_fit(mtbi_long_changes, "cbcl_aggressive")
+sds_sleep_p <- lm_long_fit(mtbi_long_changes, "sds_sleep")
 
-lm_long_fit(mtbi_long_changes, "cbcl_withdep")
+p_list <- list(
+    "cbcl_anxdep" = cbcl_anxdep_p,
+    "cbcl_withdep" = cbcl_withdep_p,
+    "cbcl_somatic" = cbcl_somatic_p,
+    "cbcl_social" = cbcl_social_p,
+    "cbcl_thought" = cbcl_thought_p,
+    "cbcl_attention" = cbcl_attention_p,
+    "cbcl_rulebreak" = cbcl_rulebreak_p,
+    "cbcl_aggressive" = cbcl_aggressive_p,
+    "sds_sleep" = sds_sleep_p
+)
 
-lm_long_fit(mtbi_long_changes, "cbcl_somatic")
+sds_sleep_p
 
-lm_long_fit(mtbi_long_changes, "cbcl_social")
+p_list_short <- lapply(
+    names(p_list),
+    function(x) {
+        p_list[[x]] <- dplyr::select(p_list[[x]], term, p.value)
+        colnames(p_list[[x]]) <- c("term", x)
+        p_list[[x]][3:4, ]
+    }
+)
+p_df <- as.data.frame(t(merge_df_list(p_list_short, uid = "term")))
+p_df$"term" <- rownames(p_df)
+rownames(p_df) <- NULL
+p_df <- p_df[-1, ]
+colnames(p_df) <- c("cluster_2_p", "cluster_3_p", "term")
+p_df <- dplyr::select(p_df, term, everything())
+p_df$"cluster_2_p" <- as.numeric(p_df$"cluster_2_p")
+p_df$"cluster_3_p" <- as.numeric(p_df$"cluster_3_p")
+p_df |>
+    knitr::kable(format = "markdown", digits = 2) |>
+    writeLines(proc_path("p_values_of_cluster.txt", TRUE))
 
-lm_long_fit(mtbi_long_changes, "cbcl_thought")
-
-lm_long_fit(mtbi_long_changes, "cbcl_attention")
-
-lm_long_fit(mtbi_long_changes, "cbcl_rulebreak")
-
-lm_long_fit(mtbi_long_changes, "cbcl_aggressive")
-
-lm_long_fit(mtbi_long_changes, "sds_sleep")
-
-colnames(mtbi_long_changes)
-
-# Checking just in baseline now...
-lm_short_fit <- function(df, ft1, ft2) {
-    models <- list(
-      lm(as.formula(paste0(feature, "_0 ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 1)),
-      lm(as.formula(paste0(feature, "_0 ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 2)),
-      lm(as.formula(paste0(feature, "_0 ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 3)),
-      lm(as.formula(paste0(feature, "_0 ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 4)),
-      lm(as.formula(paste0(feature, "_0 ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 5))
-    )
-    pooled_results <- pool(as.mira(models))
-    return(summary(pooled_results))
+# An LRT-based approach
+lm_long_lrt_fit <- function(df, feature) {
+    base_model <- lm(as.formula(paste0(feature, "_l ~ ", feature, "_0")), data = filter(df, imputation == 1))
+    full_model <- lm(as.formula(paste0(feature, "_l ~ ", feature, "_0 + factor(cluster)")), data = filter(df, imputation == 1))
+    return(anova(base_model, full_model))
 }
+
+lm_long_lrt_fit(mtbi_long_changes, "cbcl_anxdep")
 ```
 
 Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
@@ -1133,7 +1165,7 @@ classifier_ft_dl_dfs <- lapply(
 )
 ```
 
-In earlier chapters, some longitudinal data was reprocessed (date stamp 2025-03-10) to account for a previous extraction error in dMRI longitudinal data. 
+In earlier chapters, some longitudinal data was reprocessed (date stamp 2025-03-10) to account for a previous extraction error in dMRI longitudinal data.
 That error does not impact the `temporal_df2` object, which was built from directly extracted (no imputed) data in chapter 7.
 
 ```{r}
@@ -1173,7 +1205,7 @@ temporal_2_df$"uid" <- gsub("uid_", "", temporal_2_df$"uid")
 
 # Remove the UID column
 temporal_cols <- colnames(temporal_0_df)
-                
+
 "long_mtbi_0_dl_df" = long_mtbi_0_dl_df,
 "long_mtbi_l_dl_df" = long_mtbi_l_dl_df,
 "base_unij_0_dl_df" = base_unij_0_dl_df,
