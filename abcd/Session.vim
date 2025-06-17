@@ -13,11 +13,17 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +1005 06_baseline_mtbi_snf.qmd
+badd +53 09_longitudinal_analyses.qmd
+badd +3 ~/Documents/prash/time/time.csv
+badd +400 04_baseline_mtbi_snf.qmd
+badd +1 helper_functions.R
+badd +99 ~/Documents/prash/journal/prash.md
+badd +162 11_sample_size_check.qmd
+badd +12 02_baseline_preprocessing.qmd
 argglobal
 %argdel
-$argadd 06_baseline_mtbi_snf.qmd
-edit 06_baseline_mtbi_snf.qmd
+$argadd 09_longitudinal_analyses.qmd
+edit 04_baseline_mtbi_snf.qmd
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
@@ -34,9 +40,10 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe '1resize ' . ((&lines * 33 + 34) / 68)
-exe '2resize ' . ((&lines * 32 + 34) / 68)
+exe '1resize ' . ((&lines * 27 + 28) / 56)
+exe '2resize ' . ((&lines * 27 + 28) / 56)
 argglobal
+balt helper_functions.R
 setlocal foldmethod=marker
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -45,18 +52,20 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 64 - ((23 * winheight(0) + 16) / 33)
+let s:l = 393 - ((8 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 64
+keepjumps 393
 normal! 0
+lcd ~/Documents/prash/journal
 wincmd w
 argglobal
-if bufexists(fnamemodify("06_baseline_mtbi_snf.qmd", ":p")) | buffer 06_baseline_mtbi_snf.qmd | else | edit 06_baseline_mtbi_snf.qmd | endif
+if bufexists(fnamemodify("~/Documents/abcd-snf/abcd/11_sample_size_check.qmd", ":p")) | buffer ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd | else | edit ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd | endif
 if &buftype ==# 'terminal'
-  silent file 06_baseline_mtbi_snf.qmd
+  silent file ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd
 endif
+balt ~/Documents/abcd-snf/abcd/02_baseline_preprocessing.qmd
 setlocal foldmethod=marker
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -65,15 +74,16 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 1005 - ((16 * winheight(0) + 16) / 32)
+let s:l = 163 - ((14 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 1005
-normal! 0
+keepjumps 163
+normal! 018|
 wincmd w
-exe '1resize ' . ((&lines * 33 + 34) / 68)
-exe '2resize ' . ((&lines * 32 + 34) / 68)
+2wincmd w
+exe '1resize ' . ((&lines * 27 + 28) / 56)
+exe '2resize ' . ((&lines * 27 + 28) / 56)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf

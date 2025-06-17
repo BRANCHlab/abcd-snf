@@ -1,0 +1,378 @@
+Is the reason why the baseline concussion solution was not easily findable in the pre/post injured data because of a sample size difference?
+
+```{r}
+library(abcdutils)
+library(here)
+library(dplyr)
+library(readr)
+library(metasnf)
+library(fastDummies)
+library(patchwork)
+library(tidyr)
+library(ggplot2)
+
+#source("abcd/helper_functions.R")
+
+input_path <- path_maker(here("data/abcd/inputs"))
+core_path <- path_maker(here("data/abcd/core"))
+sub_path <- path_maker(here("data/abcd/subjects"))
+fig_path <- path_maker(here("data/abcd/results/figures"))
+proc_path <- path_maker(here("data/abcd/results/processed"))
+```
+
+
+```{r}
+
+mtbi_config <- readRDS(proc_path("2025_06_11_mtbi_config.rds"))
+all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
+
+batch_uid_replace <- function(list_of_dls, uids) {
+    list_of_dls_new <- lapply(
+        list_of_dls,
+        function(dl) {
+            new_dl <- dlapply(
+                dl,
+                function(x) {
+                    x$"data" <- x$"data"[x$"data"$"uid" %in% uids, ]
+                    return(x)
+                }
+            )
+            return(new_dl)
+        }
+    )
+    return(list_of_dls_new)
+}
+
+
+set.seed(1234)
+reduced_sample <- sample(uids(all_dls_h_ns$"mtbi_der_u_dls"[[1]]))[1:218]
+
+saveRDS(reduced_sample, proc_path("reduced_sample.rds", TRUE))
+
+reduced_sample <- readRDS(proc_path("2025_06_17_reduced_sample.rds"))
+
+reduced_dls <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_dls"]], reduced_sample)
+reduced_ols <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_ols"]], reduced_sample)
+
+reduced_dls[[1]]
+
+reduced_sol_df_1 <- progressr::with_progress({
+    batch_snf(
+        dl = reduced_dls[[1]],
+        sc = mtbi_config,
+        processes = "max"
+    )
+})
+saveRDS(reduced_sol_df_1, proc_path("reduced_sol_df_1.rds", TRUE))
+reduced_sol_df_2 <- progressr::with_progress({
+    batch_snf(
+        dl = reduced_dls[[2]],
+        sc = mtbi_config,
+        processes = "max"
+    )
+})
+saveRDS(reduced_sol_df_2, proc_path("reduced_sol_df_2.rds", TRUE))
+
+reduced_sol_df_3 <- progressr::with_progress({
+    batch_snf(
+        dl = reduced_dls[[3]],
+        sc = mtbi_config,
+        processes = "max"
+    )
+})
+saveRDS(reduced_sol_df_3, proc_path("reduced_sol_df_3.rds", TRUE))
+reduced_sol_df_4 <- progressr::with_progress({
+    batch_snf(
+        dl = reduced_dls[[4]],
+        sc = mtbi_config,
+        processes = "max"
+    )
+})
+saveRDS(reduced_sol_df_4, proc_path("reduced_sol_df_4.rds", TRUE))
+reduced_sol_df_5 <- progressr::with_progress({
+    batch_snf(
+        dl = reduced_dls[[5]],
+        sc = mtbi_config,
+        processes = "max"
+    )
+})
+saveRDS(reduced_sol_df_5, proc_path("reduced_sol_df_5.rds", TRUE))
+```
+
+```{r}
+reduced_sol_df_1 <- readRDS(proc_path("2025_06_17_reduced_sol_df_1.rds"))
+reduced_sol_df_2 <- readRDS(proc_path("2025_06_17_reduced_sol_df_2.rds"))
+reduced_sol_df_3 <- readRDS(proc_path("2025_06_17_reduced_sol_df_3.rds"))
+reduced_sol_df_4 <- readRDS(proc_path("2025_06_17_reduced_sol_df_4.rds"))
+reduced_sol_df_5 <- readRDS(proc_path("2025_06_17_reduced_sol_df_5.rds"))
+
+reduced_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            reduced_sol_df_1,
+            reduced_sol_df_2,
+            reduced_sol_df_3,
+            reduced_sol_df_4,
+            reduced_sol_df_5
+        ),
+        list(reset_indices = TRUE)
+    )
+)
+
+saveRDS(reduced_sol_df, proc_path("2025_06_17_reduced_sol_df.rds"))
+
+reduced_sol_df <- readRDS(proc_path("2025_06_17_reduced_sol_df.rds"))
+
+reduced_ari <- calc_aris(reduced_sol_df, processes = "max")
+
+saveRDS(reduced_ari, proc_path("2025_06_17_reduced_ari.rds"))
+
+reduced_ari <- readRDS(proc_path("2025_06_17_reduced_ari.rds"))
+
+reduced_ari_order <- get_matrix_order(reduced_ari)
+
+reduced_esdf_1 <- extend_solutions(
+    reduced_sol_df_1,
+    dl = reduced_dls[[1]], 
+    target_dl = reduced_ols[[1]]
+)
+
+saveRDS(reduced_esdf_1, proc_path("reduced_esdf_1.rds", TRUE))
+reduced_esdf_2 <- extend_solutions(
+    reduced_sol_df_2,
+    dl = reduced_dls[[2]], 
+    target_dl = reduced_ols[[2]]
+)
+saveRDS(reduced_esdf_2, proc_path("reduced_esdf_2.rds", TRUE))
+reduced_esdf_3 <- extend_solutions(
+    reduced_sol_df_3,
+    dl = reduced_dls[[3]], 
+    target_dl = reduced_ols[[3]]
+)
+saveRDS(reduced_esdf_3, proc_path("reduced_esdf_3.rds", TRUE))
+reduced_esdf_4 <- extend_solutions(
+    reduced_sol_df_4,
+    dl = reduced_dls[[4]], 
+    target_dl = reduced_ols[[4]]
+)
+saveRDS(reduced_esdf_4, proc_path("reduced_esdf_4.rds", TRUE))
+reduced_esdf_5 <- extend_solutions(
+    reduced_sol_df_5,
+    dl = reduced_dls[[5]], 
+    target_dl = reduced_ols[[5]]
+)
+saveRDS(reduced_esdf_5, proc_path("reduced_esdf_5.rds", TRUE))
+
+```
+
+```{r}
+
+reduced_esdf_1 <- readRDS(proc_path("2025_06_17_reduced_esdf_1.rds"))
+reduced_esdf_2 <- readRDS(proc_path("2025_06_17_reduced_esdf_2.rds"))
+reduced_esdf_3 <- readRDS(proc_path("2025_06_17_reduced_esdf_3.rds"))
+reduced_esdf_4 <- readRDS(proc_path("2025_06_17_reduced_esdf_4.rds"))
+reduced_esdf_5 <- readRDS(proc_path("2025_06_17_reduced_esdf_5.rds"))
+
+reduced_ext_sol_df <- do.call(
+    "rbind",
+    c(
+        list(
+            reduced_esdf_1,
+            reduced_esdf_2,
+            reduced_esdf_3,
+            reduced_esdf_4,
+            reduced_esdf_5
+        ),
+        list(reset_indices = TRUE)
+    )
+)
+
+reduced_esdf <- do.call(
+    "rbind",
+    c(
+        list(
+            reduced_esdf_1,
+            reduced_esdf_2,
+            reduced_esdf_3,
+            reduced_esdf_4,
+            reduced_esdf_5
+        ),
+        list(reset_indices = TRUE)
+    )
+) |> as.data.frame()
+
+saveRDS(reduced_esdf, proc_path("2025_06_17_reduced_esdf.rds"))
+
+reduced_esdf <- readRDS(proc_path("2025_06_17_reduced_esdf.rds"))
+
+reduced_esdf
+
+reduced_esdf$"impairment_separation" <- -log10(reduced_esdf$"mean_pval")
+
+split_vector <- c(
+    407,
+    568,
+    584,
+    620,
+    714
+)
+reduced_ari_hm <- meta_cluster_heatmap(
+    x = reduced_ari,
+    order = reduced_ari_order,
+    data = reduced_esdf,
+    split_vector = split_vector,
+    top_hm = list(
+        "Impairment Separation" = "impairment_separation"
+    ),
+    top_bar = list(
+        "Number of Clusters" = "nclust"
+    ),
+    annotation_colours = list(
+        "Impairment Separation" = colour_scale(
+            reduced_esdf$"impairment_separation",
+            min_colour = "gray7",
+            max_colour = "limegreen"
+        )
+    )
+)
+
+save_heatmap(
+    heatmap = reduced_ari_hm,
+    path = fig_path("reduced_ari_hm.png", TRUE),
+    width = 750,
+    height = 500,
+    res = 100
+)
+
+
+reduced_mc_df <- label_meta_clusters(
+    reduced_ext_sol_df,
+    order = reduced_ari_order,
+    split_vector = split_vector
+)
+
+reduced_mc_df
+
+reduced_rep_solutions <- get_representative_solutions(
+    reduced_ari,
+    reduced_mc_df
+)
+
+reduced_rep_solutions
+
+top_reduced_solution <- reduced_rep_solutions[reduced_rep_solutions$"mc" == "B", ]
+
+# In anticipation of the upcoming cluster swaps
+cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
+    swapped_sm <- dplyr::mutate(
+        solutions_matrix,
+        across(
+            dplyr::starts_with("uid"),
+            ~ ifelse(
+                . == c_a,
+                c_b,
+                ifelse(
+                    . == c_b,
+                    c_a,
+                    .
+                )
+            )
+        )
+    )
+    return(swapped_sm)
+}
+
+top_reduced_solution <- cluster_label_swap(top_reduced_solution, 1, 2)
+
+saveRDS(top_reduced_solution, proc_path("2025_06_17_top_reduced_solution.rds"))
+top_reduced_solution <- readRDS(proc_path("2025_06_17_top_reduced_solution.rds"))
+
+reduced_pl <- auto_plot(
+    sol_df_row = top_reduced_solution,
+    dl = c(
+        reduced_dls[[1]],
+        reduced_ols[[1]]
+    ),
+    verbose = TRUE,
+)
+
+reduced_pl$"household_income"
+
+reduced_cluster_df <- auto_plot(
+    sol_df_row = top_reduced_solution,
+    dl = c(
+        reduced_dls[[1]],
+        reduced_ols[[1]]
+    ),
+    verbose = TRUE,
+    return_plots = FALSE
+) |> tibble()
+
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
+
+reduced_conc <- concordance_w_mtbi(reduced_cluster_df, iters = 1000, procs = 5)
+saveRDS(reduced_conc, proc_path("2025_06_17_reduced_conc.rds"))
+reduced_conc <- readRDS(proc_path("2025_06_17_reduced_conc.rds"))
+
+# 85.6
+mean(na.omit(reduced_conc))
+
+# 80.3, 90.5
+quantile(reduced_conc, probs = c(0.025, 0.975), na.rm = TRUE)
+```
+
+The inability to find these clusters in the longitudinal sample is NOT a sample size artifact.
+
+```{r}
+lmtb_0_data_df <- readRDS(proc_path("2025_06_17_lmtb_0_data_df.rds"))
+lmtb_l_data_df <- readRDS(proc_path("2025_06_17_lmtb_l_data_df.rds"))
+
+# Test style:
+set.seed(42)
+start <- Sys.time()
+progressr::with_progress({
+    reduced_vs_lmtb_0_test <- concordance_w_mtbi_test(
+        df1 = reduced_cluster_df, df2 = lmtb_0_data_df, iters = 1000, procs = 5
+    )
+})
+print(Sys.time() - start)
+saveRDS(reduced_vs_lmtb_0_test, proc_path("reduced_vs_lmtb_0_test.rds", TRUE))
+
+# [-0.16, 0.0073] - just barely not significant
+quantile(reduced_vs_lmtb_0_test, probs = c(0.025, 0.975), na.rm = TRUE)
+
+set.seed(42)
+start <- Sys.time()
+progressr::with_progress({
+    reduced_vs_lmtb_l_test <- concordance_w_mtbi_test(
+        df1 = reduced_cluster_df, df2 = lmtb_l_data_df, iters = 1000, procs = 5
+    )
+})
+print(Sys.time() - start)
+saveRDS(reduced_vs_lmtb_l_test, proc_path("reduced_vs_lmtb_l_test.rds", TRUE))
+
+# [-0.146, 0.029] - not significant
+quantile(reduced_vs_lmtb_l_test, probs = c(0.025, 0.975), na.rm = TRUE)
+```
+
+
+```{r}
+afts
+
+reduced_pl$"household_income"
+
+names(reduced_pl)
+
+reduced_pl_wrapped <- wrap_plots(reduced_pl[afts])
+
+# Demonstration that the three cluster solution in N = 218 is possible
+ggsave(
+    fig_path("reduced_pl_wrapped.png", TRUE),
+    reduced_pl_wrapped,
+    width = 45,
+    height = 25,
+    dpi = 50
+)
+```

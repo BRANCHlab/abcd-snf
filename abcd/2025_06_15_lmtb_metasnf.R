@@ -1,0 +1,65 @@
+library(abcdutils)
+library(here)
+library(dplyr)
+library(readr)
+library(metasnf)
+library(rlist)
+library(visdat)
+library(ggplot2)
+library(mice)
+library(fastDummies)
+library(randomForest)
+library(patchwork)
+library(tidyr)
+library(ComplexHeatmap)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+core_path <- path_maker(here(paste0("data/abcd/core")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+model_path <- path_maker(here(paste0("data/abcd/results/models")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+
+read <- function(path) {
+    return(read_csv(input_path(path)))
+}
+
+all_long_dls_h_ns <- readRDS(proc_path("2025_06_13_all_long_dls_h_ns.rds"))
+
+lmtb_0_dls <- all_long_dls_h_ns$"lmtb_0_dls"
+lmtb_0_ols <- all_long_dls_h_ns$"lmtb_0_ols"
+lmtb_l_dls <- all_long_dls_h_ns$"lmtb_l_dls"
+lmtb_l_ols <- all_long_dls_h_ns$"lmtb_l_ols"
+
+lmtb_config <- readRDS(proc_path("2025_06_15_lmtb_config.rds"))
+
+lmtb_0_sol_df_s1 <- batch_snf(dl = lmtb_0_dls[[1]], sc = long_config, processes = "max")
+saveRDS(lmtb_0_sol_df_s1, proc_path("lmtb_0_sol_df_s1.rds", TRUE))
+cat("1/10")
+lmtb_0_sol_df_s2 <- batch_snf(dl = lmtb_0_dls[[2]], sc = long_config, processes = "max")
+saveRDS(lmtb_0_sol_df_s2, proc_path("lmtb_0_sol_df_s2.rds", TRUE))
+cat("2/10")
+lmtb_0_sol_df_s3 <- batch_snf(dl = lmtb_0_dls[[3]], sc = long_config, processes = "max")
+saveRDS(lmtb_0_sol_df_s3, proc_path("lmtb_0_sol_df_s3.rds", TRUE))
+cat("3/10")
+lmtb_0_sol_df_s4 <- batch_snf(dl = lmtb_0_dls[[4]], sc = long_config, processes = "max")
+saveRDS(lmtb_0_sol_df_s4, proc_path("lmtb_0_sol_df_s4.rds", TRUE))
+cat("4/10")
+lmtb_0_sol_df_s5 <- batch_snf(dl = lmtb_0_dls[[5]], sc = long_config, processes = "max")
+saveRDS(lmtb_0_sol_df_s5, proc_path("lmtb_0_sol_df_s5.rds", TRUE))
+cat("5/10")
+lmtb_l_sol_df_s1 <- batch_snf(dl = lmtb_l_dls[[1]], sc = long_config, processes = "max")
+saveRDS(lmtb_l_sol_df_s1, proc_path("lmtb_l_sol_df_s1.rds", TRUE))
+cat("6/10")
+lmtb_l_sol_df_s2 <- batch_snf(dl = lmtb_l_dls[[2]], sc = long_config, processes = "max")
+saveRDS(lmtb_l_sol_df_s2, proc_path("lmtb_l_sol_df_s2.rds", TRUE))
+cat("7/10")
+lmtb_l_sol_df_s3 <- batch_snf(dl = lmtb_l_dls[[3]], sc = long_config, processes = "max")
+saveRDS(lmtb_l_sol_df_s3, proc_path("lmtb_l_sol_df_s3.rds", TRUE))
+cat("8/10")
+lmtb_l_sol_df_s4 <- batch_snf(dl = lmtb_l_dls[[4]], sc = long_config, processes = "max")
+saveRDS(lmtb_l_sol_df_s4, proc_path("lmtb_l_sol_df_s4.rds", TRUE))
+cat("9/10")
+lmtb_l_sol_df_s5 <- batch_snf(dl = lmtb_l_dls[[5]], sc = long_config, processes = "max")
+saveRDS(lmtb_l_sol_df_s5, proc_path("lmtb_l_sol_df_s5.rds", TRUE))
+cat("10/10")
