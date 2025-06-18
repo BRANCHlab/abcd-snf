@@ -1,0 +1,239 @@
+
+Is there something in the correlation structure of these samples that determines whether or not cluster analysis can find the baseline concussion solution?
+
+```{r}
+library(abcdutils)
+library(here)
+library(dplyr)
+library(readr)
+library(metasnf)
+library(rlist)
+library(visdat)
+library(ggplot2)
+library(mice)
+library(fastDummies)
+library(randomForest)
+library(patchwork)
+library(tidyr)
+library(ComplexHeatmap)
+
+input_path <- path_maker(here(paste0("data/abcd/inputs")))
+core_path <- path_maker(here(paste0("data/abcd/core")))
+sub_path <- path_maker(here(paste0("data/abcd/subjects")))
+fig_path <- path_maker(here(paste0("data/abcd/results/figures")))
+model_path <- path_maker(here(paste0("data/abcd/results/models")))
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+```
+
+```{r}
+mtbi_ful_df <- readRDS(proc_path("2025_06_11_mtbi_ful_df.rds"))
+
+mtbi_ful_df
+
+calculate_cor_mat <- function(df, method, fisher_z = FALSE) {
+    df <- df |>
+    data.frame() |>
+    dplyr::select(-uid, -cluster) |>
+    dummy_cols(
+        select_columns = c("race", "mtbi_mechanism"),
+        remove_selected_columns = TRUE,
+        remove_most_frequent_dummy = TRUE
+    )
+    if (method == "spearman") {
+        future::plan("multisession")
+        n <- ncol(df)
+        spearman_mat <- matrix(NA, n, n)
+        colnames(spearman_mat) <- rownames(spearman_mat) <- colnames(df)
+        results <- pbapply::pblapply(
+            1:n,
+            function(i) {
+                sapply(
+                    i:ncol(df),
+                    function(j) {
+                        cor(df[[i]], df[[j]], method = "spearman")
+                    }
+                )
+            },
+            cl = future::availableCores()
+        )
+        for (i in 1:n) {
+            spearman_mat[i, i:n] <- results[[i]]
+            spearman_mat[i:n, i] <- results[[i]]
+        }
+        mat <- spearman_mat
+    } else if (method == "pearson") {
+        mat <- cor(df, method = "pearson")
+    }
+    if (fisher_z) {
+        mat <- atanh(mat) 
+    }
+}
+```
+
+I'll try to compare matrices under the following schemes:
+
+- baseline concussion data vs...
+    - A. 10 random uninjured samples
+    - B. the best matched uninjured sample
+    - C. the pre-injury sample data
+    - D. the post-injury sample data
+
+I'll do the comparisons the following ways:
+
+- permutation testing mean absolute difference in spearman correlations
+- permutation testing mean absolute difference in pearson correlations
+- permutation testing mean absolute difference in z-transformed pearson correlations
+
+```{r}
+# Data
+random_unij_dl_u1 <- readRDS(proc_path("2025_06_15_random_unij_dl_u1.rds"))
+all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
+unij_dl_u1 <- all_dls_h_ns$"unij_all_u_dls"$"imp_1"
+matched_unij_dl_do_u <- readRDS(proc_path("2025_06_15_matched_unij_dl_do_u.rds"))
+matched_unij_ol_do_u <- readRDS(proc_path("2025_06_15_matched_unij_ol_do_u.rds"))
+all_long_dls_h_ns <- readRDS(proc_path("2025_06_13_all_long_dls_h_ns.rds"))
+
+subject_filter_dl <- function(data_list, subject_vector) {
+    data_list <- data_list |>
+        dlapply(
+            function(x) {
+                keep_subs <- x$"data"$"uid" %in% subject_vector
+                x$"data" <- x$"data"[keep_subs, ]
+                return(x)
+            }
+        )
+    return(data_list)
+}
+
+# A
+set.seed(42)
+random_unij_subs_01 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_02 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_03 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_04 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_05 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_06 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_07 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_08 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_09 <- sample(uids(unij_dl_u1))[1:434]
+random_unij_subs_10 <- sample(uids(unij_dl_u1))[1:434]
+
+random_unij_1 <- subject_filter_dl(unij_dl_u1, random_unij_subs_01)
+random_unij_2 <- subject_filter_dl(unij_dl_u1, random_unij_subs_02)
+random_unij_3 <- subject_filter_dl(unij_dl_u1, random_unij_subs_03)
+random_unij_4 <- subject_filter_dl(unij_dl_u1, random_unij_subs_04)
+random_unij_5 <- subject_filter_dl(unij_dl_u1, random_unij_subs_05)
+random_unij_6 <- subject_filter_dl(unij_dl_u1, random_unij_subs_06)
+random_unij_7 <- subject_filter_dl(unij_dl_u1, random_unij_subs_07)
+random_unij_8 <- subject_filter_dl(unij_dl_u1, random_unij_subs_08)
+random_unij_9 <- subject_filter_dl(unij_dl_u1, random_unij_subs_09)
+random_unij_10 <- subject_filter_dl(unij_dl_u1, random_unij_subs_10)
+
+random_unij_1_df <- as.data.frame(random_unij_1)
+random_unij_2_df <- as.data.frame(random_unij_2)
+random_unij_3_df <- as.data.frame(random_unij_3)
+random_unij_4_df <- as.data.frame(random_unij_4)
+random_unij_5_df <- as.data.frame(random_unij_5)
+random_unij_6_df <- as.data.frame(random_unij_6)
+random_unij_7_df <- as.data.frame(random_unij_7)
+random_unij_8_df <- as.data.frame(random_unij_8)
+random_unij_9_df <- as.data.frame(random_unij_9)
+random_unij_10_df <- as.data.frame(random_unij_10)
+
+saveRDS(random_unij_1_df, proc_path("random_unij_1_df.rds", TRUE))
+saveRDS(random_unij_2_df, proc_path("random_unij_2_df.rds", TRUE))
+saveRDS(random_unij_3_df, proc_path("random_unij_3_df.rds", TRUE))
+saveRDS(random_unij_4_df, proc_path("random_unij_4_df.rds", TRUE))
+saveRDS(random_unij_5_df, proc_path("random_unij_5_df.rds", TRUE))
+saveRDS(random_unij_6_df, proc_path("random_unij_6_df.rds", TRUE))
+saveRDS(random_unij_7_df, proc_path("random_unij_7_df.rds", TRUE))
+saveRDS(random_unij_8_df, proc_path("random_unij_8_df.rds", TRUE))
+saveRDS(random_unij_9_df, proc_path("random_unij_9_df.rds", TRUE))
+saveRDS(random_unij_10_df, proc_path("random_unij_10_df.rds", TRUE))
+
+# B
+best_matched_uninjured_df <- as.data.frame(
+    c(matched_unij_dl_do_u, matched_unij_ol_do_u)
+)
+saveRDS(best_matched_uninjured_df, proc_path("best_matched_uninjured_df.rds", TRUE))
+
+# C
+saveRDS(
+    as.data.frame(
+        c(
+            all_long_dls_h_ns$"lmtb_0_dls"[[1]],
+            all_long_dls_h_ns$"lmtb_0_ols"[[1]]
+        )
+    ),
+    proc_path("lmtb_0_df.rds", TRUE)
+)
+
+# D
+saveRDS(
+    as.data.frame(
+        c(
+            all_long_dls_h_ns$"lmtb_l_dls"[[1]],
+            all_long_dls_h_ns$"lmtb_l_ols"[[1]]
+        )
+    ),
+    proc_path("lmtb_l_df.rds", TRUE)
+)
+
+```
+
+```{r}
+# A
+random_unij_1_df <- readRDS(proc_path("2025_06_18_random_unij_1_df.rds"))
+random_unij_2_df <- readRDS(proc_path("2025_06_18_random_unij_2_df.rds"))
+random_unij_3_df <- readRDS(proc_path("2025_06_18_random_unij_3_df.rds"))
+random_unij_4_df <- readRDS(proc_path("2025_06_18_random_unij_4_df.rds"))
+random_unij_5_df <- readRDS(proc_path("2025_06_18_random_unij_5_df.rds"))
+random_unij_6_df <- readRDS(proc_path("2025_06_18_random_unij_6_df.rds"))
+random_unij_7_df <- readRDS(proc_path("2025_06_18_random_unij_7_df.rds"))
+random_unij_8_df <- readRDS(proc_path("2025_06_18_random_unij_8_df.rds"))
+random_unij_9_df <- readRDS(proc_path("2025_06_18_random_unij_9_df.rds"))
+random_unij_10_df <- readRDS(proc_path("2025_06_18_random_unij_10_df.rds"))
+
+# B
+best_matched_uninjured_df <- readRDS(proc_path("2025_06_18_best_matched_uninjured_df.rds"))
+
+# C
+preinjury_df <- readRDS(proc_path("2025_06_18_lmtb_0_df.rds"))
+
+# D
+postinjury_df <- readRDS(proc_path("2025_06_18_lmtb_l_df.rds"))
+
+
+permutation_test_corrs <- function(df1, df2, method, fisher_z, perms) {
+    cor1 <- calculate_cor_mat(df1, method, fisher_z)
+    cor2 <- calculate_cor_mat(df2, method, fisher_z)
+    observed_diff <- mean(abs(cor1 - cor2), na.rm = TRUE)
+    perm_diffs <- numeric(perms)
+    n1 <- nrow(df1)
+    n2 <- nrow(df2)
+    n <- n1 + n2
+    for (i in 1:perms) {
+        merged_df <- rbind(df1, df2)[sample(n), ]
+        perm_cor1 <- calculate_cor_mat(merged_df[1:n1, ], method, fisher_z)
+        perm_cor2 <- calculate_cor_mat(merged_df[(n1+1):n, ], method, fisher_z)
+        perm_diffs[i] <- mean(abs(perm_cor1 - perm_cor2), na.rm = TRUE)
+    }
+    p_value <- mean(perm_diffs >= observed_diff)
+    return(list(observed_diff = observed_diff, p_value = p_value))
+}
+
+permutation_test_corrs(mtbi_ful_df, best_matched_uninjured_df, "pearson", FALSE, 10)
+
+
+
+#permutation testing mean absolute difference in spearman correlations
+#permutation testing mean absolute difference in pearson correlations
+#permutation testing mean absolute difference in z-transformed pearson correlations
+
+
+
+
+
+
+
+```

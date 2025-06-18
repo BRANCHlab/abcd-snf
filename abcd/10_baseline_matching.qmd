@@ -415,7 +415,7 @@ matched_unij_dpo_p <- read_subjects(
 
 ```{r}
 
-matched_uubjects <- list(
+matched_subjects <- list(
     "d_u" = matched_unij_d_u,
     "p_u" = matched_unij_p_u,
     "o_u" = matched_unij_o_u,
@@ -874,39 +874,42 @@ random_unij_ext_sol_df_p1 <- readRDS(proc_path("2025_06_17_random_unij_ext_sol_d
 ```
 
 ```{r}
-matched_unij_esm_list <- list(
-    "d_s" = matched_unij_esm_d_s,
-    "p_s" = matched_unij_esm_p_s,
-    "o_s" = matched_unij_esm_o_s,
-    "d_p" = matched_unij_esm_d_p,
-    "p_p" = matched_unij_esm_p_p,
-    "o_p" = matched_unij_esm_o_p,
-    "dp_s" = matched_unij_esm_dp_s,
-    "do_s" = matched_unij_esm_do_s,
-    "op_s" = matched_unij_esm_op_s,
-    "dp_p" = matched_unij_esm_dp_p,
-    "do_p" = matched_unij_esm_do_p,
-    "op_p" = matched_unij_esm_op_p,
-    "dpo_p" = matched_unij_esm_dpo_p,
-    "dpo_s" = matched_unij_esm_dpo_s,
-    "random_s" = random_unij_esm_s1,
-    "random_p" = random_unij_esm_p1
+
+matched_unij_ext_sol_df_list <- list(
+    "d_u" = matched_unij_ext_sol_df_d_u,
+    "p_u" = matched_unij_ext_sol_df_p_u,
+    "o_u" = matched_unij_ext_sol_df_o_u,
+    "d_p" = matched_unij_ext_sol_df_d_p,
+    "p_p" = matched_unij_ext_sol_df_p_p,
+    "o_p" = matched_unij_ext_sol_df_o_p,
+    "dp_u" = matched_unij_ext_sol_df_dp_u,
+    "do_u" = matched_unij_ext_sol_df_do_u,
+    "op_u" = matched_unij_ext_sol_df_op_u,
+    "dp_p" = matched_unij_ext_sol_df_dp_p,
+    "do_p" = matched_unij_ext_sol_df_do_p,
+    "op_p" = matched_unij_ext_sol_df_op_p,
+    "dpo_p" = matched_unij_ext_sol_df_dpo_p,
+    "dpo_u" = matched_unij_ext_sol_df_dpo_u,
+    "random_u" = random_unij_ext_sol_df_u1,
+    "random_p" = random_unij_ext_sol_df_p1
 )
 
-saveRDS(matched_unij_esm_list, proc_path("matched_unij_esm_list.rds", TRUE))
-```
-
-```{r}
-matched_unij_esm_list <- readRDS(
-    proc_path("2025_02_15_matched_unij_esm_list.rds")
+saveRDS(
+    matched_unij_ext_sol_df_list,
+    proc_path("matched_unij_ext_sol_df_list.rds", TRUE)
 )
 ```
 
 ```{r}
+matched_unij_ext_sol_df_list <- readRDS(
+    proc_path("2025_06_18_matched_unij_ext_sol_df_list.rds")
+)
+```
 
-duplicated(matched_unij_esm_list)
+```{r}
+duplicated(matched_unij_ext_sol_df_list)
 
-vec <- matched_unij_esm_list
+vec <- matched_unij_ext_sol_df_list
 
 dup_indices <- which(duplicated(vec))
 
@@ -921,21 +924,24 @@ for (i in dup_indices) {
     }
 }
 
+#op_u is equal to:
+#    -  do_u
+#op_p is equal to:
+#    -  do_p
+#dpo_p is equal to:
+#    -  dp_p
+#dpo_u is equal to:
+#    -  dp_u
+
 for (i in seq_along(vec)) {
     for (j in seq_along(vec)) {
 
     }
 }
 
-
-intersect(vec, vec)
-
-intersect(c(1, 2, 3), c(2, 3, 4))
-
-
 # Tight requirement: -log10(pval) > 4
-matched_unij_esm_3c_list <- lapply(
-    matched_unij_esm_list,
+matched_unij_ext_sol_df_3c_list <- lapply(
+    matched_unij_ext_sol_df_list,
     function(x) {
         x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 4, ]
         if (nrow(x) > 0) {
@@ -945,8 +951,8 @@ matched_unij_esm_3c_list <- lapply(
 )
 
 # Loose requirement: -log10(pval) > 1
-matched_unij_esm_3c_list_loose <- lapply(
-    matched_unij_esm_list,
+matched_unij_ext_sol_df_3c_list_loose <- lapply(
+    matched_unij_ext_sol_df_list,
     function(x) {
         x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 1, ]
         if (nrow(x) > 0) {
@@ -955,24 +961,30 @@ matched_unij_esm_3c_list_loose <- lapply(
     }
 )
 
-# 6 tight matches
-sapply(matched_unij_esm_3c_list, nrow) |>
+unlist(sapply(matched_unij_ext_sol_df_3c_list, function(x) nrow(x) > 0))
+
+# 8 tight matches
+sapply(matched_unij_ext_sol_df_3c_list, nrow) |>
     unlist() |>
     sum()
 
-# 82 loose matches
-sapply(matched_unij_esm_3c_list_loose, nrow) |>
+# 171 loose matches
+sapply(matched_unij_ext_sol_df_3c_list_loose, nrow) |>
     unlist() |>
     sum()
 
-matched_unij_esm_3c_list <- matched_unij_esm_3c_list[sapply(matched_unij_esm_3c_list, function(x) nrow(x) > 0)]
-matched_unij_esm_3c_list_loose <- matched_unij_esm_3c_list_loose[sapply(matched_unij_esm_3c_list_loose, function(x) nrow(x) > 0)]
+class(matched_unij_ext_sol_df_3c_list)
 
-saveRDS(matched_unij_esm_3c_list, proc_path("matched_unij_esm_3c_list.rds", TRUE))
-saveRDS(matched_unij_esm_3c_list_loose, proc_path("matched_unij_esm_3c_list_loose.rds", TRUE))
+sapply(matched_unij_ext_sol_df_3c_list, function(x) nrow(x) > 0)
 
-matched_unij_esm_3c_list <- readRDS(proc_path("2025_02_15_matched_unij_esm_3c_list.rds"))
-matched_unij_esm_3c_list_loose <- readRDS(proc_path("2025_02_15_matched_unij_esm_3c_list_loose.rds"))
+matched_unij_ext_sol_df_3c_list <- matched_unij_ext_sol_df_3c_list[sapply(matched_unij_ext_sol_df_3c_list, function(x) isTRUE(nrow(x) > 0))]
+matched_unij_ext_sol_df_3c_list_loose <- matched_unij_ext_sol_df_3c_list_loose[sapply(matched_unij_ext_sol_df_3c_list_loose, function(x) isTRUE(nrow(x) > 0))]
+
+saveRDS(matched_unij_ext_sol_df_3c_list, proc_path("matched_unij_ext_sol_df_3c_list.rds", TRUE))
+saveRDS(matched_unij_ext_sol_df_3c_list_loose, proc_path("matched_unij_ext_sol_df_3c_list_loose.rds", TRUE))
+
+matched_unij_ext_sol_df_3c_list <- readRDS(proc_path("2025_06_18_matched_unij_ext_sol_df_3c_list.rds"))
+matched_unij_ext_sol_df_3c_list_loose <- readRDS(proc_path("2025_06_18_matched_unij_ext_sol_df_3c_list_loose.rds"))
 ```
 
 ```{r}
@@ -987,42 +999,26 @@ dcols <- c(
     "B" = "#ff3131"
 )
 
-# do_s, do_p, op_s, op_p
-names(matched_unij_esm_3c_list)
+# dp_u, dpo_u
+names(matched_unij_ext_sol_df_3c_list)
 
-matched_unij_do_s <- mc_manhattan_plot(
-    matched_unij_esm_3c_list$"do_s",
-    dl = matched_unij_dl_do_s,
-    target_dl = matched_unij_ol_do_s,
+matched_unij_dp_u <- mc_manhattan_plot(
+    matched_unij_ext_sol_df_3c_list$"dp_u",
+    dl = matched_unij_dl_dp_u,
+    target_dl = matched_unij_ol_dp_u,
     domain_colours = dcols
 )
 
-matched_unij_do_p <- mc_manhattan_plot(
-    matched_unij_esm_3c_list$"do_p",
-    dl = matched_unij_dl_do_p,
-    target_dl = matched_unij_ol_do_p,
-    domain_colours = dcols
-)
-
-matched_unij_op_s <- mc_manhattan_plot(
-    matched_unij_esm_3c_list$"op_s",
-    dl = matched_unij_dl_op_s,
-    target_dl = matched_unij_ol_op_s,
-    domain_colours = dcols
-)
-
-matched_unij_op_p <- mc_manhattan_plot(
-    matched_unij_esm_3c_list$"op_p",
-    dl = matched_unij_dl_op_p,
-    target_dl = matched_unij_ol_op_p,
+matched_unij_dpo_u <- mc_manhattan_plot(
+    matched_unij_ext_sol_df_3c_list$"dpo_u",
+    dl = matched_unij_dl_dpo_u,
+    target_dl = matched_unij_ol_dpo_u,
     domain_colours = dcols
 )
 
 matched_unij_manhattan_plots <- list(
-    "do_s" = matched_unij_do_s,
-    "do_p" = matched_unij_do_p,
-    "op_s" = matched_unij_op_s,
-    "op_p" = matched_unij_op_p
+    "dp_u" = matched_unij_dp_u,
+    "dpo_u" = matched_unij_dpo_u
 )
 
 saveRDS(matched_unij_manhattan_plots, fig_path("matched_unij_manhattan_plots.rds", TRUE))
@@ -1030,7 +1026,7 @@ saveRDS(matched_unij_manhattan_plots, fig_path("matched_unij_manhattan_plots.rds
 
 ```{r}
 # CHECKPOINT
-matched_unij_manhattan_plots <- readRDS(fig_path("2025_02_15_matched_unij_manhattan_plots.rds"))
+matched_unij_manhattan_plots <- readRDS(fig_path("2025_06_18_matched_unij_manhattan_plots.rds"))
 ```
 
 So we know that only a couple of combinations lead to somewhat similar cluster solutions in terms of the mean p-values on outcomes.
@@ -1054,48 +1050,52 @@ heighter <- function(panes) {
     panes * 4/3 + 10/3
 }
 
-qs2(matched_unij_manhattan_plots$"do_s", "do_s", h = 4.67)
-qs2(matched_unij_manhattan_plots$"do_p", "do_p", h = 6)
-qs2(matched_unij_manhattan_plots$"op_s", "op_s", h = 4.67)
-qs2(matched_unij_manhattan_plots$"op_p", "op_p", h = 6)
+matched_unij_manhattan_plots$"dp_u" # 4 panes
+
+heighter(4)
+
+heighter(4)
+
+qs2(matched_unij_manhattan_plots$"dp_u", "dp_u", h = heighter(4))
+qs2(matched_unij_manhattan_plots$"dpo_u", "dpo_u", h = heighter(4))
 ```
 
 ```{r}
 matched_unij_dls <- list(
-    "d_s" = matched_unij_dl_d_s,
-    "p_s" = matched_unij_dl_p_s,
-    "o_s" = matched_unij_dl_o_s,
+    "d_u" = matched_unij_dl_d_u,
+    "p_u" = matched_unij_dl_p_u,
+    "o_u" = matched_unij_dl_o_u,
     "d_p" = matched_unij_dl_d_p,
     "p_p" = matched_unij_dl_p_p,
     "o_p" = matched_unij_dl_o_p,
-    "dp_s" = matched_unij_dl_dp_s,
-    "do_s" = matched_unij_dl_do_s,
-    "op_s" = matched_unij_dl_op_s,
+    "dp_u" = matched_unij_dl_dp_u,
+    "do_u" = matched_unij_dl_do_u,
+    "op_u" = matched_unij_dl_op_u,
     "dp_p" = matched_unij_dl_dp_p,
     "do_p" = matched_unij_dl_do_p,
     "op_p" = matched_unij_dl_op_p,
     "dpo_p" = matched_unij_dl_dpo_p,
-    "dpo_s" = matched_unij_dl_dpo_s,
-    "random_s" = random_unij_dl_s1,
+    "dpo_u" = matched_unij_dl_dpo_u,
+    "random_u" = random_unij_dl_u1,
     "random_p" = random_unij_dl_p1
 )
 
 matched_unij_ols <- list(
-    "d_s" = matched_unij_ol_d_s,
-    "p_s" = matched_unij_ol_p_s,
-    "o_s" = matched_unij_ol_o_s,
+    "d_u" = matched_unij_ol_d_u,
+    "p_u" = matched_unij_ol_p_u,
+    "o_u" = matched_unij_ol_o_u,
     "d_p" = matched_unij_ol_d_p,
     "p_p" = matched_unij_ol_p_p,
     "o_p" = matched_unij_ol_o_p,
-    "dp_s" = matched_unij_ol_dp_s,
-    "do_s" = matched_unij_ol_do_s,
-    "op_s" = matched_unij_ol_op_s,
+    "dp_u" = matched_unij_ol_dp_u,
+    "do_u" = matched_unij_ol_do_u,
+    "op_u" = matched_unij_ol_op_u,
     "dp_p" = matched_unij_ol_dp_p,
     "do_p" = matched_unij_ol_do_p,
     "op_p" = matched_unij_ol_op_p,
     "dpo_p" = matched_unij_ol_dpo_p,
-    "dpo_s" = matched_unij_ol_dpo_s,
-    "random_s" = random_unij_ol_s1,
+    "dpo_u" = matched_unij_ol_dpo_u,
+    "random_u" = random_unij_ol_u1,
     "random_p" = random_unij_ol_p1
 )
 
@@ -1105,9 +1105,19 @@ saveRDS(matched_unij_ols, proc_path("matched_unij_ols.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-matched_unij_dls <- readRDS(proc_path("2025_02_15_matched_unij_dls.rds"))
-matched_unij_ols <- readRDS(proc_path("2025_02_15_matched_unij_ols.rds"))
+matched_unij_dls <- readRDS(proc_path("2025_06_18_matched_unij_dls.rds"))
+matched_unij_ols <- readRDS(proc_path("2025_06_18_matched_unij_ols.rds"))
 ```
+
+
+```{r}
+
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
+
+```
+
+
 
 ```{r}
 # CHECKPOINT
@@ -1126,13 +1136,14 @@ Calculating concordance (similarity between matched uninjured solution and basel
 
 ```{r}
 matched_pl_dfs <- lapply(
-    names(matched_unij_esm_3c_list_loose),
+    names(matched_unij_ext_sol_df_3c_list_loose),
     function(match) {
         pl <- list()
-        nrows <- nrow(matched_unij_esm_3c_list_loose[[match]])
+        nrows <- nrow(matched_unij_ext_sol_df_3c_list_loose[[match]])
         for (row in seq_len(nrows)) {
+            print(paste0(match, row))
             p <- auto_plot(
-                matched_unij_esm_3c_list_loose[[match]][row, ],
+                matched_unij_ext_sol_df_3c_list_loose[[match]][row, ],
                 dl = c(matched_unij_dls[[match]], matched_unij_ols[[match]]),
                 return_plots = FALSE
             )
@@ -1141,26 +1152,30 @@ matched_pl_dfs <- lapply(
         return(pl)
     }
 )
-
-matched_unij_esm_3c_list_loose$"op_p" |> nrow()
-
-matched_pl_dfs
-
-names(matched_pl_dfs) <- names(matched_unij_esm_3c_list_loose)
+names(matched_pl_dfs) <- names(matched_unij_ext_sol_df_3c_list_loose)
 matched_pl_dfs <- unlist(matched_pl_dfs, recursive = FALSE)
 
 saveRDS(matched_pl_dfs, proc_path("matched_pl_dfs.rds", TRUE))
-matched_pls_dfs <- readRDS(proc_path("2025_02_15_matched_pl_dfs.rds"))
+matched_pls_dfs <- readRDS(proc_path("2025_06_18_matched_pl_dfs.rds"))
+
+duplicated(matched_pl_dfs)
+names(matched_pl_dfs)
+
+matched_pl_dfs_no_dups <- matched_pl_dfs[!duplicated(matched_pl_dfs)]
+
+matched_pl_dfs_no_dups |> length()
 
 matched_pl_tops <- lapply(
-    matched_pl_dfs,
+    matched_pl_dfs_no_dups,
     function(x) {
+        print(x)
         topologizer(x)
     }
 )
 
 saveRDS(matched_pl_tops, proc_path("matched_pl_tops.rds", TRUE))
-matched_pl_tops <- readRDS(proc_path("2025_02_15_matched_pl_tops.rds"))
+
+matched_pl_tops <- readRDS(proc_path("2025_06_18_matched_pl_tops.rds"))
 
 matched_pl_gen_fts <- lapply(
     matched_pl_tops,
@@ -1169,62 +1184,131 @@ matched_pl_gen_fts <- lapply(
     }
 )
 
-mtbi_gen_long <- rbind(
-    mtbi_gen_fts_in_long,
-    mtbi_gen_fts_out_long
-)
-mtbi_gen_long <- na.omit(mtbi_gen_long)
+#matched_pl_gen_fts_long <- lapply(
+#    matched_pl_gen_fts,
+#    function(x) {
+#        long_x <- pivot_longer(
+#            x,
+#            cols = -feature,
+#            names_to = "comparison",
+#            values_to = "order_unij"
+#        )
+#        long_gen_x <- dplyr::left_join(
+#            mtbi_gen_long,
+#            long_x,
+#            by = c("feature", "comparison")
+#        ) 
+#        long_gen_x <- dplyr::mutate(
+#            long_gen_x,
+#            match = dplyr::case_when(
+#                is.na(order_unij) ~ 0,
+#                order != order_unij ~ 0, 
+#                order == order_unij ~ 1
+#            )
+#        )
+#        return(long_gen_x)
+#    }
+#)
+#
+#matched_pl_gen_fts_long_fair <- lapply(
+#    matched_pl_gen_fts_long,
+#    function(x) {
+#        dplyr::filter(x, !grepl("mtbi", feature))
+#    }
+#)
 
-matched_pl_gen_fts_long <- lapply(
-    matched_pl_gen_fts,
-    function(x) {
-        long_x <- pivot_longer(
-            x,
+saveRDS(matched_pl_dfs_no_dups, proc_path("matched_pl_dfs_no_dups.rds", TRUE))
+matched_pl_dfs_no_dups <- readRDS("2025_06_18_matched_pl_dfs_no_dups.rds")
+
+concordance_w_mtbi_quick <- function(data_df, n = NULL, iters = 10, procs = 1, mtbi_data) {
+    #start <- Sys.time()
+    #bootstrap_sample <- sample(n, replace = TRUE)
+    #sampled_df <- data_df[bootstrap_sample, ]
+    tops_df <- topologizer(data_df)
+    info_table <- data_df |>
+        dplyr::group_by(cluster) |>
+        dplyr::summarize(
+            income = mean(household_income),
+            sex = mean(sex)
+        ) |>
+        dplyr::mutate(combo = income - sex) |> # sort by low income and high M
+        dplyr::arrange(combo)
+    swap_key <- paste0(info_table$"cluster", collapse = "")
+    swap_list <- list(
+        "123" = list(),                 # swap nothing
+        "132" = list(c(2, 3)),          # swap 2<->3
+        "213" = list(c(1, 2)),          # swap 1<->2
+        "231" = list(c(1, 2), c(2, 3)), # swap 1<->2 then 2<->3
+        "312" = list(c(1, 3), c(2, 3)), # swap 1<->3 then 2<->3
+        "321" = list(c(1, 3))           # swap 1<->3
+    )
+    swap_instructions <- swap_list[[swap_key]]
+    for (instruction in swap_instructions) {
+        data_df <- data_df |>
+            dplyr::mutate(
+                cluster = dplyr::case_when(
+                    cluster == instruction[1] ~ factor(instruction[2]),
+                    cluster == instruction[2] ~ factor(instruction[1]),
+                    TRUE ~ cluster
+                )
+            )
+    }
+    info_table <- data_df |>
+        dplyr::group_by(cluster) |>
+        dplyr::summarize(
+            income = mean(household_income),
+            sex = mean(sex)
+        ) |>
+        dplyr::mutate(combo = income - sex) |> # sort by low income and high M
+        dplyr::arrange(combo)
+    swap_key <- paste0(info_table$"cluster", collapse = "")
+    gen_tops_df <- generalizable_features(tops_df, compare_fn_a)
+    gen_tops_df_long <- gen_tops_df |>
+        pivot_longer(
             cols = -feature,
             names_to = "comparison",
-            values_to = "order_unij"
+            values_to = "order_sample"
         )
-        long_gen_x <- dplyr::left_join(
-            mtbi_gen_long,
-            long_x,
-            by = c("feature", "comparison")
-        ) 
-        long_gen_x <- dplyr::mutate(
-            long_gen_x,
-            match = dplyr::case_when(
-                is.na(order_unij) ~ 0,
-                order != order_unij ~ 0, 
-                order == order_unij ~ 1
-            )
-        )
-        return(long_gen_x)
+    joint_df <- dplyr::left_join(
+        mtbi_data, # reference data frame
+        gen_tops_df_long, # sampled data frame
+        by = c("feature", "comparison")
+    ) |>
+        dplyr::mutate(
+            match = ifelse(order_sample == order, 1, 0)
+        ) |>
+        dplyr::filter(!grepl("mtbi", feature))
+    concordance <- sum(joint_df$"match") / nrow(joint_df)
+    return(concordance)
+}
+
+matched_pl_concordances <- lapply(
+    seq_along(matched_pl_dfs_no_dups),
+    function(x) {
+        print(x)
+        concordance_w_mtbi_quick(matched_pl_dfs[[x]], mtbi_data = mtbi_gen_long)
     }
 )
+saveRDS(matched_pl_concordances, proc_path("matched_pl_concordances.rds", TRUE))
 
-matched_pl_gen_fts_long_fair <- lapply(
-    matched_pl_gen_fts_long,
-    function(x) {
-        dplyr::filter(x, !grepl("mtbi", feature))
-    }
-)
-
-concordance_list <- lapply(
-    matched_pl_gen_fts_long_fair,
-    function(x) {
-        100 * sum(x$"match") / nrow(x)
-    }
+matched_pl_concordances <- readRDS(
+    proc_path("2025_06_18_matched_pl_concordances.rds")
 )
 
 concordance_df <- data.frame(
-    unij_set = names(concordance_list),
-    concordance = unlist(concordance_list)
+    unij_set = names(matched_pl_dfs_no_dups),
+    concordance = unlist(matched_pl_concordances)
 ) |>
     arrange(desc(concordance))
 rownames(concordance_df) <- NULL
 
+concordance_df
+
 write_csv(concordance_df, proc_path("matched_unij_concordance.csv", TRUE))
 
-concordance_df <- read_csv(proc_path("2025_02_15_matched_unij_concordance.csv"))
+concordance_df <- read_csv(proc_path("2025_06_18_matched_unij_concordance.csv"))
+
+concordance_df
 
 xtable(concordance_df)
 
@@ -1244,806 +1328,33 @@ The D+O and O+P matching yielded identical sets of matched uninjured subjects.
 
 ```{r}
 saveRDS(
-    matched_unij_esm_3c_list_loose$"op_p"[11, ],
+    matched_unij_ext_sol_df_3c_list_loose$"do_u"[14, ],
     proc_path("matched_unij_nearest_esdf.rds", TRUE)
 )
 
+matched_unij_nearest_esdf <- readRDS(proc_path("2025_06_18_matched_unij_nearest_esdf.rds"))
+
+classifier_fts <- readRDS(proc_path("2025_06_13_classifier_fts.rds"))
+
+
 top_unij_pl <- auto_plot(
-    matched_unij_esm_3c_list_loose$"do_p"[11, ],
+    matched_unij_nearest_esdf,
     dl = c(
-        matched_unij_dls$"do_p",
-        matched_unij_ols$"do_p"
+        matched_unij_dls$"do_u",
+        matched_unij_ols$"do_u"
     )
 )
 
-gen_in_fts <- unique(mtbi_gen_fts_in_long$"feature")
-gen_in_fts[startsWith(gen_in_fts, "race_")] <- "race"
-gen_in_fts[startsWith(gen_in_fts, "mtbi_mechanism_")] <- "mtbi_mechanism"
-gen_in_fts <- unique(gen_in_fts)
-gen_out_fts <- unique(mtbi_gen_fts_out_long$"feature")
 
-gen_in_fts
+afts <- readRDS(proc_path("2025_06_11_afts.rds"))
 
-top_unij_input_plots <- top_unij_pl[gen_in_fts]
-top_unij_outcome_plots <- top_unij_pl[gen_out_fts]
-top_unij_plots <- c(top_unij_input_plots, top_unij_outcome_plots)
-
-saveRDS(top_unij_input_plots, proc_path("top_unij_input_plots.rds", TRUE))
-saveRDS(top_unij_outcome_plots, proc_path("top_unij_outcome_plots.rds", TRUE))
-saveRDS(top_unij_plots, proc_path("top_unij_plots.rds", TRUE))
-
-top_unij_input_plots <- readRDS(
-    proc_path("2025_02_15_top_unij_input_plots.rds")
-)
-top_unij_outcome_plots <- readRDS(
-    proc_path("2025_02_15_top_unij_outcome_plots.rds")
-)
-top_unij_plots <- readRDS(
-    proc_path("2025_02_18_top_unij_plots.rds")
-)
-
-outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
-relevant_fts <- c(classifier_fts, outcomes)
-
-top_unij_plots <- top_unij_plots[!is.na(names(top_unij_plots))]
-
-top_unij_wrapped_plots <- wrap_plots(top_unij_plots)
-
-top_unij_wrapped_plots
+top_unij_pl_wrapped <- wrap_plots(top_unij_pl[intersect(afts, names(top_unij_pl))])
 
 ggsave(
-    fig_path("top_unij_wrapped_plots.png", TRUE),
-    top_unij_wrapped_plots,
+    fig_path("top_unij_pl_wrapped.png", TRUE),
+    top_unij_pl_wrapped,
     width = 45,
-    height = 30,
+    height = 20,
     dpi = 50
 )
 ```
-
-```{r}
-#Is the extent of separation significantly different?
-matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
-matched_unij_dl_do_p <- readRDS(proc_path("2025_02_14_matched_unij_dl_do_p.rds"))
-matched_unij_ol_do_p <- readRDS(proc_path("2025_02_14_matched_unij_ol_do_p.rds"))
-
-matched_unij_dl_df <- as.data.frame(c(matched_unij_dl_do_p, matched_unij_ol_do_p))
-matched_unij_cluster_df <- t(matched_unij_nearest_esdf)
-
-matched_unij_data_df <- dplyr::inner_join(
-    matched_unij_cluster_df,
-    matched_unij_dl_df,
-    by = "uid"
-) |>
-    data.frame()
-colnames(matched_unij_data_df)[2] <- "cluster"
-
-matched_unij_data_df
-
-saveRDS(matched_unij_data_df, proc_path("nearest_matched_unij_data_df.rds", TRUE))
-```
-
-```{r}
-matched_unij_data_df <- readRDS(proc_path("2025_02_17_nearest_matched_unij_data_df.rds"))
-mtbi_ful_df <- data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))) |>
-    dplyr::select(uid, cluster, dplyr::everything())
-
-classifier_fts <- read_csv(proc_path("2025_02_14_classifier_fts.csv"))$"classifier_fts"
-outcomes <- readRDS(proc_path("2025_02_13_outputs.rds"))
-relevant_fts <- c(classifier_fts, outcomes)
-
-mtbi_ful_df_relevant <- mtbi_ful_df[, c("uid", "cluster", outcomes)]
-matched_unij_df_relevant <- matched_unij_data_df[, c("uid", "cluster", outcomes)]
-
-mtbi_ful_df_relevant <- mtbi_ful_df[, c("uid", "cluster", relevant_fts)]
-matched_unij_df_relevant <- matched_unij_data_df[, c("uid", "cluster", relevant_fts)]
-
-# Initial comparison
-get_mean_d <- function(df) {
-    tops_df <- topologizer(df) |>
-        dplyr::mutate(
-            c12_d = dplyr::case_when(
-                es == "d" ~ c12_es,
-                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
-            ),
-            c23_d = dplyr::case_when(
-                es == "d" ~ c23_es,
-                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
-            ),
-            c13_d = dplyr::case_when(
-                es == "d" ~ c13_es,
-                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
-            )
-        ) |>
-        dplyr::select(feature, c12_d, c13_d, c23_d)
-    tops_df_long <- tops_df |>
-        pivot_longer(
-            cols = -feature,
-            names_to = "comparison",
-            values_to = "d"
-        ) |>
-        dplyr::mutate(
-            d = dplyr::case_when(
-                d == Inf | d == -Inf ~ NA,
-                TRUE ~ abs(d)
-            )
-        ) |>
-        na.omit()
-    return(tops_df_long)
-    #return(mean(tops_df_long$"d"))
-}
-
-compare_ds <- function(df1, df2) {
-    tops_df1 <- topologizer(df1) |>
-        dplyr::mutate(
-            c12_d = dplyr::case_when(
-                es == "d" ~ c12_es,
-                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
-            ),
-            c23_d = dplyr::case_when(
-                es == "d" ~ c23_es,
-                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
-            ),
-            c13_d = dplyr::case_when(
-                es == "d" ~ c13_es,
-                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
-            )
-        ) |>
-        dplyr::select(feature, c12_d, c13_d, c23_d)
-    tops_df2 <- topologizer(df2) |>
-        dplyr::mutate(
-            c12_d = dplyr::case_when(
-                es == "d" ~ c12_es,
-                es == "or" ~ suppressWarnings(log(c12_es)) * sqrt(3) / pi
-            ),
-            c23_d = dplyr::case_when(
-                es == "d" ~ c23_es,
-                es == "or" ~ suppressWarnings(log(c23_es)) * sqrt(3) / pi
-            ),
-            c13_d = dplyr::case_when(
-                es == "d" ~ c13_es,
-                es == "or" ~ suppressWarnings(log(c13_es)) * sqrt(3) / pi
-            )
-        ) |>
-        dplyr::select(feature, c12_d, c13_d, c23_d)
-    tops_df_long1 <- tops_df1 |>
-        pivot_longer(
-            cols = -feature,
-            names_to = "comparison",
-            values_to = "d1"
-        )
-    tops_df_long2 <- tops_df2 |>
-        pivot_longer(
-            cols = -feature,
-            names_to = "comparison",
-            values_to = "d2"
-        )
-    tops_df_long <- dplyr::inner_join(
-        tops_df_long1,
-        tops_df_long2,
-        by = c("feature", "comparison")
-    ) |>
-        dplyr::mutate(
-            d1 = dplyr::case_when(
-                d1 == Inf | d1 == -Inf ~ NA,
-                TRUE ~ d1
-            ),
-            d2 = dplyr::case_when(
-                d2 == Inf | d2 == -Inf ~ NA,
-                TRUE ~ d2
-            )
-        ) |>
-        na.omit() |>
-        dplyr::mutate(
-            sse = (d1 - d2)^2
-        )
-    return(tops_df_long)
-}
-
-mtbi_vs_mu_d <- compare_ds(mtbi_ful_df_relevant, matched_unij_df_relevant)
-
-mtbi_vs_mu_d_plot <- mtbi_vs_mu_d |>
-    dplyr::filter(feature != "sex") |>
-    ggplot(
-        aes(x = feature, y = sse)
-    ) +
-    geom_point() +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    geom_hline(yintercept = 0.2, color = "red", alpha = 0.5, linewidth = 0.5) +
-    facet_wrap(~comparison, nrow = 3)
-ggsave(
-    fig_path("mtbi_vs_mu_d_plot.png", TRUE),
-    mtbi_vs_mu_d_plot,
-    width = 9,
-    height = 7,
-    dpi = 120
-)
-
-# Seems to be quite a bit higher.
-mtbi_mean_d <- get_mean_d(mtbi_ful_df_relevant) # 0.61
-unij_mean_d <- get_mean_d(matched_unij_df_relevant) # 0.53
-
-mtbi_mean_d
-
-unij_mean_d
-
-
-
-mtbi_mean_d - unij_mean_d
-
-stacked_df <- rbind(
-    mtbi_ful_df_relevant,
-    matched_unij_df_relevant
-)
-
-set.seed(42)
-mean_ds <- c()
-for (i in 1:10) {
-    print(i)
-    random_df <- stacked_df[sample(nrow(stacked_df)), ]
-    random_df1 <- random_df[1:427, ]
-    random_df2 <- random_df[428:854, ]
-    mean_d1 <- get_mean_d(random_df1)
-    mean_d2 <- get_mean_d(random_df2)
-    mean_ds <- c(mean_ds, (mean_d1 - mean_d2))
-}
-
-hist(mean_ds)
-
-#Is the proportion of observations in each cluster significantly different?
-#------------------------------------------------------------------------------
-
-## qs2 image export helper function
-#qs2 <- function(plot, path, w = 4, h = 4) {
-#    path <- paste0("unij_a_s4_", path, ".png")
-#    ggsave(fig_path(path, TRUE), plot, width = w, height = h)
-#}
-#
-## uni-plot helper function# {{{
-#uni_plot <- function(plot,
-#                     ft_name,
-#                     scale_fill_labels = NULL,
-#                     ylims = NULL) {
-#    ###########################################################################
-#    plot <- plot +
-#        theme(axis.title.y = element_text(size = 16))
-#    ###########################################################################
-#    if (class(plot$layers[[1]]$geom)[[1]] == "GeomBar") {
-#        plot <- plot + labs(fill = ft_name)
-#    } else {
-#        plot <- plot + labs(y = ft_name)
-#    }
-#    if (!is.null(scale_fill_labels)) {
-#        plot <- plot + scale_fill_discrete(labels = scale_fill_labels)
-#    }
-#    if (!is.null(ylims)) {
-#        plot <- plot + ylim(ylims[[1]], ylims[[2]])
-#    }
-#    ###########################################################################
-#    plot <- plot + labs(x = "Cluster") + theme(text = element_text(size = 16))
-#    return(plot)
-#}
-## }}}
-#
-## Matched unij Input Plots
-## Brain volumes
-#brain_volume_plot <- uni_plot(top_unij_input_plots$"brain_volume", expression("Brain Volume "(mm^3)))
-#brain_volume_plot
-#qs2(brain_volume_plot, "brain_volume")
-#
-## Sex
-#sex_plot <- uni_plot(top_unij_input_plots$"sex", "Sex", c("F", "M"))
-#sex_plot
-#qs2(sex_plot, "sex")
-#
-## cort sa
-#cort_sa_plot <- uni_plot(top_unij_input_plots$"cortical_sa", expression("Cortical Surface Area "(mm^2)))
-#cort_sa_plot
-#qs2(cort_sa_plot, "cort_sa")
-#
-## Income
-#household_income_plot <- uni_plot(top_unij_input_plots$"household_income", "Household Income")
-#household_income_plot
-#qs2(household_income_plot, "household_income")
-#
-## Pubertal Status - Parent Report
-#pubertal_status_p_plot <- uni_plot(top_unij_input_plots$"pubertal_status_p", "Pubertal Status\n(Parent Report)")
-#pubertal_status_p_plot
-#qs2(pubertal_status_p_plot, "pubertal_status_p")
-#
-## Programs this year
-#programs_this_year_plot <- uni_plot(top_unij_input_plots$"programs_this_year", "Programs This Year")
-#programs_this_year_plot
-#qs2(programs_this_year_plot, "programs_this_year")
-#
-## Non school programs
-#non_school_programs_plot <- uni_plot(top_unij_input_plots$"non_school_programs", "Non-School Programs This Year", ylims= c(-0.5, 12))
-#non_school_programs_plot
-#qs2(non_school_programs_plot, "non_school_programs")
-#
-## parent_thought
-#parent_thought_plot <- uni_plot(top_unij_input_plots$"parent_thought", "Parent Thought", ylims = c(-0.5, 13.5))
-#parent_thought_plot
-#qs2(parent_thought_plot, "parent_thought")
-#
-## Parent Somatic
-#parent_somatic_plot <- uni_plot(top_unij_input_plots$"parent_somatic", "Parent Somatic", ylims = c(-0.5, 28))
-#parent_somatic_plot
-#qs2(parent_somatic_plot, "parent_somatic")
-#
-## Weekday screentime
-#weekday_screentime_plot <- uni_plot(top_unij_input_plots$"weekday_screentime", "Weekday Screentime (hours)", ylims = c(-0.5, 21))
-#weekday_screentime_plot
-#qs2(weekday_screentime_plot, "weekday_screentime")
-#
-## parent_antisocial
-#parent_antisocial_plot <- uni_plot(top_unij_input_plots$"parent_antisocial", "Parent Antisocial")
-#parent_antisocial_plot
-#qs2(parent_antisocial_plot, "parent_antisocial")
-#
-## parent_aggressive
-#parent_aggressive_plot <- uni_plot(top_unij_input_plots$"parent_aggressive", "Parent Aggressive")
-#parent_aggressive_plot
-#qs2(parent_aggressive_plot, "parent_aggressive")
-#
-## Parent depress
-#parent_depress_plot <- uni_plot(top_unij_input_plots$"parent_depress", "Parent Depress", ylims = c(-0.5, 28))
-#parent_depress_plot
-#qs2(parent_depress_plot, "parent_depress")
-#
-## parent_anxdep
-#parent_anxdep_plot <- uni_plot(top_unij_input_plots$"parent_anxdep", "Parent Anxious-Depressed")
-#parent_anxdep_plot
-#qs2(parent_anxdep_plot, "parent_anxdep")
-#
-## Race
-#race_plot <- uni_plot(top_unij_input_plots$"race", "Race", scale_fill_labels = c("Black", "Hispanic", "Other", "White"))
-#race_plot
-#qs2(race_plot, "race")
-#
-## parent_anxdisord
-#parent_anxdisord_plot <- uni_plot(top_unij_input_plots$"parent_anxdisord", "Parent Anxious", ylims = c(-0.5, 13))
-#parent_anxdisord_plot
-#qs2(parent_anxdisord_plot, "parent_anxdisord")
-#
-## private_instruction
-#private_instruction_plot <- uni_plot(top_unij_input_plots$"private_instruction", "Private Activities", ylims = c(-0.5, 9.5))
-#private_instruction_plot
-#qs2(private_instruction_plot, "private_instruction")
-#
-## weekend_screentime
-#weekend_screentime_plot <- uni_plot(top_unij_input_plots$"weekend_screentime", "Weekend Screentime (hours)", ylims = c(-0.5, 21))
-#weekend_screentime_plot
-#qs2(weekend_screentime_plot, "weekend_screentime")
-#
-## parent_withdrawn
-#parent_withdrawn_plot <- uni_plot(top_unij_input_plots$"parent_withdrawn", "Parent Withdrawn", ylims = c(-0.5, 17))
-#parent_withdrawn_plot
-#qs2(parent_withdrawn_plot, "parent_withdrawn")
-#
-## parent_avoidant
-#parent_avoidant_plot <- uni_plot(top_unij_input_plots$"parent_avoidant", "Parent Avoidant", ylims = c(-0.5, 13))
-#parent_avoidant_plot
-#qs2(parent_avoidant_plot, "parent_avoidant")
-#
-## parent_hyperactive
-#parent_hyperactive_plot <- uni_plot(top_unij_input_plots$"parent_hyperactive", "Parent Hyperactive", ylims = c(-0.5, 12))
-#parent_hyperactive_plot
-#qs2(parent_hyperactive_plot, "parent_hyperactive")
-#
-## fmri_cort_subcort_cors
-#fmri_cort_subcort_cors_plot <- uni_plot(top_unij_input_plots$"fmri_cort_subcort_cors", "fMRI Cort-Subcort Corrs", ylims = c(-0.15, 0.2))
-#fmri_cort_subcort_cors_plot
-#qs2(fmri_cort_subcort_cors_plot, "fmri_cort_subcort_cors")
-#
-## Parent attention
-#parent_attention_plot <- uni_plot(top_unij_input_plots$"parent_attention", "Parent Attention")
-#parent_attention_plot
-#qs2(parent_attention_plot, "parent_attention")
-#
-## parent_perstr
-#parent_perstr_plot <- uni_plot(top_unij_input_plots$"parent_perstr", "Parent Personal Strength")
-#parent_perstr_plot
-#qs2(parent_perstr_plot, "parent_perstr")
-#
-## parent_intrusive
-#parent_intrusive_plot <- uni_plot(top_unij_input_plots$"parent_intrusive", "Parent Intrusive", ylims = c(-0.5, 12))
-#parent_intrusive_plot
-#qs2(parent_intrusive_plot, "parent_intrusive")
-#
-## family_fight_p
-#family_fight_p_plot <- uni_plot(top_unij_input_plots$"family_fight_p", "Family Fights\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
-#family_fight_p_plot
-#qs2(family_fight_p_plot, "family_fight_p")
-#
-## headache_history
-#headache_history_plot <- uni_plot(top_unij_input_plots$"headache_history", "Headache\nHistory", c("No", "Yes"))
-#headache_history_plot
-#qs2(headache_history_plot, "headache_history")
-#
-## exercise_time
-#exercise_time_plot <- uni_plot(top_unij_input_plots$"exercise_time", "Exercise Score", ylims = c(0, 1.1))
-#exercise_time_plot
-#qs2(exercise_time_plot, "exercise_time")
-#
-## considerate_y
-#considerate_y_plot <- uni_plot(top_unij_input_plots$"considerate_y", "Considerate\n(Youth Report)", c("No", "Yes"))
-#considerate_y_plot
-#qs2(considerate_y_plot, "considerate_y")
-#
-## family_temper_p
-#family_temper_p_plot <- uni_plot(top_unij_input_plots$"family_temper_p", "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes"))
-#family_temper_p_plot
-#qs2(family_temper_p_plot, "family_temper_p")
-#
-## family_outdo_p
-#family_outdo_p_plot <- uni_plot(top_unij_input_plots$"family_outdo_p", "Family Outdo\n(Parent Report)", c("No", "Yes"))
-#family_outdo_p_plot
-#qs2(family_outdo_p_plot, "family_outdo_p")
-#
-## cortical_thickness
-#cortical_thickness_plot <- uni_plot(top_unij_input_plots$"cortical_thickness", "Cortical Thickness (mm)", ylims = c(2.3, 3.1))
-#cortical_thickness_plot
-#qs2(cortical_thickness_plot, "cortical_thickness")
-#
-## helps_hurt_p
-#helps_hurt_p_plot <- uni_plot(top_unij_input_plots$"helps_hurt_p", "Helps Hurt\n(Parent Report)", c("No", "Yes"))
-#helps_hurt_p_plot
-#qs2(helps_hurt_p_plot, "helps_hurt_p")
-#
-## family_peaceful_p
-#family_peaceful_p_plot <- uni_plot(top_unij_input_plots$"family_peaceful_p", "Family Peaceful\n(Parent Report)", c("No", "Yes"))
-#family_peaceful_p_plot
-#qs2(family_peaceful_p_plot, "family_peaceful_p")
-#
-## family_hit_p
-#family_hit_p_plot <- uni_plot(top_unij_input_plots$"family_hit_p", "Family Hitting\n(Parent Report)", c("No", "Yes"))
-#family_hit_p_plot
-#qs2(family_hit_p_plot, "family_hit_p")
-#
-## family_angry_p
-#family_angry_p_plot <- uni_plot(top_unij_input_plots$"family_angry_p", "Family Angry\n(Parent Report)", c("No", "Yes"))
-#family_angry_p_plot
-#qs2(family_angry_p_plot, "family_angry_p")
-#
-## family_yell_y
-#family_yell_y_plot <- uni_plot(top_unij_input_plots$"family_yell_y", "Family Yells\n(Youth Report)", c("No", "Yes"))
-#family_yell_y_plot
-#qs2(family_yell_y_plot, "family_yell_y")
-#
-## pubertal_status_y
-#pubertal_status_y_plot <- uni_plot(top_unij_input_plots$"pubertal_status_y", "Pubertal Status (Youth Report)")
-#pubertal_status_y_plot
-#qs2(pubertal_status_y_plot, "pubertal_status_y")
-#
-## helps_hurt_y
-#helps_hurt_y_plot <- uni_plot(top_unij_input_plots$"helps_hurt_y", "Helps Hurt\n(Youth Report)", c("No", "Yes"))
-#helps_hurt_y_plot
-#qs2(helps_hurt_y_plot, "helps_hurt_y")
-#
-## family_throw_p
-#family_throw_p_plot <- uni_plot(top_unij_input_plots$"family_throw_p", "Family Throwing\n(Parent Report)", c("No", "Yes"))
-#family_throw_p_plot
-#qs2(family_throw_p_plot, "family_throw_p")
-#
-#
-#cbcl_anxdep_plot <- uni_plot(top_unij_outcome_plots$"cbcl_anxdep", "Anxious-Depressed", ylims = c(-0.5, 30))
-#cbcl_withdep_plot <- uni_plot(top_unij_outcome_plots$"cbcl_withdep", "Withdrawn-Depressed", ylims = c(-0.5, 15))
-#cbcl_somatic_plot <- uni_plot(top_unij_outcome_plots$"cbcl_somatic", "Somatic Problems", ylims = c(-0.5, 17))
-#cbcl_social_plot <- uni_plot(top_unij_outcome_plots$"cbcl_social", "Social Problems", ylims = c(-0.5, 20))
-#cbcl_thought_plot <- uni_plot(top_unij_outcome_plots$"cbcl_thought", "Thought Problems", ylims = c(-0.5, 20))
-#cbcl_attention_plot <- uni_plot(top_unij_outcome_plots$"cbcl_attention", "Attention Problems", ylims = c(-0.5, 22))
-#cbcl_rulebreak_plot <- uni_plot(top_unij_outcome_plots$"cbcl_rulebreak", "Rule-Breaking Problems", ylims = c(-0.5, 22))
-#cbcl_aggressive_plot <- uni_plot(top_unij_outcome_plots$"cbcl_aggressive", "Aggression Problems", ylims = c(-0.5, 32))
-#sds_sleep_plot <- uni_plot(top_unij_outcome_plots$"sds_sleep", "Total Sleep Problems", ylims = c(20, 100))
-#
-#matched_gen_in_plots <- list(
-#    "brain_volume" = brain_volume_plot,
-#    "sex" = sex_plot,
-#    "cort_sa" = cort_sa_plot,
-#    "household_income" = household_income_plot,
-#    "pubertal_status_p" = pubertal_status_p_plot,
-#    "programs_this_year" = programs_this_year_plot,
-#    "non_school_programs" = non_school_programs_plot,
-#    "parent_thought" = parent_thought_plot,
-#    "parent_somatic" = parent_somatic_plot,
-#    "weekday_screentime" = weekday_screentime_plot,
-#    "parent_antisocial" = parent_antisocial_plot,
-#    "parent_aggressive" = parent_aggressive_plot,
-#    "parent_depress" = parent_depress_plot,
-#    "parent_anxdep" = parent_anxdep_plot,
-#    "race" = race_plot,
-#    "parent_anxdisord" = parent_anxdisord_plot,
-#    "private_instruction" = private_instruction_plot,
-#    "weekend_screentime" = weekend_screentime_plot,
-#    "parent_withdrawn" = parent_withdrawn_plot,
-#    "parent_avoidant" = parent_avoidant_plot,
-#    "parent_hyperactive" = parent_hyperactive_plot,
-#    "fmri_cort_subcort_cors" = fmri_cort_subcort_cors_plot,
-#    "parent_attention" = parent_attention_plot,
-#    "parent_perstr" = parent_perstr_plot,
-#    "parent_intrusive" = parent_intrusive_plot,
-#    "family_fight_p" = family_fight_p_plot,
-#    "headache_history" = headache_history_plot,
-#    "exercise_time" = exercise_time_plot,
-#    "considerate_y" = considerate_y_plot,
-#    "family_temper_p" = family_temper_p_plot,
-#    "family_outdo_p" = family_outdo_p_plot,
-#    "cortical_thickness" = cortical_thickness_plot,
-#    "helps_hurt_p" = helps_hurt_p_plot,
-#    "family_peaceful_p" = family_peaceful_p_plot,
-#    "family_hit_p" = family_hit_p_plot,
-#    "family_angry_p" = family_angry_p_plot,
-#    "family_yell_y" = family_yell_y_plot,
-#    "pubertal_status_y" = pubertal_status_y_plot,
-#    "helps_hurt_y" = helps_hurt_y_plot,
-#    "family_throw_p" = family_throw_p_plot
-#)
-#
-#matched_gen_out_plots <- list(
-#    "cbcl_anxdep" = cbcl_anxdep_plot,
-#    "cbcl_withdep" = cbcl_withdep_plot,
-#    "cbcl_somatic" = cbcl_somatic_plot,
-#    "cbcl_social" = cbcl_social_plot,
-#    "cbcl_thought" = cbcl_thought_plot,
-#    "cbcl_attention" = cbcl_attention_plot,
-#    "cbcl_rulebreak" = cbcl_rulebreak_plot,
-#    "cbcl_aggressive" = cbcl_aggressive_plot,
-#    "sds_sleep" = sds_sleep_plot
-#)
-#
-#list.save(matched_gen_in_plots, proc_path("matched_gen_in_plots.rds", TRUE))
-#list.save(matched_gen_out_plots, proc_path("matched_gen_out_plots.rds", TRUE))
-```
-
-```{r}
-#matched_gen_in_plots <- list.load(proc_path("2024_11_28_matched_gen_in_plots.rds"))
-#matched_gen_out_plots <- list.load(proc_path("2024_11_28_matched_gen_out_plots.rds"))
-```
-
-## How does the classifier do?
-
-Can always check this later
-
-```{r}
-#subtype_classifier <- readRDS(model_path("2024_11_28_subtype_classifier.rds"))
-#
-## Just FYI
-#prep_data <- function(df, standardize = FALSE) {
-#    df <- dplyr::select(df, -"subjectkey")
-#    df <- dummy_cols(
-#        df,
-#        select_columns = "race",
-#        remove_selected_columns = TRUE,
-#        remove_most_frequent_dummy = TRUE
-#    )
-#    ordered_factors <- c(
-#        "sex",
-#        "household_income",
-#        "pubertal_status_p",
-#        "family_fight_p",
-#        "family_outdo_p",
-#        "helps_hurt_p",
-#        "helpful_y",
-#        "considerate_y",
-#        "helps_hurt_y",
-#        "family_criticize_p",
-#        "family_outdo_y",
-#        "family_angry_p",
-#        "helpful_p",
-#        "family_throw_p",
-#        "family_hit_p",
-#        "family_peaceful_y",
-#        "family_throw_y",
-#        "race_black",
-#        "race_hispanic",
-#        "race_other" 
-#    )
-#    df[ordered_factors] <- lapply(df[ordered_factors], as.ordered)
-#    if (standardize) {
-#        df[] <- lapply(df, as.numeric)
-#        df <- as.data.frame(scale(df))
-#    }
-#    if ("cluster" %in% colnames(df)) {
-#        df$"cluster" <- as.factor(df$"cluster")
-#    }
-#    return(df)
-#}
-#
-##mini_df <- unij_matching_df_s1[1:200, ]
-#
-#library(randomForest)
-#library(fastDummies)
-#
-#unij_pred_df_s1 <- unij_matching_df_s1 |> 
-#    dplyr::mutate(
-#        cluster = predict(
-#            subtype_classifier,
-#            newdata = prep_data(unij_matching_df_s1)
-#        )
-#    )
-#
-#unij_pred_df_s1$cluster |> table() |> prop.table()
-#
-#unij_pred_cluster_df <- unij_pred_df_s1 |> dplyr::select(subjectkey, cluster)
-#
-#unij_pred_plot_list <- auto_plot(
-#    cluster_df = unij_pred_cluster_df,
-#    data_list = unij_dl_s1,
-#    target_list = unij_ol_s1 
-#)
-#
-#unij_pred_plot_list[for_unij]
-#
-#unij_pred_all_plots <- wrap_plots(unij_pred_plot_list[for_unij])
-#
-#ggsave(
-#    fig_path("unij_pred_all_plots.png", TRUE),
-#    unij_pred_all_plots,
-#    width = 45,
-#    height = 30,
-#    dpi = 50
-#)
-#
-#unij_pred_cluster_df$"cluster" |> table() |> prop.table()
-#
-#get_cluster_df(mtbi_full_top_3c)$"cluster" |> table() |> prop.table()
-#
-#rbind(
-#    unij_pred_cluster_df$"cluster" |> table(),
-#    get_cluster_df(mtbi_full_top_3c)$"cluster" |> table()
-#) |> chisq.test()
-```
-
-## 1. Examining correlation structure between mTBI and matched uninjured
-
-Are the correlations stronger in the mTBI group?
-
-```{r}
-mtbi_ful_df <- as.data.frame(readRDS(proc_path("2025_02_13_mtbi_ful_df.rds")))
-
-d_s_df <- as.data.frame(c(matched_unij_dl_d_s, matched_unij_ol_d_s))
-p_s_df <- as.data.frame(c(matched_unij_dl_p_s, matched_unij_ol_p_s))
-o_s_df <- as.data.frame(c(matched_unij_dl_o_s, matched_unij_ol_o_s))
-d_p_df <- as.data.frame(c(matched_unij_dl_d_p, matched_unij_ol_d_p))
-p_p_df <- as.data.frame(c(matched_unij_dl_p_p, matched_unij_ol_p_p))
-o_p_df <- as.data.frame(c(matched_unij_dl_o_p, matched_unij_ol_o_p))
-dp_s_df <- as.data.frame(c(matched_unij_dl_dp_s, matched_unij_ol_dp_s))
-do_s_df <- as.data.frame(c(matched_unij_dl_do_s, matched_unij_ol_do_s))
-op_s_df <- as.data.frame(c(matched_unij_dl_op_s, matched_unij_ol_op_s))
-dp_p_df <- as.data.frame(c(matched_unij_dl_dp_p, matched_unij_ol_dp_p))
-do_p_df <- as.data.frame(c(matched_unij_dl_do_p, matched_unij_ol_do_p))
-op_p_df <- as.data.frame(c(matched_unij_dl_op_p, matched_unij_ol_op_p))
-dpo_p_df <- as.data.frame(c(matched_unij_dl_dpo_p, matched_unij_ol_dpo_p))
-dpo_s_df <- as.data.frame(c(matched_unij_dl_dpo_s, matched_unij_ol_dpo_s))
-random_s1_df <- as.data.frame(c(random_unij_dl_s1, random_unij_ol_s1))
-random_p1_df <- as.data.frame(c(random_unij_dl_p1, random_unij_ol_p1))
-
-matched_unij_dfs <- list(
-    "d_s_df" = d_s_df,
-    "p_s_df" = p_s_df,
-    "o_s_df" = o_s_df,
-    "d_p_df" = d_p_df,
-    "p_p_df" = p_p_df,
-    "o_p_df" = o_p_df,
-    "dp_s_df" = dp_s_df,
-    "do_s_df" = do_s_df,
-    "op_s_df" = op_s_df,
-    "dp_p_df" = dp_p_df,
-    "do_p_df" = do_p_df,
-    "op_p_df" = op_p_df,
-    "dpo_p_df" = dpo_p_df,
-    "dpo_s_df" = dpo_s_df,
-    "random_s1_df" = random_s1_df,
-    "random_p1_df" = random_p1_df
-)
-
-# No duplicate data frames
-matched_unij_dfs2 <- matched_unij_dfs[!duplicated(matched_unij_dfs)]
-names(matched_unij_dfs2)
-```
-
-```{r}
-saveRDS(matched_unij_dfs2, proc_path("matched_unij_dfs2.rds", TRUE))
-
-matched_unij_dfs2 <- readRDS(proc_path("2025_03_25_matched_unij_dfs2.rds"))
-
-
-# Data frame that only has the uninjured columns
-mtbi_compare_df <- mtbi_ful_df[, colnames(d_s_df)]
-
-mean_cor <- function(mat) {
-    mat[upper.tri(mat)] |>
-        abs() |>
-        mean()
-}
-
-perm_test <- function(df1, df2, n = 10) {
-    mean_cor_diff <- mean_cor(cor(df1)) - mean_cor(cor(df2))
-    stacked_df <- rbind(df1, df2)
-    diffs <- numeric(n)
-    for (i in 1:n) {
-        random_df <- stacked_df[sample.int(nrow(stacked_df)), ]
-        mean_cor_1 <- mean_cor(cor_fn(random_df[1:437, ]))
-        mean_cor_2 <- mean_cor(cor_fn(random_df[438:874, ]))
-        diffs[i] <- mean_cor_1 - mean_cor_2
-    }
-    return(list(
-        "observed_diff" = mean_cor_diff,
-        "simulated_diffs" = diffs,
-        "p_value" = sum(diffs > mean_cor_diff) / n
-    ))
-}
-
-library(Rcpp)
-
-sourceCpp("abcd/perm_test.cpp")
-
-prep_and_test <- function(df1, df2, n = 10) {
-    df1 <- df1 |>
-        dplyr::select(-"uid") |>
-        dummy_cols(
-            select_columns = "race",
-            remove_selected_columns = TRUE,
-            remove_most_frequent_dummy = TRUE
-        ) |>
-        as.matrix()
-    df2 <- df2 |>
-        dplyr::select(-"uid") |>
-        dummy_cols(
-            select_columns = "race",
-            remove_selected_columns = TRUE,
-            remove_most_frequent_dummy = TRUE
-        ) |>
-        as.matrix()
-    results <- perm_test_cpp(df1, df2, n = n)
-    return(results)
-}
-
-matched_unij_dfs2 |> length();
-
-set.seed(42)
-matched_perm_test_df <- data.frame()
-for (i in seq_along(matched_unij_dfs2)) {
-    cat("DF: ", i, "\n")
-    p_value <- prep_and_test(
-        mtbi_compare_df,
-        matched_unij_dfs2[[i]],
-        n = 10000
-    )$"p_value"
-    matched_perm_test_df <- rbind(
-        matched_perm_test_df,
-        data.frame(
-            "match" = names(matched_unij_dfs2)[[i]],
-            "p" = p_value
-        )
-    )
-}
-write_csv(matched_perm_test_df, proc_path("matched_perm_test_df.csv", TRUE))
-
-matched_perm_test_df <- read_csv(
-    proc_path("2025_03_25_matched_perm_test_df.csv")
-)
-
-matched_perm_test_df |> arrange(p)
-
-## A tibble: 12 × 2
-#   match             p
-#   <chr>         <dbl>
-# 1 d_s_df       0
-# 2 d_p_df       0
-# 3 random_s1_df 0
-# 4 random_p1_df 0
-# 5 p_s_df       0.0022
-# 6 p_p_df       0.0037
-# 7 do_s_df      0.0407
-# 8 do_p_df      0.0618
-# 9 dp_s_df      0.0655
-#10 dp_p_df      0.120
-#11 o_s_df       0.176
-#12 o_p_df       0.217
-```
-
-## 2. Compare correlations between mTBI C1 and C2
-
-What correlations, if any, are significantly different?
