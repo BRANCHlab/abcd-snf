@@ -13,17 +13,12 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +53 09_longitudinal_analyses.qmd
-badd +3 ~/Documents/prash/time/time.csv
-badd +400 04_baseline_mtbi_snf.qmd
-badd +1 helper_functions.R
-badd +99 ~/Documents/prash/journal/prash.md
-badd +162 11_sample_size_check.qmd
-badd +12 02_baseline_preprocessing.qmd
+badd +74 12_correlation_explanation.qmd
+badd +72 085_characterization.qmd
 argglobal
 %argdel
-$argadd 09_longitudinal_analyses.qmd
-edit 04_baseline_mtbi_snf.qmd
+$argadd 12_correlation_explanation.qmd
+edit 12_correlation_explanation.qmd
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
@@ -40,10 +35,10 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe '1resize ' . ((&lines * 27 + 28) / 56)
-exe '2resize ' . ((&lines * 27 + 28) / 56)
+exe '1resize ' . ((&lines * 28 + 28) / 57)
+exe '2resize ' . ((&lines * 27 + 28) / 57)
 argglobal
-balt helper_functions.R
+balt 085_characterization.qmd
 setlocal foldmethod=marker
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -52,20 +47,18 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 393 - ((8 * winheight(0) + 13) / 27)
+let s:l = 94 - ((19 * winheight(0) + 14) / 28)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 393
-normal! 0
-lcd ~/Documents/prash/journal
+keepjumps 94
+normal! 036|
 wincmd w
 argglobal
-if bufexists(fnamemodify("~/Documents/abcd-snf/abcd/11_sample_size_check.qmd", ":p")) | buffer ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd | else | edit ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd | endif
+if bufexists(fnamemodify("12_correlation_explanation.qmd", ":p")) | buffer 12_correlation_explanation.qmd | else | edit 12_correlation_explanation.qmd | endif
 if &buftype ==# 'terminal'
-  silent file ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd
+  silent file 12_correlation_explanation.qmd
 endif
-balt ~/Documents/abcd-snf/abcd/02_baseline_preprocessing.qmd
 setlocal foldmethod=marker
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -74,16 +67,15 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 163 - ((14 * winheight(0) + 13) / 27)
+let s:l = 286 - ((14 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 163
-normal! 018|
+keepjumps 286
+normal! 0
 wincmd w
-2wincmd w
-exe '1resize ' . ((&lines * 27 + 28) / 56)
-exe '2resize ' . ((&lines * 27 + 28) / 56)
+exe '1resize ' . ((&lines * 28 + 28) / 57)
+exe '2resize ' . ((&lines * 27 + 28) / 57)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
