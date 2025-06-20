@@ -578,6 +578,18 @@ perm_p_df |>
     dplyr::ungroup() |>
     dplyr::select(-feature) |>
     data.frame()
+
+perm_p_df |>
+    dplyr::group_by(feature, input, output, set_type) |>
+    dplyr::summarize(mean = mean(fdr_p)) |>
+    dplyr::arrange(mean) |>
+    dplyr::filter(mean < 0.05) |>
+    dplyr::ungroup() |>
+    dplyr::select(-feature) |>
+    data.frame() |>
+    dplyr::filter(set_type == "random_unij") |>
+    dplyr::arrange(input)
+
 ```
 
                   input          output                  set_type        mean
@@ -736,3 +748,38 @@ pre_v_post_df |>
 ```
 
 Nothing remained significant following FDR multiple comparisons corrections.
+
+
+Checking our main results with some plots:
+
+```{r}
+
+names(reduced_dfs)
+# significant!!!
+plot_df <- function(group1, group2) {
+    df <- rbind(
+        dplyr::mutate(reduced_dfs[[group1]], group = names(reduced_dfs)[group1]),
+        dplyr::mutate(reduced_dfs[[group2]], group = names(reduced_dfs)[group2])
+    )
+    print(
+        summary(
+            lm(cbcl_aggressive ~ household_income * group, data = df)
+        )
+    )
+    df |>
+        ggplot(
+            aes(
+                x = household_income,
+                y = cbcl_aggressive,
+                colour = group
+            )
+        ) +
+        geom_jitter(height = 0.1, width = 0.1, alpha = 0.5) +
+        geom_smooth(method = "lm", se = FALSE) +
+        theme_bw()
+}
+plot_df(1, 14)
+
+
+
+```
