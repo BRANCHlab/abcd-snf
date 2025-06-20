@@ -435,8 +435,7 @@ permutation_test_corrs3 <- function(df1,
 set.seed(42)
 start <- Sys.time()
 perm_ele_wise_corrs_v_mtbi_lapply <- lapply(
-    #2:length(reduced_dfs),
-    2,
+    2:length(reduced_dfs),
     function(x) {
         permutation_test_corrs3(
             df1 = reduced_dfs[[1]],
@@ -449,24 +448,13 @@ perm_ele_wise_corrs_v_mtbi_lapply <- lapply(
     }
 )
 print(Sys.time() - start)
-
-set.seed(42)
-start <- Sys.time()
-perm_ele_wise_corrs_v_mtbi_loop <- lapply(
-    #2:length(reduced_dfs),
-    2,
-    function(x) {
-        permutation_test_corrs3(
-            df1 = reduced_dfs[[1]],
-            df2 = reduced_dfs[[x]],
-            method = "pearson",
-            fisher_z = TRUE,
-            perms = 1000,
-            style = "loop"
-        )
-    }
+saveRDS(
+    perm_ele_wise_corrs_v_mtbi_lapply,
+    proc_path(
+        "perm_ele_wise_corrs_v_mtbi_lapply_fisherz_5000.rds",
+        TRUE
+    )
 )
-print(Sys.time() - start)
 
 flatten_mats <- function(perm_results) {
     mat_list <- perm_results$"perm_mat_diffs"
@@ -495,62 +483,256 @@ flatten_mats <- function(perm_results) {
     return(flattened_mats)
 }
 
-flatten_mats(perm_ele_wise_corrs_v_mtbi_loop[[2]])
+perm_ele_flat <- lapply(
+    perm_ele_wise_corrs_v_mtbi_lapply,
+    function(x) {
+        flatten_mats(x)
+    }
+)
+
+perm_ele_flat[[1]][[1]][1] > perm_ele_flat[[1]][[1]][-1]
+
+# this object is a list of 13 sets of group comparisons
+# each set of comparison is a list of 180 pairwise correlations
+# each pairwise correlation si a vector of 5001 values
+
+saveRDS(
+    perm_ele_flat,
+    proc_path("perm_ele_flat_v_mtbi_fisherz_5000.rds", TRUE)
+)
+
+perm_p_values <- lapply(
+    perm_ele_flat,
+    function(group_comparison) {
+        lapply(
+            group_comparison,
+            function(perm_vector) {
+                # base the comparison on sign of the first element
+                # which is the actual observed difference
+                if (perm_vector[1] >= 0) {
+                    return(mean(perm_vector[-1] >= perm_vector[1]))
+                } else {
+                    return(mean(perm_vector[-1] <= perm_vector[1]))
+                }
+            }
+        ) |> unlist()
+    }
+)
+
+saveRDS(
+    perm_p_values,
+    proc_path("perm_p_values_v_mtbi_fisherz_5000.rds", TRUE)
+)
+
+
+perm_p_dfs <- lapply(
+    perm_p_values,
+    function(x) {
+        df <- data.frame(
+            "feature" = names(x),
+            "p_value" = x
+        )
+        rownames(df) <- NULL
+        df
+    }
+)
+
+names(perm_p_dfs) <- names(reduced_dfs)[2:length(reduced_dfs)]
+
+perm_p_dfs_clean <- lapply(
+    names(perm_p_dfs),
+    function(name) {
+        perm_p_dfs[[name]]$"set" <- name
+        if (isTRUE(as.logical(grep("random_unij", name)))) {
+            perm_p_dfs[[name]]$"set_type" <- "random_unij"
+        } else {
+            perm_p_dfs[[name]]$"set_type" <- name
+        }
+        #perm_p_dfs[[name]]$"input" <- strsplit(perm_p_dfs[[name]]$"feature", "_vs_")[[1]][[1]]
+        #perm_p_dfs[[name]]$"output" <- strsplit(perm_p_dfs[[name]]$"feature", "_vs_")[[1]][[2]]
+        perm_p_dfs[[name]]$"input" <- unlist(lapply(strsplit(perm_p_dfs[[name]]$"feature", "_vs_"), function(x) x[1]))
+        perm_p_dfs[[name]]$"output" <- unlist(lapply(strsplit(perm_p_dfs[[name]]$"feature", "_vs_"), function(x) x[2]))
+        perm_p_dfs[[name]]
+    }
+)
+perm_p_df <- do.call(
+    rbind,
+    perm_p_dfs_clean
+)
+perm_p_df$"fdr_p" <- p.adjust(perm_p_df$"p_value", method = "fdr") 
+
+saveRDS(perm_p_df, proc_path("perm_p_df.rds", TRUE))
+
+perm_p_df <- readRDS(proc_path("2025_06_20_perm_p_df.rds"))
+
+perm_p_df
 ```
+
+```{r}
+# Everything
+perm_p_df |>
+    dplyr::group_by(feature, input, output, set_type) |>
+    dplyr::summarize(mean = mean(fdr_p)) |>
+    dplyr::arrange(mean) |>
+    dplyr::filter(mean < 0.05) |>
+    dplyr::ungroup() |>
+    dplyr::select(-feature) |>
+    data.frame()
+```
+
+                  input          output                  set_type        mean
+1        parent_somatic    cbcl_withdep              preinjury_df 0.000000000
+2   private_instruction cbcl_aggressive              preinjury_df 0.000000000
+3      extracurriculars cbcl_aggressive              preinjury_df 0.005318182
+4      household_income    cbcl_withdep              preinjury_df 0.005318182
+5   private_instruction cbcl_aggressive best_matched_uninjured_df 0.005318182
+6   private_instruction  cbcl_rulebreak              preinjury_df 0.005318182
+7      extracurriculars cbcl_aggressive               random_unij 0.006433632
+8      household_income    cbcl_thought               random_unij 0.007816359
+9      household_income cbcl_aggressive               random_unij 0.008879989
+10 activities_last_year cbcl_aggressive               random_unij 0.009327785
+11  private_instruction    cbcl_withdep             postinjury_df 0.011700000
+12 activities_last_year cbcl_aggressive best_matched_uninjured_df 0.013664234
+13 activities_last_year cbcl_aggressive             postinjury_df 0.013664234
+14     extracurriculars    cbcl_somatic             postinjury_df 0.013664234
+15  private_instruction    cbcl_withdep best_matched_uninjured_df 0.013664234
+16     household_income     cbcl_anxdep               random_unij 0.017178958
+17 activities_last_year cbcl_aggressive              preinjury_df 0.017550000
+18  private_instruction cbcl_aggressive               random_unij 0.019172319
+19 activities_last_year     cbcl_social best_matched_uninjured_df 0.019384615
+20     extracurriculars cbcl_aggressive best_matched_uninjured_df 0.019384615
+21  private_instruction    cbcl_withdep              preinjury_df 0.021517241
+22  private_instruction  cbcl_rulebreak best_matched_uninjured_df 0.023142857
+23     household_income    cbcl_withdep               random_unij 0.023790351
+24     household_income  cbcl_attention               random_unij 0.023911780
+25  private_instruction  cbcl_rulebreak               random_unij 0.024018424
+26     extracurriculars cbcl_aggressive             postinjury_df 0.024502618
+27     extracurriculars    cbcl_withdep best_matched_uninjured_df 0.025485149
+28     extracurriculars  cbcl_rulebreak               random_unij 0.027664824
+29     household_income     cbcl_social               random_unij 0.032231645
+30 activities_last_year     cbcl_social             postinjury_df 0.036310345
+31  private_instruction cbcl_aggressive             postinjury_df 0.036310345
+32     extracurriculars     cbcl_social best_matched_uninjured_df 0.040114286
+33     household_income    cbcl_withdep best_matched_uninjured_df 0.040114286
+34     household_income    cbcl_withdep             postinjury_df 0.040695652
+35         brain_volume     cbcl_anxdep              preinjury_df 0.042046875
+36 activities_last_year    cbcl_thought               random_unij 0.042116119
+37     parent_anxdisord    cbcl_withdep              preinjury_df 0.044150943
+38     household_income       sds_sleep               random_unij 0.044587490
+39 activities_last_year    cbcl_withdep best_matched_uninjured_df 0.045234201
+
+```{r}
+# Distribution of inputs
+perm_p_df |>
+    dplyr::group_by(feature, input, output, set_type) |>
+    dplyr::summarize(mean = mean(fdr_p)) |>
+    dplyr::arrange(mean) |>
+    dplyr::filter(mean < 0.05) |>
+    dplyr::ungroup() |>
+    dplyr::select(-feature) |>
+    data.frame() |>
+    dplyr::select(input) |> table()
+```
+
+activities_last_year         brain_volume     extracurriculars
+                   8                    1                    8
+    household_income     parent_anxdisord       parent_somatic
+                  10                    1                    1
+ private_instruction
+                  10
 
 
 ```{r}
-#dfs_to_cor_diffs <- function(df1, df2, method, fisher_z) {
-#    cor_mat_1 <- calculate_cor_mat(df1, method = method, fisher_z = fisher_z)
-#    cor_mat_2 <- calculate_cor_mat(df2, method = method, fisher_z = fisher_z)
-#    plot_cor_mat_diffs(cor_mat_1, cor_mat_2)
-#}
-#
-#dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_1_df", "pearson", TRUE)$"plot"
-#
-#mat_2 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_2_df", "pearson", TRUE)$"mat"
-#mat_3 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_3_df", "pearson", TRUE)$"mat"
-#mat_4 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_4_df", "pearson", TRUE)$"mat"
-#mat_5 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_5_df", "pearson", TRUE)$"mat"
-#mat_6 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_6_df", "pearson", TRUE)$"mat"
-#mat_7 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_7_df", "pearson", TRUE)$"mat"
-#mat_8 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_8_df", "pearson", TRUE)$"mat"
-#mat_9 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_9_df", "pearson", TRUE)$"mat"
-#mat_10 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_10_df", "pearson", TRUE)$"mat"
-#
-#mat_1 <- mat_1[sort(rownames(mat_1)), ]
-#mat_2 <- mat_2[sort(rownames(mat_2)), ]
-#mat_3 <- mat_3[sort(rownames(mat_3)), ]
-#mat_4 <- mat_4[sort(rownames(mat_4)), ]
-#mat_5 <- mat_5[sort(rownames(mat_5)), ]
-#mat_6 <- mat_6[sort(rownames(mat_6)), ]
-#mat_7 <- mat_7[sort(rownames(mat_7)), ]
-#mat_8 <- mat_8[sort(rownames(mat_8)), ]
-#mat_9 <- mat_9[sort(rownames(mat_9)), ]
-#mat_10 <- mat_10[sort(rownames(mat_10)), ]
-#
-## Calculate element-wise average of the matrices
-#element_wise_average <- function(...) {
-#    Reduce("+", list(...)) / length(list(...))
-#}
-#
-#z <- element_wise_average(
-#    mat_1, mat_2, mat_3, mat_4, mat_5, mat_6, mat_7, mat_8, mat_9, mat_10
-#)
-#
-#names(sort(-rowSums(z)))
-#
-#plot_cor_mat(z)
-#
-#mean(reduced_dfs$"mtbi_ful_df"$"cbcl_aggressive")
-#
-#permutation_test_corrs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_1_df", "pearson", FALSE, 100)
-#
-##permutation testing mean absolute difference in spearman correlations
-##permutation testing mean absolute difference in pearson correlations
-##permutation testing mean absolute difference in z-transformed pearson correlations
-#
-#lapply(random_unij_dl_u1, names)
-#
-#class(random_unij_dl_u1[[1]])
+# In just pre-injury / post-injry
+perm_p_df |>
+    dplyr::filter(set_type %in% c("preinjury_df")) |>
+    dplyr::group_by(feature, input, output, set_type) |>
+    dplyr::summarize(mean = mean(fdr_p)) |>
+    dplyr::arrange(mean) |>
+    dplyr::filter(mean < 0.05) |>
+    dplyr::ungroup() |>
+    dplyr::select(-feature) |>
+    data.frame()
+
+perm_p_df |>
+    dplyr::filter(set_type %in% c("postinjury_df")) |>
+    dplyr::group_by(feature, input, output, set_type) |>
+    dplyr::summarize(mean = mean(fdr_p)) |>
+    dplyr::arrange(mean) |>
+    dplyr::filter(mean < 0.05) |>
+    dplyr::ungroup() |>
+    dplyr::select(-feature) |>
+    data.frame()
+
 ```
+                 input          output     set_type        mean
+1       parent_somatic    cbcl_withdep preinjury_df 0.000000000
+2  private_instruction cbcl_aggressive preinjury_df 0.000000000
+3     extracurriculars cbcl_aggressive preinjury_df 0.005318182
+4     household_income    cbcl_withdep preinjury_df 0.005318182
+5  private_instruction  cbcl_rulebreak preinjury_df 0.005318182
+6 activities_last_year cbcl_aggressive preinjury_df 0.017550000
+7  private_instruction    cbcl_withdep preinjury_df 0.021517241
+8         brain_volume     cbcl_anxdep preinjury_df 0.042046875
+9     parent_anxdisord    cbcl_withdep preinjury_df 0.044150943
+
+                 input          output      set_type       mean
+1  private_instruction    cbcl_withdep postinjury_df 0.01170000
+2 activities_last_year cbcl_aggressive postinjury_df 0.01366423
+3     extracurriculars    cbcl_somatic postinjury_df 0.01366423
+4     extracurriculars cbcl_aggressive postinjury_df 0.02450262
+5 activities_last_year     cbcl_social postinjury_df 0.03631034
+6  private_instruction cbcl_aggressive postinjury_df 0.03631034
+7     household_income    cbcl_withdep postinjury_df 0.04069565
+
+```{r}
+# A quick check of pre vs post
+
+names(reduced_dfs)
+
+pre_v_post_ele_perm <- permutation_test_corrs3(
+    df1 = reduced_dfs[["preinjury_df"]],
+    df2 = reduced_dfs[["postinjury_df"]],
+    method = "pearson",
+    fisher_z = TRUE,
+    perms = 5000,
+    style = "lapply"
+)
+
+pre_v_post_flat <- flatten_mats(pre_v_post_ele_perm)
+
+names(pre_v_post_flat)
+
+pre_v_post_p_values <- lapply(
+    pre_v_post_flat,
+    function(perm_vector) {
+        # base the comparison on sign of the first element
+        # which is the actual observed difference
+        if (perm_vector[1] >= 0) {
+            return(mean(perm_vector[-1] >= perm_vector[1]))
+        } else {
+            return(mean(perm_vector[-1] <= perm_vector[1]))
+        }
+    }
+) |> unlist()
+
+pre_v_post_df <- data.frame(
+    "feature" = names(pre_v_post_p_values),
+    "p_value" = pre_v_post_p_values
+)
+pre_v_post_df$"input" <- unlist(lapply(strsplit(pre_v_post_df$"feature", "_vs_"), function(x) x[1]))
+pre_v_post_df$"output" <- unlist(lapply(strsplit(pre_v_post_df$"feature", "_vs_"), function(x) x[2]))
+rownames(pre_v_post_df) <- NULL
+pre_v_post_df <- pre_v_post_df |> dplyr::select(-feature)
+pre_v_post_df$"fdr_p" <- p.adjust(pre_v_post_df$"p_value", method = "fdr")
+
+saveRDS(pre_v_post_df, proc_path("pre_v_post_df.rds", TRUE))
+
+pre_v_post_df <- readRDS(proc_path("2025_06_20_pre_v_post_df.rds"))
+
+pre_v_post_df |>
+    dplyr::arrange(p_value)
+
+```
+
+Nothing remained significant following FDR multiple comparisons corrections.
