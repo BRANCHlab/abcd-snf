@@ -333,78 +333,224 @@ perm_diffs_cor_v_mtbi <- lapply(
     }
 )
 print(Sys.time() - start)
-saveRDS(perm_diffs_cor_v_mtbi, proc_path("perm_diffs_cor_v_mtbi_fisherz_5000.rds", TRUE))
-
-perm_diffs_cor_v_mtbi
 
 names(perm_diffs_cor_v_mtbi) <- names(reduced_dfs)[2:length(reduced_dfs)]
+
+saveRDS(perm_diffs_cor_v_mtbi, proc_path("perm_diffs_cor_v_mtbi_fisherz_5000.rds", TRUE))
+```
+
+```{r}
+perm_diffs_cor_v_mtbi <- readRDS(proc_path("2025_06_20_perm_diffs_cor_v_mtbi_fisherz_5000.rds"))
 
 lapply(
     names(perm_diffs_cor_v_mtbi),
     function(x) {
-        paste0(x, ": ", perm_diffs_cor_v_mtbi[[x]]$"p_value")
+        paste0(x, ": ", min(1, 14*perm_diffs_cor_v_mtbi[[x]]$"p_value"))
     }
 )
-
-perm_diffs_cor_v_mtbi[[4]][[1]]
-
-perm_diffs_cor_v_mtbi[[4]][[3]]
 ```
+
+Random unij dfs (6/10 significantly different after multiple comparisons corrections):
+- 1
+- *0.0308*
+- 0.2128
+- *0.0056*
+- *0*
+- *0.0336*
+- *0.0112*
+- 0.1652
+- 0.378
+- *0.0224*
+
+best_matched_uninjured_df: 1
+
+preinjury_df: 1
+
+postinjury_df: 1
 
 ## 2. If not a generic increase in strength, what is significantly different?
 
+- Focus on correlations between outcome measures and top 20 most important features for clustering solution only
+
 ```{r}
-dfs_to_cor_diffs <- function(df1, df2, method, fisher_z) {
-    cor_mat_1 <- calculate_cor_mat(df1, method = method, fisher_z = fisher_z)
-    cor_mat_2 <- calculate_cor_mat(df2, method = method, fisher_z = fisher_z)
-    plot_cor_mat_diffs(cor_mat_1, cor_mat_2)
+# Adding in dummy race variable
+ifts <- readRDS(proc_path("2025_06_11_ifts.rds"))
+ifts_expand <- unlist(append(ifts, list("race_black", "race_hispanic", "race_other"), after = which(ifts == "race")))
+ifts_expand <- ifts_expand[-18]
+ifts_expand <- ifts_expand[1:20]
+
+ofts <- readRDS(proc_path("2025_06_11_ofts.rds"))
+```
+
+```{r}
+
+permutation_test_corrs3 <- function(df1,
+                                    df2,
+                                    method = "pearson",
+                                    fisher_z = TRUE,
+                                    perms,
+                                    procs = future::availableCores(),
+                                    style = "loop") {
+    cor1 <- calculate_cor_mat(df1, method, fisher_z)[ifts_expand, ofts]
+    cor2 <- calculate_cor_mat(df2, method, fisher_z)[ifts_expand, ofts]
+    obs_diff <- cor1 - cor2
+    n1 <- nrow(df1)
+    n2 <- nrow(df2)
+    n <- n1 + n2
+    if (style == "lapply") {
+        future::plan(future::multisession, workers = procs)
+        perm_mat_diffs <- future.apply::future_lapply(
+            seq_len(perms),
+            future.seed = TRUE,
+            function(i) {
+                merged_df <- rbind(df1, df2)[sample(n), ]
+                perm_cor1 <- calculate_cor_mat(merged_df[1:n1, ], method, fisher_z)[ifts_expand, ofts]
+                perm_cor2 <- calculate_cor_mat(merged_df[(n1+1):n, ], method, fisher_z)[ifts_expand, ofts]
+                return(perm_cor1 - perm_cor2)
+            }
+        )
+        future::plan("sequential")
+    }
+    if (style == "loop") {
+        perm_mat_diffs <- vector("list", perms)
+        for (i in seq_len(perms)) {
+            merged_df <- rbind(df1, df2)[sample(n), ]
+            perm_cor1 <- calculate_cor_mat(merged_df[1:n1, ], method, fisher_z)[ifts_expand, ofts]
+            perm_cor2 <- calculate_cor_mat(merged_df[(n1+1):n, ], method, fisher_z)[ifts_expand, ofts]
+            perm_mat_diffs[[i]] <- perm_cor1 - perm_cor2
+        }
+    }
+    perm_mat_diffs <- append(perm_mat_diffs, list(obs_diff) , after = 0)
+    return(
+        list(
+            cor1 = cor1,
+            cor2 = cor2,
+            obs_diff = cor1 - cor2,
+            perm_mat_diffs = perm_mat_diffs
+        )
+    )
 }
 
-dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_1_df", "pearson", TRUE)$"plot"
 
-mat_2 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_2_df", "pearson", TRUE)$"mat"
-mat_3 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_3_df", "pearson", TRUE)$"mat"
-mat_4 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_4_df", "pearson", TRUE)$"mat"
-mat_5 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_5_df", "pearson", TRUE)$"mat"
-mat_6 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_6_df", "pearson", TRUE)$"mat"
-mat_7 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_7_df", "pearson", TRUE)$"mat"
-mat_8 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_8_df", "pearson", TRUE)$"mat"
-mat_9 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_9_df", "pearson", TRUE)$"mat"
-mat_10 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_10_df", "pearson", TRUE)$"mat"
-
-mat_1 <- mat_1[sort(rownames(mat_1)), ]
-mat_2 <- mat_2[sort(rownames(mat_2)), ]
-mat_3 <- mat_3[sort(rownames(mat_3)), ]
-mat_4 <- mat_4[sort(rownames(mat_4)), ]
-mat_5 <- mat_5[sort(rownames(mat_5)), ]
-mat_6 <- mat_6[sort(rownames(mat_6)), ]
-mat_7 <- mat_7[sort(rownames(mat_7)), ]
-mat_8 <- mat_8[sort(rownames(mat_8)), ]
-mat_9 <- mat_9[sort(rownames(mat_9)), ]
-mat_10 <- mat_10[sort(rownames(mat_10)), ]
-
-# Calculate element-wise average of the matrices
-element_wise_average <- function(...) {
-    Reduce("+", list(...)) / length(list(...))
-}
-
-z <- element_wise_average(
-    mat_1, mat_2, mat_3, mat_4, mat_5, mat_6, mat_7, mat_8, mat_9, mat_10
+set.seed(42)
+start <- Sys.time()
+perm_ele_wise_corrs_v_mtbi_lapply <- lapply(
+    #2:length(reduced_dfs),
+    2,
+    function(x) {
+        permutation_test_corrs3(
+            df1 = reduced_dfs[[1]],
+            df2 = reduced_dfs[[x]],
+            method = "pearson",
+            fisher_z = TRUE,
+            perms = 5000,
+            style = "lapply"
+        )
+    }
 )
+print(Sys.time() - start)
 
-names(sort(-rowSums(z)))
+set.seed(42)
+start <- Sys.time()
+perm_ele_wise_corrs_v_mtbi_loop <- lapply(
+    #2:length(reduced_dfs),
+    2,
+    function(x) {
+        permutation_test_corrs3(
+            df1 = reduced_dfs[[1]],
+            df2 = reduced_dfs[[x]],
+            method = "pearson",
+            fisher_z = TRUE,
+            perms = 1000,
+            style = "loop"
+        )
+    }
+)
+print(Sys.time() - start)
 
-plot_cor_mat(z)
+flatten_mats <- function(perm_results) {
+    mat_list <- perm_results$"perm_mat_diffs"
+    flattened_mats <- lapply(
+        1:length(mat_list[[1]]),
+        function(element) {
+            lapply(
+                mat_list,
+                function(mat) {
+                    mat[element]
+                }
+            ) |> unlist()
+        }
+    )
+    flattened_mats <- setNames(
+        flattened_mats,
+        as.vector(
+            outer(
+                rownames(perm_results$"perm_mat_diffs"[[1]]),
+                colnames(perm_results$"perm_mat_diffs"[[1]]),
+                paste,
+                sep = "_vs_"
+            )
+        )
+    )
+    return(flattened_mats)
+}
 
-mean(reduced_dfs$"mtbi_ful_df"$"cbcl_aggressive")
+flatten_mats(perm_ele_wise_corrs_v_mtbi_loop[[2]])
+```
 
-permutation_test_corrs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_1_df", "pearson", FALSE, 100)
 
-#permutation testing mean absolute difference in spearman correlations
-#permutation testing mean absolute difference in pearson correlations
-#permutation testing mean absolute difference in z-transformed pearson correlations
-
-lapply(random_unij_dl_u1, names)
-
-class(random_unij_dl_u1[[1]])
+```{r}
+#dfs_to_cor_diffs <- function(df1, df2, method, fisher_z) {
+#    cor_mat_1 <- calculate_cor_mat(df1, method = method, fisher_z = fisher_z)
+#    cor_mat_2 <- calculate_cor_mat(df2, method = method, fisher_z = fisher_z)
+#    plot_cor_mat_diffs(cor_mat_1, cor_mat_2)
+#}
+#
+#dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_1_df", "pearson", TRUE)$"plot"
+#
+#mat_2 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_2_df", "pearson", TRUE)$"mat"
+#mat_3 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_3_df", "pearson", TRUE)$"mat"
+#mat_4 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_4_df", "pearson", TRUE)$"mat"
+#mat_5 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_5_df", "pearson", TRUE)$"mat"
+#mat_6 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_6_df", "pearson", TRUE)$"mat"
+#mat_7 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_7_df", "pearson", TRUE)$"mat"
+#mat_8 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_8_df", "pearson", TRUE)$"mat"
+#mat_9 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_9_df", "pearson", TRUE)$"mat"
+#mat_10 <- dfs_to_cor_diffs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_10_df", "pearson", TRUE)$"mat"
+#
+#mat_1 <- mat_1[sort(rownames(mat_1)), ]
+#mat_2 <- mat_2[sort(rownames(mat_2)), ]
+#mat_3 <- mat_3[sort(rownames(mat_3)), ]
+#mat_4 <- mat_4[sort(rownames(mat_4)), ]
+#mat_5 <- mat_5[sort(rownames(mat_5)), ]
+#mat_6 <- mat_6[sort(rownames(mat_6)), ]
+#mat_7 <- mat_7[sort(rownames(mat_7)), ]
+#mat_8 <- mat_8[sort(rownames(mat_8)), ]
+#mat_9 <- mat_9[sort(rownames(mat_9)), ]
+#mat_10 <- mat_10[sort(rownames(mat_10)), ]
+#
+## Calculate element-wise average of the matrices
+#element_wise_average <- function(...) {
+#    Reduce("+", list(...)) / length(list(...))
+#}
+#
+#z <- element_wise_average(
+#    mat_1, mat_2, mat_3, mat_4, mat_5, mat_6, mat_7, mat_8, mat_9, mat_10
+#)
+#
+#names(sort(-rowSums(z)))
+#
+#plot_cor_mat(z)
+#
+#mean(reduced_dfs$"mtbi_ful_df"$"cbcl_aggressive")
+#
+#permutation_test_corrs(reduced_dfs$"mtbi_ful_df", reduced_dfs$"random_unij_1_df", "pearson", FALSE, 100)
+#
+##permutation testing mean absolute difference in spearman correlations
+##permutation testing mean absolute difference in pearson correlations
+##permutation testing mean absolute difference in z-transformed pearson correlations
+#
+#lapply(random_unij_dl_u1, names)
+#
+#class(random_unij_dl_u1[[1]])
 ```
