@@ -347,7 +347,16 @@ lapply(
     function(x) {
         paste0(x, ": ", min(1, 14*perm_diffs_cor_v_mtbi[[x]]$"p_value"))
     }
+) |> unlist()
+
+z <- p.adjust(
+    c(1, 0.0308, 0.2128, 0.0056, 0, 0.0336, 0.0112, 0.1652, 0.378, 0.0224, 1, 1, 1),
+    method = "fdr"
 )
+
+for (i in z) {
+    print(i)
+}
 ```
 
 Random unij dfs (6/10 significantly different after multiple comparisons corrections):
@@ -568,8 +577,32 @@ perm_p_df <- readRDS(proc_path("2025_06_20_perm_p_df.rds"))
 perm_p_df
 ```
 
+1/5001
+
 ```{r}
 # Everything
+
+for (i in unique(perm_p_df$"set_type")) {
+    mini_df <- perm_p_df |> dplyr::filter(set_type == i)
+    mini_df |>
+        dplyr::group_by(feature, input, output, set_type) |>
+        dplyr::summarize(mean = mean(fdr_p)) |>
+        dplyr::arrange(mean) |>
+        dplyr::filter(mean < 0.05) |>
+        dplyr::ungroup() |>
+        dplyr::select(-feature) |>
+        data.frame() |>
+        dplyr::select(set_type, dplyr::everything()) |>
+        dplyr::rename(
+            "*Group*" = "set_type",
+            "*Input Feature*" = "input",
+            "*Outcome Feature*" = "output",
+            "*p-value*" = "mean"
+        ) |>
+        knitr::kable(format = "markdown", digits = 4) |>
+        print()
+}
+
 perm_p_df |>
     dplyr::group_by(feature, input, output, set_type) |>
     dplyr::summarize(mean = mean(fdr_p)) |>
@@ -577,7 +610,8 @@ perm_p_df |>
     dplyr::filter(mean < 0.05) |>
     dplyr::ungroup() |>
     dplyr::select(-feature) |>
-    data.frame()
+    data.frame() |>
+    knitr::kable(format = "markdown", digits = 4)
 
 perm_p_df |>
     dplyr::group_by(feature, input, output, set_type) |>
@@ -779,7 +813,15 @@ plot_df <- function(group1, group2) {
         geom_smooth(method = "lm", se = FALSE) +
         theme_bw()
 }
-plot_df(1, 14)
+z1 <- plot_df(1, 13)
+z2 <- plot_df(1, 14)
+
+ggsave(
+    fig_path("income_vs_aggressive_cor_mtbi_vs_lmtb.png", TRUE),
+    wrap_plots(list(z1, z2)),
+    width = 10,
+    height = 4
+)
 
 
 
