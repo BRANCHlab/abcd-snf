@@ -439,6 +439,50 @@ format_tops <- function(tops) {
     return(tops)
 }
 
+format_tops2 <- function(tops) {
+    tops <- data.frame(tops) |> dplyr::mutate(
+        c12_sig = significant_es(es, c12_l, c12_u),
+        c13_sig = significant_es(es, c13_l, c13_u),
+        c23_sig = significant_es(es, c23_l, c23_u)
+    )
+    # Strips whitespace by converting number columns to numeric format
+    tops$"set" <- as.character(tops$"set")
+    tops <- metasnf:::numcol_to_numeric(tops)
+    tops <- tops |> dplyr::mutate(
+        "C1 vs. C2" = paste0(c12_es, " [", c12_l, ", ", c12_u, "]"),
+        "C1 vs. C3" = paste0(c13_es, " [", c13_l, ", ", c13_u, "]"),
+        "C2 vs. C3" = paste0(c23_es, " [", c23_l, ", ", c23_u, "]"),
+        .keep = "unused"
+    )
+    tops <- tops |> dplyr::mutate(
+        "C1 vs. C2" = ifelse(c12_sig == 1, paste0("*", `C1 vs. C2`, "*"), `C1 vs. C2`),
+        "C1 vs. C3" = ifelse(c13_sig == 1, paste0("*", `C1 vs. C3`, "*"), `C1 vs. C3`),
+        "C2 vs. C3" = ifelse(c23_sig == 1, paste0("*", `C2 vs. C3`, "*"), `C2 vs. C3`),
+        .keep = "unused"
+    )
+    # Remove scientific notation and trailing zeros
+    tops <- format(data.frame(tops), scientific = FALSE, drop0trailing = TRUE) |>
+        dplyr::rename(
+            "Feature" = "feature",
+            "Order" = "summary",
+            "Set" = "set",
+            "ES" = "es",
+            "C1 vs C2" = "C1.vs..C2",
+            "C1 vs C3" = "C1.vs..C3",
+            "C2 vs C3" = "C2.vs..C3"
+        ) |>
+        dplyr::select(
+            Feature,
+            Set, 
+            Order,
+            ES,
+            "C1 vs C2",
+            "C1 vs C3",
+            "C2 vs C3"
+        )
+    return(tops)
+}
+
 tstat <- function(d, n1, n2) {
     t <- d * sqrt((n1 * n2) / (n1 + n2))
     return(t)

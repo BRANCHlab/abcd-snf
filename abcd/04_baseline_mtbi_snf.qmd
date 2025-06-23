@@ -1297,12 +1297,39 @@ write_csv(sorted_tops, proc_path("sorted_tops.csv", TRUE))
 
 sorted_tops <- read_csv(proc_path("2025_06_11_sorted_tops.csv"))
 
+head(sorted_tops )
+
+
 knitr::kable(
     sorted_tops,
     format = "markdown",
     digits = 3, format.args = list(scientific = FALSE)
 ) |>
     writeLines(proc_path("mtbi_sorted_tops.txt", TRUE)) # 2025-05-30
+
+    sorted_tops |> data.frame() |> head()
+
+colnames(sorted_tops)
+
+#sorted_tops |>
+#    dplyr::select(feature, set, Summary, ES, "C1 vs. C2", "C1 vs. C3", "C2 vs. C3") |>
+#    dplyr::rename("Feature" = "feature", "Set" = "set") |>
+#    dplyr::mutate(
+#        `C1 vs. C2` = gsub("textbf\\{", "*", `C1 vs. C2`),
+#        `C1 vs. C3` = gsub("textbf\\{", "*", `C1 vs. C3`),
+#        `C2 vs. C3` = gsub("textbf\\{", "*", `C1 vs. C2`)
+#    ) |>
+#    dplyr::mutate(
+#        `C1 vs. C2` = gsub("}", "*", `C1 vs. C2`),
+#        `C1 vs. C3` = gsub("}", "*", `C1 vs. C3`),
+#        `C2 vs. C3` = gsub("}", "*", `C1 vs. C2`),
+#        ES = toupper(ES)
+#    ) |>
+#    knitr::kable(
+#        format = "markdown",
+#        digits = 3, format.args = list(scientific = FALSE)
+#    ) |>
+#    writeLines(proc_path("mtbi_sorted_tops_clean.txt", TRUE)) # 2025-06-22
 
 mtbi_der_tops <- read_csv(proc_path("2025_06_11_mtbi_der_tops.csv"))
 mtbi_ful_tops <- read_csv(proc_path("2025_06_11_mtbi_ful_tops.csv"))
@@ -1375,13 +1402,46 @@ saveRDS(all_tops_raw_manual_adj, proc_path("all_tops_raw_manual_adj.rds", TRUE))
 ```{r}
 all_tops_raw_manual_adj <- readRDS(proc_path("2025_06_11_all_tops_raw_manual_adj.rds"))
 
+
+all_tops_raw_manual_adj |> head()
+
+all_tops_raw_manual_adj |>
+    format_tops2() |>
+    dplyr::mutate(
+        ES = toupper(ES)
+    ) |>
+    knitr::kable(
+        format = "markdown",
+        digits = 3, format.args = list(scientific = FALSE)
+    ) |>
+    writeLines(proc_path("mtbi_sorted_adj_tops_clean.txt", TRUE)) # 2025-06-22
+
 mtbi_gen_fts_table <- generalizable_features(all_tops_raw_manual_adj, compare_fn_a, 0.2)
 saveRDS(mtbi_gen_fts_table, proc_path("mtbi_gen_fts_table.rds", TRUE))
+
 ```
 
 ```{r}
 mtbi_gen_fts_table <- readRDS(proc_path("2025_06_11_mtbi_gen_fts_table.rds"))
-mtbi_gen_fts_table
+
+mtbi_gen_fts_table |>
+    dplyr::mutate(
+        c1v2 = dplyr::case_when(is.na(c1v2) ~ "n.g.", c1v2 == "=" ~ "n.g.", c1v2 == "<" ~ "$lt$", c1v2 == ">" ~ "$gt$", TRUE ~ c1v2),
+        c1v3 = dplyr::case_when(is.na(c1v3) ~ "n.g.", c1v3 == "=" ~ "n.g.", c1v3 == "<" ~ "$lt$", c1v3 == ">" ~ "$gt$", TRUE ~ c1v3),
+        c2v3 = dplyr::case_when(is.na(c2v3) ~ "n.g.", c2v3 == "=" ~ "n.g.", c2v3 == "<" ~ "$lt$", c2v3 == ">" ~ "$gt$", TRUE ~ c2v3)
+    ) |>
+    dplyr::rename(
+        "Feature" = "feature",
+        "C1v2" = "c1v2",
+        "C1v3" = "c1v3",
+        "C2v3" = "c2v3"
+    ) |>
+    knitr::kable(
+        format = "markdown",
+        digits = 3, format.args = list(scientific = FALSE)
+    ) |>
+    writeLines(proc_path("mtbi_gen_fts_table.txt", TRUE)) # 2025-06-22
+
 ```
 
 ```{r}
