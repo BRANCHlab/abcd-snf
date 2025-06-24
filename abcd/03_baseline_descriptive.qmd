@@ -28,6 +28,149 @@ read <- function(path) {
 }
 ```
 
+## Sample characteristics
+
+```{r}
+# Post imputation and harmonization
+all_dls_h <- readRDS(proc_path("2025_06_11_all_dls_h.rds"))
+
+# Post imputation and harmonization, siblings dropped
+all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
+
+# Pre-imputation
+mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_train_df.csv")))
+mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_test_df.csv")))
+```
+
+```{r}
+
+names(all_dls_h_ns)
+
+sample_characterize <- function(data) {
+    if (inherits(data, "data_list")) {
+        data <- as.data.frame(data)
+    }
+    # 1. Race 
+    race_names <- names(table(q$"race"))
+    race_counts <- as.numeric(table(q$"race"))
+    race_pcts <- race_counts / nrow(q) * 100
+    race_df <- lapply(
+        1:length(race_pcts),
+        function(x) {
+            data.frame(
+                label = race_names[x],
+                value = race_counts[x],
+                formatted = paste0(race_counts[x], " (", signif(race_pcts[x], 2), "%)")
+            )
+        }
+    ) |> do.call(what = rbind)
+    # 2. Sex
+    sex_df <- table(data$"sex")
+    #return(
+    #    list(
+    #        sex,
+    #        race
+    #    )
+    #)
+}
+
+
+q <- data.frame(all_dls_h_ns$"mtbi_der_u_dls"[[1]])
+
+q |> colnames()
+
+as.data.frame(table(q$"sex")) |>
+    dplyr::rename("label" = "Var1", "value" = "Freq") |>
+    dplyr::mutate(
+        label = dplyr::case_when(
+            label == 1 ~ "M",
+            label == 0 ~ "F",
+            TRUE ~ NA
+        )
+    )
+
+# race
+mtbi_der_solution_plot_df <- readRDS(proc_path("2025_06_11_mtbi_der_solution_plot_df.rds"))
+
+mtbi_der
+
+mtbi_der_plot_list <- readRDS(fig_path("2025_06_11_mtbi_der_plot_list.rds"))
+
+mtbi_der_plot_list$"family_hit_p"
+
+mtbi_der_solution_plot_df$"sex" |> table()
+
+mean(q$"mtbi_age" / 12)
+sd(q$"mtbi_age" / 12)
+
+mean(q$"age" / 12)
+sd(q$"age" / 12)
+
+z <- lapply(
+    all_dls_h_ns$"mtbi_der_u_dls",
+    function(x) {
+        sample_characterize(x)
+    }
+)
+
+# age in months
+# pubertal status (pre/post)
+# income
+# race
+# age at latest injury
+# time since latest injury
+# injury mechanism
+# number of concussions
+# sex
+# age at interview
+# raw CBCL / SDS scores
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Importing data
 
 ```{r}
