@@ -813,11 +813,46 @@ plot_df <- function(group1, group2) {
         geom_smooth(method = "lm", se = FALSE) +
         theme_bw()
 }
+
 z1 <- plot_df(1, 13)
 z2 <- plot_df(1, 14)
 
+
 ggsave(
     fig_path("income_vs_aggressive_cor_mtbi_vs_lmtb.png", TRUE),
+    wrap_plots(list(z1, z2)),
+    width = 10,
+    height = 4
+)
+
+plot_df2 <- function(group1, group2) {
+    df <- rbind(
+        dplyr::mutate(reduced_dfs[[group1]], group = names(reduced_dfs)[group1]),
+        dplyr::mutate(reduced_dfs[[group2]], group = names(reduced_dfs)[group2])
+    )
+    print(
+        summary(
+            lm(cbcl_aggressive ~ extracurriculars * group, data = df)
+        )
+    )
+    df |>
+        ggplot(
+            aes(
+                x = extracurriculars,
+                y = cbcl_aggressive,
+                colour = group
+            )
+        ) +
+        geom_jitter(height = 0.1, width = 0.1, alpha = 0.5) +
+        geom_smooth(method = "lm", se = FALSE) +
+        theme_bw()
+}
+
+z1 <- plot_df2(1, 13)
+z2 <- plot_df2(1, 14)
+
+ggsave(
+    fig_path("extracurricular_vs_aggressive_cor_mtbi_vs_lmtb.png", TRUE),
     wrap_plots(list(z1, z2)),
     width = 10,
     height = 4
