@@ -8,7 +8,7 @@ library(readr)
 library(dplyr)
 library(here)
 library(abcdutils)
-library(ComplexUpset)
+#library(ComplexUpset)
 library(fastDummies)
 library(patchwork)
 library(visdat)
@@ -40,17 +40,62 @@ all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
 # Pre-imputation
 mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_train_df.csv")))
 mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_test_df.csv")))
+mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
+
+visdat::vis_miss(mtbi_df)
+
+sort(colSums(is.na(mtbi_df))) / nrow(mtbi_df) * 100
+
+# Post-imputation
+mtbi_train_imputed <- readRDS(proc_path("2025_05_26_mtbi_train_imputed.rds"))
+mtbi_test_imputed <- readRDS(proc_path("2025_05_26_mtbi_test_imputed.rds"))
+unij_imputed <- readRDS(proc_path("2025_05_26_unij_imputed.rds"))
+pool_imputed <- readRDS(proc_path("2025_05_26_pool_imputed.rds"))
 ```
 
-```{r}
 
+
+```{r}
 names(all_dls_h_ns)
+
 
 sample_characterize <- function(data) {
     if (inherits(data, "data_list")) {
         data <- as.data.frame(data)
     }
-    # 1. Race 
+    # 1. Sex
+    sex_df <- data.frame(table(data$"sex")) |>
+        dplyr::mutate(
+            Var1 = c("F", "M"),
+            Freq = paste0(Freq, " (", signif(100 * Freq / nrow(data), 3), "%)")
+        ) |>
+        dplyr::rename("label" = "Var1", "value" = "Freq")
+    sex_df <- rbind(
+        data.frame("label" = "*Sex*", value = ""),
+        sex_df
+    )
+    # 2. Age
+    age_df <- data.frame(
+        label = c("*Age*", "Mean (SD)"),
+        value = c("", paste0(signif(mean(data$"interview_age"), 3), " (", signif(sd(data$"interview_age"), 2), ")"))
+    )
+    # 3. Pubertal status
+    # 4. Income
+    income_df <- data.frame(table(data$"household_income")) |>
+        dplyr::mutate(
+            Var1 = dplyr::case_when(
+                Var1 == 1 ~ "<$50,000",
+                Var1 == 2 ~ "$50,000-$100,000",
+                Var1 == 3 ~ ">$100,000"
+            ),
+            Freq = paste0(Freq, " (", signif(100 * Freq / nrow(data), 3), "%)")
+        ) |>
+        dplyr::rename("label" = "Var1", "value" = "Freq")
+    income_df <- rbind(
+        data.frame("label" = "*Income*", value = ""),
+        income_df
+    )
+    # 5. Race 
     race_names <- names(table(q$"race"))
     race_counts <- as.numeric(table(q$"race"))
     race_pcts <- race_counts / nrow(q) * 100
@@ -59,36 +104,45 @@ sample_characterize <- function(data) {
         function(x) {
             data.frame(
                 label = race_names[x],
-                value = race_counts[x],
-                formatted = paste0(race_counts[x], " (", signif(race_pcts[x], 2), "%)")
+                value = paste0(race_counts[x], " (", signif(race_pcts[x], 3), "%)")
             )
         }
     ) |> do.call(what = rbind)
-    # 2. Sex
-    sex_df <- table(data$"sex")
-    #return(
-    #    list(
-    #        sex,
-    #        race
-    #    )
-    #)
+    race_df <- rbind(
+        data.frame("label" = "*Race*", value = ""),
+        race_df
+    )
+    return(
+        list(
+            sex_df,
+            age_df,
+            income_df,
+            race_df
+        ) |>
+        do.call(what = rbind)
+    )
 }
 
+mtbi_samp_char <- sample_characterize(mtbi_df)
 
-q <- data.frame(all_dls_h_ns$"mtbi_der_u_dls"[[1]])
+unij_samp_char <- sample_characterize(unij_df)
 
-q |> colnames()
+nrow(unij_df)
 
-as.data.frame(table(q$"sex")) |>
-    dplyr::rename("label" = "Var1", "value" = "Freq") |>
-    dplyr::mutate(
-        label = dplyr::case_when(
-            label == 1 ~ "M",
-            label == 0 ~ "F",
-            TRUE ~ NA
-        )
-    )
+cbind(mtbi_samp_char, dplyr::select(unij_samp_char, -label)) |>
+    knitr::kable(format = "markdown", digits = 2)
 
+    writeLines(proc_path("p_values_of_cluster.txt", TRUE))
+
+
+
+unij_df <- data.frame(read_csv(proc_path("2025_05_26_unij_df.csv")))
+
+
+
+```
+
+```{r}
 # race
 mtbi_der_solution_plot_df <- readRDS(proc_path("2025_06_11_mtbi_der_solution_plot_df.rds"))
 

@@ -683,6 +683,99 @@ We are interested in the following rs-fMRI measures:
 ##### Cortical parcellation network correlations
 
 ```{r}
+
+df_corr <- mri_y_rsfmr_cor_gp_gp |>
+    filter_timepoint(0) |>
+    filter_subjects(mtbi_subs)  |>
+    na.omit() |>
+    dplyr::select(-subjectkey, -eventname)
+
+# 1. Mean of all correlations per subject
+df_corr$mean_all <- rowMeans(df_corr, na.rm = TRUE)
+
+df_corr$mean_abs <- rowMeans(abs(df_corr), na.rm = TRUE)
+
+# 2. Mean of positive correlations per subject
+df_corr$mean_pos <- apply(df_corr, 1, function(x) mean(x[x > 0], na.rm = TRUE))
+
+# 3. Mean of negative correlations per subject
+df_corr$mean_neg <- apply(df_corr, 1, function(x) mean(x[x < 0], na.rm = TRUE))
+
+# 4. Proportion of negative correlations per subject
+df_corr$prop_neg <- apply(df_corr, 1, function(x) sum(x < 0, na.rm = TRUE) / sum(!is.na(x)))
+
+# 5. Standard deviation of correlations per subject
+df_corr$sd_all <- apply(df_corr, 1, sd, na.rm = TRUE)
+
+# 6. Mean of absolute correlations per subject
+df_corr$mean_abs <- apply(df_corr, 1, function(x) mean(abs(x), na.rm = TRUE))
+
+# View the first few rows with new summary metrics
+head(df_corr[, (ncol(df_corr)-5):ncol(df_corr)])
+
+library(ggplot2)
+
+cor(df_corr$"mean_all", df_corr$"mean_abs")
+
+df_corr |>
+    ggplot(
+        aes(x = mean_all, y = mean_abs) 
+    ) +
+    geom_point()
+
+# Correlation between mean_all and mean_pos
+cor(df_corr$mean_all, df_corr$mean_abs, use = "complete.obs")
+
+cat("Correlation between mean_all and mean_pos:", cor_pos, "\n")
+
+# Correlation between mean_all and mean_neg
+cor_neg <- cor(df_corr$mean_all, df_corr$mean_neg, use = "complete.obs")
+cat("Correlation between mean_all and mean_neg:", cor_neg, "\n")
+
+# Scatterplots
+par(mfrow=c(1,2))  # side-by-side plots
+
+plot(df_corr$mean_pos, df_corr$mean_all,
+     main = "mean_all vs mean_pos",
+     xlab = "mean_pos", ylab = "mean_all",
+     pch = 19, col = "blue")
+abline(lm(mean_all ~ mean_pos, data = df_corr), col = "red")
+
+plot(df_corr$mean_neg, df_corr$mean_all,
+     main = "mean_all vs mean_neg",
+     xlab = "mean_neg", ylab = "mean_all",
+     pch = 19, col = "green")
+abline(lm(mean_all ~ mean_neg, data = df_corr), col = "red")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 mtbi_rm_gord_cor <- abcdutils::get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
     mtbi_subs,
