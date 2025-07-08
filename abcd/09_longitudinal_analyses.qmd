@@ -766,8 +766,7 @@ quantile_cbcl <- map(
     function(col) {
         data <- all_out_adj[[col]]
         list(
-            mid = quantile(data, 0.93),
-            high = quantile(data, 0.98)
+            high = quantile(data, 0.93)
         )
     }
 ) |>
@@ -780,8 +779,7 @@ quantile_sds <- list(
 cbcl_bin_with_thresholds <- function(x, thresholds) {
   case_when(
     x >= thresholds$high ~ "high",
-    x >= thresholds$mid  ~ "mid",
-    x <  thresholds$mid  ~ "low",
+    x <  thresholds$high ~ "low",
     TRUE ~ NA_character_
   )
 }
@@ -828,106 +826,194 @@ all_bin_df <- dplyr::full_join(
     t2_bin_cols, by = c("uid", "cluster", "imputation")
 )
 
-all_bin_df |>
+out_cols
+
+cat_df <- all_bin_df |>
     dplyr::mutate(
-        anxdep_cat = paste0(adj_cbcl_anxdep_bin_t0, "_", adj_cbcl_anxdep_bin_t2)
+        cbcl_anxdep_cat = paste0(adj_cbcl_anxdep_bin_t0, "_", adj_cbcl_anxdep_bin_t2),
+        cbcl_withdep_cat = paste0(adj_cbcl_withdep_bin_t0, "_", adj_cbcl_withdep_bin_t2),
+        cbcl_somatic_cat = paste0(adj_cbcl_somatic_bin_t0, "_", adj_cbcl_somatic_bin_t2),
+        cbcl_social_cat = paste0(adj_cbcl_social_bin_t0, "_", adj_cbcl_social_bin_t2),
+        cbcl_thought_cat = paste0(adj_cbcl_thought_bin_t0, "_", adj_cbcl_thought_bin_t2),
+        cbcl_attention_cat = paste0(adj_cbcl_attention_bin_t0, "_", adj_cbcl_attention_bin_t2),
+        cbcl_rulebreak_cat = paste0(adj_cbcl_rulebreak_bin_t0, "_", adj_cbcl_rulebreak_bin_t2),
+        cbcl_aggressive_cat = paste0(adj_cbcl_aggressive_bin_t0, "_", adj_cbcl_aggressive_bin_t2),
+        sds_sleep_cat = paste0(adj_sds_sleep_bin_t0, "_", adj_sds_sleep_bin_t2)
     ) |>
-    dplyr::select(anxdep_cat, cluster) |>
-    table()
+    dplyr::select(uid, cluster, imputation, dplyr::ends_with("cat"))
 
+adj_df_cat_annotated <- dplyr::full_join(
+    adj_df_w_covs,
+    cat_df,
+    by = c("uid", "cluster", "imputation")
+)
 
-#------------------------------------------------------------------------------
+saveRDS(
+    adj_df_cat_annotated,
+    proc_path("adj_df_cat_annotated.rds", TRUE)
+)
 
-colnames(t0_data)
+adj_df_cat_annotated <- readRDS(proc_path("2025_07_08_adj_df_cat_annotated.rds"))
 
-t0_data |>
-    dplyr::mutate(
-        dplyr::across(
-            dplyr::starts_with("adj_cbcl_"),
-            cbcl_bin(reference = all_out_adj[[paste0("adj_", col)]]),
-            .names = "adj_cbcl_{col}"
+adj_out_cols <- paste0("adj_", out_cols)
+
+colnames(adj_df_cat_annotated)
+
+out_cols
+
+quantile_plot <- function(df, feature, ref_df, probs, mode = "high") {
+    if (mode == "high") {
+        vec <- c("high_high", "high_low")
+        custom_scale <- scale_colour_manual(
+            values = c("high_high" = "#5D3A9B", "high_low" = "#E66100"),
+            labels = c("high_high" = "High to High", "high_low" = "High to Low")
         )
-    )
-
-# Function to bin a numeric vector by quantiles
-bin_by_quantiles <- function(x, low_q = 0.93, high_q = 0.98) {
-  q_low <- quantile(x, low_q, na.rm = TRUE)
-  q_high <- quantile(x, high_q, na.rm = TRUE)
-  dplyr::case_when(
-    x >= q_high ~ "high",
-    x >= q_low  ~ "mid",
-    x <  q_low  ~ "low",
-    TRUE        ~ NA_character_
-  )
-}
-
-# Vector of CBCL column names (already residualized)
-cbcl_cols <- c("adj_cbcl_anxdep", "adj_cbcl_withdep")  # add as needed
-
-t0_data_binned <- t0_data %>%
-  mutate(across(all_of(cbcl_cols), bin_by_quantiles, .names = "{.col}_bin"))
-
-
-t0_data |>
-    dplyr::mutate(
-        anxdep_bin = dplyr::case_when(
-            adj_cbcl_anxdep >= quantile(adj_cbcl_anxdep, 0.98) ~ "high",
-            adj_cbcl_anxdep >= quantile(adj_cbcl_anxdep, 0.93) ~ "mid",
-            adj_cbcl_anxdep < quantile(adj_cbcl_anxdep, 0.93) ~ "low",
-            TRUE ~ NA
-        ),
-        withdep_bin = dplyr::case_when(
-            adj_cbcl_withdep >= quantile(adj_cbcl_withdep, 0.98) ~ "high",
-            adj_cbcl_withdep >= quantile(adj_cbcl_withdep, 0.93) ~ "mid",
-            adj_cbcl_withdep < quantile(adj_cbcl_withdep, 0.93) ~ "low",
-            TRUE ~ NA
-        ),
-        somatic_bin = dplyr::case_when(
-            adj_cbcl_somatic >= quantile(adj_cbcl_somatic, 0.98) ~ "high",
-            adj_cbcl_somatic >= quantile(adj_cbcl_somatic, 0.93) ~ "mid",
-            adj_cbcl_somatic < quantile(adj_cbcl_somatic, 0.93) ~ "low",
-            TRUE ~ NA
-        ),
-        social_bin = dplyr::case_when(
-            adj_cbcl_social >= quantile(adj_cbcl_social, 0.98) ~ "high",
-            adj_cbcl_social >= quantile(adj_cbcl_social, 0.93) ~ "mid",
-            adj_cbcl_social < quantile(adj_cbcl_social, 0.93) ~ "low",
-            TRUE ~ NA
-        ),
-    )
-
-
-
-quantile_plot <- function(df, feature, ref_df, probs) {
+    } else {
+        vec <- c("low_high", "low_low")
+        custom_scale <- scale_colour_manual(
+            values = c("low_high" = "#F8766D", "low_low" = "#00BFC4"),
+            labels = c("low_high" = "Low to High", "low_low" = "Low to Low")
+        )
+    }
+    pd <- position_dodge(width = 0.2)
     quantiles <- quantile(ref_df[[feature]], probs = probs)
+    cat_name <- paste0(gsub("adj_", "", feature), "_cat")
     yvals <- as.numeric(quantiles)
+    tidy_ft_name <- gsub("adj_", "", feature)
+    tidy_ft_name <- gsub("cbcl_", "CBCL ", tidy_ft_name)
+    tidy_ft_name <- gsub("anxdep", "Anxious/Depressed", tidy_ft_name)
+    tidy_ft_name <- gsub("withdep", "Withdrawn/Depressed", tidy_ft_name)
+    tidy_ft_name <- gsub("somatic", "Somatic ", tidy_ft_name)
+    tidy_ft_name <- gsub("social", "Social Problems", tidy_ft_name)
+    tidy_ft_name <- gsub("thought", "Thought Problems", tidy_ft_name)
+    tidy_ft_name <- gsub("attention", "Attention Problems", tidy_ft_name)
+    tidy_ft_name <- gsub("rulebreak", "Rule-Breaking Behavior", tidy_ft_name)
+    tidy_ft_name <- gsub("aggressive", "Aggressive Behavior", tidy_ft_name)
+    tidy_ft_name <- gsub("sds_sleep", "Sleep Disturbance", tidy_ft_name)
+    # Data analysis 
     df |>
         dplyr::filter(imputation == 1) |>
+        dplyr::filter(.data[[cat_name]] %in% vec) |>
         ggplot(
             aes(
-                x = t,
+                x = factor(t),
                 y = .data[[feature]],
                 group = uid,
-                colour = cluster
+                colour = .data[[cat_name]],
             ),
         ) +
-        geom_point() +
-        geom_line() +
+        geom_point(size = 3, position = pd, alpha = 0.5) +
+        geom_line(position = pd, alpha = 0.5) +
         geom_hline(
             yintercept = yvals,
             colour = "black"
         ) +
+        labs(x = "Time", y = tidy_ft_name, colour = "Transition") + 
         facet_wrap(~ cluster) +
-        theme_bw()
+        theme_classic() + 
+        custom_scale
 }
 
-quantile_plot(adj_df_w_covs, paste0("adj_", out_cols[[1]]), all_out_adj, c(0.93, 0.98))
+```
 
-quantile_plot(adj_df_w_covs, paste0("adj_", out_cols[[5]]), all_out_adj, c(0.93, 0.98))
 
-quantile_plot(adj_df_w_covs, paste0("adj_", out_cols[[9]]), all_out_adj, c(0.75))
+```{r}
+library(multcomp)
 
-quantile_plot(adj_df_w_covs, "adj_cbcl_anxdep", all_out_adj, c(0.1587, 0.8413))
+check_cat <- function(df, feature, imp) {
+    cat_name <- paste0(gsub("adj_", "", feature), "_cat")
+    df_low <- df |>
+        dplyr::filter(
+            imputation == imp,
+            t == 0,
+            .data[[cat_name]] %in% c("low_low", "low_high")
+        ) |>
+        dplyr::mutate(
+            stayed_low = ifelse(.data[[cat_name]] == "low_low", 1, 0)
+        )
+    df_high <- df |>
+        dplyr::filter(
+            imputation == imp,
+            t == 0,
+            .data[[cat_name]] %in% c("high_low", "high_high")
+        ) |>
+        dplyr::mutate(
+            stayed_high = ifelse(.data[[cat_name]] == "high_high", 1, 0)
+        )
+    glm_low <- glm(stayed_low ~ factor(cluster), data = df_low, family = "binomial")
+    glm_high <- glm(stayed_high ~ factor(cluster), data = df_high, family = "binomial")
+    p_stayed_low <- summary(glht(glm_low, linfct = mcp(`factor(cluster)` = "Tukey")), test = adjusted("none"))$"test"$"pvalues"
+    p_stayed_high <- summary(glht(glm_high, linfct = mcp(`factor(cluster)` = "Tukey")), test = adjusted("none"))$"test"$"pvalues"
+    low_p_df <- dplyr::rename(as.data.frame(p_stayed_low), "p" = "p_stayed_low")
+    low_p_df$"comparison" <- rownames(low_p_df)
+    low_p_df$"type" <- "stayed_low"
+    low_p_df$"feature" <- gsub("adj_", "", feature)
+    rownames(low_p_df) <- NULL
+    high_p_df <- dplyr::rename(as.data.frame(p_stayed_high), "p" = "p_stayed_high")
+    high_p_df$"comparison" <- rownames(high_p_df)
+    high_p_df$"type" <- "stayed_high"
+    high_p_df$"feature" <- gsub("adj_", "", feature)
+    rownames(high_p_df) <- NULL
+    p_df <- rbind(low_p_df, high_p_df)
+    stayed_low_plot <- df_low |>
+        count(cluster, .data[[cat_name]]) |>
+        group_by(cluster) |>
+        mutate(prop = n / sum(n)) |>
+        ggplot(aes(x = cluster, y = prop, fill = .data[[cat_name]])) +
+        geom_col(position = "fill") +  # stacked proportion bars
+        theme_classic() +
+        labs(y = "Proportion", x = "Cluster", fill = "Transition") +
+        scale_fill_manual(
+            values = c("low_high" = "#F8766D", "low_low" = "#00BFC4"),
+            labels = c("low_high" = "Low to High", "low_low" = "Low to Low")
+        )
+    stayed_high_plot <- df_high |>
+        count(cluster, .data[[cat_name]]) |>
+        group_by(cluster) |>
+        mutate(prop = n / sum(n)) |>
+        ggplot(aes(x = cluster, y = prop, fill = .data[[cat_name]])) +
+        geom_col(position = "fill") +  # stacked proportion bars
+        theme_classic() +
+        labs(y = "Proportion", x = "Cluster", fill = "Transition") +
+        scale_fill_manual(
+            values = c("high_high" = "#5D3A9B", "high_low" = "#E66100"),
+            labels = c("high_high" = "High to High", "high_low" = "High to Low")
+        )
+    return(list(stayed_low_plot, stayed_high_plot, p_df))
+}
+p_df <- data.frame()
+pl <- list()
+for (x in 1:9) {
+    prop <- check_cat(adj_df_cat_annotated, adj_out_cols[[x]], 1)
+    p_df <- rbind(p_df, dplyr::mutate(prop[[3]], x = x))
+    thresh <- if (x < 9) (0.93) else (0.75)
+    low <- quantile_plot(adj_df_cat_annotated, adj_out_cols[[x]], all_out_adj, thresh, "low")
+    high <- quantile_plot(adj_df_cat_annotated, adj_out_cols[[x]], all_out_adj, thresh, "high")
+    pl[[x]] <- wrap_plots(list(low, high, prop[[1]], prop[[2]]))
+    print(adj_out_cols[[x]])
+    ggsave(
+        plot = pl[[x]],
+        filename = fig_path(
+            paste0(
+                gsub("adj_", "", adj_out_cols[[x]]),
+                "_transition_plot.png"
+            ),
+            TRUE
+        ),
+        width = 7,
+        height = 4,
+        dpi = 150
+    )
+}
+p_df$"p_adj" <- p.adjust(p_df$p, method = "fdr")
+
+p_df |>
+    dplyr::arrange(p)
+
+saveRDS(p_df, proc_path("outcome_transition_pvals.rds", TRUE))
+saveRDS(pl, proc_path("outcome_transition_plots.rds", TRUE))
+
+# HERE 2025-07-08
 
 # "iagnostic accuracy (AUC = 0.9 1) and that the cut-off score
 # with the best diagnostic confidence, as determined by the
@@ -935,8 +1021,6 @@ quantile_plot(adj_df_w_covs, "adj_cbcl_anxdep", all_out_adj, c(0.1587, 0.8413))
 # corresponded to the upper quartile of the control group's SDSC
 # total score); this cut-off point gave a sensitivity of 0.89 and a
 # specificity of 0.74. This score correctly identified 73.4% of th" - bruni
-
-
 ```
 
 ## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?<!-- {{{ -->
