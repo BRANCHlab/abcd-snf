@@ -153,6 +153,7 @@ for (name in replace_names) {
 mtbi_long_changes$"cluster" <- as.factor(mtbi_long_changes$"cluster")
 
 saveRDS(mtbi_long_changes, proc_path("mtbi_long_changes.rds", TRUE))
+
 mtbi_long_changes <- readRDS(proc_path("2025_06_13_mtbi_long_changes.rds"))
 ```
 
@@ -468,6 +469,192 @@ lm_long_lrt_fit(mtbi_long_changes, "cbcl_anxdep")
 
 Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
 <!-- }}} -->
+
+In this section, I first adjust CBCL values by age and sex, bin them according to their quantiles within the entire ABCD dataset, and then check to see how profiles based on those bins differ across the clusters.
+
+```{r}
+mtbi_long_changes <- readRDS(proc_path("2025_06_13_mtbi_long_changes.rds"))
+
+# Separating by time
+df0 <- mtbi_long_changes |>
+    dplyr::select(
+        uid,
+        cluster,
+        imputation,
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    dplyr::select(
+        uid,
+        cluster,
+        imputation,
+        dplyr::ends_with("0")
+    ) |>
+    dplyr::mutate(t = "0")
+colnames(df0) <- gsub("_0", "", colnames(df0))
+
+dfl <- mtbi_long_changes |>
+    dplyr::select(
+        uid,
+        cluster,
+        imputation,
+        dplyr::starts_with("cbcl"),
+        dplyr::starts_with("sds")
+    ) |>
+    dplyr::select(
+        uid,
+        cluster,
+        imputation,
+        dplyr::ends_with("l")    
+    ) |>
+    dplyr::mutate(t = "2")
+colnames(dfl) <- gsub("_l", "", colnames(dfl))
+
+import <- function(path) {
+    return(abcdutils::abcd_load(core_path(path)))
+}
+
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+
+all_sex_0 <- get_sex(gish_p_gi, t = 0) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::select(-subjectkey)
+all_cbcl_0 <- get_cbcl_syndrome_scale(mh_p_cbcl, t = 0) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::select(-subjectkey)
+all_age_0 <- get_interview_age(abcd_y_lt = abcd_y_lt, t = 0, as_years = FALSE) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::rename("age" = "interview_age") |>
+    dplyr::select(-subjectkey)
+
+all_sex_l <- all_sex_0
+all_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, t = 2) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::select(-subjectkey)
+all_age_l <- get_interview_age(abcd_y_lt = abcd_y_lt, t = 2, as_years = FALSE) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::rename("age" = "interview_age") |>
+    dplyr::select(-subjectkey)
+
+source("abcd/helper_functions.R")
+
+all_age_sex_cbcl_0 <- dplyr::inner_join(
+    all_sex_0,
+    all_cbcl_0,
+    by = "uid"
+) |>
+    dplyr::inner_join(
+        all_age_0,
+        by = "uid"
+    ) |>
+    na.omit() |>
+    dplyr::filter(sex %in% c("F", "M")) |>
+    dplyr::rename(
+        "cbcl_anxdep" = "cbcl_scr_syn_anxdep_r",
+        "cbcl_withdep" = "cbcl_scr_syn_withdep_r",
+        "cbcl_somatic" = "cbcl_scr_syn_somatic_r",
+        "cbcl_social" = "cbcl_scr_syn_social_r",
+        "cbcl_thought" = "cbcl_scr_syn_thought_r",
+        "cbcl_attention" = "cbcl_scr_syn_attention_r",
+        "cbcl_rulebreak" = "cbcl_scr_syn_rulebreak_r",
+        "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r"
+    ) |>
+    dplyr::mutate(cluster = sex)
+
+all_age_sex_cbcl_l <- dplyr::inner_join(
+    all_sex_l,
+    all_cbcl_l,
+    by = "uid"
+) |>
+    dplyr::inner_join(
+        all_age_l,
+        by = "uid"
+    ) |>
+    dplyr::filter(sex %in% c("F", "M")) |>
+    dplyr::rename(
+        "cbcl_anxdep" = "cbcl_scr_syn_anxdep_r",
+        "cbcl_withdep" = "cbcl_scr_syn_withdep_r",
+        "cbcl_somatic" = "cbcl_scr_syn_somatic_r",
+        "cbcl_social" = "cbcl_scr_syn_social_r",
+        "cbcl_thought" = "cbcl_scr_syn_thought_r",
+        "cbcl_attention" = "cbcl_scr_syn_attention_r",
+        "cbcl_rulebreak" = "cbcl_scr_syn_rulebreak_r",
+        "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r"
+    ) |>
+    dplyr::mutate(cluster = sex)
+
+all_age_sex_cbcl_0 |> head()
+
+all_age_sex_cbcl_l |> head()
+
+# top, bottom, mid quantiles - do profiles shift?
+cbcl_cols <- grep("^cbcl_", names(all_age_sex_cbcl_0), value = TRUE)
+
+models_0 <- lapply(cbcl_cols, function(col) {
+  formula <- as.formula(paste(col, "~ age + sex"))
+  lm(formula, data = all_age_sex_cbcl_0)
+})
+names(models_0) <- cbcl_cols
+
+models_l <- lapply(cbcl_cols, function(col) {
+  formula <- as.formula(paste(col, "~ age + sex"))
+  lm(formula, data = all_age_sex_cbcl_l)
+})
+names(models_l) <- cbcl_cols
+
+df0_w_covariates <- df0 |>
+    as.data.frame() |>
+    dplyr::inner_join(all_sex_0) |>
+    dplyr::inner_join(all_age_0)
+
+dfl_w_covariates <- dfl |>
+    as.data.frame() |>
+    dplyr::inner_join(all_sex_l) |>
+    dplyr::inner_join(all_age_l)
+
+df0_w_covariates_adj <- df0_w_covariates
+dfl_w_covariates_adj <- dfl_w_covariates
+
+for (col in cbcl_cols) {
+  # Predicted values based on reference model
+  predicted <- predict(models_0[[col]], newdata = df0_w_covariates)
+  # Residuals: actual - predicted
+  df0_w_covariates_adj[[paste0("adj_", col)]] <- df0_w_covariates[[col]] - predicted
+}
+
+for (col in cbcl_cols) {
+  # Predicted values based on reference model
+  predicted <- predict(models_l[[col]], newdata = dfl_w_covariates)
+  # Residuals: actual - predicted
+  dfl_w_covariates_adj[[paste0("adj_", col)]] <- dfl_w_covariates[[col]] - predicted
+}
+
+df_adj <- rbind(df0_w_covariates_adj, dfl_w_covariates_adj)
+
+saveRDS(df_adj, proc_path("df_adj.rds", TRUE))
+
+df_adj <- readRDS(proc_path("2025_07_07_df_adj.rds"))
+
+df_adj |> colnames()
+
+df_adj |>
+    dplyr::filter(imputation == 1) |>
+    ggplot(
+        aes(
+            x = t,
+            y = cbcl_thought,
+            group = uid,
+            colour = cluster
+        ),
+    ) +
+    geom_point() +
+    geom_line() +
+    facet_wrap(~ cluster)
+
+
+```
 
 ## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?<!-- {{{ -->
 
