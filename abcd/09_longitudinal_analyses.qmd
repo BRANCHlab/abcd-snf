@@ -608,23 +608,37 @@ all_out_l <- dplyr::inner_join(
 # Constructing adjustment models for each outcome for each timepoint
 out_cols <- grep("^(cbcl|sds)", names(all_out_0), value = TRUE)
 
-models_0 <- lapply(
-    out_cols,
-    function(col) {
-        formula <- as.formula(paste(col, "~ age + sex"))
-        lm(formula, data = all_out_0)
-    }
-)
-names(models_0) <- out_cols
+all_out_0$"t" <- 0
+all_out_l$"t" <- 2
 
-models_l <- lapply(
+all_out <- rbind(all_out_0, all_out_l)
+
+models <- lapply(
     out_cols,
     function(col) {
-        formula <- as.formula(paste(col, "~ age + sex"))
-        lm(formula, data = all_out_l)
+        formula <- as.formula(paste(col, "~ age + sex + t"))
+        lm(formula, data = all_out)
     }
 )
-names(models_l) <- out_cols
+names(models) <- out_cols
+
+#models_0 <- lapply(
+#    out_cols,
+#    function(col) {
+#        formula <- as.formula(paste(col, "~ age + sex"))
+#        lm(formula, data = all_out_0)
+#    }
+#)
+#names(models_0) <- out_cols
+#
+#models_l <- lapply(
+#    out_cols,
+#    function(col) {
+#        formula <- as.formula(paste(col, "~ age + sex"))
+#        lm(formula, data = all_out_l)
+#    }
+#)
+#names(models_l) <- out_cols
 
 df0_w_covs <- df0 |>
     as.data.frame() |>
@@ -636,67 +650,257 @@ dfl_w_covs <- dfl |>
     dplyr::inner_join(all_sex_l) |>
     dplyr::inner_join(all_age_l)
 
-df0_w_covs
+df_w_covs <- rbind(df0_w_covs, dfl_w_covs)
 
-df0_w_covs_adj <- df0_w_covs
-dfl_w_covs_adj <- dfl_w_covs
+df_w_covs$"t" <- as.numeric(df_w_covs$"t")
 
-dfl_w_covs_adj |> head()
+#df0_w_covs
 
+#df0_w_covs_adj <- df0_w_covs
+#dfl_w_covs_adj <- dfl_w_covs
+
+#dfl_w_covs_adj |> head()
+#
 dfl_w_covs |> head()
 
-for (col in out_cols) {
-  # Predicted values based on reference model
-  predicted <- predict(models_0[[col]], newdata = df0_w_covs)
-  # Residuals: actual - predicted
-  df0_w_covs_adj[[paste0("adj_", col)]] <- df0_w_covs[[col]] - predicted
-}
+#for (col in out_cols) {
+#  # Predicted values based on reference model
+#  predicted <- predict(models_0[[col]], newdata = df0_w_covs)
+#  # Residuals: actual - predicted
+#  df0_w_covs_adj[[paste0("adj_", col)]] <- df0_w_covs[[col]] - predicted
+#}
+#
+#for (col in out_cols) {
+#  # Predicted values based on reference model
+#  predicted <- predict(models_l[[col]], newdata = dfl_w_covs)
+#  # Residuals: actual - predicted
+#  dfl_w_covs_adj[[paste0("adj_", col)]] <- dfl_w_covs[[col]] - predicted
+#}
 
-for (col in out_cols) {
-  # Predicted values based on reference model
-  predicted <- predict(models_l[[col]], newdata = dfl_w_covs)
-  # Residuals: actual - predicted
-  dfl_w_covs_adj[[paste0("adj_", col)]] <- dfl_w_covs[[col]] - predicted
-}
+#for (col in out_cols) {
+#  # Predicted values based on reference model
+#  predicted <- predict(models_l[[col]], newdata = dfl_w_covs)
+#  # Residuals: actual - predicted
+#  dfl_w_covs_adj[[paste0("adj_", col)]] <- dfl_w_covs[[col]] - predicted
+#}
 
-df_adj <- rbind(df0_w_covs_adj, dfl_w_covs_adj)
+#df_adj <- rbind(df0_w_covs_adj, dfl_w_covs_adj)
 
-saveRDS(df0_w_covs_adj, proc_path("df0_w_covs_adj.rds", TRUE))
-saveRDS(dfl_w_covs_adj, proc_path("dfl_w_covs_adj.rds", TRUE))
+#saveRDS(df0_w_covs_adj, proc_path("df0_w_covs_adj.rds", TRUE))
+#saveRDS(dfl_w_covs_adj, proc_path("dfl_w_covs_adj.rds", TRUE))
 
-saveRDS(df_adj, proc_path("df_adj.rds", TRUE))
+#saveRDS(df_adj, proc_path("df_adj.rds", TRUE))
 
 # Storing the quantiles
 
-all_out_0_adj <- all_out_0
-all_out_l_adj <- all_out_l
+#all_out_0_adj <- all_out_0
+#all_out_l_adj <- all_out_l
+
+#for (col in out_cols) {
+#  # Predicted values based on reference model
+#  predicted <- predict(models_0[[col]], newdata = all_out_0)
+#  # Residuals: actual - predicted
+#  all_out_0_adj[[paste0("adj_", col)]] <- all_out_0[[col]] - predicted
+#}
+#
+#for (col in out_cols) {
+#  # Predicted values based on reference model
+#  predicted <- predict(models_l[[col]], newdata = all_out_l)
+#  # Residuals: actual - predicted
+#  all_out_l_adj[[paste0("adj_", col)]] <- all_out_l[[col]] - predicted
+#}
+
+all_out_adj <- all_out
 
 for (col in out_cols) {
   # Predicted values based on reference model
-  predicted <- predict(models_0[[col]], newdata = all_out_0)
+  predicted <- predict(models[[col]], newdata = all_out)
   # Residuals: actual - predicted
-  all_out_0_adj[[paste0("adj_", col)]] <- all_out_0[[col]] - predicted
+  all_out_adj[[paste0("adj_", col)]] <- all_out[[col]] - predicted
 }
+
+# all out adj is residualized against age, sex, and timepoint
+# enables quantile comparisons across timepoints as well
+quantile(all_out_adj$"adj_sds_sleep", c(0, 0.33, 0.66, 1))
+
+adj_df_w_covs <- df_w_covs
 
 for (col in out_cols) {
   # Predicted values based on reference model
-  predicted <- predict(models_l[[col]], newdata = all_out_l)
+  predicted <- predict(models[[col]], newdata = df_w_covs)
   # Residuals: actual - predicted
-  all_out_l_adj[[paste0("adj_", col)]] <- all_out_l[[col]] - predicted
+  adj_df_w_covs[[paste0("adj_", col)]] <- df_w_covs[[col]] - predicted
 }
 
+# Reference adjusted data for quantiles
+saveRDS(all_out_adj, proc_path("all_out_adj.rds", TRUE))
+
+# Actual mTBI data
+saveRDS(adj_df_w_covs, proc_path("df_w_covs_adj.rds", TRUE))
 ```
 
 ```{r}
-df0_adj <- readRDS(proc_path("2025_07_08_df0_w_covs_adj.rds"))
-dfl_adj <- readRDS(proc_path("2025_07_08_dfl_w_covs_adj.rds"))
-
-df_adj <- readRDS(proc_path("2025_07_08_df_adj.rds"))
+all_out_adj <- readRDS(proc_path("2025_07_08_all_out_adj.rds"))
+adj_df_w_covs <- readRDS(proc_path("2025_07_08_df_w_covs_adj.rds"))
 
 
-quantile(all_out_0_adj$"adj_cbcl_anxdep", c(0, 0.33, 0.66, 1))
+#df0_adj <- readRDS(proc_path("2025_07_08_df0_w_covs_adj.rds"))
+#dfl_adj <- readRDS(proc_path("2025_07_08_dfl_w_covs_adj.rds"))
+#
+#df_adj <- readRDS(proc_path("2025_07_08_df_adj.rds"))
+
+out_cols
+#------------------------------------------------------------------------------
+#library(dplyr)
+library(purrr)
+
+# 1. Vector of CBCL columns
+
+
+
+cbcl_cols <- paste0("adj_", out_cols[1:8])
+sds_cols <- "adj_sds_sleep"
+
+quantile_cbcl <- map(
+    cbcl_cols,
+    function(col) {
+        data <- all_out_adj[[col]]
+        list(
+            mid = quantile(data, 0.93),
+            high = quantile(data, 0.98)
+        )
+    }
+) |>
+    set_names(cbcl_cols)
+
+quantile_sds <- list(
+    high = quantile(all_out_adj$"adj_sds_sleep", 0.75)
+)
+
+cbcl_bin_with_thresholds <- function(x, thresholds) {
+  case_when(
+    x >= thresholds$high ~ "high",
+    x >= thresholds$mid  ~ "mid",
+    x <  thresholds$mid  ~ "low",
+    TRUE ~ NA_character_
+  )
+}
+
+sds_bin_with_thresholds <- function(x, thresholds) {
+  case_when(
+    x >= thresholds$high ~ "high",
+    x <  thresholds$high ~ "low",
+    TRUE ~ NA_character_
+  )
+}
+
+t0_data <- adj_df_w_covs |> dplyr::filter(t == 0)
+t2_data <- adj_df_w_covs |> dplyr::filter(t == 2)
+
+for (col in cbcl_cols) {
+    new_col <- paste0(col, "_bin")
+    t0_data[[paste0(new_col, "_t0")]] <- cbcl_bin_with_thresholds(
+        t0_data[[col]],
+        quantile_cbcl[[col]]
+    )
+    t2_data[[paste0(new_col, "_t2")]] <- cbcl_bin_with_thresholds(
+        t2_data[[col]],
+        quantile_cbcl[[col]]
+    )
+}
+for (col in sds_cols) {
+    new_col <- paste0(col, "_bin")
+    t0_data[[paste0(new_col, "_t0")]] <- sds_bin_with_thresholds(
+        t0_data[[col]],
+        quantile_sds
+    )
+    t2_data[[paste0(new_col, "_t2")]] <- sds_bin_with_thresholds(
+        t2_data[[col]],
+        quantile_sds
+    )
+}
+
+t0_bin_cols <- t0_data |> dplyr::select(uid, cluster, imputation, dplyr::ends_with("bin_t0"))
+t2_bin_cols <- t2_data |> dplyr::select(uid, cluster, imputation, dplyr::ends_with("bin_t2"))
+
+all_bin_df <- dplyr::full_join(
+    t0_bin_cols,
+    t2_bin_cols, by = c("uid", "cluster", "imputation")
+)
+
+all_bin_df |>
+    dplyr::mutate(
+        anxdep_cat = paste0(adj_cbcl_anxdep_bin_t0, "_", adj_cbcl_anxdep_bin_t2)
+    ) |>
+    dplyr::select(anxdep_cat, cluster) |>
+    table()
+
+
+#------------------------------------------------------------------------------
+
+colnames(t0_data)
+
+t0_data |>
+    dplyr::mutate(
+        dplyr::across(
+            dplyr::starts_with("adj_cbcl_"),
+            cbcl_bin(reference = all_out_adj[[paste0("adj_", col)]]),
+            .names = "adj_cbcl_{col}"
+        )
+    )
+
+# Function to bin a numeric vector by quantiles
+bin_by_quantiles <- function(x, low_q = 0.93, high_q = 0.98) {
+  q_low <- quantile(x, low_q, na.rm = TRUE)
+  q_high <- quantile(x, high_q, na.rm = TRUE)
+  dplyr::case_when(
+    x >= q_high ~ "high",
+    x >= q_low  ~ "mid",
+    x <  q_low  ~ "low",
+    TRUE        ~ NA_character_
+  )
+}
+
+# Vector of CBCL column names (already residualized)
+cbcl_cols <- c("adj_cbcl_anxdep", "adj_cbcl_withdep")  # add as needed
+
+t0_data_binned <- t0_data %>%
+  mutate(across(all_of(cbcl_cols), bin_by_quantiles, .names = "{.col}_bin"))
+
+
+t0_data |>
+    dplyr::mutate(
+        anxdep_bin = dplyr::case_when(
+            adj_cbcl_anxdep >= quantile(adj_cbcl_anxdep, 0.98) ~ "high",
+            adj_cbcl_anxdep >= quantile(adj_cbcl_anxdep, 0.93) ~ "mid",
+            adj_cbcl_anxdep < quantile(adj_cbcl_anxdep, 0.93) ~ "low",
+            TRUE ~ NA
+        ),
+        withdep_bin = dplyr::case_when(
+            adj_cbcl_withdep >= quantile(adj_cbcl_withdep, 0.98) ~ "high",
+            adj_cbcl_withdep >= quantile(adj_cbcl_withdep, 0.93) ~ "mid",
+            adj_cbcl_withdep < quantile(adj_cbcl_withdep, 0.93) ~ "low",
+            TRUE ~ NA
+        ),
+        somatic_bin = dplyr::case_when(
+            adj_cbcl_somatic >= quantile(adj_cbcl_somatic, 0.98) ~ "high",
+            adj_cbcl_somatic >= quantile(adj_cbcl_somatic, 0.93) ~ "mid",
+            adj_cbcl_somatic < quantile(adj_cbcl_somatic, 0.93) ~ "low",
+            TRUE ~ NA
+        ),
+        social_bin = dplyr::case_when(
+            adj_cbcl_social >= quantile(adj_cbcl_social, 0.98) ~ "high",
+            adj_cbcl_social >= quantile(adj_cbcl_social, 0.93) ~ "mid",
+            adj_cbcl_social < quantile(adj_cbcl_social, 0.93) ~ "low",
+            TRUE ~ NA
+        ),
+    )
+
+
 
 quantile_plot <- function(df, feature, ref_df, probs) {
+    quantiles <- quantile(ref_df[[feature]], probs = probs)
+    yvals <- as.numeric(quantiles)
     df |>
         dplyr::filter(imputation == 1) |>
         ggplot(
@@ -709,24 +913,28 @@ quantile_plot <- function(df, feature, ref_df, probs) {
         ) +
         geom_point() +
         geom_line() +
-        facet_wrap(~ cluster)
+        geom_hline(
+            yintercept = yvals,
+            colour = "black"
+        ) +
+        facet_wrap(~ cluster) +
+        theme_bw()
 }
 
-quantile_plot(df_adj, "adj_cbcl_anxdep", c(0, 0.33, 0.66, 1))
+quantile_plot(adj_df_w_covs, paste0("adj_", out_cols[[1]]), all_out_adj, c(0.93, 0.98))
 
-df_adj |>
-    dplyr::filter(imputation == 1) |>
-    ggplot(
-        aes(
-            x = t,
-            y = adj_cbcl_anxdep,
-            group = uid,
-            colour = cluster
-        ),
-    ) +
-    geom_point() +
-    geom_line() +
-    facet_wrap(~ cluster)
+quantile_plot(adj_df_w_covs, paste0("adj_", out_cols[[5]]), all_out_adj, c(0.93, 0.98))
+
+quantile_plot(adj_df_w_covs, paste0("adj_", out_cols[[9]]), all_out_adj, c(0.75))
+
+quantile_plot(adj_df_w_covs, "adj_cbcl_anxdep", all_out_adj, c(0.1587, 0.8413))
+
+# "iagnostic accuracy (AUC = 0.9 1) and that the cut-off score
+# with the best diagnostic confidence, as determined by the
+# intersect point of sensitivity and specificity, was 39 (which
+# corresponded to the upper quartile of the control group's SDSC
+# total score); this cut-off point gave a sensitivity of 0.89 and a
+# specificity of 0.74. This score correctly identified 73.4% of th" - bruni
 
 
 ```
