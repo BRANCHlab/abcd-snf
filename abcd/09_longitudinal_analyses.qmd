@@ -517,11 +517,15 @@ import <- function(path) {
 mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
 abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
 
 all_sex_0 <- get_sex(gish_p_gi, t = 0) |>
     dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
     dplyr::select(-subjectkey)
 all_cbcl_0 <- get_cbcl_syndrome_scale(mh_p_cbcl, t = 0) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::select(-subjectkey)
+all_sds_0 <- get_sleep_disturbance(ph_p_sds, t = 0) |>
     dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
     dplyr::select(-subjectkey)
 all_age_0 <- get_interview_age(abcd_y_lt = abcd_y_lt, t = 0, as_years = FALSE) |>
@@ -533,6 +537,9 @@ all_sex_l <- all_sex_0
 all_cbcl_l <- get_cbcl_syndrome_scale(mh_p_cbcl, t = 2) |>
     dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
     dplyr::select(-subjectkey)
+all_sds_l <- get_sleep_disturbance(ph_p_sds, t = 2) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::select(-subjectkey)
 all_age_l <- get_interview_age(abcd_y_lt = abcd_y_lt, t = 2, as_years = FALSE) |>
     dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
     dplyr::rename("age" = "interview_age") |>
@@ -540,13 +547,17 @@ all_age_l <- get_interview_age(abcd_y_lt = abcd_y_lt, t = 2, as_years = FALSE) |
 
 source("abcd/helper_functions.R")
 
-all_age_sex_cbcl_0 <- dplyr::inner_join(
+all_out_0 <- dplyr::inner_join(
     all_sex_0,
     all_cbcl_0,
     by = "uid"
 ) |>
     dplyr::inner_join(
         all_age_0,
+        by = "uid"
+    ) |>
+    dplyr::inner_join(
+        all_sds_0,
         by = "uid"
     ) |>
     na.omit() |>
@@ -559,11 +570,12 @@ all_age_sex_cbcl_0 <- dplyr::inner_join(
         "cbcl_thought" = "cbcl_scr_syn_thought_r",
         "cbcl_attention" = "cbcl_scr_syn_attention_r",
         "cbcl_rulebreak" = "cbcl_scr_syn_rulebreak_r",
-        "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r"
+        "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r",
+        "sds_sleep" = "sds_p_ss_total"
     ) |>
     dplyr::mutate(cluster = sex)
 
-all_age_sex_cbcl_l <- dplyr::inner_join(
+all_out_l <- dplyr::inner_join(
     all_sex_l,
     all_cbcl_l,
     by = "uid"
@@ -572,6 +584,11 @@ all_age_sex_cbcl_l <- dplyr::inner_join(
         all_age_l,
         by = "uid"
     ) |>
+    dplyr::inner_join(
+        all_sds_l,
+        by = "uid"
+    ) |>
+    na.omit() |>
     dplyr::filter(sex %in% c("F", "M")) |>
     dplyr::rename(
         "cbcl_anxdep" = "cbcl_scr_syn_anxdep_r",
@@ -581,70 +598,128 @@ all_age_sex_cbcl_l <- dplyr::inner_join(
         "cbcl_thought" = "cbcl_scr_syn_thought_r",
         "cbcl_attention" = "cbcl_scr_syn_attention_r",
         "cbcl_rulebreak" = "cbcl_scr_syn_rulebreak_r",
-        "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r"
+        "cbcl_aggressive" = "cbcl_scr_syn_aggressive_r",
+        "sds_sleep" = "sds_p_ss_total"
     ) |>
     dplyr::mutate(cluster = sex)
 
-all_age_sex_cbcl_0 |> head()
-
-all_age_sex_cbcl_l |> head()
-
 # top, bottom, mid quantiles - do profiles shift?
-cbcl_cols <- grep("^cbcl_", names(all_age_sex_cbcl_0), value = TRUE)
 
-models_0 <- lapply(cbcl_cols, function(col) {
-  formula <- as.formula(paste(col, "~ age + sex"))
-  lm(formula, data = all_age_sex_cbcl_0)
-})
-names(models_0) <- cbcl_cols
+# Constructing adjustment models for each outcome for each timepoint
+out_cols <- grep("^(cbcl|sds)", names(all_out_0), value = TRUE)
 
-models_l <- lapply(cbcl_cols, function(col) {
-  formula <- as.formula(paste(col, "~ age + sex"))
-  lm(formula, data = all_age_sex_cbcl_l)
-})
-names(models_l) <- cbcl_cols
+models_0 <- lapply(
+    out_cols,
+    function(col) {
+        formula <- as.formula(paste(col, "~ age + sex"))
+        lm(formula, data = all_out_0)
+    }
+)
+names(models_0) <- out_cols
 
-df0_w_covariates <- df0 |>
+models_l <- lapply(
+    out_cols,
+    function(col) {
+        formula <- as.formula(paste(col, "~ age + sex"))
+        lm(formula, data = all_out_l)
+    }
+)
+names(models_l) <- out_cols
+
+df0_w_covs <- df0 |>
     as.data.frame() |>
     dplyr::inner_join(all_sex_0) |>
     dplyr::inner_join(all_age_0)
 
-dfl_w_covariates <- dfl |>
+dfl_w_covs <- dfl |>
     as.data.frame() |>
     dplyr::inner_join(all_sex_l) |>
     dplyr::inner_join(all_age_l)
 
-df0_w_covariates_adj <- df0_w_covariates
-dfl_w_covariates_adj <- dfl_w_covariates
+df0_w_covs
 
-for (col in cbcl_cols) {
+df0_w_covs_adj <- df0_w_covs
+dfl_w_covs_adj <- dfl_w_covs
+
+dfl_w_covs_adj |> head()
+
+dfl_w_covs |> head()
+
+for (col in out_cols) {
   # Predicted values based on reference model
-  predicted <- predict(models_0[[col]], newdata = df0_w_covariates)
+  predicted <- predict(models_0[[col]], newdata = df0_w_covs)
   # Residuals: actual - predicted
-  df0_w_covariates_adj[[paste0("adj_", col)]] <- df0_w_covariates[[col]] - predicted
+  df0_w_covs_adj[[paste0("adj_", col)]] <- df0_w_covs[[col]] - predicted
 }
 
-for (col in cbcl_cols) {
+for (col in out_cols) {
   # Predicted values based on reference model
-  predicted <- predict(models_l[[col]], newdata = dfl_w_covariates)
+  predicted <- predict(models_l[[col]], newdata = dfl_w_covs)
   # Residuals: actual - predicted
-  dfl_w_covariates_adj[[paste0("adj_", col)]] <- dfl_w_covariates[[col]] - predicted
+  dfl_w_covs_adj[[paste0("adj_", col)]] <- dfl_w_covs[[col]] - predicted
 }
 
-df_adj <- rbind(df0_w_covariates_adj, dfl_w_covariates_adj)
+df_adj <- rbind(df0_w_covs_adj, dfl_w_covs_adj)
+
+saveRDS(df0_w_covs_adj, proc_path("df0_w_covs_adj.rds", TRUE))
+saveRDS(dfl_w_covs_adj, proc_path("dfl_w_covs_adj.rds", TRUE))
 
 saveRDS(df_adj, proc_path("df_adj.rds", TRUE))
 
-df_adj <- readRDS(proc_path("2025_07_07_df_adj.rds"))
+# Storing the quantiles
 
-df_adj |> colnames()
+all_out_0_adj <- all_out_0
+all_out_l_adj <- all_out_l
+
+for (col in out_cols) {
+  # Predicted values based on reference model
+  predicted <- predict(models_0[[col]], newdata = all_out_0)
+  # Residuals: actual - predicted
+  all_out_0_adj[[paste0("adj_", col)]] <- all_out_0[[col]] - predicted
+}
+
+for (col in out_cols) {
+  # Predicted values based on reference model
+  predicted <- predict(models_l[[col]], newdata = all_out_l)
+  # Residuals: actual - predicted
+  all_out_l_adj[[paste0("adj_", col)]] <- all_out_l[[col]] - predicted
+}
+
+```
+
+```{r}
+df0_adj <- readRDS(proc_path("2025_07_08_df0_w_covs_adj.rds"))
+dfl_adj <- readRDS(proc_path("2025_07_08_dfl_w_covs_adj.rds"))
+
+df_adj <- readRDS(proc_path("2025_07_08_df_adj.rds"))
+
+
+quantile(all_out_0_adj$"adj_cbcl_anxdep", c(0, 0.33, 0.66, 1))
+
+quantile_plot <- function(df, feature, ref_df, probs) {
+    df |>
+        dplyr::filter(imputation == 1) |>
+        ggplot(
+            aes(
+                x = t,
+                y = .data[[feature]],
+                group = uid,
+                colour = cluster
+            ),
+        ) +
+        geom_point() +
+        geom_line() +
+        facet_wrap(~ cluster)
+}
+
+quantile_plot(df_adj, "adj_cbcl_anxdep", c(0, 0.33, 0.66, 1))
 
 df_adj |>
     dplyr::filter(imputation == 1) |>
     ggplot(
         aes(
             x = t,
-            y = cbcl_thought,
+            y = adj_cbcl_anxdep,
             group = uid,
             colour = cluster
         ),
