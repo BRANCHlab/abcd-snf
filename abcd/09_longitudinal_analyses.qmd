@@ -1027,12 +1027,156 @@ pl[[1]]
 
 # HERE 2025-07-08
 
-# "iagnostic accuracy (AUC = 0.9 1) and that the cut-off score
+# "Diagnostic accuracy (AUC = 0.9 1) and that the cut-off score
 # with the best diagnostic confidence, as determined by the
 # intersect point of sensitivity and specificity, was 39 (which
 # corresponded to the upper quartile of the control group's SDSC
 # total score); this cut-off point gave a sensitivity of 0.89 and a
 # specificity of 0.74. This score correctly identified 73.4% of th" - bruni
+```
+
+Checking again, but now rather than high-high/high-low, examining if there is differences in high that went down vs. high that stayed same or went up.
+
+```{r}
+
+adj_df_cat_annotated <- readRDS(proc_path("2025_07_08_adj_df_cat_annotated.rds"))
+
+t0_df <- adj_df_cat_annotated |>
+    dplyr::filter(t == 0)
+t2_df <- adj_df_cat_annotated |>
+    dplyr::filter(t == 2)
+colnames(t0_df) <- paste0(colnames(t0_df), "_t0")
+colnames(t2_df) <- paste0(colnames(t2_df), "_t2")
+t0_df <- dplyr::rename(t0_df, "uid" = "uid_t0", "imputation" = "imputation_t0")
+t2_df <- dplyr::rename(t2_df, "uid" = "uid_t2", "imputation" = "imputation_t2")
+
+merged_df <- dplyr::inner_join(t0_df, t2_df, by = c("uid", "imputation"))
+
+outcome_fts <- c(
+    "cbcl_anxdep",
+    "cbcl_withdep",
+    "cbcl_somatic",
+    "cbcl_social",
+    "cbcl_thought",
+    "cbcl_attention",
+    "cbcl_rulebreak",
+    "cbcl_aggressive",
+    "sds_sleep"
+)
+
+library(ggplot2)
+
+plot_high_change <- function(df, feature) {
+    category_name <- paste0(feature, "_cat_t0")
+    name_t0 <- paste0("adj_", feature, "_t0")
+    name_t2 <- paste0("adj_", feature, "_t2")
+    name <- paste0("adj_", feature)
+    df_labeled <- df |>
+        dplyr::filter(
+            .data[[category_name]] %in% c("high_high", "high_low")
+        ) |>
+        dplyr::mutate(
+            diff_cat = dplyr::case_when(
+                .data[[name_t2]] < .data[[name_t0]] ~ "improved",
+                TRUE ~ "not_improved"
+            )
+        ) |>
+        dplyr::select(
+            uid,
+            diff_cat,
+            dplyr::contains(c("cluster", "imputation", "t", feature))
+        )
+    df_0 <- df_labeled |>
+        dplyr::select(
+            uid,
+            imputation,
+            diff_cat,
+            dplyr::ends_with("_t0")
+        )
+    df_2 <- df_labeled |>
+        dplyr::select(
+            uid,
+            imputation,
+            diff_cat,
+            dplyr::ends_with("_t2")
+        )
+    colnames(df_0) <- gsub("_t0$", "", colnames(df_0))
+    colnames(df_2) <- gsub("_t2$", "", colnames(df_2))
+    stacked_df <- rbind(df_0, df_2)
+    pd <- position_dodge(width = 0.2)
+    stacked_df_analysis <- stacked_df |>
+        dplyr::filter(t == 0) |>
+        dplyr::mutate(
+            diff_cat_bin = dplyr::case_when(
+                diff_cat == "improved" ~ 1,
+                diff_cat == "not_improved" ~ 0
+            )
+        )
+    model <- glm(
+        diff_cat_bin ~ factor(cluster),
+        data = stacked_df_analysis,
+        family = "binomial"
+    )
+    p_value <- summary(
+        glht(model, linfct = mcp(`factor(cluster)` = "Tukey")), test = adjusted("none")
+    )$"test"$"pvalues"
+    p_df <- data.frame(p_value)
+    p_df$"comparison" <- rownames(p_df)
+    rownames(p_df) <- NULL
+    colnames(p_df)[[1]] <- "p"
+    p_df$"feature" <- feature
+    plot <- stacked_df |>
+        dplyr::filter(imputation == 1) |>
+        ggplot(
+            aes(
+                x = factor(t),
+                y = .data[[name]],
+                group = uid,
+                colour = diff_cat
+            )
+        ) +
+        geom_point(size = 3, position = pd, alpha = 0.5) +
+        geom_line(position = pd, alpha = 0.5) +
+        facet_wrap(~ cluster) +
+        theme_bw() +
+        scale_colour_manual(
+            values = c("improved" = "darkgreen", "not_improved" = "red"),
+            labels = c("improved" = "High -> Improved", "not_improved" = "High -> Not Improved")
+        ) +
+        labs(colour = "Transition", y = feature)
+    return(
+        list(plot, p_df)
+    )
+}
+p_df <- data.frame()
+pl <- list()
+for (i in 1:9) {
+    print(i)
+    high_change_results <- plot_high_change(merged_df, outcome_fts[[i]])
+    pl[[i]] <- high_change_results[[1]]
+    p_df <- rbind(p_df, high_change_results[[2]])
+}
+names(pl) <- outcome_fts
+p_df$"p_adj" <- p.adjust(p_df$p, method = "fdr")
+
+p_df <- p_df |>
+    arrange(p_adj) |>
+    dplyr::select(feature, comparison, p, p_adj)
+
+saveRDS(pl, fig_path("high_change_figs_pl.rds", TRUE))
+saveRDS(p_df, proc_path("high_change_p_df.rds", TRUE))
+
+ggsave(
+    filename = fig_path("high_change_plot.png", TRUE),
+    wrap_plots(pl),
+    width = 20,
+    height = 7
+)
+
+p_df |>
+    knitr::kable(format = "markdown", digits = 5)
+
+    
 ```
 
 ## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?<!-- {{{ -->
