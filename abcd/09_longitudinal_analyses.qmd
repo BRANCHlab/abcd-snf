@@ -1018,9 +1018,6 @@ saveRDS(p_df, proc_path("outcome_transition_pvals.rds", TRUE))
 saveRDS(pl, proc_path("outcome_transition_plots.rds", TRUE))
 
 p_df <- readRDS(proc_path("2025_07_08_outcome_transition_pvals.rds"))
-
-p_df
-
 pl <- readRDS(proc_path("2025_07_08_outcome_transition_plots.rds"))
 
 pl[[1]]
@@ -1038,7 +1035,6 @@ pl[[1]]
 Checking again, but now rather than high-high/high-low, examining if there is differences in high that went down vs. high that stayed same or went up.
 
 ```{r}
-
 adj_df_cat_annotated <- readRDS(proc_path("2025_07_08_adj_df_cat_annotated.rds"))
 
 t0_df <- adj_df_cat_annotated |>
@@ -1065,6 +1061,8 @@ outcome_fts <- c(
 )
 
 library(ggplot2)
+library(multcomp)
+library(patchwork)
 
 plot_high_change <- function(df, feature) {
     category_name <- paste0(feature, "_cat_t0")
@@ -1114,12 +1112,21 @@ plot_high_change <- function(df, feature) {
         )
     model <- glm(diff_cat_bin ~ factor(cluster), data = stacked_df_analysis, family = "binomial")
     p_value <- summary(glht(model, linfct = mcp(`factor(cluster)` = "Tukey")), test = adjusted("none"))$"test"$"pvalues"
+    fit_null <- glm(diff_cat_bin ~ 1, data = stacked_df_analysis, family = "binomial")
+    fit_full <- glm(diff_cat_bin ~ factor(cluster), data = stacked_df_analysis, family = "binomial")
+    lrt_p_value <- anova(fit_null, fit_full, test = "Chisq")$"Pr(>Chi)"[2]
+    chisq_p_value <- chisq.test(table(stacked_df_analysis$diff_cat_bin, stacked_df_analysis$cluster))$"p.value"
     p_df <- data.frame(p_value)
     p_df$"comparison" <- rownames(p_df)
     rownames(p_df) <- NULL
-    colnames(p_df)[[1]] <- "p"
+    colnames(p_df)[[1]] <- "p_wald_glm"
+    p_df_2 <- data.frame(
+        p_lrt = lrt_p_value,
+        p_chisq = chisq_p_value,
+        feature = feature
+    )
     p_df$"feature" <- feature
-    plot <- stacked_df |>
+    point_plot <- stacked_df |>
         dplyr::filter(imputation == 1) |>
         ggplot(
             aes(
@@ -1138,37 +1145,89 @@ plot_high_change <- function(df, feature) {
             labels = c("improved" = "High -> Improved", "not_improved" = "High -> Not Improved")
         ) +
         labs(colour = "Transition", y = feature)
+    prop_plot <- stacked_df |>
+        count(cluster, diff_cat) |>
+        group_by(cluster) |>
+        mutate(prop = n / sum(n)) |>
+        ggplot(aes(x = cluster, y = prop, fill = diff_cat)) +
+        geom_col(position = "fill") +  # stacked proportion bars
+        theme_classic() + 
+        labs(y = "Proportion", x = "Cluster", fill = "Transition") +
+        scale_fill_manual(
+            values = c("improved" = "darkgreen", "not_improved" = "red"),
+            labels = c("improved" = "High -> Improved", "not_improved" = "High -> Not Improved")
+        )
     return(
-        list(plot, p_df)
+        list(point_plot,  prop_plot, p_df, p_df_2)
     )
 }
+
 p_df <- data.frame()
+p_df_2 <- data.frame()
 pl <- list()
+pl_2 <- list()
+pl_prop
 for (i in 1:9) {
     print(i)
     high_change_results <- plot_high_change(merged_df, outcome_fts[[i]])
     pl[[i]] <- high_change_results[[1]]
-    p_df <- rbind(p_df, high_change_results[[2]])
+    pl_2[[i]] <- high_change_results[[2]]
+    p_df <- rbind(p_df, high_change_results[[3]])
+    p_df_2 <- rbind(p_df_2, high_change_results[[4]])
 }
 names(pl) <- outcome_fts
+p_df_2$"p_lrt_adj" <- p.adjust(p_df_2$p_lrt, method = "fdr")
+p_df_2$"p_chisq_adj" <- p.adjust(p_df_2$p_chisq, method = "fdr")
+
 p_df$"p_adj" <- p.adjust(p_df$p, method = "fdr")
 
-p_df <- p_df |>
-    arrange(p_adj) |>
-    dplyr::select(feature, comparison, p, p_adj)
-
-saveRDS(pl, fig_path("high_change_figs_pl.rds", TRUE))
-saveRDS(p_df, proc_path("high_change_p_df.rds", TRUE))
-
+pl_annotated <- lapply(
+    1:9,
+    function(i) {
+        pl_2[[i]] +
+            annotate(
+                "text",
+                x = 2,
+                y = 1.13,
+                label = paste0(
+                    "FDR LRT p: ", signif(p_df_2$"p_lrt_adj"[[i]], 3),
+                    "\nFDR Chisq p: ", signif(p_df_2$"p_chisq_adj"[[i]], 3)
+                ),
+                colour = "black",
+                size = 3
+            ) +
+             coord_cartesian(ylim = c(0, 1.2))
+    }
+)
+merged_plots <- wrap_plots(pl, ncol = 1) | wrap_plots(pl_annotated, ncol = 1)
+merged_plots <- merged_plots + plot_layout(widths = c(2, 1))
+#saveRDS(merged_plots, fig_path("high_change_figs_pl.rds", TRUE))
 ggsave(
     filename = fig_path("high_change_plot.png", TRUE),
-    wrap_plots(pl),
-    width = 20,
-    height = 7
+    plot = merged_plots,
+    height = 20,
+    width = 10
 )
 
-p_df |>
-    knitr::kable(format = "markdown", digits = 5)
+#p_df <- p_df |>
+#    arrange(p_adj) |>
+#    dplyr::select(feature, comparison, p, p_adj)
+#
+#saveRDS(pl, fig_path("high_change_figs_pl.rds", TRUE))
+#saveRDS(p_df, proc_path("high_change_p_df.rds", TRUE))
+#
+#pl <- readRDS(fig_path("2025_07_14_high_change_figs_pl.rds"))
+#p_df <- readRDS(proc_path("2025_07_14_high_change_p_df.rds"))
+#
+#ggsave(
+#    filename = fig_path("high_change_plot.png", TRUE),
+#    wrap_plots(pl),
+#    width = 20,
+#    height = 7
+#)
+#
+#p_df |>
+#    knitr::kable(format = "markdown", digits = 5)
 
     
 ```
