@@ -1112,14 +1112,8 @@ plot_high_change <- function(df, feature) {
                 diff_cat == "not_improved" ~ 0
             )
         )
-    model <- glm(
-        diff_cat_bin ~ factor(cluster),
-        data = stacked_df_analysis,
-        family = "binomial"
-    )
-    p_value <- summary(
-        glht(model, linfct = mcp(`factor(cluster)` = "Tukey")), test = adjusted("none")
-    )$"test"$"pvalues"
+    model <- glm(diff_cat_bin ~ factor(cluster), data = stacked_df_analysis, family = "binomial")
+    p_value <- summary(glht(model, linfct = mcp(`factor(cluster)` = "Tukey")), test = adjusted("none"))$"test"$"pvalues"
     p_df <- data.frame(p_value)
     p_df$"comparison" <- rownames(p_df)
     rownames(p_df) <- NULL
