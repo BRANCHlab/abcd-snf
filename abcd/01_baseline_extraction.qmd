@@ -159,6 +159,51 @@ write_csv(mtbi_subs, sub_path("mtbi_subs.csv", date = TRUE))
 write_csv(unij_subs, sub_path("unij_subs.csv", date = TRUE))
 ```
 
+A chunk for building the sample criteri figure:
+
+```{r}
+
+# 11864
+ph_p_otbi |>
+    detail_mtbi(abcd_y_lt) |>
+    filter_timepoint(0) |>
+    nrow()
+
+# 445
+ph_p_otbi |>
+    detail_mtbi(abcd_y_lt) |>
+    filter_timepoint(0) |>
+    dplyr::filter(mtbi == 1) |>
+    dplyr::filter(
+        moderate_tbi == 0 &
+        severe_tbi == 0
+    ) |>
+    nrow()
+
+# 437
+ph_p_otbi |>
+    detail_mtbi(abcd_y_lt) |>
+    filter_timepoint(0) |>
+    dplyr::filter(mtbi == 1) |>
+    dplyr::filter(
+        moderate_tbi == 0 &
+        severe_tbi == 0
+    ) |>
+    dplyr::filter(latest_mtbi_mpi >= 3) |>
+    nrow()
+
+colnames(z)
+
+mtbi_subs <- get_mtbi_subjects(
+    ph_p_otbi,
+    abcd_y_lt,
+    min_mpi = 3,
+    t = 0
+)
+
+```
+
+
 ```{r}
 # CHECKPOINT
 mtbi_subs <- abcdutils::read_subjects(sub_path("2025_05_22_mtbi_subs.csv"))
