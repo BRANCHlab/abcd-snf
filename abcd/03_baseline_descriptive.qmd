@@ -40,6 +40,7 @@ all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
 # Pre-imputation
 mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_train_df.csv")))
 mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_test_df.csv")))
+unij_df <- data.frame(read_csv(proc_path("2025_05_26_unij_df.csv")))
 mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
 
 visdat::vis_miss(mtbi_df)
@@ -54,10 +55,8 @@ pool_imputed <- readRDS(proc_path("2025_05_26_pool_imputed.rds"))
 ```
 
 
-
 ```{r}
 names(all_dls_h_ns)
-
 
 sample_characterize <- function(data) {
     if (inherits(data, "data_list")) {
@@ -86,7 +85,8 @@ sample_characterize <- function(data) {
             Var1 = dplyr::case_when(
                 Var1 == 1 ~ "<$50,000",
                 Var1 == 2 ~ "$50,000-$100,000",
-                Var1 == 3 ~ ">$100,000"
+                Var1 == 3 ~ ">$100,000",
+                TRUE ~ NA
             ),
             Freq = paste0(Freq, " (", signif(100 * Freq / nrow(data), 3), "%)")
         ) |>
@@ -96,9 +96,9 @@ sample_characterize <- function(data) {
         income_df
     )
     # 5. Race 
-    race_names <- names(table(q$"race"))
-    race_counts <- as.numeric(table(q$"race"))
-    race_pcts <- race_counts / nrow(q) * 100
+    race_names <- names(table(data$"race"))
+    race_counts <- as.numeric(table(data$"race"))
+    race_pcts <- race_counts / nrow(data) * 100
     race_df <- lapply(
         1:length(race_pcts),
         function(x) {
@@ -124,7 +124,6 @@ sample_characterize <- function(data) {
 }
 
 mtbi_samp_char <- sample_characterize(mtbi_df)
-
 unij_samp_char <- sample_characterize(unij_df)
 
 nrow(unij_df)
