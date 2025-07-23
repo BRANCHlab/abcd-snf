@@ -414,7 +414,6 @@ matched_unij_dpo_p <- read_subjects(
 ```
 
 ```{r}
-
 matched_subjects <- list(
     "d_u" = matched_unij_d_u,
     "p_u" = matched_unij_p_u,
@@ -462,8 +461,14 @@ match_mat_hm <- ComplexHeatmap::Heatmap(
     match_mat,
     heatmap_legend_param = list(
         title = "% Subject\nOverlap"
-    )
+    ),
+    col = circlize::colorRamp2(
+        c(min(match_mat), max(match_mat)),
+        c("black", "red")
+    ),
+    rect_gp = gpar(col = "black", lwd = 1)
 )
+match_mat_hm
 
 save_heatmap(
     heatmap = match_mat_hm,
@@ -474,7 +479,7 @@ save_heatmap(
 )
 ```
 
-## Subsetting matched unijured data and out of model lists
+## Subsetting matched uninjured data and out of model lists
 
 ```{r}
 # Function reduces a data list to only subjects in the subject vector
@@ -933,11 +938,7 @@ for (i in dup_indices) {
 #dpo_u is equal to:
 #    -  dp_u
 
-for (i in seq_along(vec)) {
-    for (j in seq_along(vec)) {
-
-    }
-}
+matched_unij_ext_sol_df_list |> length()
 
 # Tight requirement: -log10(pval) > 4
 matched_unij_ext_sol_df_3c_list <- lapply(
@@ -960,6 +961,13 @@ matched_unij_ext_sol_df_3c_list_loose <- lapply(
         } 
     }
 )
+
+
+matched_unij_ext_sol_df_3c_list_loose[[1]] |> nrow() # 4
+
+matched_unij_ext_sol_df_3c_list_loose[[2]] |> nrow() # 7
+
+matched_unij_ext_sol_df_3c_list_loose[[3]] |> nrow() # 18
 
 unlist(sapply(matched_unij_ext_sol_df_3c_list, function(x) nrow(x) > 0))
 
@@ -984,6 +992,7 @@ saveRDS(matched_unij_ext_sol_df_3c_list, proc_path("matched_unij_ext_sol_df_3c_l
 saveRDS(matched_unij_ext_sol_df_3c_list_loose, proc_path("matched_unij_ext_sol_df_3c_list_loose.rds", TRUE))
 
 matched_unij_ext_sol_df_3c_list <- readRDS(proc_path("2025_06_18_matched_unij_ext_sol_df_3c_list.rds"))
+
 matched_unij_ext_sol_df_3c_list_loose <- readRDS(proc_path("2025_06_18_matched_unij_ext_sol_df_3c_list_loose.rds"))
 ```
 
@@ -1152,13 +1161,16 @@ matched_pl_dfs <- lapply(
         return(pl)
     }
 )
+
 names(matched_pl_dfs) <- names(matched_unij_ext_sol_df_3c_list_loose)
 matched_pl_dfs <- unlist(matched_pl_dfs, recursive = FALSE)
 
 saveRDS(matched_pl_dfs, proc_path("matched_pl_dfs.rds", TRUE))
-matched_pls_dfs <- readRDS(proc_path("2025_06_18_matched_pl_dfs.rds"))
+
+matched_pl_dfs <- readRDS(proc_path("2025_06_18_matched_pl_dfs.rds"))
 
 duplicated(matched_pl_dfs)
+
 names(matched_pl_dfs)
 
 matched_pl_dfs_no_dups <- matched_pl_dfs[!duplicated(matched_pl_dfs)]
@@ -1176,6 +1188,8 @@ matched_pl_tops <- lapply(
 saveRDS(matched_pl_tops, proc_path("matched_pl_tops.rds", TRUE))
 
 matched_pl_tops <- readRDS(proc_path("2025_06_18_matched_pl_tops.rds"))
+
+matched_pl_tops |> names()
 
 matched_pl_gen_fts <- lapply(
     matched_pl_tops,
@@ -1218,7 +1232,8 @@ matched_pl_gen_fts <- lapply(
 #)
 
 saveRDS(matched_pl_dfs_no_dups, proc_path("matched_pl_dfs_no_dups.rds", TRUE))
-matched_pl_dfs_no_dups <- readRDS("2025_06_18_matched_pl_dfs_no_dups.rds")
+
+matched_pl_dfs_no_dups <- readRDS(proc_path("2025_06_18_matched_pl_dfs_no_dups.rds"))
 
 concordance_w_mtbi_quick <- function(data_df, n = NULL, iters = 10, procs = 1, mtbi_data) {
     #start <- Sys.time()
@@ -1306,7 +1321,7 @@ concordance_df
 
 write_csv(concordance_df, proc_path("matched_unij_concordance.csv", TRUE))
 
-concordance_df <- read_csv(proc_path("2025_06_18_matched_unij_concordance.csv"))
+concordance_df <- read_csv(proc_path("2025_07_22_matched_unij_concordance.csv"))
 
 concordance_df
 

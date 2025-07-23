@@ -1674,7 +1674,6 @@ quick_save(wp_o, "wp_o", w = 5.5, h = 18, dpi = 100)
 ```
 
 ```{r}
-
 print(names(iplots)[1:30])
 
 iplots[[4]]
@@ -1685,14 +1684,13 @@ light_fts <- c(
     "sex",
     "brain_volume",
     "household_income",
+    "family_fight_p",
     "extracurriculars",
     "parent_somatic",
-    "weekday_screentime",
     "race",
-    "family_fight_p",
+    "weekday_screentime",
     "cbcl_attention"
 )
-
 all_light_plots <- all_plots[light_fts]
 newsize <- 3
 all_light_plots <- lapply(
@@ -1702,21 +1700,35 @@ all_light_plots <- lapply(
             legend.title = element_text(size = 14),
             legend.text = element_text(size = 14)
         )
-        if (x %in% c(2, 3, 4, 5, 6, 9)) {
-            all_light_plots[[x]][[1]]$"layers"[[3]]$"aes_params"$"size" <- 3
-            all_light_plots[[x]][[2]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        if (x %in% c(2, 3, 5, 6, 8, 9)) {
             all_light_plots[[x]][[3]]$"layers"[[3]]$"aes_params"$"size" <- 3
         }
-        all_light_plots[[x]]
+        if (x %in% c(1, 4, 7)) {
+            all_light_plots[[x]][[3]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        all_light_plots[[x]][[3]]
     }
 )
-
+names(all_light_plots) <- light_fts
+all_light_plots$"sex" <- all_light_plots$"sex" + labs(fill = "", y = "Sex") + theme(axis.title.y = ggplot2::element_text(size = 16, angle = 90), legend.position = "left")
+all_light_plots$"brain_volume" <- all_light_plots$"brain_volume" + labs(y = "Brain\nVolume (cm³)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16)) + 
+scale_y_continuous(
+    labels = function(x) x / 1000
+  )
+all_light_plots$"household_income" <- all_light_plots$"household_income" + labs(y = "Household\nIncome") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_plots[[4]] <- all_light_plots[[4]] + labs(fill = "", y = "Family Fights\n(Parent Report)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16), legend.position = "left")
+all_light_plots[[5]] <- all_light_plots[[5]] + labs(y = "Extracurriculars\n(Quartile)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_plots[[6]] <- all_light_plots[[6]] + labs(y = "Parent\nSomatic") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_plots[[7]] <- all_light_plots[[7]] + labs(fill = "", y = "Race") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16), legend.position = "left")
+all_light_plots[[8]] <- all_light_plots[[8]] + labs(y = "Weekday\nScreentime\n(hours)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_plots[[9]] <- all_light_plots[[9]] + labs(y = "CBCL\nAttention") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
 all_light_plots |>
     wrap_plots() |>
     quick_save(
-        "dvf_light",
-        w = 22,
-        h = 6
+        "f_light",
+        w = 10,
+        h = 6,
+        dpi = 300
     )
 
 ```
