@@ -1235,6 +1235,8 @@ saveRDS(matched_pl_dfs_no_dups, proc_path("matched_pl_dfs_no_dups.rds", TRUE))
 
 matched_pl_dfs_no_dups <- readRDS(proc_path("2025_06_18_matched_pl_dfs_no_dups.rds"))
 
+matched_pl_dfs_no_dups[[1]] |> colnames()
+
 concordance_w_mtbi_quick <- function(data_df, n = NULL, iters = 10, procs = 1, mtbi_data) {
     #start <- Sys.time()
     #bootstrap_sample <- sample(n, replace = TRUE)
@@ -1338,8 +1340,7 @@ knitr::kable(
 concordance_df
 ```
 
-Matching by D+O and O+P seem to be best.
-The D+O and O+P matching yielded identical sets of matched uninjured subjects.
+Matching by D+O and D+P seem to be best.
 
 ```{r}
 saveRDS(
@@ -1351,7 +1352,6 @@ matched_unij_nearest_esdf <- readRDS(proc_path("2025_06_18_matched_unij_nearest_
 
 classifier_fts <- readRDS(proc_path("2025_06_13_classifier_fts.rds"))
 
-
 top_unij_pl <- auto_plot(
     matched_unij_nearest_esdf,
     dl = c(
@@ -1359,6 +1359,56 @@ top_unij_pl <- auto_plot(
         matched_unij_ols$"do_u"
     )
 )
+
+
+light_fts <- c(
+    "sex",
+    "brain_volume",
+    "household_income",
+    "family_fight_p",
+    "extracurriculars",
+    "parent_somatic",
+    "race",
+    "weekday_screentime",
+    "cbcl_attention"
+)
+
+top_unij_pl
+
+all_light_unij_plots <- top_unij_pl[light_fts]
+all_light_unij_plots
+
+all_light_unij_plots$"sex" <- all_light_unij_plots$"sex" + labs(fill = "", y = "Sex") + theme(axis.title.y = ggplot2::element_text(size = 16, angle = 90), legend.position = "left")
+all_light_unij_plots$"brain_volume" <- all_light_unij_plots$"brain_volume" + labs(y = "Brain\nVolume (cm³)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16)) + 
+scale_y_continuous(
+    labels = function(x) x / 1000
+  )
+all_light_unij_plots$"household_income" <- all_light_unij_plots$"household_income" + labs(y = "Household\nIncome") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_unij_plots[[4]] <- all_light_unij_plots[[4]] + labs(fill = "", y = "Family Fights\n(Parent Report)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16), legend.position = "left")
+all_light_unij_plots[[5]] <- all_light_unij_plots[[5]] + labs(y = "Extracurriculars\n(Quartile)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_unij_plots[[6]] <- all_light_unij_plots[[6]] + labs(y = "Parent\nSomatic") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_unij_plots[[7]] <- all_light_unij_plots[[7]] + labs(fill = "", y = "Race") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16), legend.position = "left")
+all_light_unij_plots[[8]] <- all_light_unij_plots[[8]] + labs(y = "Weekday\nScreentime\n(hours)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_unij_plots[[9]] <- all_light_unij_plots[[9]] + labs(y = "CBCL\nAttention") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
+all_light_unij_plots <- all_light_unij_plots |>
+    lapply(
+        function(x) {
+            x <- x + theme(
+                axis.title.x = element_blank(),
+                legend.title = element_text(size = 14),
+                legend.text = element_text(size = 14)
+            )
+        }
+    )
+all_light_unij_plots[[7]] <- all_light_unij_plots[[7]] + scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
+all_light_unij_plots |>
+    wrap_plots() |>
+    ggsave(
+        filename = fig_path("unij_top_match_light.png", TRUE),
+        w = 10,
+        h = 6,
+        dpi = 300
+    )
 
 
 afts <- readRDS(proc_path("2025_06_11_afts.rds"))

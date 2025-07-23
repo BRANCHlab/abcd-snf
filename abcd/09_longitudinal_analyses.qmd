@@ -1880,6 +1880,8 @@ lmtb_l_esdf <- as.data.frame(lmtb_l_ext_sol_df)
 lmtb_0_esdf$"impairment_separation" <- -log10(lmtb_0_esdf$"mean_pval")
 lmtb_l_esdf$"impairment_separation" <- -log10(lmtb_l_esdf$"mean_pval")
 
+
+
 full_lmtb_0_ari_hm <- meta_cluster_heatmap(
     x = lmtb_0_ari,
     order = lmtb_0_ari_order,
@@ -1946,6 +1948,156 @@ save_heatmap(
     height = 800,
     res = 100
 )
+
+concordance_w_mtbi_quick <- function(data_df, n = NULL, iters = 10, procs = 1, mtbi_data) {
+    tops_df <- topologizer(data_df)
+    info_table <- data_df |>
+        dplyr::group_by(cluster) |>
+        dplyr::summarize(
+            income = mean(household_income),
+            sex = mean(sex)
+        ) |>
+        dplyr::mutate(combo = income - sex) |> # sort by low income and high M
+        dplyr::arrange(combo)
+    swap_key <- paste0(info_table$"cluster", collapse = "")
+    swap_list <- list(
+        "123" = list(),                 # swap nothing
+        "132" = list(c(2, 3)),          # swap 2<->3
+        "213" = list(c(1, 2)),          # swap 1<->2
+        "231" = list(c(1, 2), c(2, 3)), # swap 1<->2 then 2<->3
+        "312" = list(c(1, 3), c(2, 3)), # swap 1<->3 then 2<->3
+        "321" = list(c(1, 3))           # swap 1<->3
+    )
+    swap_instructions <- swap_list[[swap_key]]
+    for (instruction in swap_instructions) {
+        data_df <- data_df |>
+            dplyr::mutate(
+                cluster = dplyr::case_when(
+                    cluster == instruction[1] ~ factor(instruction[2]),
+                    cluster == instruction[2] ~ factor(instruction[1]),
+                    TRUE ~ cluster
+                )
+            )
+    }
+    info_table <- data_df |>
+        dplyr::group_by(cluster) |>
+        dplyr::summarize(
+            income = mean(household_income),
+            sex = mean(sex)
+        ) |>
+        dplyr::mutate(combo = income - sex) |> # sort by low income and high M
+        dplyr::arrange(combo)
+    swap_key <- paste0(info_table$"cluster", collapse = "")
+    gen_tops_df <- generalizable_features(tops_df, compare_fn_a)
+    gen_tops_df_long <- gen_tops_df |>
+        pivot_longer(
+            cols = -feature,
+            names_to = "comparison",
+            values_to = "order_sample"
+        )
+    joint_df <- dplyr::left_join(
+        mtbi_data, # reference data frame
+        gen_tops_df_long, # sampled data frame
+        by = c("feature", "comparison")
+    ) |>
+        dplyr::mutate(
+            match = ifelse(order_sample == order, 1, 0)
+        ) |>
+        dplyr::filter(!grepl("mtbi", feature))
+        joint_df <- joint_df |> dplyr::select(match) |> na.omit()
+        print(paste0("nrow: ", nrow(joint_df)))
+    concordance <- sum(joint_df$"match", na.rm = TRUE) / nrow(joint_df)
+    return(concordance)
+}
+
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
+
+z1 <- auto_plot(
+    lmtb_0_ext_sol_df[1, ],
+    dl = c(lmtb_0_dls[[1]], lmtb_0_ols[[1]]),
+    return_plots = FALSE
+)
+
+z2 <- auto_plot(
+    lmtb_0_ext_sol_df[1:200, ],
+    dl = c(lmtb_0_dls[[1]], lmtb_0_ols[[1]]),
+    return_plots = FALSE
+)
+
+dl_idx <- c(
+    rep(1, 200),
+    rep(2, 200),
+    rep(3, 200),
+    rep(4, 200),
+    rep(5, 200)
+)
+
+conc_df <- data.frame()
+for (i in 1:1000) {
+    print(i)
+    idx <- dl_idx[[i]]
+    if (lmtb_0_ext_sol_df[i, ]$"nclust" == 3) {
+        lmtb_0_pl_df <- auto_plot(
+            lmtb_0_ext_sol_df[i, ],
+            dl = c(lmtb_0_dls[[idx]], lmtb_0_ols[[idx]]),
+            return_plots = FALSE
+        )
+        conc <- concordance_w_mtbi_quick(lmtb_0_pl_df, mtbi_data = mtbi_gen_long)
+        conc_df <- rbind(
+            conc_df,
+            data.frame(
+                solution = i,
+                dl = idx,
+                concordance = conc
+            )
+        )
+    }
+}
+saveRDS(conc_df, proc_path("lmtb_0_concordance_df.rds", TRUE))
+
+conc_df <- data.frame()
+for (i in 1:1000) {
+    print(i)
+    idx <- dl_idx[[i]]
+    if (lmtb_l_ext_sol_df[i, ]$"nclust" == 3) {
+        lmtb_l_pl_df <- auto_plot(
+            lmtb_l_ext_sol_df[i, ],
+            dl = c(lmtb_l_dls[[idx]], lmtb_l_ols[[idx]]),
+            return_plots = FALSE
+        )
+        conc <- concordance_w_mtbi_quick(lmtb_l_pl_df, mtbi_data = mtbi_gen_long)
+        conc_df <- rbind(
+            conc_df,
+            data.frame(
+                solution = i,
+                dl = idx,
+                concordance = conc
+            )
+        )
+    }
+}
+saveRDS(conc_df, proc_path("lmtb_l_concordance_df.rds", TRUE))
+
+lmtb_0_conc_df <- readRDS(proc_path("2025_07_23_lmtb_0_concordance_df.rds"))
+
+lmtb_l_conc_df <- readRDS(proc_path("2025_07_23_lmtb_l_concordance_df.rds"))
+
+# max is 56.6%
+lmtb_0_conc_df |>
+    arrange(-concordance) |>
+    head(5)
+
+# 31 3 cluster solutions
+nrow(lmtb_0_conc_df)
+
+# max is 66.4%
+lmtb_l_conc_df |>
+    arrange(-concordance) |>
+    head(5)
+
+# 125 3 cluster solutions
+nrow(lmtb_l_conc_df)
 ```
 
 Neither option resulted in particularly similar cluster solution to the original mTBI sample.
