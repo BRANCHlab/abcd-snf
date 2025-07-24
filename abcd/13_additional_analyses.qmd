@@ -1,0 +1,243 @@
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(abcdutils)
+library(visdat)
+
+core_path <- abcdutils::path_maker(here::here("data/abcd/core"))
+input_path <- abcdutils::path_maker(here::here("data/abcd/inputs"))
+sub_path <- abcdutils::path_maker(here::here("data/abcd/subjects"))
+fig_path <- abcdutils::path_maker(here::here("data/abcd/results/figures"))
+
+core_path <- abcdutils::path_maker(here::here("data/abcd/core"))
+import <- function(path) {
+    return(abcdutils::abcd_load(core_path(path)))
+}
+```
+
+
+```{r}
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+ph_p_pds <- import("physical-health/ph_p_pds.csv")
+abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
+cbcl_df <- get_cbcl_syndrome_scale(mh_p_cbcl, raw = TRUE, t = 0)
+sds_df <- get_sleep_disturbance(ph_p_sds, t = 0)
+
+#-----------------------------------------------------------------------------
+
+sex_df <- get_sex(gish_p_gi, t = 0, as_numeric = TRUE, only_m_f = TRUE)
+sex_df2 <- get_sex(gish_p_gi, t = 0, as_numeric = TRUE, only_m_f = FALSE)
+sex_df2$"sex" |> table()
+
+pubertal_df <- get_pubertal_status_p(ph_p_pds, t = 0)
+
+race_df  <- get_race(abcd_p_demo, asian_as_other = TRUE, t = 0)
+```
+
+## sex# {{{
+
+```{r}
+merged_df <- merge_df_list(
+    list(
+        sex_df,
+        cbcl_df,
+        sds_df
+    ),
+    uid = "subjectkey"
+) |> na.omit()
+
+colnames(merged_df)
+
+library(ggsignif)
+
+compare_plot <- function(df, x, y, x_label = x, y_label = y) {
+    df |>
+        ggplot(
+            aes(
+                x = factor(.data[[x]]),
+                y = .data[[y]]
+            )
+        ) +
+        geom_jitter(height = 0, alpha = 0.2) +
+        geom_violin(alpha = 0.8) +
+        stat_summary(fun = "mean", geom = "crossbar", linewidth = 0.5, colour = "red", size = 5) +
+        labs(x = x_label, y = y_label) 
+}
+
+compare_plot(merged_df, "sex", "cbcl_scr_syn_anxdep_r", "Sex", "CBCL Anxious/Depressed")
+
+source("abcd/helper_functions.R")
+
+outcome_fts <- colnames(merged_df)[3:11]
+
+outcome_fts
+
+nrow(merged_df)
+
+pl <- list()
+es_df <- data.frame()
+for (i in seq_along(outcome_fts)) {
+    outcome_ft <- outcome_fts[i]
+    des <- calc_des_wp(
+        merged_df[merged_df$"sex" == 1, outcome_ft],
+        merged_df[merged_df$"sex" == 0, outcome_ft]
+    )
+    print(paste0(outcome_ft, ": ", des$"es", " [", des$"l", ", ", des$"u", "], p = ", des$"p"))
+    es_df <- rbind(
+        es_df,
+        data.frame(
+            outcome = outcome_ft,
+            es = des$"es",
+            l = des$"l",
+            u = des$"u",
+            p = des$"p",
+            clean = paste0(
+                round(des$"es", 2), " [",
+                round(des$"l", 2), ", ",
+                round(des$"u", 2), "]"
+            )
+        )
+    )
+    pl[[i]] <- compare_plot(merged_df, "sex", outcome_ft, "Sex")
+}
+names(pl) <- outcome_fts
+
+es_df |> arrange(es)
+
+pl$"cbcl_scr_syn_attention_r"
+
+calc_des(
+    merged_df[merged_df$"sex" == 1, "cbcl_scr_syn_anxdep_r"],
+    merged_df[merged_df$"sex" == 0, "cbcl_scr_syn_anxdep_r"]
+)
+```
+# }}}
+
+## pubertal status# {{{
+
+```{r}
+merged_df_pubertal <- merge_df_list(
+    list(
+        pubertal_df,
+        cbcl_df,
+        sds_df
+    ),
+    uid = "subjectkey"
+) |> na.omit()
+
+merged_df_pubertal |>
+    dplyr::select(-subjectkey) |>
+    cor() |>
+    as.data.frame() |>
+    dplyr::select(pubertal_status_p)
+
+```
+# }}}
+
+## race
+
+```{r}
+
+merged_df_race <- merge_df_list(
+    list(
+        race_df,
+        cbcl_df,
+        sds_df
+    ),
+    uid = "subjectkey"
+) |> na.omit()
+
+pl <- list()
+es_df <- data.frame()
+for (i in seq_along(outcome_fts)) {
+    outcome_ft <- outcome_fts[i]
+    for (race in c("white", "black", "hispanic", "other")) {
+        for (race2 in c("white", "black", "hispanic", "other")) {
+            if (race != race2) {
+                des <- calc_des_wp(
+                    na.omit(merged_df_race[merged_df_race$"race" == race, outcome_ft]),
+                    na.omit(merged_df_race[merged_df_race$"race" == race2, outcome_ft])
+                )
+                es_df <- rbind(
+                    es_df,
+                    data.frame(
+                        outcome = outcome_ft,
+                        race1 = race,
+                        race2 = race2,
+                        es = des$"es",
+                        l = des$"l",
+                        u = des$"u",
+                        p = des$"p",
+                        clean = paste0(
+                            round(des$"es", 2), " [",
+                            round(des$"l", 2), ", ",
+                            round(des$"u", 2), "]"
+                        )
+                    )
+                )
+            }
+        }
+    }
+    pl[[i]] <- compare_plot(merged_df_race, "race", outcome_ft)
+}
+names(pl) <- outcome_fts
+
+outcome_fts
+
+pl$"cbcl_scr_syn_rulebreak_r"
+
+pl$"cbcl_scr_syn_anxdep_r"
+
+pl$"sds_p_ss_total"
+
+pl$"cbcl_scr_syn_social_r"
+
+pl$"cbcl_scr_syn_aggressive_r"
+
+es_df 
+
+es_df[1:108 %% 2 == 0, ] |>
+    arrange(abs(es))
+
+es_df[1:108 %% 2 == 0, ] |>
+    arrange(abs(es)) |>
+    dplyr::mutate(abs_es = abs(es)) |>
+    dplyr::group_by(outcome) |>
+    dplyr::summarize(mean = mean(abs_es)) |>
+    arrange(mean)
+
+es_df[1:108 %% 2 == 0, ] |>
+    arrange(abs(es)) |>
+    dplyr::mutate(abs_es = abs(es)) |>
+    dplyr::filter(outcome == "cbcl_scr_syn_aggressive_r")
+
+
+es_df[1:108 %% 2 == 0, ] |>
+    arrange(abs(es)) |>
+    dplyr::mutate(abs_es = abs(es)) |>
+    dplyr::filter(outcome == "cbcl_scr_syn_rulebreak_r")
+
+
+options(width = 200)
+
+pl[[1]]
+
+compare_plot(merged_df_race, "race", "cbcl_scr_syn_anxdep_r")
+
+compare_plot(merged_df_race, "race", "cbcl_scr_syn_aggressive_r")
+
+compare_plot(merged_df_race, "race", "cbcl_scr_syn_aggressive_r")
+
+
+aov_res <- aov(outcome ~ race, data = df)
+
+eta_result <- eta_squared(aov_res, partial = FALSE, ci = 0.95)
+print(eta_result)
+
+
+```
+

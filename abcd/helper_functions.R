@@ -522,6 +522,31 @@ calc_des <- function(x1, x2) {
     )
 }
 
+calc_des_wp <- function(x1, x2) {
+    n1 <- length(x1)
+    n2 <- length(x2)
+    s1 <- sd(x1)
+    s2 <- sd(x2)
+    s <- pooled_sd(n1, s1, n2, s2)
+    mean1 <- mean(x1)
+    mean2 <- mean(x2)
+    d <- cohens_d(mean1, mean2, s)
+    d_full <- compute.es::des(
+        d,
+        n1,
+        n2,
+        verbose = FALSE
+    )
+    return(
+        list(
+            "es" = d_full$"d",
+            "l" = d_full$"l.d",
+            "u" = d_full$"u.d",
+            "p" = d_full$"pval.d"
+        )
+    )
+}
+
 calc_propes <- function(x1, x2) {
     d_full <- compute.es::propes(
         mean(x1),
