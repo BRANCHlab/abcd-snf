@@ -723,20 +723,33 @@ We are interested in the following rs-fMRI measures:
 - Gordon network (cortical) correlations
 - Subcortical correlations
 
+frontoparietal network: _fo_ or _fopa_
+
+default mode network: _df_ or _dt_
+
+salience network: _sa_
+
+
 ##### Cortical parcellation network correlations
 
 ```{r}
-df_corr <- mri_y_rsfmr_cor_gp_gp |>
-    filter_timepoint(0) |>
-    filter_subjects(mtbi_subs)  |>
-    na.omit() |>
-    dplyr::select(-subjectkey, -eventname)
+
+mri_y_rsfmr_cor_gp_gp |>
+    dplyr::select(dplyr::contains(c("_dt_", "_sa_", "_fo_"))) |> colnames()
+
+mri_y_rsfmr_cor_gp_aseg |>
+    dplyr::select(dplyr::contains(c("_df_", "_sa_", "_fopa_"))) |> colnames()
+
+skimr::skim(mri_y_rsfmr_cor_gp_aseg)
 
 mtbi_rm_gord_cor <- get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
     mtbi_subs,
     t = 0
 )
+
+colnames(mri_y_rsfmr_cor_gp_gp)
+
 
 dplyr::tibble(mtbi_rm_gord_cor)
 
@@ -762,6 +775,9 @@ readr::write_csv(
 ##### Subcortical parcellation network correlations
 
 ```{r}
+
+mri_y_rsfmr_cor_gp_aseg |> colnames()
+
 mtbi_rm_subc_cor <- get_subc_cor(
     mri_y_rsfmr_cor_gp_aseg,
     mtbi_subs,
