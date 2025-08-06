@@ -115,15 +115,62 @@ mri_y_qc_raw_smr_t2 <- abcd_load(core_path("imaging/mri_y_qc_raw_smr_t2.csv"))
 mri_y_qc_raw_rsfmr  <- abcd_load(core_path("imaging/mri_y_qc_raw_rsfmr.csv"))
 mri_y_qc_raw_dmr    <- abcd_load(core_path("imaging/mri_y_qc_raw_dmr.csv"))
 
+mri_y_qc_incl    <- abcd_load(core_path("imaging/mri_y_qc_incl.csv"))
+
+mri_y_qc_incl |>
+    filter_timepoint(t = 0) |>
+    filter_subjects(mtbi_subs) |>
+    dplyr::filter(imgincl_t1w_include == 1) |>
+    nrow()
+
+mri_y_qc_incl |>
+    filter_timepoint(t = 0) |>
+    filter_subjects(unij_subs) |>
+    dplyr::filter(imgincl_t1w_include == 1) |>
+    nrow()
+
+
+mri_y_qc_raw_smr_t1 |> 
+    filter_timepoint(t = 0) |>
+    filter_subjects(lmtb_subs) |>
+    dplyr::select(dplyr::contains("qc_score")) |>
+    dplyr::filter(iqc_t1_1_qc_score != 1)
+
+
+lmtb_subs
+
+lmtb_subs <- read_subjects(
+    sub_path("2025_06_09_mtbi_subs_0_to_2.csv")
+)
+
+colnames(mri_y_qc_raw_dmr)
+
 # sMRI
 mtbi_smri_qc <- qc_smri(mri_y_qc_raw_smr_t1, t = 0, mtbi_subs, "qc")
 mtbi_smri_pc <- qc_smri(mri_y_qc_raw_smr_t1, t = 0, mtbi_subs, "pc")
+
 unij_smri_qc <- qc_smri(mri_y_qc_raw_smr_t1, t = 0, unij_subs, "qc")
 unij_smri_pc <- qc_smri(mri_y_qc_raw_smr_t1, t = 0, unij_subs, "pc")
+
+unij_smri_qc2 <- qc_smri2(mri_y_qc_raw_smr_t1, t = 0, unij_subs, "qc")
+unij_smri_pc2 <- qc_smri2(mri_y_qc_raw_smr_t1, t = 0, unij_subs, "pc")
+
+# 430 vs. 435
+length(intersect(mtbi_smri_qc$"pass", mtbi_smri_pc$"pass"))
+length(intersect(mtbi_smri_qc2$"pass", mtbi_smri_pc2$"pass"))
+
+length(intersect(unij_smri_qc$"pass", unij_smri_pc$"pass"))
+length(intersect(unij_smri_qc2$"pass", unij_smri_pc2$"pass"))
+
+unij_subs |> length()
+
+mtbi_smri_qc2 <- qc_smri2(mri_y_qc_raw_smr_t1, t = 0, mtbi_subs, "qc")
+mtbi_smri_pc2 <- qc_smri2(mri_y_qc_raw_smr_t1, t = 0, mtbi_subs, "pc")
 
 # dMRI
 mtbi_dmri_qc <- qc_dmri(mri_y_qc_raw_dmr, t = 0, mtbi_subs, "qc")
 mtbi_dmri_pc <- qc_dmri(mri_y_qc_raw_dmr, t = 0, mtbi_subs, "pc")
+
 unij_dmri_qc <- qc_dmri(mri_y_qc_raw_dmr, t = 0, unij_subs, "qc")
 unij_dmri_pc <- qc_dmri(mri_y_qc_raw_dmr, t = 0, unij_subs, "pc")
 
@@ -143,6 +190,7 @@ smri_pass <- c(
     intersect(mtbi_smri_qc$"pass", mtbi_smri_pc$"pass"),
     intersect(unij_smri_qc$"pass", unij_smri_pc$"pass")
 )
+
 
 rsfmri_pass <- c(
     intersect(mtbi_rsfmri_qc$"pass", mtbi_rsfmri_pc$"pass"),
