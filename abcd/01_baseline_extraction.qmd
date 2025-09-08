@@ -159,6 +159,7 @@ write_csv(mtbi_subs, sub_path("mtbi_subs.csv", date = TRUE))
 write_csv(unij_subs, sub_path("unij_subs.csv", date = TRUE))
 ```
 
+
 A chunk for building the sample criteri figure:
 
 ```{r}
@@ -590,6 +591,10 @@ mtbi_sm_subc_v <- abcdutils::get_subc_v(
     t = 0
 )
 
+mri_y_smr_vol_aseg |> colnames()
+
+search_dd("smri_vol_scs")$"var_label"
+
 dplyr::tibble(mtbi_sm_subc_v)
 
 readr::write_csv(
@@ -624,6 +629,10 @@ mtbi_sm_cort_t <- abcdutils::get_cort_t(
     t = 0
 )
 
+colnames(mri_y_smr_thk_dsk)
+
+search_dd("smri_thick_cdk")$"var_label"
+
 dplyr::tibble(mtbi_sm_cort_t)
 
 readr::write_csv(
@@ -648,11 +657,17 @@ readr::write_csv(
 ##### Cortical surface areas
 
 ```{r}
+
+colnames(mri_y_smr_area_dsk)
+
+search_dd("smri_area_cdk")$"var_label"
+
 mtbi_sm_cort_sa <- abcdutils::get_cort_sa(
     mri_y_smr_area_dsk,
     mtbi_subs,
     t = 0
 )
+
 dplyr::tibble(mtbi_sm_cort_sa)
 
 readr::write_csv(
@@ -672,6 +687,7 @@ readr::write_csv(
     unij_sm_cort_sa,
     input_path("unij_sm_cort_sa.csv", date = TRUE)
 )
+
 ```
 
 #### Diffusion MRI
@@ -695,6 +711,15 @@ mtbi_dm_wmnd <- abcdutils::get_wmnd(
     subjects = mtbi_subs,
     t = 0
 )
+
+mri_y_rsi_rnd_at |> colnames()
+
+search_dd("dmri_rsirnd_fib")$"var_label"
+
+colnames(mri_y_rsi_rnd_wm_dsk)
+
+
+search_dd("dmri_rsirndwm_cdk")$"var_label"
 
 dplyr::tibble(mtbi_dm_wmnd)
 
@@ -793,33 +818,17 @@ plot(df_corr$mean_neg, df_corr$mean_all,
 abline(lm(mean_all ~ mean_neg, data = df_corr), col = "red")
 
 
+mri_y_rsfmr_cor_gp_gp |> colnames()
 
 
+colnames(mri_y_rsfmr_cor_gp_gp)[115]
+
+mri_y_rsfmr_cor_gp_gp[, 115]
 
 
+colnames(mri_y_rsfmr_cor_gp_aseg)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+search_dd("rsfmri_cor_ngd_")$"var_label"
 
 mtbi_rm_gord_cor <- abcdutils::get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
