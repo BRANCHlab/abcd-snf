@@ -591,10 +591,6 @@ mtbi_sm_subc_v <- abcdutils::get_subc_v(
     t = 0
 )
 
-mri_y_smr_vol_aseg |> colnames()
-
-search_dd("smri_vol_scs")$"var_label"
-
 dplyr::tibble(mtbi_sm_subc_v)
 
 readr::write_csv(
@@ -629,10 +625,6 @@ mtbi_sm_cort_t <- abcdutils::get_cort_t(
     t = 0
 )
 
-colnames(mri_y_smr_thk_dsk)
-
-search_dd("smri_thick_cdk")$"var_label"
-
 dplyr::tibble(mtbi_sm_cort_t)
 
 readr::write_csv(
@@ -657,11 +649,6 @@ readr::write_csv(
 ##### Cortical surface areas
 
 ```{r}
-
-colnames(mri_y_smr_area_dsk)
-
-search_dd("smri_area_cdk")$"var_label"
-
 mtbi_sm_cort_sa <- abcdutils::get_cort_sa(
     mri_y_smr_area_dsk,
     mtbi_subs,
@@ -712,15 +699,6 @@ mtbi_dm_wmnd <- abcdutils::get_wmnd(
     t = 0
 )
 
-mri_y_rsi_rnd_at |> colnames()
-
-search_dd("dmri_rsirnd_fib")$"var_label"
-
-colnames(mri_y_rsi_rnd_wm_dsk)
-
-
-search_dd("dmri_rsirndwm_cdk")$"var_label"
-
 dplyr::tibble(mtbi_dm_wmnd)
 
 readr::write_csv(
@@ -753,87 +731,17 @@ We are interested in the following rs-fMRI measures:
 ##### Cortical parcellation network correlations
 
 ```{r}
-
-df_corr <- mri_y_rsfmr_cor_gp_gp |>
-    filter_timepoint(0) |>
-    filter_subjects(mtbi_subs)  |>
-    na.omit() |>
-    dplyr::select(-subjectkey, -eventname)
-
-# 1. Mean of all correlations per subject
-df_corr$mean_all <- rowMeans(df_corr, na.rm = TRUE)
-
-df_corr$mean_abs <- rowMeans(abs(df_corr), na.rm = TRUE)
-
-# 2. Mean of positive correlations per subject
-df_corr$mean_pos <- apply(df_corr, 1, function(x) mean(x[x > 0], na.rm = TRUE))
-
-# 3. Mean of negative correlations per subject
-df_corr$mean_neg <- apply(df_corr, 1, function(x) mean(x[x < 0], na.rm = TRUE))
-
-# 4. Proportion of negative correlations per subject
-df_corr$prop_neg <- apply(df_corr, 1, function(x) sum(x < 0, na.rm = TRUE) / sum(!is.na(x)))
-
-# 5. Standard deviation of correlations per subject
-df_corr$sd_all <- apply(df_corr, 1, sd, na.rm = TRUE)
-
-# 6. Mean of absolute correlations per subject
-df_corr$mean_abs <- apply(df_corr, 1, function(x) mean(abs(x), na.rm = TRUE))
-
-# View the first few rows with new summary metrics
-head(df_corr[, (ncol(df_corr)-5):ncol(df_corr)])
-
-library(ggplot2)
-
-cor(df_corr$"mean_all", df_corr$"mean_abs")
-
-df_corr |>
-    ggplot(
-        aes(x = mean_all, y = mean_abs) 
-    ) +
-    geom_point()
-
-# Correlation between mean_all and mean_pos
-cor(df_corr$mean_all, df_corr$mean_abs, use = "complete.obs")
-
-cat("Correlation between mean_all and mean_pos:", cor_pos, "\n")
-
-# Correlation between mean_all and mean_neg
-cor_neg <- cor(df_corr$mean_all, df_corr$mean_neg, use = "complete.obs")
-cat("Correlation between mean_all and mean_neg:", cor_neg, "\n")
-
-# Scatterplots
-par(mfrow=c(1,2))  # side-by-side plots
-
-plot(df_corr$mean_pos, df_corr$mean_all,
-     main = "mean_all vs mean_pos",
-     xlab = "mean_pos", ylab = "mean_all",
-     pch = 19, col = "blue")
-abline(lm(mean_all ~ mean_pos, data = df_corr), col = "red")
-
-plot(df_corr$mean_neg, df_corr$mean_all,
-     main = "mean_all vs mean_neg",
-     xlab = "mean_neg", ylab = "mean_all",
-     pch = 19, col = "green")
-abline(lm(mean_all ~ mean_neg, data = df_corr), col = "red")
-
-
-mri_y_rsfmr_cor_gp_gp |> colnames()
-
-
-colnames(mri_y_rsfmr_cor_gp_gp)[115]
-
-mri_y_rsfmr_cor_gp_gp[, 115]
-
-
-colnames(mri_y_rsfmr_cor_gp_aseg)
-
-search_dd("rsfmri_cor_ngd_")$"var_label"
-
-mtbi_rm_gord_cor <- abcdutils::get_gord_cor(
+mtbi_rm_gord_cor <- get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
     mtbi_subs,
-    t = 0
+    t = 0,
+    desired_networks = list(
+        c("default", "default"), 
+        c("dorsal_attention", "dorsal_attention"),
+        c("fronto_parietal", "fronto_parietal"),
+        c("salience", "salience"),
+        c("default", "fronto_parietal")
+    )
 )
 
 dplyr::tibble(mtbi_rm_gord_cor)
@@ -843,7 +751,7 @@ readr::write_csv(
     input_path("mtbi_rm_gord_cor.csv", date = TRUE)
 )
 
-unij_rm_gord_cor <- abcdutils::get_gord_cor(
+unij_rm_gord_cor <- get_gord_cor(
     mri_y_rsfmr_cor_gp_gp,
     unij_subs,
     t = 0
@@ -860,7 +768,7 @@ readr::write_csv(
 ##### Subcortical parcellation network correlations
 
 ```{r}
-mtbi_rm_subc_cor <- abcdutils::get_subc_cor(
+mtbi_rm_subc_cor <- get_subc_cor(
     mri_y_rsfmr_cor_gp_aseg,
     mtbi_subs,
     t = 0
