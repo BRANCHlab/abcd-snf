@@ -16,6 +16,7 @@ library(dplyr)
 library(readr)
 library(metasnf)
 library(mice)
+library(rlist)
 
 #source("abcd/helper_functions.R")
 
@@ -496,7 +497,6 @@ set.seed(42)
 start <- Sys.time()
 unij_imputed <- run_imputation(unij_df, 1, vs, FALSE)
 print(Sys.time() - start)
-
 saveRDS(unij_imputed, proc_path("unij_imputed.rds", TRUE))
 complete(unij_imputed$"imputed", action = "long", include = FALSE) |>
     missing_columns()
@@ -592,16 +592,16 @@ write_csv(
 ```{r}
 # CHECKPOINT
 mtbi_train_complete <- read_csv(
-    input_path("2025_05_26_mtbi_train_complete.csv")
+    input_path("2025_09_11_mtbi_train_complete.csv")
 )
 mtbi_test_complete <- read_csv(
-    input_path("2025_05_26_mtbi_test_complete.csv")
+    input_path("2025_09_11_mtbi_test_complete.csv")
 )
 unij_complete <- read_csv(
-    input_path("2025_05_26_unij_complete.csv")
+    input_path("2025_09_11_unij_complete.csv")
 )
 pool_complete <- read_csv(
-    input_path("2025_05_26_pool_complete.csv")
+    input_path("2025_09_11_pool_complete.csv")
 )
 ```
 
@@ -711,19 +711,21 @@ Re-reading:
 
 ```{r}
 mtbi_train_parsed_imputations <- list.load(
-    input_path("2025_05_26_mtbi_train_parsed_imputations.rds")
+    input_path("2025_09_11_mtbi_train_parsed_imputations.rds")
 )
 mtbi_test_parsed_imputations <- list.load(
-    input_path("2025_05_26_mtbi_test_parsed_imputations.rds")
+    input_path("2025_09_11_mtbi_test_parsed_imputations.rds")
 )
+
 mtbi_pool_parsed_imputations <- list.load(
-    input_path("2025_05_26_mtbi_pool_parsed_imputations.rds")
+    input_path("2025_09_11_mtbi_pool_parsed_imputations.rds")
 )
+
 unij_parsed_imputations <- list.load(
-    input_path("2025_05_26_unij_parsed_imputations.rds")
+    input_path("2025_09_11_unij_parsed_imputations.rds")
 )
 unij_pool_parsed_imps <- list.load(
-    input_path("2025_05_26_unij_pool_parsed_imputations.rds")
+    input_path("2025_09_11_unij_pool_parsed_imputations.rds")
 )
 
 names(mtbi_train_parsed_imputations)
@@ -751,19 +753,25 @@ For the sake of brevity, these will be referred to with the following notation:
 ```{r}
 source("abcd/helper_functions.R")
 
+mtbi_train_parsed_imputations[[1]]
+
+
+names(mtbi_train_parsed_imputations) <- gsub("^mtbi_", "", names(mtbi_train_parsed_imputations))
+names(mtbi_test_parsed_imputations) <- gsub("^mtbi_", "", names(mtbi_test_parsed_imputations))
+names(mtbi_pool_parsed_imputations) <- gsub("^unij_", "", names(mtbi_pool_parsed_imputations))
+names(unij_parsed_imputations) <- gsub("^unij_", "", names(unij_parsed_imputations))
+names(unij_pool_parsed_imps) <- gsub("^unij_", "", names(unij_pool_parsed_imps))
+
 mtbi_train_data_lists <- build_mtbi_dls(mtbi_train_parsed_imputations)
-mtbi_train_oom_lists  <- build_mtbi_ols(mtbi_train_parsed_imputations)
-
+mtbi_train_oom_lists  <- build_ols(mtbi_train_parsed_imputations)
 mtbi_test_data_lists  <- build_mtbi_dls(mtbi_test_parsed_imputations)
-mtbi_test_oom_lists   <- build_mtbi_ols(mtbi_test_parsed_imputations)
-
+mtbi_test_oom_lists   <- build_ols(mtbi_test_parsed_imputations)
 mtbi_pool_data_lists  <- build_unij_dls(mtbi_pool_parsed_imputations)
-mtbi_pool_oom_lists   <- build_unij_ols(mtbi_pool_parsed_imputations)
-
+mtbi_pool_oom_lists   <- build_ols(mtbi_pool_parsed_imputations)
 unij_data_lists       <- build_unij_dls(unij_parsed_imputations)
-unij_oom_lists        <- build_unij_ols(unij_parsed_imputations)
+unij_oom_lists        <- build_ols(unij_parsed_imputations)
 unij_pool_data_lists  <- build_unij_dls(unij_pool_parsed_imps)
-unij_pool_oom_lists   <- build_unij_ols(unij_pool_parsed_imps)
+unij_pool_oom_lists   <- build_ols(unij_pool_parsed_imps)
 
 all_dls <- list(
     "mtbi_train_data_lists" = mtbi_train_data_lists,
@@ -864,7 +872,7 @@ saveRDS(all_dls, input_path("all_dls.rds", TRUE))
 # Combat harmonization
 
 ```{r}
-all_dls <- readRDS(input_path("2025_05_27_all_dls.rds"))
+all_dls <- readRDS(input_path("2025_09_11_all_dls.rds"))
 ```
 
 ```{r echo = FALSE}
