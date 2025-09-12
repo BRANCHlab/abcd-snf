@@ -17,6 +17,7 @@ library(readr)
 library(metasnf)
 library(mice)
 library(rlist)
+library(ggplot2)
 
 #source("abcd/helper_functions.R")
 
@@ -803,7 +804,7 @@ name_changes <- c(
     "cbcl_thought"           = "cbcl_scr_syn_thought_r",
     "cbcl_withdep"           = "cbcl_scr_syn_withdep_r",
     "cortical_sa"            = "smri_area_cdk_total",
-    "cortical_thickness"     = "smri_thick_cdk_mean",
+    "cortical_t"             = "smri_thick_cdk_mean",
     "family_angry_p"         = "q2_angry_p",
     "family_angry_y"         = "q2_angry_y",
     "family_criticize_p"     = "q5_criticize_p",
@@ -822,8 +823,13 @@ name_changes <- c(
     "family_throw_y"         = "q3_throw_y",
     "family_yell_p"          = "q9_yell_p",
     "family_yell_y"          = "q9_yell_y",
-    "fmri_cort_cors"         = "avg_gord_cor",
-    "fmri_cort_subcort_cors" = "avg_subc_cor",
+    "fmri_dmn_within_cor"    = "rsfmri_c_ngd_dt_ngd_dt",
+    "fmri_dan_within_cor"    = "rsfmri_c_ngd_dla_ngd_dla",
+    "fmri_fpn_within_cor"    = "rsfmri_c_ngd_fo_ngd_fo",
+    "fmri_san_within_cor"    = "rsfmri_c_ngd_sa_ngd_sa",
+    "fmri_dmn_fpn_cor"       = "rsfmri_c_ngd_dt_ngd_fo",
+    "fmri_fpn_lamyg_cor"     = "rsfmri_cor_ngd_fopa_scs_aglh",
+    "fmri_fpn_ramyg_cor"     = "rsfmri_cor_ngd_fopa_scs_agrh",
     "headache_history"       = "headache",
     "major_wm_ndi"           = "dmri_rsirnd_fib_allfib",
     "mtbi_age"               = "latest_mtbi_age",
@@ -854,6 +860,8 @@ name_changes <- c(
     "weekend_screentime"     = "screentime_wknd_hrs"
 )
 
+names(all_dls[[1]][[1]])
+
 all_dls <- all_dls |>
     lapply(
         function(data_lists_of_group) {
@@ -881,9 +889,6 @@ library(neuroCombat)
 dl <- all_dls$"mtbi_train_data_lists"$"imp_1"
 ol <- all_dls$"mtbi_train_oom_lists"$"imp_1"
 
-summary(dl)
-summary(ol)
-
 combat_dl <- function(dl, ol, site_df, mean.only = FALSE) {
     neuro_components <- c(
         "n_subc_v",
@@ -902,12 +907,17 @@ combat_dl <- function(dl, ol, site_df, mean.only = FALSE) {
     )
     neuro_fts <- c(
         "brain_volume",
-        "cortical_thickness",
+        "cortical_t",
         "cortical_sa",
         "major_wm_ndi",
         "pericortical_wm_ndi",
-        "fmri_cort_cors",
-        "fmri_cort_subcort_cors"
+        "fmri_dmn_within_cor",
+        "fmri_dan_within_cor",
+        "fmri_fpn_within_cor",
+        "fmri_san_within_cor",
+        "fmri_dmn_fpn_cor",
+        "fmri_fpn_lamyg_cor",
+        "fmri_fpn_ramyg_cor"
     )
     neuroimaging_df <- as.data.frame(dl[neuro_components])
     covariate_df <- as.data.frame(c(dl[covariate_components], ol))
@@ -958,12 +968,17 @@ visualize_combat <- function(initial_dl, harmonized_dl, site_df) {
         dplyr::select(-subjectkey)
     neuro_fts <- c(
         "brain_volume",
-        "cortical_thickness",
+        "cortical_t",
         "cortical_sa",
         "major_wm_ndi",
         "pericortical_wm_ndi",
-        "fmri_cort_cors",
-        "fmri_cort_subcort_cors"
+        "fmri_dmn_within_cor",
+        "fmri_dan_within_cor",
+        "fmri_fpn_within_cor",
+        "fmri_san_within_cor",
+        "fmri_dmn_fpn_cor",
+        "fmri_fpn_lamyg_cor",
+        "fmri_fpn_ramyg_cor"
     )
     initial_df <- as.data.frame(initial_dl)
     harmonized_df <- as.data.frame(harmonized_dl)
@@ -1005,7 +1020,7 @@ visualize_combat <- function(initial_dl, harmonized_dl, site_df) {
     return(plot_list)
 }
 
-dl_harmonized <- combat_dl(dl, ol)
+dl_harmonized <- combat_dl(dl, ol, mtbi_site)
 
 pl <- visualize_combat(dl, dl_harmonized, mtbi_site)
 
@@ -1094,7 +1109,6 @@ drop_random_siblings <- function(abcd_y_lt, subjects) {
     return(siblings_removed$"subjectkey")
 }
 
-
 set.seed(42)
 mtbi_no_sibs_subs <- drop_random_siblings(abcd_y_lt, mtbi_subs)
 
@@ -1104,26 +1118,25 @@ mtbi_val_no_sibs_subs <- mtbi_test_subs[mtbi_test_subs %in% mtbi_no_sibs_subs]
 set.seed(42)
 unij_no_sibs_subs <- drop_random_siblings(abcd_y_lt, unij_subs)
 
-length(mtbi_train_subs)       # N = 354 originally
-length(mtbi_der_no_sibs_subs) # N = 352 after sibling removal
+length(mtbi_train_subs)       # N = 359 originally
+length(mtbi_der_no_sibs_subs) # N = 356 after sibling removal
 
 length(mtbi_test_subs)        # N = 83 originally
 length(mtbi_val_no_sibs_subs) # N = 82 after sibling removal
 
-length(unij_subs)         # N = 9349 originally
-length(unij_no_sibs_subs) # N = 7944 after sibling removal
+length(unij_subs)         # N = 9302 originally
+length(unij_no_sibs_subs) # N = 7905 after sibling removal
 
 saveRDS(mtbi_no_sibs_subs,     sub_path("mtbi_no_sibs_subs.rds", TRUE))
 saveRDS(mtbi_der_no_sibs_subs, sub_path("mtbi_der_no_sibs_subs.rds", TRUE))
 saveRDS(mtbi_val_no_sibs_subs, sub_path("mtbi_val_no_sibs_subs.rds", TRUE))
 saveRDS(unij_no_sibs_subs,     sub_path("unij_no_sibs_subs.rds", TRUE))
 
-mtbi_no_sibs_subs <- readRDS(sub_path("2025_06_11_mtbi_no_sibs_subs.rds"))
-mtbi_der_no_sibs_subs <- readRDS(sub_path("2025_06_11_mtbi_der_no_sibs_subs.rds"))
-mtbi_val_no_sibs_subs <- readRDS(sub_path("2025_06_11_mtbi_val_no_sibs_subs.rds"))
-unij_no_sibs_subs <- readRDS(sub_path("2025_06_11_unij_no_sibs_subs.rds"))
-
-all_dls_h <- readRDS(proc_path("2025_06_11_all_dls_h.rds"))
+mtbi_no_sibs_subs <- readRDS(sub_path("2025_09_11_mtbi_no_sibs_subs.rds"))
+mtbi_der_no_sibs_subs <- readRDS(sub_path("2025_09_11_mtbi_der_no_sibs_subs.rds"))
+mtbi_val_no_sibs_subs <- readRDS(sub_path("2025_09_11_mtbi_val_no_sibs_subs.rds"))
+unij_no_sibs_subs <- readRDS(sub_path("2025_09_11_unij_no_sibs_subs.rds"))
+all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
 
 names(all_dls_h)
 
