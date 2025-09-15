@@ -111,7 +111,7 @@ mtbi_subs_t0 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-mtbi_subs_t0 # 446 kids
+length(mtbi_subs_t0) # 442 kids
 
 # subs who had an mTBI based on year 1 follow up data
 mtbi_subs_t1 <- get_mtbi_subjects(
@@ -124,10 +124,10 @@ mtbi_subs_t1 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-mtbi_subs_t1 # 133
+length(mtbi_subs_t1) # 131
 
-sum(mtbi_subs_t1 %in% mtbi_subs_t0)
-sum(mtbi_subs_t0 %in% mtbi_subs_t1)
+sum(mtbi_subs_t1 %in% mtbi_subs_t0) # 23
+sum(mtbi_subs_t0 %in% mtbi_subs_t1) # 23
 
 # subs who had an mTBI based on the year 2 follow up data
 mtbi_subs_t2 <- get_mtbi_subjects(
@@ -140,7 +140,7 @@ mtbi_subs_t2 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-mtbi_subs_t2 # 143
+length(mtbi_subs_t2) # 144
 
 # subs who had an mtbi pre-1yfu, but not pre-baseline (t1 only)
 mtbi_subs_t1o <- mtbi_subs_t1[!mtbi_subs_t1 %in% mtbi_subs_t0]
@@ -171,6 +171,8 @@ unij_subs_t0 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 0) |>
     dplyr::select(subjectkey) |>
     unlist() |>
     as.character()
+
+get_uninjured_subjects
 
 # Subjects who had no mtbi or worse between baseline and 1yfu
 unij_subs_t1 <- get_uninjured_subjects(ph_p_otbi, abcd_y_lt, t = 1) |>
@@ -204,26 +206,26 @@ write_subjects(
 ```{r}
 # CHECKPOINT
 mtbi_subs_t1 <- read_subjects(
-    sub_path("2025_06_09_mtbi_subs_t1.csv")
+    sub_path("2025_09_15_mtbi_subs_t1.csv")
 )
 
 mtbi_subs_t2 <- read_subjects(
-    sub_path("2025_06_09_mtbi_subs_t2.csv")
+    sub_path("2025_09_15_mtbi_subs_t2.csv")
 )
 
 # Longitudinal mTBI subjects
 lmtb_subs <- read_subjects(
-    sub_path("2025_06_09_mtbi_subs_0_to_2.csv")
+    sub_path("2025_09_15_mtbi_subs_0_to_2.csv")
 )
 
 # Longitudinal uninjured subjects
 lunj_subs <- read_subjects(
-    sub_path("2025_06_09_unij_subs_0_to_2.csv")
+    sub_path("2025_09_15_unij_subs_0_to_2.csv")
 )
 
 # The original baseline sample:
-mtbi_subs <- read_subjects(sub_path("2025_05_22_mtbi_subs.csv"))
-unij_subs <- read_subjects(sub_path("2025_05_22_unij_subs.csv"))
+mtbi_subs <- read_subjects(sub_path("2025_09_11_mtbi_subs.csv"))
+unij_subs <- read_subjects(sub_path("2025_09_11_unij_subs.csv"))
 ```
 
 It is possible to have been filtered into this stage without actually having T2 data collected by virtue of having T1 data collected.
@@ -250,10 +252,10 @@ saveRDS(lunj_subs_wt2, sub_path("lunj_subs_wt2.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_subs_wt2 <- readRDS(sub_path("2025_06_10_mtbi_subs_wt2.rds"))
-unij_subs_wt2 <- readRDS(sub_path("2025_06_10_unij_subs_wt2.rds"))
-lmtb_subs_wt2 <- readRDS(sub_path("2025_06_10_lmtb_subs_wt2.rds"))
-lunj_subs_wt2 <- readRDS(sub_path("2025_06_10_lunj_subs_wt2.rds"))
+mtbi_subs_wt2 <- readRDS(sub_path("2025_09_15_mtbi_subs_wt2.rds"))
+unij_subs_wt2 <- readRDS(sub_path("2025_09_15_unij_subs_wt2.rds"))
+lmtb_subs_wt2 <- readRDS(sub_path("2025_09_15_lmtb_subs_wt2.rds"))
+lunj_subs_wt2 <- readRDS(sub_path("2025_09_15_lunj_subs_wt2.rds"))
 ```
 
 Checking when each injured subject should have their injury info collected:
@@ -807,22 +809,66 @@ We are interested in the following rs-fMRI measures:
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_rm_gord_cor_0 <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, lmtb_subs_wt2, t = 0)
+lmtb_rm_gord_cor_0 <- get_gord_cor(
+    mri_y_rsfmr_cor_gp_gp,
+    lmtb_subs_wt2,
+    t = 0,
+    roi_pairs = list(
+        c("default", "default"), 
+        c("dorsal_attention", "dorsal_attention"),
+        c("fronto_parietal", "fronto_parietal"),
+        c("salience", "salience"),
+        c("default", "fronto_parietal")
+    )
+)
 tibble(lmtb_rm_gord_cor_0)
 iwrite(lmtb_rm_gord_cor_0, "lmtb_rm_gord_cor_0.csv")
 
 #: B: longitudinal mTBI, longitudinal timepoint
-lmtb_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, lmtb_subs_wt2, t = 2)
+lmtb_rm_gord_cor_l <- get_gord_cor(
+    mri_y_rsfmr_cor_gp_gp,
+    lmtb_subs_wt2,
+    t = 2,
+    roi_pairs = list(
+        c("default", "default"), 
+        c("dorsal_attention", "dorsal_attention"),
+        c("fronto_parietal", "fronto_parietal"),
+        c("salience", "salience"),
+        c("default", "fronto_parietal")
+    )
+)
 tibble(lmtb_rm_gord_cor_l)
 iwrite(lmtb_rm_gord_cor_l, "lmtb_rm_gord_cor_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, mtbi_subs_wt2, t = 2)
+mtbi_rm_gord_cor_l <- get_gord_cor(
+    mri_y_rsfmr_cor_gp_gp,
+    mtbi_subs_wt2,
+    t = 2,
+    roi_pairs = list(
+        c("default", "default"), 
+        c("dorsal_attention", "dorsal_attention"),
+        c("fronto_parietal", "fronto_parietal"),
+        c("salience", "salience"),
+        c("default", "fronto_parietal")
+    )
+)
 tibble(mtbi_rm_gord_cor_l)
 iwrite(mtbi_rm_gord_cor_l, "mtbi_rm_gord_cor_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_rm_gord_cor_l <- get_gord_cor(mri_y_rsfmr_cor_gp_gp, unij_subs_wt2, t = 2)
+unij_rm_gord_cor_l <- get_gord_cor(
+    mri_y_rsfmr_cor_gp_gp,
+    unij_subs_wt2,
+    t = 2,
+    roi_pairs = list(
+        c("default", "default"), 
+        c("dorsal_attention", "dorsal_attention"),
+        c("fronto_parietal", "fronto_parietal"),
+        c("salience", "salience"),
+        c("default", "fronto_parietal")
+    )
+)
 tibble(unij_rm_gord_cor_l)
 iwrite(unij_rm_gord_cor_l, "unij_rm_gord_cor_l.csv")
 ```
@@ -831,22 +877,58 @@ iwrite(unij_rm_gord_cor_l, "unij_rm_gord_cor_l.csv")
 
 ```{r}
 # A: longitudinal mTBI, baseline timepoint
-lmtb_rm_subc_cor_0 <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, lmtb_subs_wt2, t = 0)
+lmtb_rm_subc_cor_0 <- get_subc_cor(
+    mri_y_rsfmr_cor_gp_aseg,
+    lmtb_subs_wt2,
+    t = 0,
+    roi_pairs = list(
+        c("fronto_parietal", "left_amygdala"),
+        c("fronto_parietal", "right_amygdala")
+    )
+)
+
 tibble(lmtb_rm_subc_cor_0)
 iwrite(lmtb_rm_subc_cor_0, "lmtb_rm_subc_cor_0.csv")
 
 # B: longitudinal mTBI, longitudinal timepoint
-lmtb_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, lmtb_subs_wt2, t = 2)
+lmtb_rm_subc_cor_l <- get_subc_cor(
+    mri_y_rsfmr_cor_gp_aseg,
+    lmtb_subs_wt2,
+    t = 2,
+    roi_pairs = list(
+        c("fronto_parietal", "left_amygdala"),
+        c("fronto_parietal", "right_amygdala")
+    )
+)
+
 tibble(lmtb_rm_subc_cor_l)
 iwrite(lmtb_rm_subc_cor_l, "lmtb_rm_subc_cor_l.csv")
 
 # C: baseline mTBI, longitudinal timepoint
-mtbi_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, mtbi_subs_wt2, t = 2)
+mtbi_rm_subc_cor_l <- get_subc_cor(
+    mri_y_rsfmr_cor_gp_aseg,
+    mtbi_subs_wt2,
+    t = 2,
+    roi_pairs = list(
+        c("fronto_parietal", "left_amygdala"),
+        c("fronto_parietal", "right_amygdala")
+    )
+)
+
 tibble(mtbi_rm_subc_cor_l)
 iwrite(mtbi_rm_subc_cor_l, "mtbi_rm_subc_cor_l.csv")
 
 # D: baseline uninjured, longitudinal timepoint
-unij_rm_subc_cor_l <- get_subc_cor(mri_y_rsfmr_cor_gp_aseg, unij_subs_wt2, t = 2)
+unij_rm_subc_cor_l <- get_subc_cor(
+    mri_y_rsfmr_cor_gp_aseg,
+    unij_subs_wt2,
+    t = 2,
+    roi_pairs = list(
+        c("fronto_parietal", "left_amygdala"),
+        c("fronto_parietal", "right_amygdala")
+    )
+)
+
 tibble(unij_rm_subc_cor_l)
 iwrite(unij_rm_subc_cor_l, "unij_rm_subc_cor_l.csv")
 ```

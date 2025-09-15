@@ -32,25 +32,25 @@ read <- function(path) {
 
 ```{r}
 # Post imputation and harmonization
-all_dls_h <- readRDS(proc_path("2025_06_11_all_dls_h.rds"))
+all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
 
 # Post imputation and harmonization, siblings dropped
-all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
+all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
 
 # Pre-imputation
-mtbi_train_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_train_df.csv")))
-mtbi_test_df <- data.frame(read_csv(proc_path("2025_05_26_mtbi_test_df.csv")))
-unij_df <- data.frame(read_csv(proc_path("2025_05_26_unij_df.csv")))
+mtbi_train_df <- data.frame(read_csv(proc_path("2025_09_11_mtbi_train_df.csv")))
+mtbi_test_df <- data.frame(read_csv(proc_path("2025_09_11_mtbi_test_df.csv")))
+unij_df <- data.frame(read_csv(proc_path("2025_09_11_unij_df.csv")))
 mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
 
 #visdat::vis_miss(mtbi_df)
 #sort(colSums(is.na(mtbi_df))) / nrow(mtbi_df) * 100
 
 # Post-imputation
-mtbi_train_imputed <- readRDS(proc_path("2025_05_26_mtbi_train_imputed.rds"))
-mtbi_test_imputed <- readRDS(proc_path("2025_05_26_mtbi_test_imputed.rds"))
-unij_imputed <- readRDS(proc_path("2025_05_26_unij_imputed.rds"))
-pool_imputed <- readRDS(proc_path("2025_05_26_pool_imputed.rds"))
+mtbi_train_imputed <- readRDS(proc_path("2025_09_11_mtbi_train_imputed.rds"))
+mtbi_test_imputed <- readRDS(proc_path("2025_09_11_mtbi_test_imputed.rds"))
+unij_imputed <- readRDS(proc_path("2025_09_11_unij_imputed.rds"))
+pool_imputed <- readRDS(proc_path("2025_09_11_pool_imputed.rds"))
 ```
 
 
@@ -130,57 +130,23 @@ nrow(unij_df)
 cbind(mtbi_samp_char, dplyr::select(unij_samp_char, -label)) |>
     knitr::kable(format = "markdown", digits = 2)
 
-    writeLines(proc_path("p_values_of_cluster.txt", TRUE))
-
-
-
-unij_df <- data.frame(read_csv(proc_path("2025_05_26_unij_df.csv")))
-
-
-
+#|label            |value       |value        |
+#|:----------------|:-----------|:------------|
+#|*Sex*            |            |             |
+#|F                |173 (39.1%) |4700 (50.5%) |
+#|M                |269 (60.9%) |4601 (49.5%) |
+#|*Age*            |            |             |
+#|Mean (SD)        |120 (7.5)   |119 (7.5)    |
+#|*Income*         |            |             |
+#|<$50,000         |86 (19.5%)  |2625 (28.2%) |
+#|$50,000-$100,000 |117 (26.5%) |2369 (25.5%) |
+#|>$100,000        |204 (46.2%) |3467 (37.3%) |
+#|*Race*           |            |             |
+#|black            |38 (8.6%)   |1541 (16.6%) |
+#|hispanic         |70 (15.8%)  |1949 (21%)   |
+#|other            |50 (11.3%)  |1175 (12.6%) |
+#|white            |284 (64.3%) |4636 (49.8%) |
 ```
-
-```{r}
-# race
-mtbi_der_solution_plot_df <- readRDS(proc_path("2025_06_11_mtbi_der_solution_plot_df.rds"))
-
-mtbi_der
-
-mtbi_der_plot_list <- readRDS(fig_path("2025_06_11_mtbi_der_plot_list.rds"))
-
-mtbi_der_plot_list$"family_hit_p"
-
-mtbi_der_solution_plot_df$"sex" |> table()
-
-mean(q$"mtbi_age" / 12)
-sd(q$"mtbi_age" / 12)
-
-mean(q$"age" / 12)
-sd(q$"age" / 12)
-
-z <- lapply(
-    all_dls_h_ns$"mtbi_der_u_dls",
-    function(x) {
-        sample_characterize(x)
-    }
-)
-
-# age in months
-# pubertal status (pre/post)
-# income
-# race
-# age at latest injury
-# time since latest injury
-# injury mechanism
-# number of concussions
-# sex
-# age at interview
-# raw CBCL / SDS scores
-```
-
-
-
-
 
 
 
