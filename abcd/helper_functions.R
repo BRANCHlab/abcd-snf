@@ -548,11 +548,24 @@ calc_des_wp <- function(x1, x2) {
 }
 
 calc_propes <- function(x1, x2) {
+    success_1 <- sum(x1, na.rm = TRUE)
+    success_2 <- sum(x2, na.rm = TRUE)
+    if (success_1 == 0 || success_1 == length(x1) || success_2 == 0 || success_2 == length(x2)) {
+        m1 <- (success_1 + 0.5) / (length(x1) + 1)
+        m2 <- (success_2 + 0.5) / (length(x2) + 1)
+        n1 <- length(x1) + 1
+        n2 <- length(x2) + 1
+    } else {
+        m1 <- success_1 / length(x1)
+        m2 <- success_2 / length(x2)
+        n1 <- length(x1)
+        n2 <- length(x2)
+    }
     d_full <- compute.es::propes(
-        mean(x1),
-        mean(x2),
-        length(x1),
-        length(x2),
+        m1,
+        m2,
+        n1,
+        n2,
         verbose = FALSE
     )
     return(
