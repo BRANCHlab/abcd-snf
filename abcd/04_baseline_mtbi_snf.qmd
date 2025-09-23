@@ -22,6 +22,7 @@ library(dplyr)
 library(fastDummies)
 library(tidyr)
 library(nnet)
+library(ComplexHeatmap)
 
 input_path      <- path_maker(here(paste0("data/abcd/inputs")))
 proc_path       <- path_maker(here(paste0("data/abcd/results/processed")))
@@ -1376,7 +1377,6 @@ all_tops_raw_manual_adj |>
 ```
 
 ```{r}
-# HERE 2025-09-22
 saveRDS(all_tops_raw_manual_adj, proc_path("all_tops_raw_manual_adj.rds", TRUE))
 ```
 
@@ -1800,8 +1800,8 @@ dl_demo <- mtbi_dl_1[c(4, 6:9)]
 saveRDS(dl_demo, proc_path("dl_demo.rds", TRUE))
 saveRDS(dl_no_demo, proc_path("dl_no_demo.rds", TRUE))
 
-dl_demo <- readRDS(proc_path("2025_06_12_dl_demo.rds"))
-dl_no_demo <- readRDS(proc_path("2025_06_12_dl_no_demo.rds"))
+dl_demo <- readRDS(proc_path("2025_09_23_dl_demo.rds"))
+dl_no_demo <- readRDS(proc_path("2025_09_23_dl_no_demo.rds"))
 
 dl_demo
 
@@ -1812,7 +1812,7 @@ saveRDS(dl_corrected, proc_path("dl_corrected.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-dl_corrected <- readRDS(proc_path("2025_06_12_dl_corrected.rds"))
+dl_corrected <- readRDS(proc_path("2025_09_23_dl_corrected.rds"))
 
 names(dl_corrected)
 
@@ -1844,12 +1844,11 @@ corrected_config <- snf_config(
     ),
     use_default_dist_fns = TRUE
 )
-
 saveRDS(corrected_config, proc_path("corrected_config.rds", TRUE))
 
-corrected_config <- readRDS(proc_path("2025_06_12_corrected_config.rds"))
+corrected_config <- readRDS(proc_path("2025_09_23_corrected_config.rds"))
 
-c(dl_corrected, dl_demo) |>
+correction_heatmap <- c(dl_corrected, dl_demo) |>
     as.data.frame() |>
     dummy_cols(
         select_columns = c("race", "mtbi_mechanism"),
@@ -1871,19 +1870,26 @@ c(dl_corrected, dl_demo) |>
     ) |>
     cor() |>
     Heatmap(cluster_rows = FALSE, cluster_columns = FALSE)
+
+save_heatmap(
+    heatmap = correction_heatmap,
+    path = fig_path("correction_heatmap.png", TRUE),
+    width = 950,
+    height = 700,
+    res = 100
+)
 ```
 
 
 ```{r}
 # CHECKPOINT
-dl_corrected <- readRDS(proc_path("2025_06_12_dl_corrected.rds"))
-corrected_config <- readRDS(proc_path("2025_06_12_corrected_config.rds"))
+dl_corrected <- readRDS(proc_path("2025_09_23_dl_corrected.rds"))
+corrected_config <- readRDS(proc_path("2025_09_23_corrected_config.rds"))
 ```
 
 Meta clustering using the demographic adjusted data list.
 
 ```{r}
-# HERE 2025-06-03
 progressr::with_progress({
 demo_adj_sol_df <- batch_snf(
     dl = dl_corrected,
@@ -1896,7 +1902,7 @@ saveRDS(demo_adj_sol_df, proc_path("demo_adj_sol_df.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-demo_adj_sol_df <- readRDS(proc_path("2025_06_12_demo_adj_sol_df.rds"))
+demo_adj_sol_df <- readRDS(proc_path("2025_09_23_demo_adj_sol_df.rds"))
 demo_adj_ari <- calc_aris(demo_adj_sol_df, verbose = TRUE, processes = "max")
 saveRDS(demo_adj_ari, proc_path("demo_adj_ari.rds", TRUE))
 ```
@@ -1908,9 +1914,9 @@ saveRDS(demo_adj_ari_order, proc_path("demo_adj_ari_order.rds", TRUE))
 
 ```{r}
 # CHECKPOINT
-demo_adj_sol_df <- readRDS(proc_path("2025_06_12_demo_adj_sol_df.rds"))
-demo_adj_ari <- readRDS(proc_path("2025_06_12_demo_adj_ari.rds"))
-demo_adj_ari_order <- readRDS(proc_path("2025_06_12_demo_adj_ari_order.rds"))
+demo_adj_sol_df <- readRDS(proc_path("2025_09_23_demo_adj_sol_df.rds"))
+demo_adj_ari <- readRDS(proc_path("2025_09_23_demo_adj_ari.rds"))
+demo_adj_ari_order <- readRDS(proc_path("2025_09_23_demo_adj_ari_order.rds"))
 ```
 
 Creating a demographic adjusted outcome list to extend against.
@@ -1921,7 +1927,7 @@ saveRDS(adj_oom_list, proc_path("adj_oom_list.rds", TRUE))
 ```
 
 ```{r}
-adj_oom_list <- readRDS(proc_path("2025_06_12_adj_oom_list.rds"))
+adj_oom_list <- readRDS(proc_path("2025_09_23_adj_oom_list.rds"))
 ```
 
 ```{r}
@@ -1941,7 +1947,7 @@ saveRDS(
 
 ```{r}
 demo_double_adj_ext_sol_df <- readRDS(
-    proc_path("2025_06_12_demo_double_adj_ext_sol_df.rds")
+    proc_path("2025_09_23_demo_double_adj_ext_sol_df.rds")
 )
 
 base_adj_ari_hm <- meta_cluster_heatmap(
@@ -1953,14 +1959,19 @@ demo_double_adj_esdf <- as.data.frame(demo_double_adj_ext_sol_df)
 demo_double_adj_esdf$"impairment_separation" <- -log10(demo_double_adj_esdf$"mean_pval")
 
 demo_adj_split_vec <- c(
-    27,
-    95,
-    171,
-    218,
-    266
+    30,
+    65,
+    183,
+    236,
+    281,
+    361,
+    375
+    #171,
+    #218,
+    #266
 )
 saveRDS(demo_adj_split_vec, proc_path("demo_adj_split_vec.rds", TRUE))
-demo_adj_split_vec <- readRDS(proc_path("2025_06_12_demo_adj_split_vec.rds"))
+demo_adj_split_vec <- readRDS(proc_path("2025_09_23_demo_adj_split_vec.rds"))
 # The double adjustment does not yield and interesting meta clusters
 full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
     x = demo_adj_ari,
@@ -2004,5 +2015,5 @@ double_demo_adj_rep_solutions <- get_representative_solutions(
     double_demo_adj_mc_sol_df
 )
 
-double_demo_adj_rep_solutions$"mean_pval" # The lowest mean p-value is 0.17
+min(double_demo_adj_rep_solutions$"mean_pval") # The lowest mean p-value is 0.2156412
 ```

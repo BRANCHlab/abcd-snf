@@ -42,12 +42,10 @@ These features are the same as those that were characterized in the matched unin
 
 ```{r}
 # Data frame of all features extracted for baseline concussion sample
-mtbi_ful_df <- readRDS(proc_path("2025_06_11_mtbi_ful_df.rds"))
+mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
 
 # Data frame with generalizable features from baseline solution in long format
-mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits.csv"))
-
-mtbi
+mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits.csv"))
 
 # Undummying
 classifier_fts <- mtbi_gen_fts_table_hits$feature
@@ -61,14 +59,14 @@ saveRDS(classifier_fts, proc_path("classifier_fts.rds", TRUE))
 ```
 
 ```{r}
-classifier_fts <- readRDS(proc_path("2025_06_13_classifier_fts.rds"))
-ifts <- readRDS(proc_path("2025_06_11_ifts.rds"))
+classifier_fts <- readRDS(proc_path("2025_09_23_classifier_fts.rds"))
+ifts <- readRDS(proc_path("2025_09_15_ifts.rds"))
 
 classifier_ifts <- classifier_fts[classifier_fts %in% ifts]
 
 saveRDS(classifier_ifts, proc_path("classifier_ifts.rds", TRUE))
 
-classifier_ifts <- readRDS(proc_path("2025_06_13_classifier_ifts.rds"))
+classifier_ifts <- readRDS(proc_path("2025_09_23_classifier_ifts.rds"))
 
 classifier_ifts
 
@@ -80,57 +78,53 @@ for (ft in classifier_ifts) {
 The features used for classification are:
 
 1. sex
-2. brain_volume
-3. cortical_sa
+2. cortical_sa
+3. brain_volume
 4. household_income
 5. pubertal_status_p
 6. activities_last_year
-7. extracurriculars
-8. parent_somatic
-9. parent_thought
-10. private_instruction
-11. parent_depress
-12. weekday_screentime
-13. fmri_cort_cors
-14. parent_anxdisord
-15. parent_antisocial
-16. parent_aggressive
-17. parent_anxdep
-18. race
+7. weekday_screentime
+8. weekend_screentime
+9. race
+10. parent_somatic
+11. parent_antisocial
+12. parent_thought
+13. extracurriculars
+14. parent_aggressive
+15. parent_depress
+16. parent_anxdisord
+17. private_instruction
+18. parent_anxdep
 19. parent_withdrawn
 20. parent_attention
-21. parent_hyperactive
-22. parent_avoidant
-23. parent_perstr
-24. family_fight_p
-25. considerate_y
-26. weekend_screentime
-27. physical_activity
-28. family_criticize_p
-29. fmri_cort_subcort_cors
-30. school_activities
-31. helps_hurt_p
-32. headache_history
-33. considerate_p
-34. family_outdo_p
-35. family_criticize_y
-36. cortical_thickness
-37. pericortical_wm_ndi
-38. family_throw_p
-39. same_sex_close_friend
-40. family_hit_p
-41. age
+21. parent_avoidant
+22. parent_hyperactive
+23. helps_hurt_p
+24. physical_activity
+25. school_activities
+26. family_fight_p
+27. headache_history
+28. same_sex_close_friend
+29. cortical_t
+30. parent_perstr
+31. family_peaceful_p
+32. helpful_p
+33. family_outdo_p
+34. considerate_p
+35. considerate_y
+36. age
+37. family_hit_p
+38. fmri_dmn_fpn_cor
+39. family_peaceful_y
+40. helps_hurt_y
+41. family_angry_y
 42. same_sex_friend
-43. family_angry_p
+43. family_yell_y
 44. pubertal_status_y
-45. family_outdo_y
-46. helpful_p
-47. family_peaceful_y
-48. family_yell_y
-49. helps_hurt_y
-50. helpful_y
-51. family_throw_y
-52. family_fight_y
+45. fmri_dan_within_cor
+46. family_throw_p
+47. family_angry_p
+48. family_throw_y
 
 ```{r}
 # Reducing mtbi_ful_df to only contain the classifier features
@@ -146,7 +140,7 @@ write_csv(mtbi_classification_df, proc_path("mtbi_classification_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-mtbi_classification_df <- read_csv(proc_path("2025_06_13_mtbi_classification_df.csv"))
+mtbi_classification_df <- read_csv(proc_path("2025_09_23_mtbi_classification_df.csv"))
 ```
 
 ### 80/20 train/test split
@@ -158,8 +152,8 @@ shuffled_df <- mtbi_classification_df[sample(nrow(mtbi_classification_df)), ]
 
 nrow(mtbi_classification_df) * 0.8
 
-train_classification_df <- shuffled_df[1:347, ]
-test_classification_df <- shuffled_df[347:434, ]
+train_classification_df <- shuffled_df[1:350, ]
+test_classification_df <- shuffled_df[351:438, ]
 
 write_csv(
     train_classification_df,
@@ -175,11 +169,11 @@ write_csv(
 ```{r}
 # CHECKPOINT
 train_classification_df <- read_csv(
-    proc_path("2025_06_13_train_classification_df.csv")
+    proc_path("2025_09_23_train_classification_df.csv")
 )
 
 test_classification_df <- read_csv(
-    proc_path("2025_06_13_test_classification_df.csv")
+    proc_path("2025_09_23_test_classification_df.csv")
 )
 ```
 
@@ -204,20 +198,138 @@ mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
 mh_y_or <- import("mental-health/mh_y_or.csv")
 # Screen time
 nt_p_stq <- import("novel-technologies/nt_p_stq.csv")
+
+
+
 ```
 
 ```{r}
 train_classification_df <- read_csv(
-    proc_path("2025_06_13_train_classification_df.csv")
+    proc_path("2025_09_23_train_classification_df.csv")
 )
 
 test_classification_df <- read_csv(
-    proc_path("2025_06_13_test_classification_df.csv")
+    proc_path("2025_09_23_test_classification_df.csv")
 )
 
 for (name in colnames(train_classification_df)) {
     print(name)
 }
+
+```
+
+Which features are time-sensitive?
+
+1.  [-] sex
+2.  [x] cortical_sa
+3.  [x] brain_volume
+4.  [-] household_income
+5.  [x] pubertal_status_p
+6.  [-] activities_last_year
+7.  [x] weekday_screentime
+8.  [x] weekend_screentime
+9.  [-] race
+10. [-] parent_somatic
+11. [-] parent_antisocial
+12. [-] parent_thought
+13. [-] extracurriculars
+14. [-] parent_aggressive
+15. [-] parent_depress
+16. [-] parent_anxdisord
+17. [x] private_instruction
+18. [-] parent_anxdep
+19. [-] parent_withdrawn
+20. [-] parent_attention
+21. [-] parent_avoidant
+22. [-] parent_hyperactive
+23. [-] helps_hurt_p
+24. [-] physical_activity
+25. [-] school_activities
+26. [-] family_fight_p
+27. [ ] headache_history
+28. [ ] same_sex_close_friend
+29. [ ] cortical_t
+30. [ ] parent_perstr
+31. [ ] family_peaceful_p
+32. [ ] helpful_p
+33. [ ] family_outdo_p
+34. [ ] considerate_p
+35. [ ] considerate_y
+36. [ ] age
+37. [ ] family_hit_p
+38. [ ] fmri_dmn_fpn_cor
+39. [ ] family_peaceful_y
+40. [ ] helps_hurt_y
+41. [ ] family_angry_y
+42. [ ] same_sex_friend
+43. [ ] family_yell_y
+44. [ ] pubertal_status_y
+45. [ ] fmri_dan_within_cor
+46. [ ] family_throw_p
+47. [ ] family_angry_p
+48. [ ] family_throw_y
+
+
+```{r}
+
+a <- list(1, 2, 3)
+
+a
+
+append(a, 4)
+
+check_time_sensitive <- function(fn, vars, col, d = TRUE) {
+    t0 <- do.call(fn, c(vars, list(t = 0)))
+    t2 <- do.call(fn, c(vars, list(t = 2)))
+    if (d) {
+        es_fn <- calc_des
+    } else {
+        es_fn <- calc_propes
+    }
+    es <- es_fn(
+        na.omit(t0[[col]]),
+        na.omit(t2[[col]])
+    )
+    print(paste0(
+        "ES: ", es$"es",
+        " (", es$"l", ", ", es$"u", ")"
+    ))
+    return(abs(es$"es") >= 0.2)
+}
+
+check_time_sensitive(get_income, list(abcd_p_demo), "household_income") # FALSE
+check_time_sensitive(get_pubertal_status_p, list(ph_p_pds), "pubertal_status_p") # TRUE
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "activities_last_year") # TRUE
+check_time_sensitive(get_screen_time, list(nt_p_stq), "screentime_wknd_hrs") # TRUE
+check_time_sensitive(get_screen_time, list(nt_p_stq), "screentime_wkday_hrs") # TRUE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_somatic_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_antisocial_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_thought_r") # FALSE
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "extracurriculars") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_aggressive_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_depress_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_anxdisord_r") # FALSE
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "private_instruction") # TRUE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_anxdep_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_withdrawn_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_attention_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_avoidant_r") # FALSE
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_hyperactive_r") # FALSE
+check_time_sensitive(get_prosocial_behaviour_p, list(ce_p_psb, no_zero = TRUE), "helps_hurt_p") # FALSE
+check_time_sensitive(get_exercise, list(ph_y_yrb), "physical_activity") # FALSE
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "school_activities") # FALSE
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q1_fight_p") # FALSE
+
+
+
+check_time_sensitive(get_headaches, list(ph_p_mhx), "headache")
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_perstr_r") # FALSE
+
+
+
+```
+
+```{r}
 
 subc_v <- get_subc_v(mri_y_smr_vol_aseg, t = 0)
 cort_t <- get_cort_t(mri_y_smr_thk_dsk, t = 0)
