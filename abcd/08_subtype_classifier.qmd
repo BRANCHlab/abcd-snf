@@ -7,7 +7,7 @@ library(here)
 library(abcdutils)
 library(dplyr)
 library(caret)
-library(xgboost)
+library(readr)
 library(randomForest)
 library(fastDummies)
 library(skimr)
@@ -43,7 +43,9 @@ These features are the same as those that were characterized in the matched unin
 ```{r}
 # Data frame of all features extracted for baseline concussion sample
 mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
+```
 
+```{r}
 # Data frame with generalizable features from baseline solution in long format
 mtbi_gen_fts_table_hits <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits.csv"))
 
@@ -65,10 +67,10 @@ ifts <- readRDS(proc_path("2025_09_15_ifts.rds"))
 classifier_ifts <- classifier_fts[classifier_fts %in% ifts]
 
 saveRDS(classifier_ifts, proc_path("classifier_ifts.rds", TRUE))
+```
 
+```{r}
 classifier_ifts <- readRDS(proc_path("2025_09_23_classifier_ifts.rds"))
-
-classifier_ifts
 
 for (ft in classifier_ifts) {
     print(ft)
@@ -180,7 +182,9 @@ test_classification_df <- read_csv(
 ### Time-scaling temporally sensitive features
 
 ```{r}
-# Age
+# Ohio TBI screen
+ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
+# Age, family ID, site ID
 abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
 # Pubertal development scale, youth report
 ph_y_pds <- import("physical-health/ph_y_pds.csv")
@@ -188,19 +192,50 @@ ph_y_pds <- import("physical-health/ph_y_pds.csv")
 ph_p_pds <- import("physical-health/ph_p_pds.csv")
 # Parent report of gender identity
 gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+# Demographic data
+abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
+# Medical history
+ph_p_mhx <- import("physical-health/ph_p_mhx.csv")
 # Subcortical volumes (ASEG)
 mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
 # Desikan cortical thicknesses
 mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
 # Desikan cortical surface areas
 mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
+# rs-fMRI cortical-cortical correlations
+mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
+# rs-fMRI cortical-subcortical correlations
+mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
 # Number of friends
 mh_y_or <- import("mental-health/mh_y_or.csv")
 # Screen time
 nt_p_stq <- import("novel-technologies/nt_p_stq.csv")
-
-
-
+# Participation in sports and activities
+ph_p_saiq <- import("physical-health/ph_p_saiq.csv")
+# Exercise habits
+ph_y_yrb <- import("physical-health/ph_y_yrb.csv")
+# Youth report of prosocial behaviour
+ce_y_psb <- import("culture-environment/ce_y_psb.csv")
+# Parent report of prosocial behaviour
+ce_p_psb <- import("culture-environment/ce_p_psb.csv")
+# Youth report of family function
+ce_y_fes <- import("culture-environment/ce_y_fes.csv")
+# Parent report of family function
+ce_p_fes <- import("culture-environment/ce_p_fes.csv")
+# Parent ASEBA self-report (psychopathology)
+mh_p_asr <- import("mental-health/mh_p_asr.csv")
+# Parent report of child behaviour (CBCL)
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+# Sleep disturbance scale
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+# Scanner ID
+mri_y_adm_info <- import("imaging/mri_y_adm_info.csv")
 ```
 
 ```{r}
@@ -246,38 +281,30 @@ Which features are time-sensitive?
 24. [-] physical_activity
 25. [-] school_activities
 26. [-] family_fight_p
-27. [ ] headache_history
-28. [ ] same_sex_close_friend
-29. [ ] cortical_t
-30. [ ] parent_perstr
-31. [ ] family_peaceful_p
-32. [ ] helpful_p
-33. [ ] family_outdo_p
-34. [ ] considerate_p
-35. [ ] considerate_y
-36. [ ] age
-37. [ ] family_hit_p
-38. [ ] fmri_dmn_fpn_cor
-39. [ ] family_peaceful_y
-40. [ ] helps_hurt_y
-41. [ ] family_angry_y
-42. [ ] same_sex_friend
-43. [ ] family_yell_y
-44. [ ] pubertal_status_y
-45. [ ] fmri_dan_within_cor
-46. [ ] family_throw_p
-47. [ ] family_angry_p
-48. [ ] family_throw_y
-
+27. [-] headache_history
+28. [-] same_sex_close_friend
+29. [x] cortical_t
+30. [-] parent_perstr
+31. [-] family_peaceful_p
+32. [-] helpful_p
+33. [-] family_outdo_p
+34. [-] considerate_p
+35. [-] considerate_y
+36. [x] age
+37. [-] family_hit_p
+38. [-] fmri_dmn_fpn_cor
+39. [-] family_peaceful_y
+40. [-] helps_hurt_y
+41. [-] family_angry_y
+42. [-] same_sex_friend
+43. [-] family_yell_y
+44. [x] pubertal_status_y
+45. [-] fmri_dan_within_cor
+46. [-] family_throw_p
+47. [-] family_angry_p
+48. [-] family_throw_y
 
 ```{r}
-
-a <- list(1, 2, 3)
-
-a
-
-append(a, 4)
-
 check_time_sensitive <- function(fn, vars, col, d = TRUE) {
     t0 <- do.call(fn, c(vars, list(t = 0)))
     t2 <- do.call(fn, c(vars, list(t = 2)))
@@ -297,40 +324,64 @@ check_time_sensitive <- function(fn, vars, col, d = TRUE) {
     return(abs(es$"es") >= 0.2)
 }
 
-check_time_sensitive(get_income, list(abcd_p_demo), "household_income") # FALSE
-check_time_sensitive(get_pubertal_status_p, list(ph_p_pds), "pubertal_status_p") # TRUE
-check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "activities_last_year") # TRUE
-check_time_sensitive(get_screen_time, list(nt_p_stq), "screentime_wknd_hrs") # TRUE
-check_time_sensitive(get_screen_time, list(nt_p_stq), "screentime_wkday_hrs") # TRUE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_somatic_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_antisocial_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_thought_r") # FALSE
-check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "extracurriculars") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_aggressive_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_depress_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_anxdisord_r") # FALSE
-check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "private_instruction") # TRUE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_anxdep_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_withdrawn_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_attention_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_avoidant_r") # FALSE
-check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_hyperactive_r") # FALSE
-check_time_sensitive(get_prosocial_behaviour_p, list(ce_p_psb, no_zero = TRUE), "helps_hurt_p") # FALSE
-check_time_sensitive(get_exercise, list(ph_y_yrb), "physical_activity") # FALSE
-check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "school_activities") # FALSE
-check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q1_fight_p") # FALSE
-
-
-
-check_time_sensitive(get_headaches, list(ph_p_mhx), "headache")
+check_time_sensitive(get_income, list(abcd_p_demo), "household_income") # F
+check_time_sensitive(get_pubertal_status_p, list(ph_p_pds), "pubertal_status_p") # T
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "activities_last_year") # T
+check_time_sensitive(get_screen_time, list(nt_p_stq), "screentime_wknd_hrs") # T
+check_time_sensitive(get_screen_time, list(nt_p_stq), "screentime_wkday_hrs") # T
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_somatic_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_antisocial_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_thought_r") # F
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "extracurriculars") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_aggressive_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_depress_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_anxdisord_r") # F
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "private_instruction") # T
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_anxdep_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_withdrawn_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_attention_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_avoidant_r") # F
+check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_hyperactive_r") # F
+check_time_sensitive(get_prosocial_behaviour_p, list(ce_p_psb, no_zero = TRUE), "helps_hurt_p") # F
+check_time_sensitive(get_exercise, list(ph_y_yrb), "physical_activity") # F
+check_time_sensitive(get_sports_and_activities, list(ph_p_saiq, discretize = TRUE), "school_activities") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q1_fight_p") # F
+check_time_sensitive(get_headaches, list(ph_p_mhx), "headache") # F
+check_time_sensitive(get_headaches, list(ph_p_mhx), "headache") # F
+check_time_sensitive(get_friends, list(mh_y_or, gish_p_gi, discretize = TRUE), "ss_close_friend") # F
+check_time_sensitive(get_cort_t, list(mri_y_smr_thk_dsk), "smri_thick_cdk_mean") # T
 check_time_sensitive(get_parent_psychopathology, list(mh_p_asr, raw = TRUE), "asr_scr_perstr_r") # FALSE
-
-
-
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q7_peaceful_p") # F
+check_time_sensitive(get_prosocial_behaviour_p, list(ce_p_psb, no_zero = TRUE), "helpful_p") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q8_outdo_p") # F
+check_time_sensitive(get_prosocial_behaviour_p, list(ce_p_psb, no_zero = TRUE), "considerate_p") # F
+check_time_sensitive(get_prosocial_behaviour_y, list(ce_y_psb, no_zero = TRUE), "considerate_y") # F
+check_time_sensitive(get_interview_age, list(abcd_y_lt = abcd_y_lt, as_years = FALSE), "interview_age") # T
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q6_hit_p") # F
+check_time_sensitive(get_gord_cor, list(mri_y_rsfmr_cor_gp_gp, roi_pairs = list(c("default", "fronto_parietal"))), "rsfmri_c_ngd_dt_ngd_fo") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q7_peaceful_y") # F
+check_time_sensitive(get_prosocial_behaviour_y, list(ce_y_psb, no_zero = TRUE), "helpful_y") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q2_angry_y") # F
+check_time_sensitive(get_friends, list(mh_y_or, gish_p_gi, discretize = TRUE), "ss_friend") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q9_yell_y") # F
+check_time_sensitive(get_pubertal_status_y, list(ph_y_pds, max_value = 3), "pubertal_status_y") # T
+check_time_sensitive(get_gord_cor, list(mri_y_rsfmr_cor_gp_gp, roi_pairs = list(c("dorsal_attention", "dorsal_attention"))), "rsfmri_c_ngd_dla_ngd_dla") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q3_throw_p") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q2_angry_p") # F
+check_time_sensitive(get_family_function, list(ce_y_fes, ce_p_fes), "q3_throw_y") # F
 ```
 
-```{r}
+2.  [x] cortical_sa
+3.  [x] brain_volume
+5.  [x] pubertal_status_p
+7.  [x] weekday_screentime
+8.  [x] weekend_screentime
+17. [ ] private_instruction
+29. [x] cortical_t
+36. [x] age
+44. [x] pubertal_status_y
 
+```{r}
 subc_v <- get_subc_v(mri_y_smr_vol_aseg, t = 0)
 cort_t <- get_cort_t(mri_y_smr_thk_dsk, t = 0)
 cort_sa <- get_cort_sa(mri_y_smr_area_dsk, t = 0)
@@ -338,6 +389,7 @@ pubertal_status_p <- get_pubertal_status_p(ph_p_pds, max_value = 3, t = 0)
 pubertal_status_y <- get_pubertal_status_y(ph_y_pds, max_value = 3, t = 0)
 age <- get_interview_age(abcd_y_lt, t = 0, as_years = FALSE)
 screen_time <- get_screen_time(nt_p_stq, t = 0)
+private_instruction <- get_sports_and_activities(ph_p_saiq, discretize = TRUE, t = 0)
 
 subc_v_t2 <- get_subc_v(mri_y_smr_vol_aseg, t = 2)
 cort_t_t2 <- get_cort_t(mri_y_smr_thk_dsk, t = 2)
@@ -346,19 +398,8 @@ pubertal_status_p_t2 <- get_pubertal_status_p(ph_p_pds, max_value = 4, t = 2)
 pubertal_status_y_t2 <- get_pubertal_status_y(ph_y_pds, max_value = 4, t = 2)
 age_t2 <- get_interview_age(abcd_y_lt, t = 2, as_years = FALSE)
 screen_time_t2 <- get_screen_time(nt_p_stq, t = 2)
+private_instruction_t2 <- get_sports_and_activities(ph_p_saiq, discretize = TRUE, t = 2)
 ```
-
-Temporally sensitive features:
-
-- brain_volume
-- cortical_sa
-- pubertal_status_p
-- age
-- weekday_screentime
-- weekend_screentime
-- cortical_thickness
-- pubertal_status_y
-
 
 ```{r}
 temporal_df <- metasnf::merge_df_list(
@@ -369,10 +410,16 @@ temporal_df <- metasnf::merge_df_list(
         pubertal_status_p,
         pubertal_status_y,
         age,
-        screen_time
+        screen_time,
+        private_instruction
     ),
     uid = "subjectkey"
-)
+) |>
+    dplyr::select(
+        -"school_activities",
+        -"extracurriculars",
+        -"activities_last_year"
+    )
 
 temporal_df2 <- metasnf::merge_df_list(
     list(
@@ -382,16 +429,24 @@ temporal_df2 <- metasnf::merge_df_list(
         pubertal_status_p_t2,
         pubertal_status_y_t2,
         age_t2,
-        screen_time_t2
+        screen_time_t2,
+        private_instruction_t2
     ),
     uid = "subjectkey"
-)
+) |>
+    dplyr::select(
+        -"school_activities",
+        -"extracurriculars",
+        -"activities_last_year"
+    )
+
+colnames(temporal_df2)
 
 temporal_df <- temporal_df |> dplyr::rename(
     "uid" = "subjectkey",
     "age" = "interview_age",
     "brain_volume" = "smri_vol_scs_wholeb",
-    "cortical_thickness" = "smri_thick_cdk_mean",
+    "cortical_t" = "smri_thick_cdk_mean",
     "cortical_sa" = "smri_area_cdk_total",
     "weekend_screentime" = "screentime_wknd_hrs",
     "weekday_screentime" = "screentime_wkday_hrs"
@@ -401,7 +456,7 @@ temporal_df2 <- temporal_df2 |> dplyr::rename(
     "uid" = "subjectkey",
     "age" = "interview_age",
     "brain_volume" = "smri_vol_scs_wholeb",
-    "cortical_thickness" = "smri_thick_cdk_mean",
+    "cortical_t" = "smri_thick_cdk_mean",
     "cortical_sa" = "smri_area_cdk_total",
     "weekend_screentime" = "screentime_wknd_hrs",
     "weekday_screentime" = "screentime_wkday_hrs"
@@ -413,7 +468,7 @@ temporal_df2$"uid" <- paste0("uid_", temporal_df2$"uid")
 saveRDS(temporal_df, proc_path("temporal_df.rds", TRUE))
 saveRDS(temporal_df2, proc_path("temporal_df2.rds", TRUE))
 
-temporal_df <- readRDS(proc_path("2025_06_13_temporal_df.rds"))
+temporal_df <- readRDS(proc_path("2025_09_25_temporal_df.rds"))
 
 temporal_df <- temporal_df |> 
     dplyr::filter(
@@ -449,8 +504,8 @@ Temporally sensitive features have now been z-scored across all ABCD values for 
 
 ```{r}
 # CHECKPOINT
-train_scale_df <- read_csv(proc_path("2025_06_13_train_scale_df.csv"))
-test_scale_df <- read_csv(proc_path("2025_06_13_test_scale_df.csv"))
+train_scale_df <- read_csv(proc_path("2025_09_25_train_scale_df.csv"))
+test_scale_df <- read_csv(proc_path("2025_09_25_test_scale_df.csv"))
 ```
 
 ### Final preparatory steps
@@ -602,7 +657,7 @@ saveRDS(trained_models, model_path("rf_models.rds", TRUE))
 stopCluster(cl)
 unregister_dopar()
 print(Sys.time() - time)
-# rf_models <- readRDS(model_path("2025_06_13_rf_models.rds"))
+#rf_models <- readRDS(model_path("2025_09_25_rf_models.rds"))
 ```
 
 ### SVM
@@ -644,7 +699,6 @@ svm_model2$"results" |>
     geom_jitter() +
     theme_bw()
 
-
 svm_tune_grid_3 <- expand.grid(
     sigma = c(1e-6, 0.0001, 0.001, 0.01, 0.05),
     C = c(0.1, 0.5, 1, 10, 50, 100, 200, 500)
@@ -671,6 +725,8 @@ svm_tune_c <- svm_model3$"results" |>
     theme_bw()
 svm_tuning_plots <- wrap_plots(list(svm_tune_sigma, svm_tune_c), ncol = 2)
 
+svm_tuning_plots
+
 ggsave(
     fig_path("svm_tuning_plots.png", TRUE),
     svm_tuning_plots,
@@ -680,7 +736,7 @@ ggsave(
 )
 
 saveRDS(svm_model3, model_path("svm_model.rds", TRUE))
-svm_model <- readRDS(model_path("2025_06_13_svm_model.rds"))
+svm_model <- readRDS(model_path("2025_09_25_svm_model.rds"))
 ```
 
 ### K-NN
@@ -697,15 +753,15 @@ knn_model <- train(
 
 saveRDS(knn_model, model_path("knn_model.rds", TRUE))
 
-knn_model <- readRDS(model_path("2025_06_13_knn_model.rds"))
+knn_model <- readRDS(model_path("2025_09_25_knn_model.rds"))
 ```
 
 ### Comparisons
 
 ```{r}
-knn_model <- readRDS(model_path("2025_06_13_knn_model.rds"))
-rf_models <- readRDS(model_path("2025_06_13_rf_models.rds"))
-svm_model <- readRDS(model_path("2025_06_13_svm_model.rds"))
+knn_model <- readRDS(model_path("2025_09_25_knn_model.rds"))
+rf_models <- readRDS(model_path("2025_09_25_rf_models.rds"))
+svm_model <- readRDS(model_path("2025_09_25_svm_model.rds"))
 
 classifier_list <- rf_models
 classifier_list[[length(classifier_list) + 1]] <- svm_model
@@ -797,68 +853,69 @@ rf_sorted <- rf_accuracy_df |>
 
 head(rf_sorted)
 
-rf_models$"maxnodes_40nodesize_4ntree_3000"$"bestTune"
+rf_models$"maxnodes_50nodesize_4ntree_1000"$"bestTune"
 
+rf_models$"maxnodes_50nodesize_4ntree_1000"$"finalModel"
 ```
 
-Best model seemed to have mtry 2, max nodes 50, node size 5, n trees 3000 with 86.2% accuracy and 0.034% accuracy SD.
-But to be safe, I'll lean on one witha slightly fewer node size (4), fewer max nodes (40), and lower accuracy SD (0.018%) that is still 85.6% acc.
+Best model seemed to have mtry 10, max nodes 50, node size 4, n trees 1000 with 86% accuracy and 0.046% accuracy SD.
 
-        OOB estimate of  error rate: 19.83%
+        OOB estimate of  error rate: 16.29%
 Confusion matrix:
    1   2  3 class.error
-1 83  17  4  0.20192308
-2  8 118  3  0.08527132
-3 15  22 78  0.32173913
+1 85  14  7   0.1981132
+2  8 127  9   0.1180556
+3 11   8 81   0.1900000
 
-### Training on full data set
+### Training on full training set
 
 ```{r}
 set.seed(42)
-
 model <- randomForest(
     cluster ~ .,
     data = prep_data(train_scale_df),
-    mtry = 2,
-    ntree = 3000,
-    maxnodes = 40,
+    mtry = 10,
+    ntree = 1000,
+    maxnodes = 50,
     nodesize = 4
 )
-
 saveRDS(model, model_path("rf_training_subtype_classifier.rds", TRUE))
-
-rf_training_subtype_classifier <- readRDS(model_path("2025_06_13_rf_training_subtype_classifier.rds"))
+rf_training_subtype_classifier <- readRDS(model_path("2025_09_25_rf_training_subtype_classifier.rds"))
 
 predictions <- predict(
     rf_training_subtype_classifier,
     newdata = prep_data(test_scale_df)
 )
 
-# Model acc on test data: 82.0%%
+# Model acc on test data: 87.5%%
 mean(predictions == prep_data(test_scale_df)$cluster)
 
 confusionMatrix(predictions, prep_data(test_scale_df)$"cluster")
 
 c(test_scale_df$"cluster", train_scale_df$"cluster") |> table()
-# N = 140, 155, and 142 btw - quite balanced
+# N = 123, 182, and 133 btw - quite balanced
 ```
 
           Reference
 Prediction  1  2  3
-         1 24  0  1
-         2 11 26  3
-         3  1  0 23
+         1 14  5  0
+         2  1 31  1
+         3  2  2 32
 
 Overall Statistics
 
-               Accuracy : 0.8202
-                 95% CI : (0.7245, 0.8936)
-    No Information Rate : 0.4045
-    P-Value [Acc > NIR] : 1.041e-15
+               Accuracy : 0.875
+                 95% CI : (0.7873, 0.9359)
+    No Information Rate : 0.4318
+    P-Value [Acc > NIR] : <2e-16
 
-                  Kappa : 0.733
+                  Kappa : 0.8056
 
- Mcnemar's Test P-Value : 0.002905
+ Mcnemar's Test P-Value : 0.1718
+
+ High mcnemar p-value means misclassifications aren't biased
+
+ ### Training on full data set 
 
 ```{r}
 set.seed(42)
@@ -867,14 +924,14 @@ full_classification_df <- rbind(train_scale_df, test_scale_df)
 full_model <- randomForest(
     cluster ~ .,
     data = prep_data(full_classification_df),
-    mtry = 2,
-    ntree = 3000,
-    maxnodes = 40,
+    mtry = 10,
+    ntree = 1000,
+    maxnodes = 50,
     nodesize = 4
 )
 
 saveRDS(full_model, model_path("subtype_classifier.rds", TRUE))
-subtype_classifier <- readRDS(model_path("2025_06_13_subtype_classifier.rds"))
+subtype_classifier <- readRDS(model_path("2025_09_25_subtype_classifier.rds"))
 ```
 
 ### Variable importances
@@ -884,10 +941,37 @@ var_imp_df <- as.data.frame(importance(subtype_classifier))
 var_imp_df$"feature" <- rownames(var_imp_df)
 write_csv(var_imp_df, proc_path("var_imp_df.csv", TRUE))
 
-var_imp_df <- read_csv(proc_path("2025_06_13_var_imp_df.csv"))
+var_imp_df <- read_csv(proc_path("2025_09_25_var_imp_df.csv"))
 
-dplyr::arrange(var_imp_df, -MeanDecreaseGini)$"feature"[1:20]
+for (ft in dplyr::arrange(var_imp_df, -MeanDecreaseGini)$"feature"[1:20]) {
+    print(ft)
+}
+```
 
+Top 20:
+
+1. brain_volume
+2. cortical_sa
+3. household_income
+4. sex
+5. pubertal_status_p
+6. weekday_screentime
+7. activities_last_year
+8. weekend_screentime
+9. parent_somatic
+10. extracurriculars
+11. cortical_t
+12. physical_activity
+13. parent_antisocial
+14. parent_thought
+15. fmri_dmn_fpn_cor
+16. age
+17. fmri_dan_within_cor
+18. parent_aggressive
+19. parent_depress
+20. parent_attention
+
+```{r}
 var_imp_df
 
 # Create a ggplot for variable importance
