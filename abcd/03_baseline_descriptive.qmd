@@ -55,8 +55,6 @@ pool_imputed <- readRDS(proc_path("2025_09_11_pool_imputed.rds"))
 
 
 ```{r}
-names(all_dls_h_ns)
-
 sample_characterize <- function(data) {
     if (inherits(data, "data_list")) {
         data <- as.data.frame(data)
@@ -75,7 +73,7 @@ sample_characterize <- function(data) {
     # 2. Age
     age_df <- data.frame(
         label = c("*Age*", "Mean (SD)"),
-        value = c("", paste0(signif(mean(data$"interview_age"), 3), " (", signif(sd(data$"interview_age"), 2), ")"))
+        value = c("", paste0(signif(mean(data$"age"), 3), " (", signif(sd(data$"age"), 2), ")"))
     )
     # 3. Pubertal status
     # 4. Income
@@ -122,10 +120,12 @@ sample_characterize <- function(data) {
     )
 }
 
-mtbi_samp_char <- sample_characterize(mtbi_df)
-unij_samp_char <- sample_characterize(unij_df)
+mtbi_samp_char <- rbind(
+    as.data.frame(all_dls_h_ns$"mtbi_der_u_dls"$"imp_1"),
+    as.data.frame(all_dls_h_ns$"mtbi_val_u_dls"$"imp_1")
+) |> sample_characterize()
 
-nrow(unij_df)
+unij_samp_char <- as.data.frame(all_dls_h_ns$"unij_all_u_dls"$"imp_1") |> sample_characterize()
 
 cbind(mtbi_samp_char, dplyr::select(unij_samp_char, -label)) |>
     knitr::kable(format = "markdown", digits = 2)
@@ -133,19 +133,19 @@ cbind(mtbi_samp_char, dplyr::select(unij_samp_char, -label)) |>
 #|label            |value       |value        |
 #|:----------------|:-----------|:------------|
 #|*Sex*            |            |             |
-#|F                |173 (39.1%) |4700 (50.5%) |
-#|M                |269 (60.9%) |4601 (49.5%) |
+#|F                |171 (39%)   |3949 (50%)   |
+#|M                |267 (61%)   |3956 (50%)   |
 #|*Age*            |            |             |
-#|Mean (SD)        |120 (7.5)   |119 (7.5)    |
+#|Mean (SD)        |120 (7.5)   |119 (7.4)    |
 #|*Income*         |            |             |
-#|<$50,000         |86 (19.5%)  |2625 (28.2%) |
-#|$50,000-$100,000 |117 (26.5%) |2369 (25.5%) |
-#|>$100,000        |204 (46.2%) |3467 (37.3%) |
+#|<$50,000         |102 (23.3%) |2631 (33.3%) |
+#|$50,000-$100,000 |122 (27.9%) |2203 (27.9%) |
+#|>$100,000        |214 (48.9%) |3071 (38.8%) |
 #|*Race*           |            |             |
-#|black            |38 (8.6%)   |1541 (16.6%) |
-#|hispanic         |70 (15.8%)  |1949 (21%)   |
-#|other            |50 (11.3%)  |1175 (12.6%) |
-#|white            |284 (64.3%) |4636 (49.8%) |
+#|black            |38 (8.68%)  |1307 (16.5%) |
+#|hispanic         |70 (16%)    |1714 (21.7%) |
+#|other            |50 (11.4%)  |1008 (12.8%) |
+#|white            |280 (63.9%) |3876 (49%)   |
 ```
 
 
