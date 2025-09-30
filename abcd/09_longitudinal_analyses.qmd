@@ -43,7 +43,6 @@ proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
 read <- function(path) {
     return(read_csv(input_path(path)))
 }
-
 ```
 
 ```{r}
@@ -55,17 +54,6 @@ all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
 ```
 
 ## Q1: Was the baseline clustering informative for LT outcomes? (Done, June 15)<!-- {{{ -->
-
-```{r}
-# Import data
-#mtbi_base_df <- readRDS(proc_path("2025_02_13_mtbi_ful_df.rds"))
-#all_long_dls <- readRDS(input_path("2025_03_10_all_long_dls.rds"))
-#all_dls <- readRDS(input_path("2025_02_10_all_dls.rds"))
-
-mtbi_ful_df <- readRDS(proc_path("2025_06_11_mtbi_ful_df.rds"))
-all_long_dls_h_ns <- readRDS(proc_path("2025_06_13_all_long_dls_h_ns.rds"))
-all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
-```
 
 ```{r}
 names(all_long_dls_h_ns)
@@ -108,15 +96,18 @@ mtbi_l_wt2_ns
 
 
 # Keep track of baseline data before attaching to longitudinal data
-colnames(mtbi_ful_df2) <- paste0(colnames(mtbi_ful_df2), "_0")
+mtbi_ful_df_0 <- mtbi_ful_df
+colnames(mtbi_ful_df_0) <- paste0(colnames(mtbi_ful_df_0), "_0")
+colnames(mtbi_ful_df_0)
 
-mtbi_ful_df2 <- mtbi_ful_df2 |>
+mtbi_ful_df_0 <- mtbi_ful_df_0 |>
     dplyr::rename(
         "uid" = "uid_0",
         "cluster" = "cluster_0",
         "sex" = "sex_0",
         "race" = "race_0"
     )
+
 colnames(mtbi_l_df) <- paste0(colnames(mtbi_l_df), "_l")
 mtbi_l_df <- mtbi_l_df |>
     dplyr::rename(
@@ -124,8 +115,8 @@ mtbi_l_df <- mtbi_l_df |>
         "imputation" = "imputation_l"
     )
 
-mtbi_ful_df2 <- dplyr::filter(
-     mtbi_ful_df2,
+mtbi_ful_df_0 <- dplyr::filter(
+     mtbi_ful_df_0,
      uid %in% mtbi_l_wt2_ns
 )
 mtbi_l_df <- dplyr::filter(
@@ -134,21 +125,31 @@ mtbi_l_df <- dplyr::filter(
 )
 
 mtbi_long_changes <- dplyr::full_join(
-    mtbi_ful_df2,
+    mtbi_ful_df_0,
     mtbi_l_df,
     by = "uid"
 )
 
-original_names <- gsub("_0", "", colnames(mtbi_ful_df2)[-c(1:2)])
+original_names <- gsub("_0", "", colnames(mtbi_ful_df_0)[-c(1:2)])
 original_names <- original_names[!grepl("mtbi", original_names)]
 replace_names <- original_names[!grepl("race", original_names)]
 replace_names <- replace_names[!grepl("sex", replace_names)]
+
+print(colnames(mtbi_long_changes))
+
+i <- 0
+
+mtbi_long_changes |> colnames()
+
 for (name in replace_names) {
+    i <- i + 1
+    print(i)
     print(name)
     long_val <- mtbi_long_changes[[paste0(name, "_l")]]
     base_val <- mtbi_long_changes[[paste0(name, "_0")]]
     mtbi_long_changes[[paste0(name, "_d")]] <- long_val - base_val
 }
+
 mtbi_long_changes$"cluster" <- as.factor(mtbi_long_changes$"cluster")
 
 saveRDS(mtbi_long_changes, proc_path("mtbi_long_changes.rds", TRUE))
@@ -2232,7 +2233,7 @@ Consider the data frame `lmtb_0_df`, which contains feature values for the longi
 A subset of the columns in `lmtb_0_df` are identified as temporally sensitive:
 
 - brain_volume
-- cortical_thickness
+- cortical_t
 - cortical_sa
 - pubertal_status_p
 - pubertal_status_y

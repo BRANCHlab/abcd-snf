@@ -1249,6 +1249,8 @@ mtbi_der_top_solution_nmi_v_pval_rank <- read_csv(
     proc_path("2025_09_15_mtbi_der_top_solution_nmi_v_pval_rank.csv")
 )
 
+print(mtbi_der_top_solution_nmi_v_pval_rank, n = Inf)
+
 # Constructing a data frame of feature ranks that accounts for how
 # mechanism and race were dummied
 nmi_ranks <- mtbi_der_top_solution_nmi_v_pval_rank |>
@@ -1672,56 +1674,59 @@ print(names(iplots)[1:30])
 
 all_plots <- c(iplots, oplots)
 
-#light_fts <- c(
-#    "sex",
-#    "brain_volume",
-#    "household_income",
-#    "family_fight_p",
-#    "extracurriculars",
-#    "parent_somatic",
-#    "race",
-#    "weekday_screentime",
-#    "cbcl_attention"
-#)
-#all_light_plots <- all_plots[light_fts]
-#newsize <- 3
-#all_light_plots <- lapply(
-#    seq_along(all_light_plots),
-#    function(x) {
-#        all_light_plots[[x]] <- all_light_plots[[x]] + theme(
-#            legend.title = element_text(size = 14),
-#            legend.text = element_text(size = 14)
-#        )
-#        if (x %in% c(2, 3, 5, 6, 8, 9)) {
-#            all_light_plots[[x]][[3]]$"layers"[[3]]$"aes_params"$"size" <- 3
-#        }
-#        if (x %in% c(1, 4, 7)) {
-#            all_light_plots[[x]][[3]]$"layers"[[2]]$"aes_params"$"size" <- 5
-#        }
-#        all_light_plots[[x]][[3]]
-#    }
-#)
-#names(all_light_plots) <- light_fts
-#all_light_plots$"sex" <- all_light_plots$"sex" + labs(fill = "", y = "Sex") + theme(axis.title.y = ggplot2::element_text(size = 16, angle = 90), legend.position = "left")
-#all_light_plots$"brain_volume" <- all_light_plots$"brain_volume" + labs(y = "Brain\nVolume (cm³)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16)) + 
-#scale_y_continuous(
-#    labels = function(x) x / 1000
-#  )
-#all_light_plots$"household_income" <- all_light_plots$"household_income" + labs(y = "Household\nIncome") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
-#all_light_plots[[4]] <- all_light_plots[[4]] + labs(fill = "", y = "Family Fights\n(Parent Report)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16), legend.position = "left")
-#all_light_plots[[5]] <- all_light_plots[[5]] + labs(y = "Extracurriculars\n(Quartile)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
-#all_light_plots[[6]] <- all_light_plots[[6]] + labs(y = "Parent\nSomatic") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
-#all_light_plots[[7]] <- all_light_plots[[7]] + labs(fill = "", y = "Race") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16), legend.position = "left")
-#all_light_plots[[8]] <- all_light_plots[[8]] + labs(y = "Weekday\nScreentime\n(hours)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
-#all_light_plots[[9]] <- all_light_plots[[9]] + labs(y = "CBCL\nAttention") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = 16))
-#all_light_plots |>
-#    wrap_plots() |>
-#    quick_save(
-#        "f_light",
-#        w = 10,
-#        h = 6,
-#        dpi = 300
-#    )
+all_plots$"household_income"
+
+light_fts <- c(
+    "sex", # 1 (cat)
+    "brain_volume", # 2
+    "household_income",
+    "race", # 6 (cat)
+    "parent_antisocial",
+    "weekday_screentime",
+    "activities_last_year",
+    "cbcl_aggressive",
+    "sds_sleep"
+)
+all_light_plots <- all_plots[light_fts]
+newsize <- 3
+all_light_plots <- lapply(
+    seq_along(all_light_plots),
+    function(x) {
+        all_light_plots[[x]] <- all_light_plots[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14)
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            all_light_plots[[x]][[3]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            all_light_plots[[x]][[3]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        all_light_plots[[x]][[3]]
+    }
+)
+names(all_light_plots) <- light_fts
+axis_fs <- 14
+all_light_plots$"sex" <- all_light_plots$"sex" + labs(fill = "", y = "Sex") + theme(axis.title.y = ggplot2::element_text(size = axis_fs, angle = 90), legend.position = "left")
+all_light_plots$"brain_volume" <- all_light_plots$"brain_volume" + labs(y = "Brain\nVolume (cm³)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs)) + scale_y_continuous(labels = function(x) x / 1000)
+all_light_plots$"household_income" <- all_light_plots$"household_income" + labs(y = "Household\nIncome") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+all_light_plots$"activities_last_year" <- all_light_plots$"activities_last_year" + labs(y = "Activities Last\nYear (Quartile)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+all_light_plots$"parent_antisocial" <- all_light_plots$"parent_antisocial" + labs(y = "Parent\nAntisocial") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+all_light_plots$"race" <- all_light_plots$"race" + labs(fill = "", y = "Race") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "left")
+all_light_plots$"weekday_screentime" <- all_light_plots$"weekday_screentime" + labs(y = "Weekday\nScreentime\n(hours)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+all_light_plots$"cbcl_aggressive" <- all_light_plots$"cbcl_aggressive" + labs(y = "CBCL\nAggressive") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+all_light_plots$"sds_sleep" <- all_light_plots$"sds_sleep" + labs(y = "Total Sleeping\nProblems") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "none")
+all_light_plots |>
+    wrap_plots() |>
+    quick_save(
+        "light",
+        w = 10,
+        h = 6,
+        dpi = 300
+    )
+
 ```
 
 # Summary of the validation (table)
