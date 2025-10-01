@@ -1474,15 +1474,16 @@ family_hit_p_plot           <- tri_plot(dvf_plots, "family_hit_p",           "Fa
 family_hit_y_plot           <- tri_plot(dvf_plots, "family_hit_y",           "Family Hitting\n(Youth Report)", c("No", "Yes")) #; family_hit_y_plot ; Sys.sleep(1)
 family_outdo_p_plot         <- tri_plot(dvf_plots, "family_outdo_p",         "Family Outdo\n(Parent Report)", c("No", "Yes")) #; family_outdo_p_plot ; Sys.sleep(1)
 family_outdo_y_plot         <- tri_plot(dvf_plots, "family_outdo_y",         "Family Outdoing\n(Youth Report)", c("No", "Yes")) #; family_outdo_y_plot ; Sys.sleep(1)
-family_peaceful_p_plot      <- tri_plot(dvf_plots, "family_peaceful_p",      "Family Peaceful\n(Parent Report)", c("No", "Yes")) #; family_peaceful_p_plot ; Sys.sleep(1)
-family_peaceful_y_plot      <- tri_plot(dvf_plots, "family_peaceful_y",      "Family Peaceful\n(Youth Report)", c("No", "Yes")) #; family_peaceful_y_plot ; Sys.sleep(1)
+
+family_peaceful_p_plot      <- tri_plot(dvf_plots, "family_peaceful_p",      "Family Not Peaceful\n(Parent Report)", c("No", "Yes")) #; family_peaceful_p_plot ; Sys.sleep(1)
+family_peaceful_y_plot      <- tri_plot(dvf_plots, "family_peaceful_y",      "Family Not Peaceful\n(Youth Report)", c("No", "Yes")) #; family_peaceful_y_plot ; Sys.sleep(1)
+
 family_temper_p_plot        <- tri_plot(dvf_plots, "family_temper_p",        "Family Temper\n(Parent Report)", scale_fill_labels = c("No", "Yes")) #; family_temper_p_plot ; Sys.sleep(1)
 family_temper_y_plot        <- tri_plot(dvf_plots, "family_temper_y",        "Family Temper\n(Youth Report)", c("No", "Yes")) #; family_temper_y_plot ; Sys.sleep(1)
 family_throw_p_plot         <- tri_plot(dvf_plots, "family_throw_p",         "Family Throwing\n(Parent Report)", c("No", "Yes")) #; family_throw_p_plot ; Sys.sleep(1)
 family_throw_y_plot         <- tri_plot(dvf_plots, "family_throw_y",         "Family Throwing\n(Youth Report)", c("No", "Yes")) #; family_throw_y_plot ; Sys.sleep(1)
 family_yell_p_plot          <- tri_plot(dvf_plots, "family_yell_p",          "Family Yells\n(Parent Report)", c("No", "Yes")) #; family_yell_p_plot ; Sys.sleep(1)
 family_yell_y_plot          <- tri_plot(dvf_plots, "family_yell_y",          "Family Yells\n(Youth Report)", c("No", "Yes")) #; family_yell_y_plot ; Sys.sleep(1)
-
 fmri_dan_within_cor_plot    <- tri_plot(dvf_plots, "fmri_dan_within_cor",    "fMRI DAN Corrs", ylims = c(0, 0.6)) #; fmri_dan_within_cor_plot; Sys.sleep(1)
 fmri_dmn_fpn_cor_plot       <- tri_plot(dvf_plots, "fmri_dmn_fpn_cor",       "fMRI DAN-FPN\nCorrs", ylims = c(-0.2, 0.3)) #; fmri_dmn_fpn_cor_plot; Sys.sleep(1)
 fmri_dmn_within_cor_plot    <- tri_plot(dvf_plots, "fmri_dmn_within_cor",    "fMRI DMN Corrs", ylims = c(0, 0.5)) #; fmri_dmn_within_cor_plot; Sys.sleep(1)
@@ -1490,7 +1491,6 @@ fmri_fpn_lamyg_cor_plot     <- tri_plot(dvf_plots, "fmri_fpn_lamyg_cor",     "fM
 fmri_fpn_ramyg_cor_plot     <- tri_plot(dvf_plots, "fmri_fpn_ramyg_cor",     "fMRI FPN-rAmyg\nCorrs", ylims = c(-0.35, 0.4)) #; fmri_fpn_ramyg_cor_plot; Sys.sleep(1)
 fmri_fpn_within_cor_plot    <- tri_plot(dvf_plots, "fmri_fpn_within_cor",    "fMRI FPN Corrs", ylims = c(0, 0.5)) #; fmri_fpn_within_cor_plot; Sys.sleep(1)
 fmri_san_within_cor_plot    <- tri_plot(dvf_plots, "fmri_san_within_cor",    "fMRI SAN Corrs", ylims = c(0, 0.8)) #; fmri_san_within_cor_plot; Sys.sleep(1)
-
 headache_history_plot       <- tri_plot(dvf_plots, "headache_history",       "Headache\nHistory", c("No", "Yes")) #; headache_history_plot ; Sys.sleep(1)
 helpful_p_plot              <- tri_plot(dvf_plots, "helpful_p",              "Helpful\n(Parent Report)", c("No", "Yes")) #; helpful_p_plot ; Sys.sleep(1)
 helpful_y_plot              <- tri_plot(dvf_plots, "helpful_y",              "Helpful\n(Youth Report)", c("No", "Yes")) #; helpful_y_plot ; Sys.sleep(1)
@@ -1781,7 +1781,19 @@ mtbi_gen_fts_table_hits_t |>
     knitr::kable(format = "markdown", align = "lccc") |>
     writeLines(proc_path("mtbi_gen_fts_table_hits_t.txt", TRUE))
 
+# 2025-09-30
 mtbi_gen_fts_table_hits |>
+    dplyr::mutate(
+        c1v2 = dplyr::case_when(is.na(c1v2) ~ "-", c1v2 == "=" ~ "-", c1v2 == "<" ~ "$lt$", c1v2 == ">" ~ "$gt$", TRUE ~ c1v2),
+        c1v3 = dplyr::case_when(is.na(c1v3) ~ "-", c1v3 == "=" ~ "-", c1v3 == "<" ~ "$lt$", c1v3 == ">" ~ "$gt$", TRUE ~ c1v3),
+        c2v3 = dplyr::case_when(is.na(c2v3) ~ "-", c2v3 == "=" ~ "-", c2v3 == "<" ~ "$lt$", c2v3 == ">" ~ "$gt$", TRUE ~ c2v3)
+    ) |>
+    dplyr::rename(
+        "Feature" = "feature",
+        "C1v2" = "c1v2",
+        "C1v3" = "c1v3",
+        "C2v3" = "c2v3"
+    ) |>
     knitr::kable(format = "markdown", align = "lccc") |>
     writeLines(proc_path("mtbi_gen_fts_table_hits.txt", TRUE))
 ```
