@@ -13,26 +13,46 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +17 12_correlation_explanation.qmd
-badd +5 ~/Documents/prash/time/time.csv
-badd +687 ~/Documents/abcd-snf-article/manuscript.typ
-badd +154 ~/Documents/abcd-snf/abcd/01_baseline_extraction.qmd
-badd +1416 ~/Documents/abcd-snf/abcd/04_baseline_mtbi_snf.qmd
-badd +1116 ~/Documents/abcd-snf/abcd/02_baseline_preprocessing.qmd
-badd +468 helper_functions.R
+badd +171 ~/Documents/abcd-snf-article/manuscript.typ
+badd +1317 04_baseline_mtbi_snf.qmd
+badd +1912 ~/Documents/abcd-snf/abcd/03_baseline_descriptive.qmd
+badd +73 ~/Documents/abcd-snf/abcd/062_characterization.qmd
+badd +141 ~/Documents/abcd-snf/abcd/085_characterization.qmd
+badd +12 ~/Documents/abcd-snf/abcd/11_sample_size_check.qmd
+badd +209 ~/Documents/prash/journal/prash.md
 argglobal
 %argdel
-$argadd 12_correlation_explanation.qmd
-edit helper_functions.R
+tabnew +setlocal\ bufhidden=wipe
+tabrewind
+edit 04_baseline_mtbi_snf.qmd
+argglobal
+balt ~/Documents/abcd-snf-article/manuscript.typ
+setlocal foldmethod=marker
+setlocal foldexpr=0
+setlocal foldmarker={{{,}}}
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldenable
+let s:l = 1315 - ((20 * winheight(0) + 22) / 45)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 1315
+normal! 050|
+tabnext
+edit ~/Documents/abcd-snf-article/manuscript.typ
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
 wincmd _ | wincmd |
-split
+vsplit
+1wincmd h
+wincmd w
 wincmd _ | wincmd |
 split
-2wincmd k
-wincmd w
+1wincmd k
 wincmd w
 let &splitbelow = s:save_splitbelow
 let &splitright = s:save_splitright
@@ -43,53 +63,12 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe '1resize ' . ((&lines * 14 + 22) / 44)
-exe '2resize ' . ((&lines * 14 + 22) / 44)
-exe '3resize ' . ((&lines * 13 + 22) / 44)
+exe 'vert 1resize ' . ((&columns * 158 + 159) / 318)
+exe '2resize ' . ((&lines * 22 + 23) / 47)
+exe 'vert 2resize ' . ((&columns * 159 + 159) / 318)
+exe '3resize ' . ((&lines * 22 + 23) / 47)
+exe 'vert 3resize ' . ((&columns * 159 + 159) / 318)
 argglobal
-balt 12_correlation_explanation.qmd
-setlocal foldmethod=marker
-setlocal foldexpr=0
-setlocal foldmarker={{{,}}}
-setlocal foldignore=#
-setlocal foldlevel=0
-setlocal foldminlines=1
-setlocal foldnestmax=20
-setlocal foldenable
-let s:l = 468 - ((6 * winheight(0) + 7) / 14)
-if s:l < 1 | let s:l = 1 | endif
-keepjumps exe s:l
-normal! zt
-keepjumps 468
-normal! 022|
-wincmd w
-argglobal
-if bufexists(fnamemodify("~/Documents/abcd-snf/abcd/04_baseline_mtbi_snf.qmd", ":p")) | buffer ~/Documents/abcd-snf/abcd/04_baseline_mtbi_snf.qmd | else | edit ~/Documents/abcd-snf/abcd/04_baseline_mtbi_snf.qmd | endif
-if &buftype ==# 'terminal'
-  silent file ~/Documents/abcd-snf/abcd/04_baseline_mtbi_snf.qmd
-endif
-balt ~/Documents/abcd-snf/abcd/02_baseline_preprocessing.qmd
-setlocal foldmethod=marker
-setlocal foldexpr=0
-setlocal foldmarker={{{,}}}
-setlocal foldignore=#
-setlocal foldlevel=0
-setlocal foldminlines=1
-setlocal foldnestmax=20
-setlocal foldenable
-let s:l = 1416 - ((6 * winheight(0) + 7) / 14)
-if s:l < 1 | let s:l = 1 | endif
-keepjumps exe s:l
-normal! zt
-keepjumps 1416
-normal! 0
-wincmd w
-argglobal
-if bufexists(fnamemodify("~/Documents/abcd-snf-article/manuscript.typ", ":p")) | buffer ~/Documents/abcd-snf-article/manuscript.typ | else | edit ~/Documents/abcd-snf-article/manuscript.typ | endif
-if &buftype ==# 'terminal'
-  silent file ~/Documents/abcd-snf-article/manuscript.typ
-endif
-balt ~/Documents/prash/time/time.csv
 setlocal foldmethod=marker
 setlocal foldexpr=0
 setlocal foldmarker=\ //\ {{{,\ //\ }}}
@@ -98,18 +77,82 @@ setlocal foldlevel=0
 setlocal foldminlines=1
 setlocal foldnestmax=20
 setlocal foldenable
-let s:l = 693 - ((7 * winheight(0) + 6) / 13)
+585
+sil! normal! zo
+816
+sil! normal! zo
+926
+sil! normal! zo
+let s:l = 934 - ((112 * winheight(0) + 22) / 45)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 693
-normal! 0
+keepjumps 934
+normal! 065|
+wincmd w
+argglobal
+if bufexists(fnamemodify("~/Documents/abcd-snf-article/manuscript.typ", ":p")) | buffer ~/Documents/abcd-snf-article/manuscript.typ | else | edit ~/Documents/abcd-snf-article/manuscript.typ | endif
+if &buftype ==# 'terminal'
+  silent file ~/Documents/abcd-snf-article/manuscript.typ
+endif
+balt 04_baseline_mtbi_snf.qmd
+setlocal foldmethod=marker
+setlocal foldexpr=0
+setlocal foldmarker=\ //\ {{{,\ //\ }}}
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldenable
+585
+sil! normal! zo
+816
+sil! normal! zo
+926
+sil! normal! zo
+let s:l = 174 - ((6 * winheight(0) + 11) / 22)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 174
+normal! 056|
+wincmd w
+argglobal
+if bufexists(fnamemodify("~/Documents/abcd-snf-article/manuscript.typ", ":p")) | buffer ~/Documents/abcd-snf-article/manuscript.typ | else | edit ~/Documents/abcd-snf-article/manuscript.typ | endif
+if &buftype ==# 'terminal'
+  silent file ~/Documents/abcd-snf-article/manuscript.typ
+endif
+balt ~/Documents/abcd-snf/abcd/062_characterization.qmd
+setlocal foldmethod=marker
+setlocal foldexpr=0
+setlocal foldmarker=\ //\ {{{,\ //\ }}}
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldenable
+585
+sil! normal! zo
+612
+sil! normal! zo
+816
+sil! normal! zo
+926
+sil! normal! zo
+let s:l = 622 - ((8 * winheight(0) + 11) / 22)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 622
+normal! 08|
 wincmd w
 2wincmd w
-exe '1resize ' . ((&lines * 14 + 22) / 44)
-exe '2resize ' . ((&lines * 14 + 22) / 44)
-exe '3resize ' . ((&lines * 13 + 22) / 44)
-tabnext 1
+exe 'vert 1resize ' . ((&columns * 158 + 159) / 318)
+exe '2resize ' . ((&lines * 22 + 23) / 47)
+exe 'vert 2resize ' . ((&columns * 159 + 159) / 318)
+exe '3resize ' . ((&lines * 22 + 23) / 47)
+exe 'vert 3resize ' . ((&columns * 159 + 159) / 318)
+tabnext 2
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
 endif
