@@ -401,6 +401,26 @@ saveRDS(mtbi_der_mc_sol_df, proc_path("mtbi_der_mc_sol_df.rds", TRUE))
 ```{r}
 # CHECKPOINT
 mtbi_der_mc_sol_df <- readRDS(proc_path("2025_09_15_mtbi_der_mc_sol_df.rds"))
+
+
+as.data.frame(mtbi_der_mc_sol_df) |>
+    dplyr::filter(mc == "D") |>
+    nrow()
+
+as.data.frame(mtbi_der_mc_sol_df) |>
+    dplyr::filter(mc == "D") |>
+    dplyr::filter(mean_pval < 0.001 & nclust == 3) |>
+    nrow()
+
+as.data.frame(mtbi_der_mc_sol_df) |>
+    dplyr::filter(mc == "D") |>
+    dplyr::filter(nclust == 3) |>
+    dplyr::select(mean_pval) |>
+    unlist() |> 
+    log10() |>
+    as.numeric() |>
+    saveRDS(proc_path("mtbi_der_mc_d_pvals.rds", TRUE))
+
 ```
 
 When picking out representative solutions, I'd like to preferentially go for solutions that derived from solo rather than pooled imputations, as those solutions have values for all features.
@@ -1668,11 +1688,7 @@ quick_save(wp_o, "wp_o", w = 5.5, h = 20, dpi = 100)
 ```
 
 ```{r}
-print(names(iplots)[1:30])
-
 all_plots <- c(iplots, oplots)
-
-all_plots$"household_income"
 
 light_fts <- c(
     "sex", # 1 (cat)
@@ -1687,6 +1703,7 @@ light_fts <- c(
 )
 all_light_plots <- all_plots[light_fts]
 newsize <- 3
+
 all_light_plots <- lapply(
     seq_along(all_light_plots),
     function(x) {
@@ -1707,12 +1724,12 @@ all_light_plots <- lapply(
 )
 names(all_light_plots) <- light_fts
 axis_fs <- 14
-all_light_plots$"sex" <- all_light_plots$"sex" + labs(fill = "", y = "Sex") + theme(axis.title.y = ggplot2::element_text(size = axis_fs, angle = 90), legend.position = "left")
+all_light_plots$"sex" <- all_light_plots$"sex" + labs(fill = "Sex", y = "%") + theme(axis.title.y = ggplot2::element_text(size = axis_fs, angle = 90), legend.position = "left")
 all_light_plots$"brain_volume" <- all_light_plots$"brain_volume" + labs(y = "Brain\nVolume (cm³)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs)) + scale_y_continuous(labels = function(x) x / 1000)
 all_light_plots$"household_income" <- all_light_plots$"household_income" + labs(y = "Household\nIncome") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
 all_light_plots$"activities_last_year" <- all_light_plots$"activities_last_year" + labs(y = "Activities Last\nYear (Quartile)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
 all_light_plots$"parent_antisocial" <- all_light_plots$"parent_antisocial" + labs(y = "Parent\nAntisocial") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
-all_light_plots$"race" <- all_light_plots$"race" + labs(fill = "", y = "Race") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "left")
+all_light_plots$"race" <- all_light_plots$"race" + labs(fill = "Race", y = "%") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "left")
 all_light_plots$"weekday_screentime" <- all_light_plots$"weekday_screentime" + labs(y = "Weekday\nScreentime\n(hours)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
 all_light_plots$"cbcl_aggressive" <- all_light_plots$"cbcl_aggressive" + labs(y = "CBCL\nAggressive") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
 all_light_plots$"sds_sleep" <- all_light_plots$"sds_sleep" + labs(y = "Total Sleeping\nProblems") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "none")

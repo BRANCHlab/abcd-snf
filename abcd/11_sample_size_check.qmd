@@ -22,9 +22,8 @@ proc_path <- path_maker(here("data/abcd/results/processed"))
 
 
 ```{r}
-
-mtbi_config <- readRDS(proc_path("2025_06_11_mtbi_config.rds"))
-all_dls_h_ns <- readRDS(proc_path("2025_06_11_all_dls_h_no_sibs.rds"))
+mtbi_config <- readRDS(proc_path("2025_09_15_mtbi_config.rds"))
+all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
 
 batch_uid_replace <- function(list_of_dls, uids) {
     list_of_dls_new <- lapply(
@@ -46,10 +45,8 @@ batch_uid_replace <- function(list_of_dls, uids) {
 
 set.seed(1234)
 reduced_sample <- sample(uids(all_dls_h_ns$"mtbi_der_u_dls"[[1]]))[1:218]
-
 saveRDS(reduced_sample, proc_path("reduced_sample.rds", TRUE))
-
-reduced_sample <- readRDS(proc_path("2025_06_17_reduced_sample.rds"))
+reduced_sample <- readRDS(proc_path("2025_10_02_reduced_sample.rds"))
 
 reduced_dls <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_dls"]], reduced_sample)
 reduced_ols <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_ols"]], reduced_sample)
@@ -60,7 +57,7 @@ reduced_sol_df_1 <- progressr::with_progress({
     batch_snf(
         dl = reduced_dls[[1]],
         sc = mtbi_config,
-        processes = "max"
+        processes = 8
     )
 })
 saveRDS(reduced_sol_df_1, proc_path("reduced_sol_df_1.rds", TRUE))
@@ -68,16 +65,15 @@ reduced_sol_df_2 <- progressr::with_progress({
     batch_snf(
         dl = reduced_dls[[2]],
         sc = mtbi_config,
-        processes = "max"
+        processes = 8
     )
 })
 saveRDS(reduced_sol_df_2, proc_path("reduced_sol_df_2.rds", TRUE))
-
 reduced_sol_df_3 <- progressr::with_progress({
     batch_snf(
         dl = reduced_dls[[3]],
         sc = mtbi_config,
-        processes = "max"
+        processes = 8
     )
 })
 saveRDS(reduced_sol_df_3, proc_path("reduced_sol_df_3.rds", TRUE))
@@ -85,7 +81,7 @@ reduced_sol_df_4 <- progressr::with_progress({
     batch_snf(
         dl = reduced_dls[[4]],
         sc = mtbi_config,
-        processes = "max"
+        processes = 8
     )
 })
 saveRDS(reduced_sol_df_4, proc_path("reduced_sol_df_4.rds", TRUE))
@@ -93,18 +89,18 @@ reduced_sol_df_5 <- progressr::with_progress({
     batch_snf(
         dl = reduced_dls[[5]],
         sc = mtbi_config,
-        processes = "max"
+        processes = 8
     )
 })
 saveRDS(reduced_sol_df_5, proc_path("reduced_sol_df_5.rds", TRUE))
 ```
 
 ```{r}
-reduced_sol_df_1 <- readRDS(proc_path("2025_06_17_reduced_sol_df_1.rds"))
-reduced_sol_df_2 <- readRDS(proc_path("2025_06_17_reduced_sol_df_2.rds"))
-reduced_sol_df_3 <- readRDS(proc_path("2025_06_17_reduced_sol_df_3.rds"))
-reduced_sol_df_4 <- readRDS(proc_path("2025_06_17_reduced_sol_df_4.rds"))
-reduced_sol_df_5 <- readRDS(proc_path("2025_06_17_reduced_sol_df_5.rds"))
+reduced_sol_df_1 <- readRDS(proc_path("2025_10_02_reduced_sol_df_1.rds"))
+reduced_sol_df_2 <- readRDS(proc_path("2025_10_02_reduced_sol_df_2.rds"))
+reduced_sol_df_3 <- readRDS(proc_path("2025_10_02_reduced_sol_df_3.rds"))
+reduced_sol_df_4 <- readRDS(proc_path("2025_10_02_reduced_sol_df_4.rds"))
+reduced_sol_df_5 <- readRDS(proc_path("2025_10_02_reduced_sol_df_5.rds"))
 
 reduced_sol_df <- do.call(
     "rbind",
@@ -120,24 +116,20 @@ reduced_sol_df <- do.call(
     )
 )
 
-saveRDS(reduced_sol_df, proc_path("2025_06_17_reduced_sol_df.rds"))
+saveRDS(reduced_sol_df, proc_path("2025_10_02_reduced_sol_df.rds"))
+reduced_sol_df <- readRDS(proc_path("2025_10_02_reduced_sol_df.rds"))
+reduced_ari <- calc_aris(reduced_sol_df, processes = 8)
+saveRDS(reduced_ari, proc_path("2025_10_02_reduced_ari.rds"))
+reduced_ari <- readRDS(proc_path("2025_10_02_reduced_ari.rds"))
+```
 
-reduced_sol_df <- readRDS(proc_path("2025_06_17_reduced_sol_df.rds"))
-
-reduced_ari <- calc_aris(reduced_sol_df, processes = "max")
-
-saveRDS(reduced_ari, proc_path("2025_06_17_reduced_ari.rds"))
-
-reduced_ari <- readRDS(proc_path("2025_06_17_reduced_ari.rds"))
-
+```{r}
 reduced_ari_order <- get_matrix_order(reduced_ari)
-
 reduced_esdf_1 <- extend_solutions(
     reduced_sol_df_1,
     dl = reduced_dls[[1]], 
     target_dl = reduced_ols[[1]]
 )
-
 saveRDS(reduced_esdf_1, proc_path("reduced_esdf_1.rds", TRUE))
 reduced_esdf_2 <- extend_solutions(
     reduced_sol_df_2,
@@ -163,17 +155,18 @@ reduced_esdf_5 <- extend_solutions(
     target_dl = reduced_ols[[5]]
 )
 saveRDS(reduced_esdf_5, proc_path("reduced_esdf_5.rds", TRUE))
-
 ```
 
 ```{r}
+# HERE 2025-10-02
+reduced_esdf_1 <- readRDS(proc_path("2025_10_02_reduced_esdf_1.rds"))
+reduced_esdf_2 <- readRDS(proc_path("2025_10_02_reduced_esdf_2.rds"))
+reduced_esdf_3 <- readRDS(proc_path("2025_10_02_reduced_esdf_3.rds"))
+reduced_esdf_4 <- readRDS(proc_path("2025_10_02_reduced_esdf_4.rds"))
+reduced_esdf_5 <- readRDS(proc_path("2025_10_02_reduced_esdf_5.rds"))
+```
 
-reduced_esdf_1 <- readRDS(proc_path("2025_06_17_reduced_esdf_1.rds"))
-reduced_esdf_2 <- readRDS(proc_path("2025_06_17_reduced_esdf_2.rds"))
-reduced_esdf_3 <- readRDS(proc_path("2025_06_17_reduced_esdf_3.rds"))
-reduced_esdf_4 <- readRDS(proc_path("2025_06_17_reduced_esdf_4.rds"))
-reduced_esdf_5 <- readRDS(proc_path("2025_06_17_reduced_esdf_5.rds"))
-
+```{r}
 reduced_ext_sol_df <- do.call(
     "rbind",
     c(
@@ -202,20 +195,19 @@ reduced_esdf <- do.call(
     )
 ) |> as.data.frame()
 
-saveRDS(reduced_esdf, proc_path("2025_06_17_reduced_esdf.rds"))
-
-reduced_esdf <- readRDS(proc_path("2025_06_17_reduced_esdf.rds"))
+saveRDS(reduced_esdf, proc_path("2025_10_02_reduced_esdf.rds"))
+reduced_esdf <- readRDS(proc_path("2025_10_02_reduced_esdf.rds"))
 
 reduced_esdf
 
 reduced_esdf$"impairment_separation" <- -log10(reduced_esdf$"mean_pval")
 
 split_vector <- c(
-    407,
-    568,
-    584,
-    620,
-    714
+    190,
+    229,
+    363,
+    693,
+    756
 )
 reduced_ari_hm <- meta_cluster_heatmap(
     x = reduced_ari,
@@ -236,7 +228,6 @@ reduced_ari_hm <- meta_cluster_heatmap(
         )
     )
 )
-
 reduced_ari_hm
 
 save_heatmap(
@@ -262,7 +253,7 @@ reduced_rep_solutions <- get_representative_solutions(
 
 reduced_rep_solutions
 
-top_reduced_solution <- reduced_rep_solutions[reduced_rep_solutions$"mc" == "B", ]
+top_reduced_solution <- reduced_rep_solutions[reduced_rep_solutions$"mc" == "E", ]
 
 # In anticipation of the upcoming cluster swaps
 cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
@@ -284,11 +275,11 @@ cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
     return(swapped_sm)
 }
 
-top_reduced_solution <- cluster_label_swap(top_reduced_solution, 1, 2)
+top_reduced_solution <- cluster_label_swap(top_reduced_solution, 2, 3)
 
-saveRDS(top_reduced_solution, proc_path("2025_06_17_top_reduced_solution.rds"))
+saveRDS(top_reduced_solution, proc_path("top_reduced_solution.rds", TRUE))
 
-top_reduced_solution <- readRDS(proc_path("2025_06_17_top_reduced_solution.rds"))
+top_reduced_solution <- readRDS(proc_path("2025_10_02_top_reduced_solution.rds"))
 
 reduced_pl <- auto_plot(
     sol_df_row = top_reduced_solution,
@@ -299,7 +290,13 @@ reduced_pl <- auto_plot(
     verbose = TRUE,
 )
 
+saveRDS(reduced_pl, proc_path("reduced_pl.rds", TRUE))
+
+reduced_pl <- readRDS(proc_path("2025_10_02_reduced_pl.rds"))
+
 reduced_pl$"household_income"
+
+reduced_pl$"sex"
 
 reduced_cluster_df <- auto_plot(
     sol_df_row = top_reduced_solution,
