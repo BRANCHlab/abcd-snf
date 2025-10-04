@@ -11,7 +11,7 @@ library(patchwork)
 library(tidyr)
 library(ggplot2)
 
-#source("abcd/helper_functions.R")
+source("abcd/helper_functions.R")
 
 input_path <- path_maker(here("data/abcd/inputs"))
 core_path <- path_maker(here("data/abcd/core"))
@@ -46,6 +46,7 @@ batch_uid_replace <- function(list_of_dls, uids) {
 set.seed(1234)
 reduced_sample <- sample(uids(all_dls_h_ns$"mtbi_der_u_dls"[[1]]))[1:218]
 saveRDS(reduced_sample, proc_path("reduced_sample.rds", TRUE))
+
 reduced_sample <- readRDS(proc_path("2025_10_02_reduced_sample.rds"))
 
 reduced_dls <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_dls"]], reduced_sample)
@@ -278,7 +279,9 @@ cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
 top_reduced_solution <- cluster_label_swap(top_reduced_solution, 2, 3)
 
 saveRDS(top_reduced_solution, proc_path("top_reduced_solution.rds", TRUE))
+```
 
+```{r}
 top_reduced_solution <- readRDS(proc_path("2025_10_02_top_reduced_solution.rds"))
 
 reduced_pl <- auto_plot(
@@ -291,12 +294,10 @@ reduced_pl <- auto_plot(
 )
 
 saveRDS(reduced_pl, proc_path("reduced_pl.rds", TRUE))
+```
 
+```{r}
 reduced_pl <- readRDS(proc_path("2025_10_02_reduced_pl.rds"))
-
-reduced_pl$"household_income"
-
-reduced_pl$"sex"
 
 reduced_cluster_df <- auto_plot(
     sol_df_row = top_reduced_solution,
@@ -308,22 +309,22 @@ reduced_cluster_df <- auto_plot(
     return_plots = FALSE
 ) |> tibble()
 
-mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits_t.csv"))
 mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
-
 reduced_conc <- concordance_w_mtbi(reduced_cluster_df, iters = 1000, procs = 5)
-saveRDS(reduced_conc, proc_path("2025_06_17_reduced_conc.rds"))
 
-reduced_conc <- readRDS(proc_path("2025_06_17_reduced_conc.rds"))
+saveRDS(reduced_conc, proc_path("reduced_conc.rds", TRUE))
+reduced_conc <- readRDS(proc_path("2025_10_03_reduced_conc.rds"))
 
 
 reduced_conc
 
-# 85.6
+# 87.0
 mean(na.omit(reduced_conc))
 
-# 80.3, 90.5
+# 80.2, 92.1
 quantile(reduced_conc, probs = c(0.025, 0.975), na.rm = TRUE)
+
 ```
 
 The inability to find these clusters in the longitudinal sample is NOT a sample size artifact.

@@ -47,10 +47,15 @@ read <- function(path) {
 
 ```{r}
 mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
-all_long_dls_h_ns <- readRDS(proc_path("2025_09_30_all_long_dls_h_ns.rds"))
+all_long_dls_h_ns <- readRDS(proc_path("2025_10_03_all_long_dls_h_ns.rds"))
 all_long_dls_h <- readRDS(proc_path("2025_09_29_all_long_dls_h.rds"))
 all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
 all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
+
+colnames(all_dls_h[[1]][[1]]$"n_cort_t"$"data")
+colnames(all_dls_h_ns[[1]][[1]]$"n_cort_t"$"data")
+colnames(all_long_dls_h[[1]][[1]]$"n_cort_t"$"data")
+colnames(all_long_dls_h_ns[[1]][[1]]$"n_cort_t"$"data")
 ```
 
 ## Q1: Was the baseline clustering informative for LT outcomes?<!-- {{{ -->
@@ -2107,11 +2112,16 @@ Suggests that there may be something unique to the kids who had their injury at 
 
 Assigning predicted clusters to the following 5 groups:
 
-1. Longitudinal mTBI, pre-injury data (N = 220)
-2. Longitudinal mTBI, post-injury data (the same N = 220)
-3. Baseline uninjured group at T0  (N = 9349)
-4. Longitudinal uninjured group at T0 (A subset of 3., N = 7678)
-5. Longitudinal uninjured group at T2 (the same N = 7678)
+1. Longitudinal mTBI, pre-injury data (N = 220): lmtb_0
+2. Longitudinal mTBI, post-injury data (the same N = 220): lmtb_l
+3. Baseline uninjured group at T0: unij_0
+4. Longitudinal uninjured group at T0: lunj_0
+5. Longitudinal uninjured group at T2: lunj_l
+
+The baseline uninjured sample here is a little bit complicated.
+For the longitudinal time point of the baseline uninjured sample, we must use the N = 7278 subjects that were calculated in CH6.
+These were uninjured subjects that had T2 data and were sibling dropped.
+To pull them out in the baseline sample, we need to use the PRE-sibling drop data lists.
 
 ```{r}
 library(caret)
@@ -2119,10 +2129,9 @@ library(randomForest)
 ```
 
 ```{r}
-lunj_subs_wt2_ns <- readRDS(sub_path("2025_06_12_lunj_subs_wt2_ns.rds"))
+lunj_subs_wt2_ns <- readRDS(sub_path("2025_09_15_lunj_subs_wt2_ns.rds"))
 lunj_subs_wt2_ns <- paste0("uid_", lunj_subs_wt2_ns)
-
-unij_subs_wt2_ns <- readRDS(sub_path("2025_06_12_unij_subs_wt2_ns.rds"))
+unij_subs_wt2_ns <- readRDS(sub_path("2025_09_15_unij_subs_wt2_ns.rds"))
 unij_subs_wt2_ns <- paste0("uid_", unij_subs_wt2_ns)
 
 # Classifying data using baseline as well as longitudinal features
@@ -2135,7 +2144,6 @@ lmtb_l_ol <- all_long_dls_h_ns$"lmtb_l_ols"[[1]]
 unij_0_dl <- all_dls_h$"unij_all_p_dls"[[1]]
 unij_0_ol <- all_dls_h$"unij_all_p_ols"[[1]]
 
-# These are not all necessary unij still!
 unij_l_dl <- all_long_dls_h$"unij_l_dls"[[1]]
 unij_l_ol <- all_long_dls_h$"unij_l_ols"[[1]]
 ```
@@ -2152,33 +2160,37 @@ nrow(lmtb_l_dl_df_wt2_ns) # N = 218
 
 unij_0_dl_df <- as.data.frame(unij_0_dl)
 unij_0_ol_df <- as.data.frame(unij_0_ol)
-nrow(unij_0_dl_df) # N = 7944
+nrow(unij_0_dl_df) # N = 9302
 
 unij_l_dl_df <- as.data.frame(unij_l_dl)
 unij_l_ol_df <- as.data.frame(unij_l_ol)
-nrow(unij_l_dl_df) # N = 8615
+nrow(unij_l_dl_df) # N = 8572
 
 # wt2 drop, NS drop
+# Baseline uninjured sample that has T2 data, baseline data
 unij_0_dl_df_wt2_ns <- unij_0_dl_df |> dplyr::filter(uid %in% unij_subs_wt2_ns)
-nrow(unij_0_dl_df_wt2_ns) # 7313
+nrow(unij_0_dl_df_wt2_ns) # 7278
 unij_0_ol_df_wt2_ns <- unij_0_ol_df |> dplyr::filter(uid %in% unij_subs_wt2_ns)
-nrow(unij_0_ol_df_wt2_ns) # 7313
+nrow(unij_0_ol_df_wt2_ns) # 7278
 
+# Baseline uninjured sample that has T2 data, long data
 unij_l_dl_df_wt2_ns <- unij_l_dl_df |> dplyr::filter(uid %in% unij_subs_wt2_ns)
-nrow(unij_l_dl_df_wt2_ns) # 7313
+nrow(unij_l_dl_df_wt2_ns) # 7278
 unij_l_ol_df_wt2_ns <- unij_l_ol_df |> dplyr::filter(uid %in% unij_subs_wt2_ns)
-nrow(unij_l_ol_df_wt2_ns) # 7313
+nrow(unij_l_ol_df_wt2_ns) # 7278
 
 # wt2 drop, NS drop
+# Long uninjured sample that has T2 data, baseline data
 lunj_0_dl_df_wt2_ns <- unij_0_dl_df |> dplyr::filter(uid %in% lunj_subs_wt2_ns)
-nrow(lunj_0_dl_df_wt2_ns)
+nrow(lunj_0_dl_df_wt2_ns) # 6512
 lunj_0_ol_df_wt2_ns <- unij_0_ol_df |> dplyr::filter(uid %in% lunj_subs_wt2_ns)
-nrow(lunj_0_ol_df_wt2_ns)
+nrow(lunj_0_ol_df_wt2_ns) # 6512
 
+# Long uninjured sample that has T2 data, long data
 lunj_l_dl_df_wt2_ns <- unij_l_dl_df |> dplyr::filter(uid %in% lunj_subs_wt2_ns)
-nrow(lunj_l_dl_df_wt2_ns)
+nrow(lunj_l_dl_df_wt2_ns) # 6512
 lunj_l_ol_df_wt2_ns <- unij_l_ol_df |> dplyr::filter(uid %in% lunj_subs_wt2_ns)
-nrow(lunj_l_ol_df_wt2_ns)
+nrow(lunj_l_ol_df_wt2_ns) # 6512
 
 comparison_dl_dfs <- list(
     "lmtb_0_dl_df" = lmtb_0_dl_df_wt2_ns,
@@ -2203,12 +2215,12 @@ saveRDS(comparison_ol_dfs, proc_path("comparison_ol_dfs.rds", TRUE))
 ```
 
 ```{r}
-comparison_dl_dfs <- readRDS(proc_path("2025_06_16_comparison_dl_dfs.rds"))
-comparison_ol_dfs <- readRDS(proc_path("2025_06_16_comparison_ol_dfs.rds"))
+comparison_dl_dfs <- readRDS(proc_path("2025_10_03_comparison_dl_dfs.rds"))
+comparison_ol_dfs <- readRDS(proc_path("2025_10_03_comparison_ol_dfs.rds"))
 ```
 
 ```{r}
-classifier_ifts <- readRDS(proc_path("2025_06_13_classifier_ifts.rds"))
+classifier_ifts <- readRDS(proc_path("2025_09_23_classifier_ifts.rds"))
 
 classifier_ft_dl_dfs <- lapply(
     comparison_dl_dfs,
@@ -2216,28 +2228,20 @@ classifier_ft_dl_dfs <- lapply(
         x[, classifier_ifts]
     }
 )
+
 ```
 
 ```{r}
 # Extracted temporally sensitive features for all ABCD subjects at T0 and T2
-temporal_df0 <- readRDS(proc_path("2025_06_13_temporal_df.rds"))
-temporal_df2 <- readRDS(proc_path("2025_06_13_temporal_df2.rds"))
+temporal_df0 <- readRDS(proc_path("2025_09_25_temporal_df.rds"))
+temporal_df2 <- readRDS(proc_path("2025_09_25_temporal_df2.rds"))
 
-subtype_classifier <- readRDS(model_path("2025_06_13_subtype_classifier.rds"))
+subtype_classifier <- readRDS(model_path("2025_09_25_subtype_classifier.rds"))
 ```
 
 The scaling process that occurs below is described as follows.
 Consider the data frame `lmtb_0_df`, which contains feature values for the longitudinal mTBI sample at baseline data collection timepoint.
-A subset of the columns in `lmtb_0_df` are identified as temporally sensitive:
-
-- brain_volume
-- cortical_t
-- cortical_sa
-- pubertal_status_p
-- pubertal_status_y
-- age
-- weekend_screentime
-- weekday_screentime
+A subset of the columns in `lmtb_0_df` are identified as temporally sensitive.
 
 Our goal is to re-scale these columns within `lmtb_0_df` based on the entire set of ABCD values of that feature for that time point.
 The raw extracted set of ABCD values for those temporally sensitive features are found in `temporal_df0` (for T0 values), and `temporal_df2` (for T2 values).
@@ -2255,19 +2259,6 @@ temporal_df2$"uid" <- gsub("uid_", "", temporal_df2$"uid")
 
 # Remove the UID column
 temporal_cols <- colnames(temporal_df0)
-
-#"lmtb_0_dl_df" = lmtb_0_dl_df,
-#"lmtb_l_dl_df" = lmtb_l_dl_df,
-#"unij_0_dl_df" = unij_0_dl_df,
-#"unij_l_dl_df" = unij_l_dl_df,
-#"lunj_0_dl_df" = lunj_0_dl_df,
-#"lunj_l_dl_df" = lunj_l_dl_df
-#
-#long_mtbi_subs
-#
-#base_unij_subs # <- A superset of long_unij_subs
-#
-#long_unij_subs
 ```
 
 There is notably some overlap between the long_mtbi group and the base_unij group.
@@ -2333,16 +2324,17 @@ At this point the temporally sensitive variables has been appropriately time sca
 
 
 ```{r}
-unij_0_time_scaled <- readRDS(proc_path("2025_06_16_unij_0_time_scaled.rds"))
-lmtb_0_time_scaled <- readRDS(proc_path("2025_06_16_lmtb_0_time_scaled.rds"))
-lunj_0_time_scaled <- readRDS(proc_path("2025_06_16_lunj_0_time_scaled.rds"))
-unij_l_time_scaled <- readRDS(proc_path("2025_06_16_unij_l_time_scaled.rds"))
-lmtb_l_time_scaled <- readRDS(proc_path("2025_06_16_lmtb_l_time_scaled.rds"))
-lunj_l_time_scaled <- readRDS(proc_path("2025_06_16_lunj_l_time_scaled.rds"))
+unij_0_time_scaled <- readRDS(proc_path("2025_10_03_unij_0_time_scaled.rds"))
+lmtb_0_time_scaled <- readRDS(proc_path("2025_10_03_lmtb_0_time_scaled.rds"))
+lunj_0_time_scaled <- readRDS(proc_path("2025_10_03_lunj_0_time_scaled.rds"))
+unij_l_time_scaled <- readRDS(proc_path("2025_10_03_unij_l_time_scaled.rds"))
+lmtb_l_time_scaled <- readRDS(proc_path("2025_10_03_lmtb_l_time_scaled.rds"))
+lunj_l_time_scaled <- readRDS(proc_path("2025_10_03_lunj_l_time_scaled.rds"))
 ```
 
 ```{r}
 make_pred_df <- function(df) {
+    # prep data is function from chapter 8
     clean_df <- prep_data(df)
     df$"cluster" <- predict(subtype_classifier, newdata = clean_df)
     return(df)
@@ -2365,12 +2357,12 @@ write_csv(lunj_l_pred_df, proc_path("lunj_l_pred_df.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-unij_0_pred_df <- read_csv(proc_path("2025_06_16_unij_0_pred_df.csv"))
-lmtb_0_pred_df <- read_csv(proc_path("2025_06_16_lmtb_0_pred_df.csv"))
-lunj_0_pred_df <- read_csv(proc_path("2025_06_16_lunj_0_pred_df.csv"))
-unij_l_pred_df <- read_csv(proc_path("2025_06_16_unij_l_pred_df.csv"))
-lmtb_l_pred_df <- read_csv(proc_path("2025_06_16_lmtb_l_pred_df.csv"))
-lunj_l_pred_df <- read_csv(proc_path("2025_06_16_lunj_l_pred_df.csv"))
+unij_0_pred_df <- read_csv(proc_path("2025_10_03_unij_0_pred_df.csv"))
+lmtb_0_pred_df <- read_csv(proc_path("2025_10_03_lmtb_0_pred_df.csv"))
+lunj_0_pred_df <- read_csv(proc_path("2025_10_03_lunj_0_pred_df.csv"))
+unij_l_pred_df <- read_csv(proc_path("2025_10_03_unij_l_pred_df.csv"))
+lmtb_l_pred_df <- read_csv(proc_path("2025_10_03_lmtb_l_pred_df.csv"))
+lunj_l_pred_df <- read_csv(proc_path("2025_10_03_lunj_l_pred_df.csv"))
 ```
 
 ```{r}
@@ -2391,27 +2383,27 @@ cluster_props <- function(cluster_df) {
     (\(x) 100 * x)()
 }
 
-cluster_props(unij_0_cluster_df) # 22.5, 40.4, 37.0
+cluster_props(unij_0_cluster_df) # 22.4, 37.4, 40.2
 
-cluster_props(unij_l_cluster_df) # 15.5, 35.6, 48.9
+cluster_props(unij_l_cluster_df) # 21.0, 35.2, 43.8
 
-cluster_props(lunj_0_cluster_df) # 21.9 40.3, 37.7
+cluster_props(lunj_0_cluster_df) # 22.0, 37.5, 40.5
 
-cluster_props(lunj_l_cluster_df) # 15.2, 35.4, 49.3
+cluster_props(lunj_l_cluster_df) # 20.3, 35.4, 44.3
 
-cluster_props(lmtb_0_cluster_df) # 15.6, 57.3, 27.0
+cluster_props(lmtb_0_cluster_df) # 14.2, 54.1, 31.7
 
-cluster_props(lmtb_l_cluster_df) # 9.6, 51.4, 39.0
+cluster_props(lmtb_l_cluster_df) # 14.7, 51.8, 33.5
 
 # Compare with the original full solution proportions
-mtbi_ful_df <- readRDS(proc_path("2025_06_11_mtbi_ful_df.rds"))
+mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
 
-cluster_props(mtbi_ful_df) # 32.3, 35.7, 32.0
+cluster_props(mtbi_ful_df) # 28.1, 41.6, 30.4
 ```
 
 ```{r}
-classifier_ifts <- readRDS(proc_path("2025_06_13_classifier_ifts.rds"))
-ofts <- readRDS(proc_path("2025_06_11_ofts.rds"))
+classifier_ifts <- readRDS(proc_path("2025_09_23_classifier_ifts.rds"))
+ofts <- readRDS(proc_path("2025_09_15_ofts.rds"))
 relevant_fts <- c(classifier_ifts, ofts)
 
 export_wrapped_plots <- function(df,
@@ -2442,7 +2434,7 @@ export_wrapped_plots <- function(df,
             dpi = dpi
         )
     } else {
-        return(plot_list)
+        return(plot_list[feature_set])
     }
 }
 
@@ -2453,6 +2445,7 @@ export_wrapped_plots(
     feature_set = relevant_fts,
     name = "lmtb_0_pred_scaled_plot.png"
 )
+
 export_wrapped_plots(
     df = lmtb_l_cluster_df,
     dl = lmtb_l_dl,
@@ -2463,29 +2456,51 @@ export_wrapped_plots(
 
 export_wrapped_plots(
     df = unij_0_cluster_df,
-    dl = unij_0_dl,
-    ol = unij_0_ol,
+    dl = dlapply(
+        unij_0_dl,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+            x
+        }
+    ),
+    ol = dlapply(
+        unij_0_ol,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+            x
+        }
+    ),
     feature_set = relevant_fts,
     name = "unij_0_pred_scaled_plot.png"
 )
 
 export_wrapped_plots(
     df = unij_l_cluster_df,
-    dl = unij_l_dl,
-    ol = unij_l_ol,
+    dl = dlapply(
+        unij_l_dl,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+            x
+        }
+    ),
+    ol = dlapply(
+        unij_l_ol,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+            x
+        }
+    ),
     feature_set = relevant_fts,
     name = "unij_l_pred_scaled_plot.png"
 )
 
-## Just top 10 features
-#sorted_inputs <- readRDS(proc_path("2025_02_12_sorted_inputs.rds"))
-#top_fts <- intersect(
-#    c(sorted_inputs[1:10], outcome_fts),
-#    relevant_fts
-#)
-#
-#saveRDS(top_fts, proc_path("top_fts.rds", TRUE))
-#top_fts <- readRDS(proc_path("2025_05_12_top_fts.rds"))
+# Just top 10 features
+sorted_inputs <- readRDS(proc_path("2025_09_15_ifts.rds"))
+outcome_fts <- readRDS(proc_path("2025_09_15_ofts.rds"))
+top_fts <- intersect(
+    c(sorted_inputs[1:10], outcome_fts),
+    relevant_fts
+)
 
 export_wrapped_plots(
     df = lmtb_0_cluster_df,
@@ -2497,6 +2512,7 @@ export_wrapped_plots(
     h = 7,
     name = "lmtb_0_pred_scaled_plot_top_fts.png"
 )
+
 export_wrapped_plots(
     df = lmtb_l_cluster_df,
     dl = lmtb_l_dl,
@@ -2507,10 +2523,23 @@ export_wrapped_plots(
     h = 7,
     name = "lmtb_l_pred_scaled_plot_top_fts.png"
 )
+
 export_wrapped_plots(
     df = unij_0_cluster_df,
-    dl = unij_0_dl,
-    ol = unij_0_ol,
+    dl = dlapply(
+        unij_0_dl,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+            x
+        }
+    ),
+    ol = dlapply(
+        unij_0_ol,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+            x
+        }
+    ),
     feature_set = top_fts,
     rows = 2,
     w = 30,
@@ -2520,8 +2549,20 @@ export_wrapped_plots(
 
 export_wrapped_plots(
     df = unij_l_cluster_df,
-    dl = unij_l_dl,
-    ol = unij_l_ol,
+    dl = dlapply(
+        unij_l_dl,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+            x
+        }
+    ),
+    ol = dlapply(
+        unij_l_ol,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+            x
+        }
+    ),
     feature_set = top_fts,
     rows = 2,
     w = 30,
@@ -2532,36 +2573,43 @@ export_wrapped_plots(
 lunj_0_dl <- unij_0_dl |>
     dlapply(
         function(x) {
-            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs)
+            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs_wt2_ns)
             return(x)
         }
     )
 lunj_0_ol <- unij_0_ol |>
     dlapply(
         function(x) {
-            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs)
+            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs_wt2_ns)
             return(x)
         }
     )
 lunj_l_dl <- unij_l_dl |>
     dlapply(
         function(x) {
-            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs)
+            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs_wt2_ns)
             return(x)
         }
     )
 lunj_l_ol <- unij_l_ol |>
     dlapply(
         function(x) {
-            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs)
+            x$"data" <- dplyr::filter(x$"data", uid %in% lunj_subs_wt2_ns)
             return(x)
         }
     )
+
+lunj_0_cluster_df
+
+lunj_0_dl
+
+lunj_0_ol
 
 export_wrapped_plots(
     df = lunj_0_cluster_df,
     dl = lunj_0_dl,
     ol = lunj_0_ol,
+    feature_set = relevant_fts,
     name = "lunj_0_pred_scaled_plot.png"
 )
 
@@ -2569,181 +2617,928 @@ export_wrapped_plots(
     df = lunj_l_cluster_df,
     dl = lunj_l_dl,
     ol = lunj_l_ol,
+    feature_set = relevant_fts,
     name = "lunj_l_pred_scaled_plot.png"
 )
 
-export_wrapped_plots(
-    df = lunj_0_cluster_df,
-    dl = lunj_0_dl,
-    ol = lunj_0_ol,
-    feature_set = top_fts,
-    rows = 2,
-    w = 30,
-    h = 7,
-    name = "lunj_0_pred_scaled_plot_top_fts.png"
-)
-
-export_wrapped_plots(
-    df = lunj_l_cluster_df,
-    dl = lunj_l_dl,
-    ol = lunj_l_ol,
-    feature_set = top_fts,
-    rows = 2,
-    w = 30,
-    h = 7,
-    name = "lunj_l_pred_scaled_plot_top_fts.png"
-)
+#export_wrapped_plots(
+#    df = lunj_0_cluster_df,
+#    dl = lunj_0_dl,
+#    ol = lunj_0_ol,
+#    feature_set = top_fts,
+#    rows = 2,
+#    w = 30,
+#    h = 7,
+#    name = "lunj_0_pred_scaled_plot_top_fts.png"
+#)
+#
+#export_wrapped_plots(
+#    df = lunj_l_cluster_df,
+#    dl = lunj_l_dl,
+#    ol = lunj_l_ol,
+#    feature_set = top_fts,
+#    rows = 2,
+#    w = 30,
+#    h = 7,
+#    name = "lunj_l_pred_scaled_plot_top_fts.png"
+#)
 ```
 
 Just inputs:
 
 ```{r}
+light_fts <- c(
+    "sex", # 1 (cat)
+    "brain_volume", # 2
+    "household_income",
+    "race", # 6 (cat)
+    "parent_antisocial",
+    "weekday_screentime",
+    "activities_last_year",
+    "cbcl_aggressive",
+    "sds_sleep"
+)
 
-top_ins <- sorted_inputs[1:10]
+lmtb_0_pl <- export_wrapped_plots(
+    df = lmtb_0_cluster_df,
+    dl = lmtb_0_dl,
+    ol = lmtb_0_ol,
+    feature_set = light_fts,
+    cols = 1,
+    h = 22,
+    w = 5,
+    dpi = 80,
+    name = "lmtb_0_pred_scaled_plot_top_ins.png",
+    export = FALSE
+)
+lapply(
+    seq_along(lmtb_0_pl),
+    function(x) {
+        lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            lmtb_0_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            lmtb_0_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        if (x == 2) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                scale_y_continuous(labels = function(y) y / 1000) +
+                labs(y = "brain volume\n(cm³)")
+        }
+        if (x == 3) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                labs(y = "household\nincome")
+        }
+        if (x == 4) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                labs(y = "parent\nantisocial")
+        }
+        if (x == 5) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                labs(y = "weekday\nscreentime")
+        }
+        if (x == 6) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                labs(y = "activities\nlast year")
+        }
+        if (x == 7) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                labs(y = "cbcl\naggressive")
+        }
+        if (x == 8) {
+            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+                labs(y = "sds\nsleep")
+        }
+        lmtb_0_pl[[x]]
+    }
+) |>
+    wrap_plots(ncol = 1) |>
+    ggsave(
+        filename = fig_path("lmtb_0_pred_scaled_plot_top_ins.png", TRUE),
+        width = 4,
+        height = 15,
+        dpi = 80
+    )
 
-export_wrapped_plots(
-    df = long_mtbi_0_cluster_df,
-    dl = long_mtbi_0_dl,
-    ol = long_mtbi_0_ol,
-    feature_set = top_ins,
+lmtb_l_pl <- export_wrapped_plots(
+    df = lmtb_l_cluster_df,
+    dl = lmtb_l_dl,
+    ol = lmtb_l_ol,
+    feature_set = light_fts,
     cols = 1,
-    h = 27,
+    h = 22,
     w = 5,
     dpi = 80,
-    name = "long_mtbi_0_pred_scaled_plot_top_ins.png"
+    name = "lmtb_l_pred_scaled_plot_top_ins.png",
+    export = FALSE
 )
-export_wrapped_plots(
-    df = long_mtbi_l_cluster_df,
-    dl = long_mtbi_l_dl,
-    ol = long_mtbi_l_ol,
-    feature_set = top_ins,
+lapply(
+    seq_along(lmtb_l_pl),
+    function(x) {
+        lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            lmtb_l_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            lmtb_l_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        if (x == 2) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                scale_y_continuous(labels = function(y) y / 1000) +
+                labs(y = "brain volume\n(cm³)")
+        }
+        if (x == 3) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                labs(y = "household\nincome")
+        }
+        if (x == 4) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                labs(y = "parent\nantisocial")
+        }
+        if (x == 5) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                labs(y = "weekday\nscreentime")
+        }
+        if (x == 6) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                labs(y = "activities\nlast year")
+        }
+        if (x == 7) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                labs(y = "cbcl\naggressive")
+        }
+        if (x == 8) {
+            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+                labs(y = "sds\nsleep")
+        }
+        lmtb_l_pl[[x]]
+    }
+) |>
+    wrap_plots(ncol = 1) |>
+    ggsave(
+        filename = fig_path("lmtb_l_pred_scaled_plot_top_ins.png", TRUE),
+        width = 4,
+        height = 15,
+        dpi = 80
+    )
+
+unij_0_pl <- export_wrapped_plots(
+    df = unij_0_cluster_df,
+    dl = dlapply(
+        unij_0_dl,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+            x
+        }
+    ),
+    ol = dlapply(
+        unij_0_ol,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+            x
+        }
+    ),
+    feature_set = light_fts,
     cols = 1,
-    h = 27,
+    h = 22,
     w = 5,
     dpi = 80,
-    name = "long_mtbi_l_pred_scaled_plot_top_ins.png"
+    name = "unij_0_pred_scaled_plot_top_ins.png",
+    export = FALSE
 )
-export_wrapped_plots(
-    df = base_unij_0_cluster_df,
-    dl = base_unij_0_dl,
-    ol = base_unij_0_ol,
-    feature_set = top_ins,
+lapply(
+    seq_along(unij_0_pl),
+    function(x) {
+        unij_0_pl[[x]] <- unij_0_pl[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            unij_0_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            unij_0_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        if (x == 2) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                scale_y_continuous(labels = function(y) y / 1000) +
+                labs(y = "brain volume\n(cm³)")
+        }
+        if (x == 3) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                labs(y = "household\nincome")
+        }
+        if (x == 4) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                labs(y = "parent\nantisocial")
+        }
+        if (x == 5) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                labs(y = "weekday\nscreentime")
+        }
+        if (x == 6) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                labs(y = "activities\nlast year")
+        }
+        if (x == 7) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                labs(y = "cbcl\naggressive")
+        }
+        if (x == 8) {
+            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+                labs(y = "sds\nsleep")
+        }
+        unij_0_pl[[x]]
+    }
+) |>
+    wrap_plots(ncol = 1) |>
+    ggsave(
+        filename = fig_path("unij_0_pred_scaled_plot_top_ins.png", TRUE),
+        width = 4,
+        height = 15,
+        dpi = 80
+    )
+
+unij_l_pl <- export_wrapped_plots(
+    df = unij_l_cluster_df,
+    dl = dlapply(
+        unij_l_dl,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+            x
+        }
+    ),
+    ol = dlapply(
+        unij_l_ol,
+        function(x) {
+            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+            x
+        }
+    ),
+    feature_set = light_fts,
     cols = 1,
-    h = 27,
+    h = 22,
     w = 5,
     dpi = 80,
-    name = "base_unij_0_pred_scaled_plot_top_ins.png"
+    name = "unij_l_pred_scaled_plot_top_ins.png",
+    export = FALSE
 )
-export_wrapped_plots(
-    df = base_unij_l_cluster_df,
-    dl = base_unij_l_dl,
-    ol = base_unij_l_ol,
-    feature_set = top_ins,
+lapply(
+    seq_along(unij_l_pl),
+    function(x) {
+        unij_l_pl[[x]] <- unij_l_pl[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            unij_l_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            unij_l_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        if (x == 2) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                scale_y_continuous(labels = function(y) y / 1000) +
+                labs(y = "brain volume\n(cm³)")
+        }
+        if (x == 3) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                labs(y = "household\nincome")
+        }
+        if (x == 4) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                labs(y = "parent\nantisocial")
+        }
+        if (x == 5) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                labs(y = "weekday\nscreentime")
+        }
+        if (x == 6) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                labs(y = "activities\nlast year")
+        }
+        if (x == 7) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                labs(y = "cbcl\naggressive")
+        }
+        if (x == 8) {
+            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+                labs(y = "sds\nsleep")
+        }
+        unij_l_pl[[x]]
+    }
+) |>
+    wrap_plots(ncol = 1) |>
+    ggsave(
+        filename = fig_path("unij_l_pred_scaled_plot_top_ins.png", TRUE),
+        width = 4,
+        height = 15,
+        dpi = 80
+    )
+
+lunj_0_pl <- export_wrapped_plots(
+    df = lunj_0_cluster_df,
+    dl = lunj_0_dl,
+    ol = lunj_0_ol,
+    feature_set = light_fts,
     cols = 1,
-    h = 27,
+    h = 22,
     w = 5,
     dpi = 80,
-    name = "base_unij_l_pred_scaled_plot_top_ins.png"
+    name = "lunj_0_pred_scaled_plot_top_ins.png",
+    export = FALSE
 )
-export_wrapped_plots(
-    df = long_unij_0_cluster_df,
-    dl = long_unij_0_dl,
-    ol = long_unij_0_ol,
-    feature_set = top_ins,
+lapply(
+    seq_along(lunj_0_pl),
+    function(x) {
+        lunj_0_pl[[x]] <- lunj_0_pl[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            lunj_0_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            lunj_0_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        if (x == 2) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                scale_y_continuous(labels = function(y) y / 1000) +
+                labs(y = "brain volume\n(cm³)")
+        }
+        if (x == 3) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                labs(y = "household\nincome")
+        }
+        if (x == 4) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                labs(y = "parent\nantisocial")
+        }
+        if (x == 5) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                labs(y = "weekday\nscreentime")
+        }
+        if (x == 6) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                labs(y = "activities\nlast year")
+        }
+        if (x == 7) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                labs(y = "cbcl\naggressive")
+        }
+        if (x == 8) {
+            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+                labs(y = "sds\nsleep")
+        }
+        lunj_0_pl[[x]]
+    }
+) |>
+    wrap_plots(ncol = 1) |>
+    ggsave(
+        filename = fig_path("lunj_0_pred_scaled_plot_top_ins.png", TRUE),
+        width = 4,
+        height = 15,
+        dpi = 80
+    )
+
+lunj_l_pl <- export_wrapped_plots(
+    df = lunj_l_cluster_df,
+    dl = lunj_l_dl,
+    ol = lunj_l_ol,
+    feature_set = light_fts,
     cols = 1,
-    h = 27,
+    h = 22,
     w = 5,
     dpi = 80,
-    name = "long_unij_0_pred_scaled_plot_top_ins.png"
+    name = "lunj_l_pred_scaled_plot_top_ins.png",
+    export = FALSE
 )
-export_wrapped_plots(
-    df = long_unij_l_cluster_df,
-    dl = long_unij_l_dl,
-    ol = long_unij_l_ol,
-    feature_set = top_ins,
-    cols = 1,
-    h = 27,
-    w = 5,
-    dpi = 80,
-    name = "long_unij_l_pred_scaled_plot_top_ins.png"
-)
+lapply(
+    seq_along(lunj_l_pl),
+    function(x) {
+        lunj_l_pl[[x]] <- lunj_l_pl[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            lunj_l_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            lunj_l_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        if (x == 2) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                scale_y_continuous(labels = function(y) y / 1000) +
+                labs(y = "brain volume\n(cm³)")
+        }
+        if (x == 3) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                labs(y = "household\nincome")
+        }
+        if (x == 4) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                labs(y = "parent\nantisocial")
+        }
+        if (x == 5) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                labs(y = "weekday\nscreentime")
+        }
+        if (x == 6) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                labs(y = "activities\nlast year")
+        }
+        if (x == 7) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                labs(y = "cbcl\naggressive")
+        }
+        if (x == 8) {
+            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+                labs(y = "sds\nsleep")
+        }
+        lunj_l_pl[[x]]
+    }
+) |>
+    wrap_plots(ncol = 1) |>
+    ggsave(
+        filename = fig_path("lunj_l_pred_scaled_plot_top_ins.png", TRUE),
+        width = 4,
+        height = 15,
+        dpi = 80
+    )
 ```
 
-Just outputs:
 
 ```{r}
-export_wrapped_plots(
-    df = long_mtbi_0_cluster_df,
-    dl = long_mtbi_0_dl,
-    ol = long_mtbi_0_ol,
-    feature_set = outcome_fts,
-    cols = 1,
-    h = 24,
-    w = 3,
-    dpi = 80,
-    name = "long_mtbi_0_pred_scaled_plot_outcome_fts.png"
-)
-export_wrapped_plots(
-    df = long_mtbi_l_cluster_df,
-    dl = long_mtbi_l_dl,
-    ol = long_mtbi_l_ol,
-    feature_set = outcome_fts,
-    cols = 1,
-    h = 24,
-    w = 3,
-    dpi = 80,
-    name = "long_mtbi_l_pred_scaled_plot_outcome_fts.png"
-)
-export_wrapped_plots(
-    df = base_unij_0_cluster_df,
-    dl = base_unij_0_dl,
-    ol = base_unij_0_ol,
-    feature_set = outcome_fts,
-    cols = 1,
-    h = 24,
-    w = 3,
-    dpi = 80,
-    name = "base_unij_0_pred_scaled_plot_outcome_fts.png"
-)
-export_wrapped_plots(
-    df = base_unij_l_cluster_df,
-    dl = base_unij_l_dl,
-    ol = base_unij_l_ol,
-    feature_set = outcome_fts,
-    cols = 1,
-    h = 24,
-    w = 3,
-    dpi = 80,
-    name = "base_unij_l_pred_scaled_plot_outcome_fts.png"
-)
-export_wrapped_plots(
-    df = long_unij_0_cluster_df,
-    dl = long_unij_0_dl,
-    ol = long_unij_0_ol,
-    feature_set = outcome_fts,
-    cols = 1,
-    h = 24,
-    w = 3,
-    dpi = 80,
-    name = "long_unij_0_pred_scaled_plot_outcome_fts.png"
-)
-export_wrapped_plots(
-    df = long_unij_l_cluster_df,
-    dl = long_unij_l_dl,
-    ol = long_unij_l_ol,
-    feature_set = outcome_fts,
-    cols = 1,
-    h = 24,
-    w = 3,
-    dpi = 80,
-    name = "long_unij_l_pred_scaled_plot_outcome_fts.png"
-)
+#lmtb_0_pl <- export_wrapped_plots(
+#    df = lmtb_0_cluster_df,
+#    dl = lmtb_0_dl,
+#    ol = lmtb_0_ol,
+#    feature_set = outcome_fts,
+#    cols = 1,
+#    h = 22,
+#    w = 5,
+#    dpi = 80,
+#    name = "lmtb_0_pred_scaled_plot_outs.png",
+#    export = FALSE
+#)
+#lapply(
+#    seq_along(lmtb_0_pl),
+#    function(x) {
+#        lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] + theme(
+#            legend.title = element_text(size = 14),
+#            legend.text = element_text(size = 14),
+#            axis.title.y = element_text(size = 14),
+#            axis.title.x = element_blank()
+#        )
+#        lmtb_0_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+#        if (x == 1) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nanxdep")
+#        }
+#        if (x == 2) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nwithdep")
+#        }
+#        if (x == 3) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nsomatic")
+#        }
+#        if (x == 4) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nsocial")
+#        }
+#        if (x == 5) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nthought")
+#        }
+#        if (x == 6) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nattention")
+#        }
+#        if (x == 7) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "cbcl\nrulebreak")
+#        }
+#        if (x == 8) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        if (x == 8) {
+#            lmtb_0_pl[[x]] <- lmtb_0_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        lmtb_0_pl[[x]]
+#    }
+#) |>
+#    wrap_plots(ncol = 1) |>
+#    ggsave(
+#        filename = fig_path("lmtb_0_pred_scaled_plot_outs.png", TRUE),
+#        width = 2,
+#        height = 15,
+#        dpi = 80
+#    )
+#
+#lmtb_l_pl <- export_wrapped_plots(
+#    df = lmtb_l_cluster_df,
+#    dl = lmtb_l_dl,
+#    ol = lmtb_l_ol,
+#    feature_set = outcome_fts,
+#    cols = 1,
+#    h = 22,
+#    w = 5,
+#    dpi = 80,
+#    name = "lmtb_l_pred_scaled_plot_outs.png",
+#    export = FALSE
+#)
+#lapply(
+#    seq_along(lmtb_l_pl),
+#    function(x) {
+#        lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] + theme(
+#            legend.title = element_text(size = 14),
+#            legend.text = element_text(size = 14),
+#            axis.title.y = element_text(size = 14),
+#            axis.title.x = element_blank()
+#        )
+#        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+#            # Categorical features
+#            lmtb_l_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+#        }
+#        if (x %in% c(1, 4)) {
+#            # Continuous / numeric features
+#            lmtb_l_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+#        }
+#        if (x == 2) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                scale_y_continuous(labels = function(y) y / 1000) +
+#                labs(y = "brain volume\n(cm³)")
+#        }
+#        if (x == 3) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                labs(y = "household\nincome")
+#        }
+#        if (x == 4) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                labs(y = "parent\nantisocial")
+#        }
+#        if (x == 5) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                labs(y = "weekday\nscreentime")
+#        }
+#        if (x == 6) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                labs(y = "activities\nlast year")
+#        }
+#        if (x == 7) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                labs(y = "cbcl\naggressive")
+#        }
+#        if (x == 8) {
+#            lmtb_l_pl[[x]] <- lmtb_l_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        lmtb_l_pl[[x]]
+#    }
+#) |>
+#    wrap_plots(ncol = 1) |>
+#    ggsave(
+#        filename = fig_path("lmtb_l_pred_scaled_plot_outs.png", TRUE),
+#        width = 4,
+#        height = 15,
+#        dpi = 80
+#    )
+#unij_0_pl <- export_wrapped_plots(
+#    df = unij_0_cluster_df,
+#    dl = dlapply(
+#        unij_0_dl,
+#        function(x) {
+#            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+#            x
+#        }
+#    ),
+#    ol = dlapply(
+#        unij_0_ol,
+#        function(x) {
+#            x$"data" <- dplyr::filter(x$"data", uid %in% unij_0_cluster_df$"uid")
+#            x
+#        }
+#    ),
+#    feature_set = outcome_fts,
+#    cols = 1,
+#    h = 22,
+#    w = 5,
+#    dpi = 80,
+#    name = "unij_0_pred_scaled_plot_outs.png",
+#    export = FALSE
+#)
+#lapply(
+#    seq_along(unij_0_pl),
+#    function(x) {
+#        unij_0_pl[[x]] <- unij_0_pl[[x]] + theme(
+#            legend.title = element_text(size = 14),
+#            legend.text = element_text(size = 14),
+#            axis.title.y = element_text(size = 14),
+#            axis.title.x = element_blank()
+#        )
+#        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+#            # Categorical features
+#            unij_0_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+#        }
+#        if (x %in% c(1, 4)) {
+#            # Continuous / numeric features
+#            unij_0_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+#        }
+#        if (x == 2) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                scale_y_continuous(labels = function(y) y / 1000) +
+#                labs(y = "brain volume\n(cm³)")
+#        }
+#        if (x == 3) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                labs(y = "household\nincome")
+#        }
+#        if (x == 4) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                labs(y = "parent\nantisocial")
+#        }
+#        if (x == 5) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                labs(y = "weekday\nscreentime")
+#        }
+#        if (x == 6) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                labs(y = "activities\nlast year")
+#        }
+#        if (x == 7) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                labs(y = "cbcl\naggressive")
+#        }
+#        if (x == 8) {
+#            unij_0_pl[[x]] <- unij_0_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        unij_0_pl[[x]]
+#    }
+#) |>
+#    wrap_plots(ncol = 1) |>
+#    ggsave(
+#        filename = fig_path("unij_0_pred_scaled_plot_outs.png", TRUE),
+#        width = 4,
+#        height = 15,
+#        dpi = 80
+#    )
+#unij_l_pl <- export_wrapped_plots(
+#    df = unij_l_cluster_df,
+#    dl = dlapply(
+#        unij_l_dl,
+#        function(x) {
+#            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+#            x
+#        }
+#    ),
+#    ol = dlapply(
+#        unij_l_ol,
+#        function(x) {
+#            x$"data" <- dplyr::filter(x$"data", uid %in% unij_l_cluster_df$"uid")
+#            x
+#        }
+#    ),
+#    feature_set = outcome_fts,
+#    cols = 1,
+#    h = 22,
+#    w = 5,
+#    dpi = 80,
+#    name = "unij_l_pred_scaled_plot_outs.png",
+#    export = FALSE
+#)
+#lapply(
+#    seq_along(unij_l_pl),
+#    function(x) {
+#        unij_l_pl[[x]] <- unij_l_pl[[x]] + theme(
+#            legend.title = element_text(size = 14),
+#            legend.text = element_text(size = 14),
+#            axis.title.y = element_text(size = 14),
+#            axis.title.x = element_blank()
+#        )
+#        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+#            # Categorical features
+#            unij_l_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+#        }
+#        if (x %in% c(1, 4)) {
+#            # Continuous / numeric features
+#            unij_l_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+#        }
+#        if (x == 2) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                scale_y_continuous(labels = function(y) y / 1000) +
+#                labs(y = "brain volume\n(cm³)")
+#        }
+#        if (x == 3) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                labs(y = "household\nincome")
+#        }
+#        if (x == 4) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                labs(y = "parent\nantisocial")
+#        }
+#        if (x == 5) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                labs(y = "weekday\nscreentime")
+#        }
+#        if (x == 6) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                labs(y = "activities\nlast year")
+#        }
+#        if (x == 7) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                labs(y = "cbcl\naggressive")
+#        }
+#        if (x == 8) {
+#            unij_l_pl[[x]] <- unij_l_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        unij_l_pl[[x]]
+#    }
+#) |>
+#    wrap_plots(ncol = 1) |>
+#    ggsave(
+#        filename = fig_path("unij_l_pred_scaled_plot_outs.png", TRUE),
+#        width = 4,
+#        height = 15,
+#        dpi = 80
+#    )
+#lunj_0_pl <- export_wrapped_plots(
+#    df = lunj_0_cluster_df,
+#    dl = lunj_0_dl,
+#    ol = lunj_0_ol,
+#    feature_set = outcome_fts,
+#    cols = 1,
+#    h = 22,
+#    w = 5,
+#    dpi = 80,
+#    name = "lunj_0_pred_scaled_plot_outs.png",
+#    export = FALSE
+#)
+#lapply(
+#    seq_along(lunj_0_pl),
+#    function(x) {
+#        lunj_0_pl[[x]] <- lunj_0_pl[[x]] + theme(
+#            legend.title = element_text(size = 14),
+#            legend.text = element_text(size = 14),
+#            axis.title.y = element_text(size = 14),
+#            axis.title.x = element_blank()
+#        )
+#        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+#            # Categorical features
+#            lunj_0_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+#        }
+#        if (x %in% c(1, 4)) {
+#            # Continuous / numeric features
+#            lunj_0_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+#        }
+#        if (x == 2) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                scale_y_continuous(labels = function(y) y / 1000) +
+#                labs(y = "brain volume\n(cm³)")
+#        }
+#        if (x == 3) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                labs(y = "household\nincome")
+#        }
+#        if (x == 4) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                labs(y = "parent\nantisocial")
+#        }
+#        if (x == 5) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                labs(y = "weekday\nscreentime")
+#        }
+#        if (x == 6) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                labs(y = "activities\nlast year")
+#        }
+#        if (x == 7) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                labs(y = "cbcl\naggressive")
+#        }
+#        if (x == 8) {
+#            lunj_0_pl[[x]] <- lunj_0_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        lunj_0_pl[[x]]
+#    }
+#) |>
+#    wrap_plots(ncol = 1) |>
+#    ggsave(
+#        filename = fig_path("lunj_0_pred_scaled_plot_outs.png", TRUE),
+#        width = 4,
+#        height = 15,
+#        dpi = 80
+#    )
+#lunj_l_pl <- export_wrapped_plots(
+#    df = lunj_l_cluster_df,
+#    dl = lunj_l_dl,
+#    ol = lunj_l_ol,
+#    feature_set = outcome_fts,
+#    cols = 1,
+#    h = 22,
+#    w = 5,
+#    dpi = 80,
+#    name = "lunj_l_pred_scaled_plot_outs.png",
+#    export = FALSE
+#)
+#lapply(
+#    seq_along(lunj_l_pl),
+#    function(x) {
+#        lunj_l_pl[[x]] <- lunj_l_pl[[x]] + theme(
+#            legend.title = element_text(size = 14),
+#            legend.text = element_text(size = 14),
+#            axis.title.y = element_text(size = 14),
+#            axis.title.x = element_blank()
+#        )
+#        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+#            # Categorical features
+#            lunj_l_pl[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+#        }
+#        if (x %in% c(1, 4)) {
+#            # Continuous / numeric features
+#            lunj_l_pl[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+#        }
+#        if (x == 2) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                scale_y_continuous(labels = function(y) y / 1000) +
+#                labs(y = "brain volume\n(cm³)")
+#        }
+#        if (x == 3) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                labs(y = "household\nincome")
+#        }
+#        if (x == 4) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                labs(y = "parent\nantisocial")
+#        }
+#        if (x == 5) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                labs(y = "weekday\nscreentime")
+#        }
+#        if (x == 6) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                labs(y = "activities\nlast year")
+#        }
+#        if (x == 7) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                labs(y = "cbcl\naggressive")
+#        }
+#        if (x == 8) {
+#            lunj_l_pl[[x]] <- lunj_l_pl[[x]] +
+#                labs(y = "sds\nsleep")
+#        }
+#        lunj_l_pl[[x]]
+#    }
+#) |>
+#    wrap_plots(ncol = 1) |>
+#    ggsave(
+#        filename = fig_path("lunj_l_pred_scaled_plot_outs.png", TRUE),
+#        width = 4,
+#        height = 15,
+#        dpi = 80
+#
 ```
 
 Statistical analysis: bootstrapped similarity to baseline mTBI solution
 
 ```{r}
-mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits_t.csv"))
 mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
 
 lmtb_0_data_df <- dplyr::inner_join(
@@ -2751,24 +3546,28 @@ lmtb_0_data_df <- dplyr::inner_join(
     as.data.frame(c(lmtb_0_dl, lmtb_0_ol)),
     by = "uid"
 )
+nrow(lmtb_0_data_df)
 
 lmtb_l_data_df <- dplyr::inner_join(
     lmtb_l_cluster_df,
     as.data.frame(c(lmtb_l_dl, lmtb_l_ol)),
     by = "uid"
 )
+nrow(lmtb_l_data_df)
 
 unij_0_data_df <- dplyr::inner_join(
     unij_0_cluster_df,
     as.data.frame(c(unij_0_dl, unij_0_ol)),
     by = "uid"
 )
+nrow(unij_0_data_df)
 
 unij_l_data_df <- dplyr::inner_join(
     unij_l_cluster_df,
     as.data.frame(c(unij_l_dl, unij_l_ol)),
     by = "uid"
 )
+nrow(unij_l_data_df)
 
 saveRDS(lmtb_0_data_df, proc_path("lmtb_0_data_df.rds", TRUE))
 saveRDS(lmtb_l_data_df, proc_path("lmtb_l_data_df.rds", TRUE))
@@ -2777,13 +3576,13 @@ saveRDS(unij_l_data_df, proc_path("unij_l_data_df.rds", TRUE))
 ```
 
 ```{r}
-mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_06_13_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits_t.csv"))
 mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
 
-lmtb_0_data_df <- readRDS(proc_path("2025_06_17_lmtb_0_data_df.rds"))
-lmtb_l_data_df <- readRDS(proc_path("2025_06_17_lmtb_l_data_df.rds"))
-unij_0_data_df <- readRDS(proc_path("2025_06_17_unij_0_data_df.rds"))
-unij_l_data_df <- readRDS(proc_path("2025_06_17_unij_l_data_df.rds"))
+lmtb_0_data_df <- readRDS(proc_path("2025_10_03_lmtb_0_data_df.rds"))
+lmtb_l_data_df <- readRDS(proc_path("2025_10_03_lmtb_l_data_df.rds"))
+unij_0_data_df <- readRDS(proc_path("2025_10_03_unij_0_data_df.rds"))
+unij_l_data_df <- readRDS(proc_path("2025_10_03_unij_l_data_df.rds"))
 ```
 
 ```{r}
@@ -2966,8 +3765,6 @@ concordance_w_mtbi_test <- function(df1, df2, n = NULL, iters = 10, procs = 1) {
     return(unlist(res))
 }
 
-
-# HERE
 set.seed(42)
 start <- Sys.time()
 progressr::with_progress({
@@ -2977,6 +3774,8 @@ lmtb_0_pred_conc
 print(Sys.time() - start)
 saveRDS(lmtb_0_pred_conc, proc_path("lmtb_0_pred_conc.rds", TRUE))
 
+#------------------------------------------------------------------------------
+
 set.seed(42)
 start <- Sys.time()
 progressr::with_progress({
@@ -2985,7 +3784,6 @@ progressr::with_progress({
 lmtb_l_pred_conc
 print(Sys.time() - start)
 saveRDS(lmtb_l_pred_conc, proc_path("lmtb_l_pred_conc.rds", TRUE))
-
 set.seed(42)
 start <- Sys.time()
 progressr::with_progress({
@@ -3002,7 +3800,7 @@ progressr::with_progress({
 unij_l_pred_conc
 print(Sys.time() - start)
 saveRDS(unij_l_pred_conc, proc_path("unij_l_pred_conc.rds", TRUE))
-
+#
 # Test style:
 set.seed(42)
 start <- Sys.time()
@@ -3012,23 +3810,26 @@ progressr::with_progress({
     )
 })
 print(Sys.time() - start)
-
 saveRDS(lmtb_pred_conc_test, proc_path("lmtb_pred_conc_test.rds", TRUE))
 
-lmtb_pred_conc_test <- readRDS(proc_path("2025_06_17_lmtb_pred_conc_test.rds"))
+lmtb_pred_conc_test <- readRDS(proc_path("2025_10_03_lmtb_pred_conc_test.rds"))
 
-# [-0.080, 0.117]
+# [-0.127, 0.111]
 quantile(lmtb_pred_conc_test, c(0.025, 0.975), na.rm = TRUE)
+
+mean(lmtb_pred_conc_test)*100
+
+# HERE
 ```
 
 So we can say that there's no significant difference in how similar the pre-injury/post-injury group is to the baseline mTBI group.
 
 ```{r}
-lmtb_0_pred_conc <- readRDS(proc_path("2025_06_17_lmtb_0_pred_conc.rds"))
-lmtb_l_pred_conc <- readRDS(proc_path("2025_06_17_lmtb_l_pred_conc.rds"))
+lmtb_0_pred_conc <- readRDS(proc_path("2025_10_03_lmtb_0_pred_conc.rds"))
+lmtb_l_pred_conc <- readRDS(proc_path("2025_10_03_lmtb_l_pred_conc.rds"))
 
-unij_0_pred_conc <- readRDS(proc_path("2025_06_17_unij_0_pred_conc.rds"))
-unij_l_pred_conc <- readRDS(proc_path("2025_06_17_unij_l_pred_conc.rds"))
+unij_0_pred_conc <- readRDS(proc_path("2025_10_03_unij_0_pred_conc.rds"))
+unij_l_pred_conc <- readRDS(proc_path("2025_10_03_unij_l_pred_conc.rds"))
 
 mean(na.omit(lmtb_0_pred_conc))
 mean(na.omit(lmtb_l_pred_conc))
@@ -3040,12 +3841,12 @@ sims_pre <- na.omit(lmtb_0_pred_conc)
 sims_post <- na.omit(lmtb_l_pred_conc)
 
 ci_solo_pre <- quantile(sims_pre, probs = c(0.025, 0.975))
-mean(sims_pre) # 0.7791422
-ci_solo_pre # 0.7153285, 0.8394161
+round(mean(sims_pre)*100, 1)
+round(ci_solo_pre*100, 1)
 
 ci_solo_post <- quantile(sims_post, probs = c(0.025, 0.975))
-mean(sims_post) # 0.7964491
-ci_solo_post #0.7299270, 0.8540146
+round(mean(sims_post)*100, 1)
+round(ci_solo_post*100, 1)
 
 lmtb_0_conc_data <- data.frame(group = "lmtb_0", x = na.omit(lmtb_0_pred_conc))
 lmtb_l_conc_data <- data.frame(group = "lmtb_l", x = na.omit(lmtb_l_pred_conc))
