@@ -27,14 +27,20 @@ sub_path <- path_maker(here(paste0("data/abcd/subjects")))
 
 ```{r}
 calculate_cor_mat <- function(df, method, fisher_z = FALSE) {
-    df <- df |>
-    data.frame() |>
-    dplyr::select(-uid) |>
-    dummy_cols(
-        select_columns = c("race"),
-        remove_selected_columns = TRUE,
-        remove_most_frequent_dummy = TRUE
-    )
+    if ("race" %in% colnames(df)) {
+        df <- df |>
+        data.frame() |>
+        dplyr::select(-uid) |>
+        dummy_cols(
+            select_columns = c("race"),
+            remove_selected_columns = TRUE,
+            remove_most_frequent_dummy = TRUE
+        )
+    } else {
+        df <- df |>
+        data.frame() |>
+        dplyr::select(-uid)
+    }
     if (method == "spearman") {
         future::plan("multisession")
         n <- ncol(df)
@@ -336,6 +342,7 @@ saveRDS(perm_diffs_cor_v_mtbi, proc_path("perm_diffs_cor_v_mtbi_fisherz_5000.rds
 
 ```{r}
 perm_diffs_cor_v_mtbi <- readRDS(proc_path("2025_10_03_perm_diffs_cor_v_mtbi_fisherz_5000.rds"))
+
 # HERE
 lapply(
     names(perm_diffs_cor_v_mtbi),
@@ -344,32 +351,42 @@ lapply(
     }
 ) |> unlist()
 
-z <- p.adjust(
-    c(1, 0.0308, 0.2128, 0.0056, 0, 0.0336, 0.0112, 0.1652, 0.378, 0.0224, 1, 1, 1),
-    method = "fdr"
-)
+lapply(perm_diffs_cor_v_mtbi, function(x) x$"p_value")
 
-for (i in z) {
-    print(i)
+fdr_adjusted_pvals <- lapply(
+    perm_diffs_cor_v_mtbi,
+    function(x) {
+        x$"p_value"
+    }
+) |>
+    p.adjust(method = "fdr") |>
+    round(4)
+
+for (p in fdr_adjusted_pvals) {
+    print(p)
 }
+
 ```
 
-Random unij dfs (6/10 significantly different after multiple comparisons corrections):
-- 1
-- *0.0308*
-- 0.2128
-- *0.0056*
-- *0*
-- *0.0336*
-- *0.0112*
-- 0.1652
-- 0.378
-- *0.0224*
+Random unij dfs (10/10 significantly different after multiple comparisons corrections):
+
+1. 0.0302
+2. 0.0026
+3. 0.0101
+4. 0.0118
+5. 0.0045
+6. 0.0033
+7. 0.0039
+8. 0.0033
+9. 0.0033
+10. 0.0036
+
+[1] 0.1404
+[1] 0.3628
+[1] 0.3317
 
 best_matched_uninjured_df: 1
-
 preinjury_df: 1
-
 postinjury_df: 1
 
 ## 2. If not a generic increase in strength, what is significantly different?
@@ -378,22 +395,22 @@ postinjury_df: 1
 
 ```{r}
 # Adding in dummy race variable
-ifts <- readRDS(proc_path("2025_06_11_ifts.rds"))
-ifts_expand <- unlist(append(ifts, list("race_black", "race_hispanic", "race_other"), after = which(ifts == "race")))
-ifts_expand <- ifts_expand[-18]
-ifts_expand <- ifts_expand[1:20]
+ifts <- readRDS(proc_path("2025_09_15_ifts.rds"))
+ifts_expand <- ifts[1:25]
+ifts_expand <- unlist(append(ifts_expand, list("race_black", "race_hispanic", "race_other"), after = which(ifts_expand == "race")))
+ifts_expand <- ifts_expand[-which(ifts_expand == "race")]
+ifts_expand
 
-ofts <- readRDS(proc_path("2025_06_11_ofts.rds"))
+ofts <- readRDS(proc_path("2025_09_15_ofts.rds"))
 ```
 
 ```{r}
-
 permutation_test_corrs3 <- function(df1,
                                     df2,
                                     method = "pearson",
                                     fisher_z = TRUE,
                                     perms,
-                                    procs = future::availableCores(),
+                                    procs = 8,
                                     style = "loop") {
     cor1 <- calculate_cor_mat(df1, method, fisher_z)[ifts_expand, ofts]
     cor2 <- calculate_cor_mat(df2, method, fisher_z)[ifts_expand, ofts]
@@ -434,7 +451,6 @@ permutation_test_corrs3 <- function(df1,
         )
     )
 }
-
 
 set.seed(42)
 start <- Sys.time()
@@ -528,7 +544,6 @@ saveRDS(
     proc_path("perm_p_values_v_mtbi_fisherz_5000.rds", TRUE)
 )
 
-
 perm_p_dfs <- lapply(
     perm_p_values,
     function(x) {
@@ -567,7 +582,7 @@ perm_p_df$"fdr_p" <- p.adjust(perm_p_df$"p_value", method = "fdr")
 
 saveRDS(perm_p_df, proc_path("perm_p_df.rds", TRUE))
 
-perm_p_df <- readRDS(proc_path("2025_06_20_perm_p_df.rds"))
+perm_p_df <- readRDS(proc_path("2025_10_06_perm_p_df.rds"))
 
 perm_p_df
 ```
@@ -856,58 +871,51 @@ ggsave(
 )
 
 names(reduced_dfs)
-
 ```
 
 ```{r}
 |*Group*     |*Input Feature*      |*Outcome Feature* | *p-value*|
 |:-----------|:--------------------|:-----------------|---------:|
-|random_unij |extracurriculars     |cbcl_aggressive   |    0.0064|
-|random_unij |household_income     |cbcl_thought      |    0.0078|
-|random_unij |household_income     |cbcl_aggressive   |    0.0089|
-|random_unij |activities_last_year |cbcl_aggressive   |    0.0093|
-|random_unij |household_income     |cbcl_anxdep       |    0.0172|
-|random_unij |private_instruction  |cbcl_aggressive   |    0.0192|
-|random_unij |household_income     |cbcl_withdep      |    0.0238|
-|random_unij |household_income     |cbcl_attention    |    0.0239|
-|random_unij |private_instruction  |cbcl_rulebreak    |    0.0240|
-|random_unij |extracurriculars     |cbcl_rulebreak    |    0.0277|
-|random_unij |household_income     |cbcl_social       |    0.0322|
-|random_unij |activities_last_year |cbcl_thought      |    0.0421|
-|random_unij |household_income     |sds_sleep         |    0.0446|
+|random_unij |private_instruction  |cbcl_aggressive   |    0.0096|
+|random_unij |activities_last_year |cbcl_aggressive   |    0.0164|
+|random_unij |private_instruction  |cbcl_rulebreak    |    0.0175|
+|random_unij |extracurriculars     |cbcl_aggressive   |    0.0198|
+|random_unij |extracurriculars     |cbcl_rulebreak    |    0.0256|
+|random_unij |household_income     |cbcl_aggressive   |    0.0286|
+|random_unij |household_income     |cbcl_rulebreak    |    0.0302|
+|random_unij |activities_last_year |cbcl_thought      |    0.0362|
+|random_unij |private_instruction  |cbcl_withdep      |    0.0407|
+|random_unij |household_income     |cbcl_attention    |    0.0415|
+|random_unij |extracurriculars     |cbcl_somatic      |    0.0428|
+|random_unij |private_instruction  |cbcl_thought      |    0.0436|
 
-|*Group*                   |*Input Feature*      |*Outcome Feature* | *p-value*|
-|:-------------------------|:--------------------|:-----------------|---------:|
-|best_matched_uninjured_df |private_instruction  |cbcl_aggressive   |    0.0053|
-|best_matched_uninjured_df |activities_last_year |cbcl_aggressive   |    0.0137|
-|best_matched_uninjured_df |private_instruction  |cbcl_withdep      |    0.0137|
-|best_matched_uninjured_df |activities_last_year |cbcl_social       |    0.0194|
-|best_matched_uninjured_df |extracurriculars     |cbcl_aggressive   |    0.0194|
-|best_matched_uninjured_df |private_instruction  |cbcl_rulebreak    |    0.0231|
-|best_matched_uninjured_df |extracurriculars     |cbcl_withdep      |    0.0255|
-|best_matched_uninjured_df |extracurriculars     |cbcl_social       |    0.0401|
-|best_matched_uninjured_df |household_income     |cbcl_withdep      |    0.0401|
-|best_matched_uninjured_df |activities_last_year |cbcl_withdep      |    0.0452|
+|*Group*                   |*Input Feature*  |*Outcome Feature* | *p-value*|
+|:-------------------------|:----------------|:-----------------|---------:|
+|best_matched_uninjured_df |extracurriculars |cbcl_aggressive   |    0.0398|
+|best_matched_uninjured_df |parent_somatic   |cbcl_aggressive   |    0.0482|
 
 |*Group*      |*Input Feature*      |*Outcome Feature* | *p-value*|
 |:------------|:--------------------|:-----------------|---------:|
 |preinjury_df |parent_somatic       |cbcl_withdep      |    0.0000|
 |preinjury_df |private_instruction  |cbcl_aggressive   |    0.0000|
-|preinjury_df |extracurriculars     |cbcl_aggressive   |    0.0053|
-|preinjury_df |household_income     |cbcl_withdep      |    0.0053|
-|preinjury_df |private_instruction  |cbcl_rulebreak    |    0.0053|
-|preinjury_df |activities_last_year |cbcl_aggressive   |    0.0175|
-|preinjury_df |private_instruction  |cbcl_withdep      |    0.0215|
-|preinjury_df |brain_volume         |cbcl_anxdep       |    0.0420|
-|preinjury_df |parent_anxdisord     |cbcl_withdep      |    0.0442|
+|preinjury_df |extracurriculars     |cbcl_aggressive   |    0.0089|
+|preinjury_df |household_income     |cbcl_withdep      |    0.0089|
+|preinjury_df |activities_last_year |cbcl_aggressive   |    0.0229|
+|preinjury_df |private_instruction  |cbcl_rulebreak    |    0.0229|
+|preinjury_df |private_instruction  |cbcl_withdep      |    0.0258|
 
 |*Group*       |*Input Feature*      |*Outcome Feature* | *p-value*|
 |:-------------|:--------------------|:-----------------|---------:|
-|postinjury_df |private_instruction  |cbcl_withdep      |    0.0117|
-|postinjury_df |activities_last_year |cbcl_aggressive   |    0.0137|
-|postinjury_df |extracurriculars     |cbcl_somatic      |    0.0137|
-|postinjury_df |extracurriculars     |cbcl_aggressive   |    0.0245|
-|postinjury_df |activities_last_year |cbcl_social       |    0.0363|
-|postinjury_df |private_instruction  |cbcl_aggressive   |    0.0363|
-|postinjury_df |household_income     |cbcl_withdep      |    0.0407|
+|postinjury_df |activities_last_year |cbcl_aggressive   |    0.0166|
+|postinjury_df |private_instruction  |cbcl_withdep      |    0.0166|
+|postinjury_df |private_instruction  |cbcl_aggressive   |    0.0379|
+|postinjury_df |extracurriculars     |cbcl_aggressive   |    0.0388|
+|postinjury_df |activities_last_year |cbcl_social       |    0.0470|
+
+
+
+
+
+
+
 ```
