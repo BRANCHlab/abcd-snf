@@ -51,11 +51,6 @@ all_long_dls_h_ns <- readRDS(proc_path("2025_10_03_all_long_dls_h_ns.rds"))
 all_long_dls_h <- readRDS(proc_path("2025_09_29_all_long_dls_h.rds"))
 all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
 all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
-
-colnames(all_dls_h[[1]][[1]]$"n_cort_t"$"data")
-colnames(all_dls_h_ns[[1]][[1]]$"n_cort_t"$"data")
-colnames(all_long_dls_h[[1]][[1]]$"n_cort_t"$"data")
-colnames(all_long_dls_h_ns[[1]][[1]]$"n_cort_t"$"data")
 ```
 
 ## Q1: Was the baseline clustering informative for LT outcomes?<!-- {{{ -->
@@ -96,7 +91,7 @@ mtbi_l_df <- dplyr::full_join(
     by = c("uid", "imputation")
 )
 
-mtbi_l_wt2_ns <- intersect(unique(mtbi_l_df$"uid"), mtbi_ful_df2$"uid")
+mtbi_l_wt2_ns <- intersect(unique(mtbi_l_df$"uid"), mtbi_ful_df$"uid")
 mtbi_l_wt2_ns
 
 # Keep track of baseline data before attaching to longitudinal data
@@ -158,7 +153,7 @@ mtbi_long_changes$"cluster" <- as.factor(mtbi_long_changes$"cluster")
 
 saveRDS(mtbi_long_changes, proc_path("mtbi_long_changes.rds", TRUE))
 
-mtbi_long_changes <- readRDS(proc_path("2025_06_13_mtbi_long_changes.rds"))
+mtbi_long_changes <- readRDS(proc_path("2025_10_06_mtbi_long_changes.rds"))
 ```
 
 ```{r}
@@ -361,9 +356,10 @@ gg_long_cor(mtbi_long_changes, "weekend_screentime")
 
 gg_long_cor(mtbi_long_changes, "household_income")
 
+colnames(mtbi_long_changes)
+
 cor_mat <- mtbi_long_changes |>
     dplyr::select(-uid, -mtbi_mechanism_0, -race_l) |>
-    dplyr::rename("race" = "race_0") |>
     dplyr::mutate(cluster = as.numeric(cluster)) |>
     dummy_cols(
         select_columns = "race",
@@ -389,8 +385,6 @@ lm_long_fit <- function(df, feature) {
     pooled_results <- pool(as.mira(models))
     return(summary(pooled_results))
 }
-
-replace_names
 
 pval_df <- data.frame()
 for (feature in replace_names) {
@@ -479,7 +473,8 @@ Cluster is never a significant feature in predicting longitudinal outcome given 
 In this section, I first adjust CBCL values by age and sex, bin them according to their quantiles within the entire ABCD dataset, and then check to see how profiles based on those bins differ across the clusters.
 
 ```{r}
-mtbi_long_changes <- readRDS(proc_path("2025_06_13_mtbi_long_changes.rds"))
+mtbi_long_changes <- readRDS(proc_path("2025_10_06_mtbi_long_changes.rds"))
+# HERE
 
 # Separating by time
 df0 <- mtbi_long_changes |>
@@ -746,10 +741,8 @@ saveRDS(adj_df_w_covs, proc_path("df_w_covs_adj.rds", TRUE))
 ```
 
 ```{r}
-
-all_out_adj <- readRDS(proc_path("2025_07_08_all_out_adj.rds"))
-
-adj_df_w_covs <- readRDS(proc_path("2025_07_08_df_w_covs_adj.rds"))
+all_out_adj <- readRDS(proc_path("2025_10_06_all_out_adj.rds"))
+adj_df_w_covs <- readRDS(proc_path("2025_10_06_df_w_covs_adj.rds"))
 
 all_out_adj |> colnames()
 
@@ -833,8 +826,6 @@ all_bin_df <- dplyr::full_join(
     t2_bin_cols, by = c("uid", "cluster", "imputation")
 )
 
-out_cols
-
 cat_df <- all_bin_df |>
     dplyr::mutate(
         cbcl_anxdep_cat = paste0(adj_cbcl_anxdep_bin_t0, "_", adj_cbcl_anxdep_bin_t2),
@@ -860,7 +851,7 @@ saveRDS(
     proc_path("adj_df_cat_annotated.rds", TRUE)
 )
 
-adj_df_cat_annotated <- readRDS(proc_path("2025_07_08_adj_df_cat_annotated.rds"))
+adj_df_cat_annotated <- readRDS(proc_path("2025_10_06_adj_df_cat_annotated.rds"))
 
 colnames(adj_df_cat_annotated)
 
@@ -922,7 +913,6 @@ quantile_plot <- function(df, feature, ref_df, probs, mode = "high") {
         theme_classic() + 
         custom_scale
 }
-
 ```
 
 
@@ -1023,12 +1013,10 @@ p_df |>
 saveRDS(p_df, proc_path("outcome_transition_pvals.rds", TRUE))
 saveRDS(pl, proc_path("outcome_transition_plots.rds", TRUE))
 
-p_df <- readRDS(proc_path("2025_07_08_outcome_transition_pvals.rds"))
-pl <- readRDS(proc_path("2025_07_08_outcome_transition_plots.rds"))
+p_df <- readRDS(proc_path("2025_10_06_outcome_transition_pvals.rds"))
+pl <- readRDS(proc_path("2025_10_06_outcome_transition_plots.rds"))
 
 pl[[1]]
-
-# HERE 2025-07-08
 
 # "Diagnostic accuracy (AUC = 0.9 1) and that the cut-off score
 # with the best diagnostic confidence, as determined by the
@@ -1044,7 +1032,7 @@ pl[[1]]
 Checking again, but now rather than high-high/high-low, examining if there is differences in high that went down vs. high that stayed same or went up.
 
 ```{r}
-adj_df_cat_annotated <- readRDS(proc_path("2025_07_08_adj_df_cat_annotated.rds"))
+adj_df_cat_annotated <- readRDS(proc_path("2025_10_06_adj_df_cat_annotated.rds"))
 
 t0_df <- adj_df_cat_annotated |>
     dplyr::filter(t == 0)
@@ -1250,6 +1238,7 @@ p_df |>
     dplyr::rename("Adjusted p-value" = "p_fisher_adj", "Feature" = "feature") |>
     dplyr::select(-p_fisher) |>
     knitr::kable(format = "markdown", digits = 6)
+
 sig_fts <- p_df |>
     dplyr::filter(p_fisher_adj < 0.05) |>
     dplyr::select(feature) |>
@@ -1280,16 +1269,14 @@ pairwise_df_sig |>
 
 sig_plots <- lapply(
     c(
-        "cbcl_withdep",
         "cbcl_thought",
-        "cbcl_somatic",
-        "cbcl_rulebreak",
-        "cbcl_social"
+        "cbcl_somatic"
     ),
     function(x) {
         (pl[[x]] | pl_2[[x]]) + plot_layout(widths = c(2, 1))
     }
 )
+
 my_sig <- function(comparisons, annotations, y_position) {
     geom_signif(
         comparisons = comparisons,
@@ -1300,15 +1287,13 @@ my_sig <- function(comparisons, annotations, y_position) {
         vjust = 0.3
     )
 }
+
 annotations <- list(
-    "withdep"   = my_sig(list(c("1", "2"), c("1", "3"), c("2", "3")), c("*", "*", "***"), c(1.02, 1.25, 1.12)),
-    "thought"   = my_sig(list(c("1", "3")), c("***"), 1.02),
-    "somatic"   = my_sig(list(c("2", "3"), c("1", "3")), c("**", "*"), c(1.02, 1.16)),
-    "rulebreak" = my_sig(list(c("1", "2"), c("2", "3")), c("**", "*"), c(1.02, 1.12)),
-    "social"    = my_sig(list(c("2", "3")), c("**"), 1.02)
+    "thought"   = my_sig(list(c("1", "2"), c("2", "3")), c("***", "***"), c(1.02, 1.16)),
+    "somatic"   = my_sig(list(c("1", "2"), c("2", "3")), c("***", "***"), c(1.02, 1.16))
 )
 sig_plots2 <- lapply(
-    1:5,
+    seq_along(annotations),
     function(x) {
         if (x != 3) {
             sig_plots[[x]][[2]] <- sig_plots[[x]][[2]] + theme(legend.position = "none")
@@ -1327,24 +1312,22 @@ change_plot <- wrap_plots(sig_plots2, ncol = 1)
 ggsave(
     filename = fig_path("high_change_plot_clean2.png", TRUE),
     plot = change_plot,
-    height = 13,
-    width = 8
+    height = 5,
+    width = 6
 )
-
-
 ```
 
 |Feature         | Adjusted p-value|
 |:---------------|----------------:|
-|cbcl_withdep    |         0.000133|
-|cbcl_thought    |         0.000133|
-|cbcl_somatic    |         0.008305|
-|cbcl_rulebreak  |         0.008305|
-|cbcl_social     |         0.008902|
-|cbcl_attention  |         0.299846|
-|sds_sleep       |         0.628342|
-|cbcl_anxdep     |         0.914292|
-|cbcl_aggressive |         0.914292|
+|cbcl_somatic    |         0.000000|
+|cbcl_thought    |         0.000036|
+|cbcl_withdep    |         0.091976|
+|sds_sleep       |         0.091976|
+|cbcl_social     |         0.336959|
+|cbcl_anxdep     |         0.456565|
+|cbcl_aggressive |         0.640358|
+|cbcl_attention  |         0.782927|
+|cbcl_rulebreak  |         0.782927|
 
 ```{r}
 
