@@ -37,6 +37,8 @@ import <- function(path) {
 
 ## Import raw data
 
+This chunk loads in raw ABCD 5.1 CSVs into data frames.
+
 ```{r}
 # Ohio TBI screen
 ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
@@ -94,14 +96,9 @@ ph_p_sds <- import("physical-health/ph_p_sds.csv")
 mri_y_adm_info <- import("imaging/mri_y_adm_info.csv")
 ```
 
-## Subject identification
+## Sample identification
 
-All information required for identifying children at a chronic stage (> 3 months) following mTBI as of baseline data collection is available in the `ph_p_otbi.csv` file.
-To identify subjects at a chronic stage post-mTBI, two intermediate pieces of information must be calculated from the original dataset:
-
-* identifying which head injuries were mTBIs
-* identifying the time since the most recent mTBI
-
+All information required for identifying children following mTBI as of baseline data collection is available in the `ph_p_otbi.csv` file.
 The structure of the Ohio State TBI screen as used for ABCD data collection was not completely compatible with the most commonly used definition of mTBI [@blennow_traumatic_2016], which requires at least one of the following:
 
 * Any period of loss of consciousness
@@ -159,28 +156,8 @@ write_csv(mtbi_subs, sub_path("mtbi_subs.csv", date = TRUE))
 write_csv(unij_subs, sub_path("unij_subs.csv", date = TRUE))
 ```
 
-
-A chunk for building the sample criteria figure:
-
-```{r}
-# 11864
-ph_p_otbi |>
-    detail_mtbi(abcd_y_lt) |>
-    filter_timepoint(0) |>
-    nrow()
-
-# 445
-ph_p_otbi |>
-    detail_mtbi(abcd_y_lt) |>
-    filter_timepoint(0) |>
-    dplyr::filter(mtbi == 1) |>
-    dplyr::filter(
-        moderate_tbi == 0 &
-        severe_tbi == 0
-    ) |>
-    nrow()
-```
-
+Throughout this and subsequent files, I make an effort to export intermediate data objects and re-import them in a following chunk.
+This is done both to serve as a reproducibility check as well as to serve as a checkpoint to resume work without tracking gigantic session files.
 
 ```{r}
 # CHECKPOINT
@@ -191,6 +168,7 @@ length(mtbi_subs)
 length(unij_subs)
 ```
 
+An overview of the types of injuries considered in the `ph_p_otbi` file can be examined by calling `abcdutils::original_tbi_names()`.
 A few types of injuries were handled differently from the rest in the above code.
 For the `other_loc` injury type, the questionnaire asked for a total number of injuries with LOC as well as a total number of injuries with LOC above 30 minutes.
 If their difference was above 0, they were labelled as having had an mTBI.
@@ -203,10 +181,9 @@ For the `other_multi` and `other_other_multi` injury types, insufficient informa
 The acute symptom data is found within the TBI dataset.
 We are interesed in the following acute symptoms:
 
-* mechanism of injury
-* age
-* LOC information
-* Feeling dazed or having memory loss
+* mechanism of injury (categorical)
+* LOC information (ordinal)
+* Feeling dazed or having memory loss (binary)
 
 A few more intermediate columns need to be added to isolate these variables for the most recent mTBIs of the subjects.
 
@@ -268,12 +245,12 @@ readr::write_csv(
 
 Demographic variables included in the analyses are:
 
-* Interview age
-* Injury age
-* Sex
-* Race
-* Household income
-* Pubertal status
+* Interview age (numeric, months)
+* Injury age (numeric, years)
+* Sex (binary)
+* Race (categorical)
+* Household income (ordinal)
+* Pubertal status (ordinal)
 
 #### Interview age
 
@@ -496,7 +473,7 @@ readr::write_csv(
 
 Medical history variables of interest include:
 
-1. Number of previous head injuries
+1. Number of previous head injuries (discrete)
 2. History of headaches (binary)
 
 #### History of headaches
