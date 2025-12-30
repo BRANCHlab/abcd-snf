@@ -8,7 +8,6 @@ library(readr)
 library(dplyr)
 library(here)
 library(abcdutils)
-#library(ComplexUpset)
 library(fastDummies)
 library(patchwork)
 library(visdat)
@@ -28,7 +27,7 @@ read <- function(path) {
 }
 ```
 
-## Sample characteristics
+## Importing baseline data
 
 ```{r}
 # Post imputation and harmonization
@@ -43,9 +42,6 @@ mtbi_test_df <- data.frame(read_csv(proc_path("2025_09_11_mtbi_test_df.csv")))
 unij_df <- data.frame(read_csv(proc_path("2025_09_11_unij_df.csv")))
 mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
 
-#visdat::vis_miss(mtbi_df)
-#sort(colSums(is.na(mtbi_df))) / nrow(mtbi_df) * 100
-
 # Post-imputation
 mtbi_train_imputed <- readRDS(proc_path("2025_09_11_mtbi_train_imputed.rds"))
 mtbi_test_imputed <- readRDS(proc_path("2025_09_11_mtbi_test_imputed.rds"))
@@ -53,6 +49,25 @@ unij_imputed <- readRDS(proc_path("2025_09_11_unij_imputed.rds"))
 pool_imputed <- readRDS(proc_path("2025_09_11_pool_imputed.rds"))
 ```
 
+This chunk examines the % of missingness in the original mTBI and uninjured sample
+
+```{r}
+mtbi_missingness_plot <- mtbi_df |>
+    dplyr::select(order(colnames(mtbi_df))) |>
+    dplyr::select(-subjectkey) |>
+    visdat::vis_miss() + theme(
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0)
+  )
+
+unij_missingness_plot <- unij_df |>
+    dplyr::select(order(colnames(unij_df))) |>
+    dplyr::select(-subjectkey) |>
+    visdat::vis_miss() + theme(
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0)
+  )
+```
+
+## Sample characteristics
 
 ```{r}
 sample_characterize <- function(data) {
@@ -124,6 +139,10 @@ mtbi_samp_char <- rbind(
     as.data.frame(all_dls_h_ns$"mtbi_der_u_dls"$"imp_1"),
     as.data.frame(all_dls_h_ns$"mtbi_val_u_dls"$"imp_1")
 ) |> sample_characterize()
+
+mtbi_samp_char
+
+
 
 unij_samp_char <- as.data.frame(all_dls_h_ns$"unij_all_u_dls"$"imp_1") |> sample_characterize()
 
