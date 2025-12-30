@@ -4,7 +4,7 @@ This chapter contains:
 1. Removal of neuroimaging data failing QC
 2. Random removal of siblings
 3. Train/test split
-4. Mice imputation of missing data
+4. MICE imputation of missing data
 5. Organization of imputed data into `data_list` class objects (from the `metasnf` package)
 
 ## Importing Extracted Data
@@ -177,44 +177,13 @@ unij_sm_cort_t_qc   <- iread("2025_09_11_unij_sm_cort_t_qc.csv")
 unij_sm_subc_v_qc   <- iread("2025_09_11_unij_sm_subc_v_qc.csv")
 ```
 
-```{r}
-library(mice)
-# 1. Create a simple toy dataset
-set.seed(123)
-data <- data.frame(
-  age = c(10, 11, 12, NA, 10, 11, 12, NA, 11, 10),
-  iq  = c(100, 105, 110, 115, NA, 102, NA, 108, 111, 100),
-  scanner_id = c("S1", "S1", "S2", NA, "S2", "S1", NA, "S2", "S1", NA)
-)
-# Turn scanner_id into a factor (common in MICE usage)
-data$scanner_id <- as.factor(data$scanner_id)
-# View missing data summary
-ini <- mice(data, maxit = 0)
-meth <- ini$method
-pred <- ini$predictorMatrix
-# Don't impute scanner_id
-meth["scanner_id"] <- ""
-# Predict age and iq using each other (you could add scanner_id if desired)
-pred["age", ] <- c(0, 1, 0)  # Predict age using iq only
-pred["iq", ]  <- c(1, 0, 0)  # Predict iq using age only
-imp <- mice(data, method = meth, predictorMatrix = pred, m = 5, seed = 42)
-completed_data <- complete(imp, action = "long", include = TRUE)
-# View completed data
-print(completed_data)
-# Compare original and completed data side-by-side
-cbind(original = data$scanner_id, imputed = completed_data$scanner_id)
-```
-
 ## Train/Test Split
 
 To avoid having training and testing data inform each other during imputation, we assign the splits prior to the imputation.
 This is only done in our primary analysis group (baseline mTBI).
 
 ```{r}
-mtbi_split <- train_test_assign(
-    train_frac = 0.8,
-    uids = mtbi_subs
-)
+mtbi_split <- train_test_assign(train_frac = 0.8, uids = mtbi_subs)
 
 mtbi_train_subs <- mtbi_split$"train"
 mtbi_test_subs <- mtbi_split$"test"
@@ -353,20 +322,16 @@ missing_columns(unij_df)
 ```
 
 ```{r}
-
-# Function that checks which variables have the biggest correlations# {{{
+# This function identifies the correlations between all pairs of variables
+# and returns all of those pairs whose correlation exceeds the threshold
 pairwise_correlations <- function(df, threshold = 0) {
-    # Remove missing data to help calculate correlations
     df <- na.omit(df)
     # Remove non-numeric columns
     non_numeric_cols <- sapply(df, function(x) !is.numeric(x))
     df <- df[, !non_numeric_cols]
-    # Calculate correlations
     correlations <- cor(df)
     # Ignore self-correlations
     diag(correlations) <- 0
-    # Take absolute value of the correlations, as strong anti-correlations also
-    # lead to strong linear dependence
     abs_cor <- abs(correlations)
     # Create dataframe of all pairs of correlations
     pairs <- t(combn(colnames(abs_cor), 2))
@@ -376,20 +341,20 @@ pairwise_correlations <- function(df, threshold = 0) {
     return(paired_cors)
 }
 
-# Function to help sort variables by pairwise correlations
+# This function sorts variables by pairwise correlations
 top_correlating_vars <- function(df, threshold = 0) {
     # Dataframe highlighting strongest correlations
     df <- pairwise_correlations(df, threshold)
-    # Iteratively build up an ordered correlations matrix by:
-    #   - Record one of the two variables contributing to the largest
-    #     pairwise correlation
-    #   - Remove that variables from the list of all pairs of correlations
-    #   - Repeat until all variables have been removed
     max_cor_df <- data.frame(
         variable = as.character(),
         max_cor = as.numeric()
     )
     i <- 0
+    # Iteratively build up an ordered correlations matrix by:
+    #   - Record one of the two variables contributing to the largest
+    #     pairwise correlation
+    #   - Remove that variables from the list of all pairs of correlations
+    #   - Repeat until all variables have been removed
     while (nrow(df) > 0) {
         i <- i + 1
         row_with_max_cor <- which(df$"cor" == max(df$"cor"))[1]
@@ -410,24 +375,20 @@ top_correlating_vars <- function(df, threshold = 0) {
     return(max_cor_df)
 }
 
-# Prediction matrix construction
-build_pred_mat <- function(df, n_predictors = 1) {
-    pred_mat <- matrix(
-        nrow = ncol(df),
-        ncol = ncol(df),
-        data = 1
-    )
+# This function builds a prediction matrix while preventing the N most
+# highly correlated features from participating as predictors
+build_pred_mat <- function(df, n_preds_dropped = 1) {
+    pred_mat <- matrix(nrow = ncol(df), ncol = ncol(df), data = 1)
     colnames(pred_mat) <- colnames(df)
     rownames(pred_mat) <- colnames(df)
     diag(pred_mat) <- 0
     pred_mat_vars <- top_correlating_vars(df)
-    vars_to_drop <- pred_mat_vars$"variable"[seq_len(n_predictors)]
+    vars_to_drop <- pred_mat_vars$"variable"[seq_len(n_preds_dropped)]
     print(paste0("Dropping: ", paste(vars_to_drop, collapse = ", ")))
     pred_mat[, vars_to_drop] <- 0
     return(pred_mat)
-}# }}}
-# pred_mat_exclusions controls how many of the top most correlated variables
-# are excluded as predictors from the predictor matrix.
+}
+
 run_imputation <- function(df,
                            pred_mat_exclusions = 0,
                            visit_sequence = NULL,
@@ -489,8 +450,6 @@ saveRDS(mtbi_test_imputed, proc_path("mtbi_test_imputed.rds", TRUE))
 complete(mtbi_test_imputed$"imputed", action = "long", include = FALSE) |>
     missing_columns()
 
-# HERE 2025-09-11
-
 #Uninjured
 set.seed(42)
 start <- Sys.time()
@@ -513,6 +472,8 @@ mtbi_test_imputed <- readRDS(proc_path("2025_09_11_mtbi_test_imputed.rds"))
 unij_imputed <- readRDS(proc_path("2025_09_11_unij_imputed.rds"))
 pool_imputed <- readRDS(proc_path("2025_09_11_pool_imputed.rds"))
 ```
+
+Density plots help visualize imputation results.
 
 ```{r}
 save_density_plots(
@@ -605,6 +566,8 @@ pool_complete <- read_csv(
 ```
 
 # mTBI subsetting
+
+For all the observations that were imputed together, this chunk appropriately splits them 
 
 ```{r}
 extract_imputed <- function(original_df, imputed_df, partition) {
@@ -753,7 +716,6 @@ For the sake of brevity, these will be referred to with the following notation:
 source("abcd/helper_functions.R")
 
 mtbi_train_parsed_imputations[[1]]
-
 
 names(mtbi_train_parsed_imputations) <- gsub("^mtbi_", "", names(mtbi_train_parsed_imputations))
 names(mtbi_test_parsed_imputations) <- gsub("^mtbi_", "", names(mtbi_test_parsed_imputations))
@@ -1021,8 +983,6 @@ visualize_combat <- function(initial_dl, harmonized_dl, site_df) {
 dl_harmonized <- combat_dl(dl, ol, mtbi_site)
 
 pl <- visualize_combat(dl, dl_harmonized, mtbi_site)
-
-names(all_dls)
 
 all_dls$"mtbi_der_sh_data_lists"$"imp_1" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_1", all_dls$"mtbi_train_oom_lists"$"imp_1", mtbi_site)
 all_dls$"mtbi_der_sh_data_lists"$"imp_2" <-  combat_dl(all_dls$"mtbi_train_data_lists"$"imp_2", all_dls$"mtbi_train_oom_lists"$"imp_2", mtbi_site)

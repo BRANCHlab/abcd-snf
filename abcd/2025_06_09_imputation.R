@@ -59,7 +59,7 @@ top_correlating_vars <- function(df, threshold = 0) {
     }
     return(max_cor_df)
 }
-build_pred_mat <- function(df, n_predictors = 1) {
+build_pred_mat <- function(df, n_preds_dropped = 1) {
     pred_mat <- matrix(
         nrow = ncol(df),
         ncol = ncol(df),
@@ -69,7 +69,7 @@ build_pred_mat <- function(df, n_predictors = 1) {
     rownames(pred_mat) <- colnames(df)
     diag(pred_mat) <- 0
     pred_mat_vars <- top_correlating_vars(df)
-    vars_to_drop <- pred_mat_vars$"variable"[seq_len(n_predictors)]
+    vars_to_drop <- pred_mat_vars$"variable"[seq_len(n_preds_dropped)]
     print(paste0("Dropping: ", paste(vars_to_drop, collapse = ", ")))
     pred_mat[, vars_to_drop] <- 0
     return(pred_mat)
