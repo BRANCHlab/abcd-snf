@@ -54,15 +54,9 @@ set.seed(42)
 mtbi_config <- snf_config(
     all_dls_h_ns$"mtbi_der_u_dls"$"imp_1",
     n_solutions = 200,
-    cnt_dist_fns = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    dsc_dist_fns = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
-    ord_dist_fns = list(
-        "standard_norm_euclidean" = sn_euclidean_distance
-    ),
+    cnt_dist_fns = list("standard_norm_euclidean" = sn_euclidean_distance),
+    dsc_dist_fns = list("standard_norm_euclidean" = sn_euclidean_distance),
+    ord_dist_fns = list("standard_norm_euclidean" = sn_euclidean_distance),
     use_default_dist_fns = TRUE
 )
 
@@ -523,15 +517,7 @@ cluster_label_swap <- function(solutions_matrix, c_a, c_b) {
         solutions_matrix,
         across(
             dplyr::starts_with("uid"),
-            ~ ifelse(
-                . == c_a,
-                c_b,
-                ifelse(
-                    . == c_b,
-                    c_a,
-                    .
-                )
-            )
+            ~ ifelse(. == c_a, c_b, ifelse(. == c_b, c_a, .))
         )
     )
     return(swapped_sm)
@@ -586,7 +572,7 @@ ordered_nmis <- nmis[nmi_order$ix, ]
 ordered_nmis$"nmi_rank" <- rank(-ordered_nmis$"s881", ties.method = "min")
 ```
 
-### Rank by p-values
+I also calculate p-value related ranks, however NMI scores are what are used in the manuscript.
 
 ```{r}
 pvals <- get_pvals(mtbi_der_top_solution_swp, keep_summaries = FALSE)
@@ -610,8 +596,6 @@ ordered_pvals$"pval_rank" <- rank(
     ties.method = "min"
 )
 ```
-
-### Joint rank
 
 ```{r}
 mtbi_der_top_solution_nmi_v_pval <- dplyr::full_join(
@@ -644,14 +628,6 @@ mtbi_der_top_solution_nmi_v_pval$"joint_rank" <- rank(
 )
 
 mtbi_der_top_solution_nmi_v_pval
-#joint_order <- sort(
-#    mtbi_der_top_solution_nmi_v_pval$"joint_rank",
-#    decreasing = FALSE,
-#    index.return = TRUE
-#)
-
-#mtbi_der_top_solution_nmi_v_pval_rank <-
-#    mtbi_der_top_solution_nmi_v_pval[joint_order$ix, ]
 
 mtbi_der_top_solution_nmi_v_pval_rank <- dplyr::rename(
     mtbi_der_top_solution_nmi_v_pval,
@@ -716,57 +692,6 @@ saveRDS(ofts, proc_path("ofts.rds", TRUE))
 ifts <- readRDS(proc_path("2025_09_15_ifts.rds"))
 afts <- readRDS(proc_path("2025_09_15_afts.rds"))
 ofts <- readRDS(proc_path("2025_09_15_ofts.rds"))
-```
-
-### Correlation of NMI and p-value
-
-Checking association between the two feature importance ranking methods.
-
-```{r}
-#nmi_v_p_rho <- cor(
-#    mtbi_der_top_solution_nmi_v_pval_rank$"nmi_rank",
-#    mtbi_der_top_solution_nmi_v_pval_rank$"pval_rank",
-#    method = "spearman"
-#)
-#
-#nmi_v_pval_plot <- mtbi_der_top_solution_nmi_v_pval_rank |>
-#    ggplot(
-#        aes(x = nmi_rank, y = pval_rank, label = feature, colour = domain)
-#    ) +
-#    geom_point(size = 2) + 
-#    scale_colour_manual(
-#        values = c(
-#            "AS" = "#85929e",
-#            "D" = "#bb8fce",
-#            "N" = "#e59866",
-#            "MH" = "#7fb3d5",
-#            "P" = "#52be80"
-#        )
-#    ) +
-#    theme_bw() +
-#    labs(x = "Rank by NMI", y = "Rank by Association p-value") +
-#    ggrepel::geom_text_repel(
-#        force = 1,
-#        max.overlaps = 35,
-#        size = 4
-#    ) +
-#    annotate(
-#        "text",
-#        x = 4,
-#        y = 50,
-#        size = 5,
-#        label = paste("Spearman's ρ =", round(nmi_v_p_rho, 2)),
-#        hjust = 0
-#    ) + 
-#    theme(text = element_text(size = 20))
-#nmi_v_pval_plot
-#
-#ggsave(
-#    fig_path("nmi_v_pval_plot.png", TRUE),
-#    nmi_v_pval_plot,
-#    width = 14,
-#    height = 12
-#)
 ```
 
 ```{r}
@@ -1992,20 +1917,12 @@ base_adj_ari_hm <- meta_cluster_heatmap(
 demo_double_adj_esdf <- as.data.frame(demo_double_adj_ext_sol_df)
 demo_double_adj_esdf$"impairment_separation" <- -log10(demo_double_adj_esdf$"mean_pval")
 
-demo_adj_split_vec <- c(
-    30,
-    65,
-    183,
-    236,
-    281,
-    361,
-    375
-    #171,
-    #218,
-    #266
-)
+demo_adj_split_vec <- c(30, 65, 183, 236, 281, 361, 375)
+
 saveRDS(demo_adj_split_vec, proc_path("demo_adj_split_vec.rds", TRUE))
+
 demo_adj_split_vec <- readRDS(proc_path("2025_09_23_demo_adj_split_vec.rds"))
+
 # The double adjustment does not yield and interesting meta clusters
 full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
     x = demo_adj_ari,
@@ -2022,7 +1939,7 @@ full_demo_double_adj_ari_hm <- meta_cluster_heatmap(
     annotation_colours = list(
         "Impairment Separation" = colour_scale(
             # Using the separation scale of the original derivation clustering
-            mtbi_der_esdf$"impairment_separation",
+            demo_double_adj_esdf$"impairment_separation",
             min_colour = "gray7",
             max_colour = "limegreen"
         )
