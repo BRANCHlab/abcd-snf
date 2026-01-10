@@ -904,14 +904,13 @@ matched_unij_ext_sol_df_list <- readRDS(
 ```
 
 ```{r}
+# There are some duplicated data frames in here
 duplicated(matched_unij_ext_sol_df_list)
 
+# Checking which data frames are the duplicates
 vec <- matched_unij_ext_sol_df_list
-
 dup_indices <- which(duplicated(vec))
-
 dup_indices
-
 for (i in dup_indices) {
     cat(names(vec)[i], " is equal to:\n", sep = "")
     for (j in seq_along(vec)) {
@@ -921,57 +920,49 @@ for (i in dup_indices) {
     }
 }
 
-#op_u is equal to:
-#    -  do_u
-#op_p is equal to:
-#    -  do_p
-#dpo_p is equal to:
-#    -  dp_p
-#dpo_u is equal to:
-#    -  dp_u
+#op_u = do_u
+#op_p = do_p
+
+#dpo_p = dp_p
+#dpo_u = dp_u
 
 names(matched_unij_ext_sol_df_list[!duplicated(vec)])
 
+#remove duplicated data frames
 matched_unij_ext_sol_df_list_dedup <- matched_unij_ext_sol_df_list[!duplicated(vec)]
 
-# Tight requirement: -log10(pval) > 3
-matched_unij_ext_sol_df_3c_list_dedup <- lapply(
+## Tight requirement: -log10(pval) > 3
+#matched_unij_ext_sol_df_3c_list_dedup <- lapply(
+#    matched_unij_ext_sol_df_list_dedup,
+#    function(x) {
+#        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 3, ]
+#        if (nrow(x) > 0) {
+#            return(x)
+#        } 
+#    }
+#)
+
+## Loose requirement: -log10(pval) > 1
+#matched_unij_ext_sol_df_3c_list_dedup_loose <- lapply(
+#    matched_unij_ext_sol_df_list_dedup,
+#    function(x) {
+#        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 1, ]
+#        if (nrow(x) > 0) {
+#            return(x)
+#        } 
+#    }
+#)
+
+# Only requirement is nclust = 3
+matched_unij_ext_sol_df_list_3c <- lapply(
     matched_unij_ext_sol_df_list_dedup,
     function(x) {
-        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 3, ]
+        x <- x[x$"nclust" == 3, ]
         if (nrow(x) > 0) {
             return(x)
         } 
     }
 )
-
-lapply(
-    matched_unij_ext_sol_df_list,
-    function(x) {
-        sum(x$"nclust" == 3 & -log10(x$"mean_pval") > 1)
-    }
-) |> unlist() |> sum()
-
-# Loose requirement: -log10(pval) > 1
-matched_unij_ext_sol_df_3c_list_dedup_loose <- lapply(
-    matched_unij_ext_sol_df_list_dedup,
-    function(x) {
-        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 1, ]
-        if (nrow(x) > 0) {
-            return(x)
-        } 
-    }
-)
-
--log10(0.1)
-
-lapply(
-    matched_unij_ext_sol_df_list,
-    function(x) {
-        x <- x[x$"nclust" == 3 & x$"mean_pval" <= 0.001, ]
-        return(nrow(x))
-    }
-) |> unlist() |> sum()
 
 lapply(
     matched_unij_ext_sol_df_list,
@@ -1018,124 +1009,16 @@ ggsave(
     dpi = 120
 )
 
-lapply(matched_unij_ext_sol_df_list_dedup, nrow) |> unlist() |> sum
+lapply(matched_unij_ext_sol_df_list_dedup, nrow) |> unlist() |> sum() #2400
 
-matched_unij_ext_sol_df_3c_list_dedup_loose[[1]] |> nrow() # 10
-
-matched_unij_ext_sol_df_3c_list_dedup_loose[[2]] |> nrow() # 11
-
-matched_unij_ext_sol_df_3c_list_dedup_loose[[3]] |> nrow() # 18
-
-matched_unij_ext_sol_df_3c_list
-
-unlist(sapply(matched_unij_ext_sol_df_3c_list, function(x) nrow(x) > 0))
-
-# 9 tight matches
-sapply(matched_unij_ext_sol_df_3c_list_dedup, nrow) |>
+# 274 3 cluster solutions
+sapply(matched_unij_ext_sol_df_list_3c, nrow) |>
     unlist() |>
     sum()
 
-# 142 loose matches
-sapply(matched_unij_ext_sol_df_3c_list_dedup_loose, nrow) |>
-    unlist() |>
-    sum()
-
-matched_unij_ext_sol_df_3c_list_dedup <- matched_unij_ext_sol_df_3c_list_dedup[sapply(matched_unij_ext_sol_df_3c_list_dedup, function(x) isTRUE(nrow(x) > 0))]
-matched_unij_ext_sol_df_3c_list_dedup_loose <- matched_unij_ext_sol_df_3c_list_dedup_loose[sapply(matched_unij_ext_sol_df_3c_list_dedup_loose, function(x) isTRUE(nrow(x) > 0))]
-
-saveRDS(matched_unij_ext_sol_df_3c_list_dedup, proc_path("matched_unij_ext_sol_df_3c_list_dedup.rds", TRUE))
-saveRDS(matched_unij_ext_sol_df_3c_list_dedup_loose, proc_path("matched_unij_ext_sol_df_3c_list_dedup_loose.rds", TRUE))
-
-matched_unij_ext_sol_df_3c_list_dedup <- readRDS(proc_path("2025_10_02_matched_unij_ext_sol_df_3c_list_dedup.rds"))
-matched_unij_ext_sol_df_3c_list_dedup_loose <- readRDS(proc_path("2025_10_02_matched_unij_ext_sol_df_3c_list_dedup_loose.rds"))
-```
-
-```{r}
-# Domain colour labels
-dcols <- c(
-    "AS" = "#85929e",
-    "D" = "#bb8fce",
-    "N" = "#e59866",
-    "MH" = "#7fb3d5",
-    "P" = "#52be80",
-    "S" = "#d98880",
-    "B" = "#ff3131"
-)
-
-# o_p, dp_u, dp_p, do_p
-names(matched_unij_ext_sol_df_3c_list_dedup)
-
-matched_unij_o_p_manhattan <- mc_manhattan_plot(
-    matched_unij_ext_sol_df_3c_list_dedup$"o_p",
-    dl = matched_unij_dl_o_p,
-    target_dl = matched_unij_ol_o_p,
-    domain_colours = dcols
-)
-
-matched_unij_dp_u_manhattan <- mc_manhattan_plot(
-    matched_unij_ext_sol_df_3c_list_dedup$"dp_u",
-    dl = matched_unij_dl_dp_u,
-    target_dl = matched_unij_ol_dp_u,
-    domain_colours = dcols
-)
-
-matched_unij_dp_p_manhattan <- mc_manhattan_plot(
-    matched_unij_ext_sol_df_3c_list_dedup$"dp_p",
-    dl = matched_unij_dl_dp_p,
-    target_dl = matched_unij_ol_dp_p,
-    domain_colours = dcols
-)
-
-matched_unij_do_p_manhattan <- mc_manhattan_plot(
-    matched_unij_ext_sol_df_3c_list_dedup$"do_p",
-    dl = matched_unij_dl_do_p,
-    target_dl = matched_unij_ol_do_p,
-    domain_colours = dcols
-)
-
-matched_unij_manhattan_plots <- list(
-    "o_p" = matched_unij_o_p_manhattan,
-    "dp_u" = matched_unij_dp_u_manhattan,
-    "dp_p" = matched_unij_dp_p_manhattan,
-    "do_p" = matched_unij_do_p_manhattan
-)
-
-saveRDS(matched_unij_manhattan_plots, fig_path("matched_unij_manhattan_plots.rds", TRUE))
-```
-
-```{r}
-# CHECKPOINT
-matched_unij_manhattan_plots <- readRDS(fig_path("2025_10_02_matched_unij_manhattan_plots.rds"))
-```
-
-```{r}
-# Quick save function
-qs2 <- function(plot, path, w = 18, h = 14, d = 120) {    
-    path <- paste0("matched_unij_", path, "_manhattan.png")
-    ggsave(
-        fig_path(path, TRUE),
-        plot,
-        width = w,
-        height = h,
-        dpi = d
-    )
-}
-
-# Small function to calculate how tall each manhattan plot
-# should be.
-heighter <- function(panes) {
-    panes * 4/3 + 10/3
-}
-
-matched_unij_manhattan_plots$"o_p" # 1
-matched_unij_manhattan_plots$"dp_u" # 5
-matched_unij_manhattan_plots$"dp_p" # 2
-matched_unij_manhattan_plots$"do_p" # 1
-
-qs2(matched_unij_manhattan_plots$"o_p", "o_p", h = heighter(1))
-qs2(matched_unij_manhattan_plots$"dp_u", "dp_u", h = heighter(5))
-qs2(matched_unij_manhattan_plots$"dp_p", "dp_p", h = heighter(2))
-qs2(matched_unij_manhattan_plots$"do_p", "do_p", h = heighter(1))
+matched_unij_ext_sol_df_list_3c <- matched_unij_ext_sol_df_list_3c[sapply(matched_unij_ext_sol_df_list_3c, function(x) isTRUE(nrow(x) > 0))]
+saveRDS(matched_unij_ext_sol_df_list_3c, proc_path("matched_unij_ext_sol_df_list_3c.rds", TRUE))
+matched_unij_ext_sol_df_list_3c <- readRDS(proc_path("2026_01_09_matched_unij_ext_sol_df_list_3c.rds"))
 ```
 
 ```{r}
@@ -1186,13 +1069,10 @@ matched_unij_dls <- readRDS(proc_path("2025_10_02_matched_unij_dls.rds"))
 matched_unij_ols <- readRDS(proc_path("2025_10_02_matched_unij_ols.rds"))
 ```
 
-
 ```{r}
 mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits_t.csv"))
 mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
 ```
-
-
 
 ```{r}
 # CHECKPOINT
@@ -1200,18 +1080,20 @@ classifier_ifts <- readRDS(proc_path("2025_09_23_classifier_ifts.rds"))
 classifier_ifts
 ```
 
-Calculating concordance (similarity between matched uninjured solution and baseline mTBI solution topologies) using loose threshold.
+Calculating concordance (similarity between matched uninjured solution and baseline mTBI solution topologies).
 
 ```{r}
+# Using the auto_plot function to extract well-formatted data frames
+# for concordance calculations
 matched_pl_dfs <- lapply(
-    names(matched_unij_ext_sol_df_3c_list_dedup_loose),
+    names(matched_unij_ext_sol_df_list_3c),
     function(match) {
         pl <- list()
-        nrows <- nrow(matched_unij_ext_sol_df_3c_list_dedup_loose[[match]])
+        nrows <- nrow(matched_unij_ext_sol_df_list_3c[[match]])
         for (row in seq_len(nrows)) {
             print(paste0(match, row))
             p <- auto_plot(
-                matched_unij_ext_sol_df_3c_list_dedup_loose[[match]][row, ],
+                matched_unij_ext_sol_df_list_3c[[match]][row, ],
                 dl = c(matched_unij_dls[[match]], matched_unij_ols[[match]]),
                 return_plots = FALSE
             )
@@ -1221,12 +1103,12 @@ matched_pl_dfs <- lapply(
     }
 )
 
-names(matched_pl_dfs) <- names(matched_unij_ext_sol_df_3c_list_dedup_loose)
+names(matched_pl_dfs) <- names(matched_unij_ext_sol_df_list_3c)
 matched_pl_dfs <- unlist(matched_pl_dfs, recursive = FALSE)
 
 saveRDS(matched_pl_dfs, proc_path("matched_pl_dfs.rds", TRUE))
 
-matched_pl_dfs <- readRDS(proc_path("2025_10_02_matched_pl_dfs.rds"))
+matched_pl_dfs <- readRDS(proc_path("2026_01_09_matched_pl_dfs.rds"))
 
 source("abcd/helper_functions.R")
 
@@ -1240,9 +1122,7 @@ matched_pl_tops <- lapply(
 
 saveRDS(matched_pl_tops, proc_path("matched_pl_tops.rds", TRUE))
 
-matched_pl_tops <- readRDS(proc_path("2025_10_02_matched_pl_tops.rds"))
-
-matched_pl_tops |> names()
+matched_pl_tops <- readRDS(proc_path("2026_01_09_matched_pl_tops.rds"))
 
 matched_pl_gen_fts <- lapply(
     matched_pl_tops,
@@ -1250,39 +1130,6 @@ matched_pl_gen_fts <- lapply(
         generalizable_features(x, compare_fn_a)
     }
 )
-
-#matched_pl_gen_fts_long <- lapply(
-#    matched_pl_gen_fts,
-#    function(x) {
-#        long_x <- pivot_longer(
-#            x,
-#            cols = -feature,
-#            names_to = "comparison",
-#            values_to = "order_unij"
-#        )
-#        long_gen_x <- dplyr::left_join(
-#            mtbi_gen_long,
-#            long_x,
-#            by = c("feature", "comparison")
-#        ) 
-#        long_gen_x <- dplyr::mutate(
-#            long_gen_x,
-#            match = dplyr::case_when(
-#                is.na(order_unij) ~ 0,
-#                order != order_unij ~ 0, 
-#                order == order_unij ~ 1
-#            )
-#        )
-#        return(long_gen_x)
-#    }
-#)
-#
-#matched_pl_gen_fts_long_fair <- lapply(
-#    matched_pl_gen_fts_long,
-#    function(x) {
-#        dplyr::filter(x, !grepl("mtbi", feature))
-#    }
-#)
 
 concordance_w_mtbi_quick <- function(data_df, n = NULL, iters = 10, procs = 1, mtbi_data) {
     #start <- Sys.time()
@@ -1355,9 +1202,8 @@ matched_pl_concordances <- lapply(
 )
 saveRDS(matched_pl_concordances, proc_path("matched_pl_concordances.rds", TRUE))
 
-# HERE
 matched_pl_concordances <- readRDS(
-    proc_path("2025_10_02_matched_pl_concordances.rds")
+    proc_path("2026_01_09_matched_pl_concordances.rds")
 )
 
 concordance_df <- data.frame(
@@ -1382,8 +1228,8 @@ concordance_df$"unij_set"
 concordance_df_summary <- concordance_df |>
     dplyr::mutate(
         match = dplyr::case_when(
-            grepl("dp_", unij_set) ~ "D, P",
-            grepl("do_", unij_set) ~ "D, O",
+            grepl("dp_", unij_set) ~ "D+P / D+P+O",
+            grepl("do_", unij_set) ~ "D+O / O+P",
             grepl("d_", unij_set) ~ "D",
             grepl("p_", unij_set) ~ "P",
             grepl("o_", unij_set) ~ "O",
@@ -1423,7 +1269,9 @@ concordance_df_summary |>
     knitr::kable(
         format = "markdown",
         digits = 1
-    ) |>
+    )
+
+
         writeLines(proc_path("matched_unij_concordance_summary.txt", TRUE))
 ```
 
