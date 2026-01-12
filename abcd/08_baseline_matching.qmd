@@ -931,28 +931,6 @@ names(matched_unij_ext_sol_df_list[!duplicated(vec)])
 #remove duplicated data frames
 matched_unij_ext_sol_df_list_dedup <- matched_unij_ext_sol_df_list[!duplicated(vec)]
 
-## Tight requirement: -log10(pval) > 3
-#matched_unij_ext_sol_df_3c_list_dedup <- lapply(
-#    matched_unij_ext_sol_df_list_dedup,
-#    function(x) {
-#        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 3, ]
-#        if (nrow(x) > 0) {
-#            return(x)
-#        } 
-#    }
-#)
-
-## Loose requirement: -log10(pval) > 1
-#matched_unij_ext_sol_df_3c_list_dedup_loose <- lapply(
-#    matched_unij_ext_sol_df_list_dedup,
-#    function(x) {
-#        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 1, ]
-#        if (nrow(x) > 0) {
-#            return(x)
-#        } 
-#    }
-#)
-
 # Only requirement is nclust = 3
 matched_unij_ext_sol_df_list_3c <- lapply(
     matched_unij_ext_sol_df_list_dedup,
@@ -962,6 +940,17 @@ matched_unij_ext_sol_df_list_3c <- lapply(
             return(x)
         } 
     }
+)
+
+saveRDS(
+    matched_unij_ext_sol_df_list_3c,
+    proc_path("matched_unij_ext_sol_df_list_3c.rds", TRUE)
+)
+```
+
+```{r}
+matched_unij_ext_sol_df_list_3c <- readRDS(
+    proc_path("2026_01_12_matched_unij_ext_sol_df_list_3c.rds")
 )
 
 lapply(
@@ -1015,10 +1004,6 @@ lapply(matched_unij_ext_sol_df_list_dedup, nrow) |> unlist() |> sum() #2400
 sapply(matched_unij_ext_sol_df_list_3c, nrow) |>
     unlist() |>
     sum()
-
-matched_unij_ext_sol_df_list_3c <- matched_unij_ext_sol_df_list_3c[sapply(matched_unij_ext_sol_df_list_3c, function(x) isTRUE(nrow(x) > 0))]
-saveRDS(matched_unij_ext_sol_df_list_3c, proc_path("matched_unij_ext_sol_df_list_3c.rds", TRUE))
-matched_unij_ext_sol_df_list_3c <- readRDS(proc_path("2026_01_09_matched_unij_ext_sol_df_list_3c.rds"))
 ```
 
 ```{r}
@@ -1217,13 +1202,7 @@ concordance_df
 
 write_csv(concordance_df, proc_path("matched_unij_concordance.csv", TRUE))
 
-concordance_df <- read_csv(proc_path("2025_10_02_matched_unij_concordance.csv"))
-
-concordance_df_old <- read_csv(proc_path("2025_07_22_matched_unij_concordance.csv"))
-
-grepl("dp_p", concordance_df$"unij_set")
-
-concordance_df$"unij_set"
+concordance_df <- read_csv(proc_path("2026_01_12_matched_unij_concordance.csv"))
 
 concordance_df_summary <- concordance_df |>
     dplyr::mutate(
@@ -1263,16 +1242,15 @@ concordance_df_summary |>
     dplyr::rename(
         "Criteria" = "match",
         "Pooled" = "imp",
-        "Average Concordance" = "avg_concordance",
+        "Mean Concordance" = "avg_concordance",
         "Max Concordance" = "max_concordance"
     ) |>
     knitr::kable(
         format = "markdown",
         digits = 1
-    )
-
-
+    ) |>
         writeLines(proc_path("matched_unij_concordance_summary.txt", TRUE))
+
 ```
 
 

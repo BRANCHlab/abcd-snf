@@ -53,7 +53,7 @@ all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
 all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
 ```
 
-## Q1: Was the baseline clustering informative for LT outcomes?<!-- {{{ -->
+## Q1: Was the baseline clustering informative for LT outcomes?
 
 ```{r}
 names(all_long_dls_h_ns)
@@ -157,24 +157,6 @@ mtbi_long_changes <- readRDS(proc_path("2025_10_06_mtbi_long_changes.rds"))
 ```
 
 ```{r}
-# Some plotting functions
-gg_long_cor_imp <- function(df, feature, long = TRUE) {
-    f1 <- paste0(feature, "_0")
-    if (long) {
-        f2 <- paste0(feature, "_l")
-    } else {
-        f2 <- paste0(feature, "_d")
-    }
-    plot <- ggplot(
-        df,
-        aes(x = .data[[f1]], y = .data[[f2]])
-    ) +
-        geom_jitter(alpha = 0.2) +
-        facet_wrap(~ imputation) +
-        theme_bw()
-    return(plot)
-}
-
 gg_long_cor <- function(df, feature, long = TRUE) {
     df <- dplyr::filter(df, imputation == 1)
     f1 <- paste0(feature, "_0")
@@ -466,15 +448,14 @@ lm_long_lrt_fit(mtbi_long_changes, "cbcl_anxdep")
 ```
 
 Cluster is never a significant feature in predicting longitudinal outcome given baseline outcome.
-<!-- }}} -->
 
-## Longitudinal trajectory check 1<!-- {{{ -->
+
+## Longitudinal trajectory check 1
 
 In this section, I first adjust CBCL values by age and sex, bin them according to their quantiles within the entire ABCD dataset, and then check to see how profiles based on those bins differ across the clusters.
 
 ```{r}
 mtbi_long_changes <- readRDS(proc_path("2025_10_06_mtbi_long_changes.rds"))
-# HERE
 
 # Separating by time
 df0 <- mtbi_long_changes |>
@@ -1025,7 +1006,7 @@ pl[[1]]
 # total score); this cut-off point gave a sensitivity of 0.89 and a
 # specificity of 0.74. This score correctly identified 73.4% of th" - bruni
 ```
-<!-- }}} -->
+
 
 # Longitudinal trajectory check 2
 
@@ -1351,7 +1332,7 @@ pl_2$"cbcl_thought"
     
 ```
 
-## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?<!-- {{{ -->
+## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
 
 ```{r}
 matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
@@ -1581,9 +1562,9 @@ pvalue_df <- read_csv(proc_path("2025_02_16_pvalue_df.csv"))
 Quite a few features there that remain significant even after bonferroni correction.
 There certainly seem to be factors that increase a child's risk of sustaining an mTBI.
 These are all taken from the same data collection period as well!
-<!-- }}} -->
 
-## Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative? <!-- {{{ -->
+
+## Q3. Clustering of the longitudinal sample with their baseline vs. their longitudinal data: both equally informative? 
 
 ```{r}
 lmtb_0_dls <- all_long_dls_h_ns$"lmtb_0_dls"
@@ -2089,7 +2070,7 @@ nrow(lmtb_l_conc_df)
 
 Neither option resulted in particularly similar cluster solution to the original mTBI sample.
 Suggests that there may be something unique to the kids who had their injury at a much earlier timepoint.
-<!-- }}} -->
+
 
 ## Q4. Classifier built from baseline mTBI data: informative?
 
@@ -3837,7 +3818,7 @@ unij_0_conc_data <- data.frame(group = "unij_0", x = na.omit(unij_0_pred_conc))
 unij_l_conc_data <- data.frame(group = "unij_l", x = na.omit(unij_l_pred_conc))
 ```
 
-### Meta clustering the longitudinal timepoint for baseline concussion group# {{{
+### Meta clustering the longitudinal timepoint for baseline concussion group# 
 
 ```{r}
 ## CHECKPOINT
@@ -4212,4 +4193,4 @@ If I go back to when I was about to run extend solutions, and instead try to fin
 #)
 ```
 
-Not all that interesting; kids who had worse scores to begin with have an easier time getting better.# }}}
+Not all that interesting; kids who had worse scores to begin with have an easier time getting better.# 
