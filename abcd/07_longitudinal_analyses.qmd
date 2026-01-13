@@ -1609,9 +1609,6 @@ lmtb_0_sol_df_u4 <- batch_snf(dl = lmtb_0_dls[[4]], sc = lmtb_config, processes 
 saveRDS(lmtb_0_sol_df_u4, proc_path("lmtb_0_sol_df_u4.rds", TRUE))
 lmtb_0_sol_df_u5 <- batch_snf(dl = lmtb_0_dls[[5]], sc = lmtb_config, processes = 48)
 saveRDS(lmtb_0_sol_df_u5, proc_path("lmtb_0_sol_df_u5.rds", TRUE))
-```
-
-```{r}
 lmtb_l_sol_df_u1 <- batch_snf(dl = lmtb_l_dls[[1]], sc = lmtb_config, processes = 48)
 saveRDS(lmtb_l_sol_df_u1, proc_path("lmtb_l_sol_df_u1.rds", TRUE))
 lmtb_l_sol_df_u2 <- batch_snf(dl = lmtb_l_dls[[2]], sc = lmtb_config, processes = 48)
@@ -1694,6 +1691,8 @@ lmtb_l_ari <- readRDS(proc_path("2025_10_02_lmtb_l_ari.rds"))
 lmtb_l_ari_order <- unlist(read_csv(proc_path("2025_10_02_lmtb_l_ari_order.csv")))
 names(lmtb_l_ari_order) <- NULL
 ```
+
+At this point we have the cluster solutions for the pre-injury and post-injury data.
 
 ```{r}
 # Solo imputation 1
@@ -2053,16 +2052,27 @@ lmtb_l_conc_df <- readRDS(proc_path("2025_10_02_lmtb_l_concordance_df.rds"))
 
 # max is 76.2%
 lmtb_0_conc_df |>
-    arrange(-concordance) |>
-    head(5)
+    arrange(-concordance)
 
 # 43 3 cluster solutions
 nrow(lmtb_0_conc_df)
 
 # max is 73.0%
 lmtb_l_conc_df |>
-    arrange(-concordance) |>
-    head(5)
+    arrange(-concordance)
+
+lmtb_0_conc_df$"group" <- "pre-injury"
+lmtb_l_conc_df$"group" <- "post-injury"
+
+# HERE
+
+rbind(lmtb_0_conc_df, lmtb_l_conc_df) |>
+    dplyr::mutate(concordance = 100 * concordance) |>
+    ggplot(aes(x = concordance, colour = group)) +
+    geom_density() +
+    labs(x = "Concordance (%)", y = "Density", colour = "Time point") +
+    theme_bw() +
+    theme(text = element_text(size = 14))
 
 # 75 3 cluster solutions
 nrow(lmtb_l_conc_df)
@@ -3818,7 +3828,7 @@ unij_0_conc_data <- data.frame(group = "unij_0", x = na.omit(unij_0_pred_conc))
 unij_l_conc_data <- data.frame(group = "unij_l", x = na.omit(unij_l_pred_conc))
 ```
 
-### Meta clustering the longitudinal timepoint for baseline concussion group# 
+### Meta clustering the longitudinal timepoint for baseline concussion group
 
 ```{r}
 ## CHECKPOINT
@@ -4193,4 +4203,4 @@ If I go back to when I was about to run extend solutions, and instead try to fin
 #)
 ```
 
-Not all that interesting; kids who had worse scores to begin with have an easier time getting better.# 
+Not all that interesting; kids who had worse scores to begin with have an easier time getting better.
