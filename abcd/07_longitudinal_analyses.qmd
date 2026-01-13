@@ -1979,25 +1979,7 @@ concordance_w_mtbi_quick <- function(data_df, n = NULL, iters = 10, procs = 1, m
 mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits_t.csv"))
 mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
 
-z1 <- auto_plot(
-    lmtb_0_ext_sol_df[1, ],
-    dl = c(lmtb_0_dls[[1]], lmtb_0_ols[[1]]),
-    return_plots = FALSE
-)
-
-z2 <- auto_plot(
-    lmtb_0_ext_sol_df[1:200, ],
-    dl = c(lmtb_0_dls[[1]], lmtb_0_ols[[1]]),
-    return_plots = FALSE
-)
-
-dl_idx <- c(
-    rep(1, 200),
-    rep(2, 200),
-    rep(3, 200),
-    rep(4, 200),
-    rep(5, 200)
-)
+dl_idx <- c(rep(1, 200), rep(2, 200), rep(3, 200), rep(4, 200), rep(5, 200))
 
 conc_df <- data.frame()
 for (i in 1:1000) {
@@ -2009,7 +1991,10 @@ for (i in 1:1000) {
             dl = c(lmtb_0_dls[[idx]], lmtb_0_ols[[idx]]),
             return_plots = FALSE
         )
-        conc <- concordance_w_mtbi_quick(lmtb_0_pl_df, mtbi_data = mtbi_gen_long)
+        conc <- concordance_w_mtbi_quick(
+            lmtb_0_pl_df,
+            mtbi_data = mtbi_gen_long
+        )
         conc_df <- rbind(
             conc_df,
             data.frame(
@@ -2032,7 +2017,10 @@ for (i in 1:1000) {
             dl = c(lmtb_l_dls[[idx]], lmtb_l_ols[[idx]]),
             return_plots = FALSE
         )
-        conc <- concordance_w_mtbi_quick(lmtb_l_pl_df, mtbi_data = mtbi_gen_long)
+        conc <- concordance_w_mtbi_quick(
+            lmtb_l_pl_df,
+            mtbi_data = mtbi_gen_long
+        )
         conc_df <- rbind(
             conc_df,
             data.frame(
@@ -2054,6 +2042,8 @@ lmtb_l_conc_df <- readRDS(proc_path("2025_10_02_lmtb_l_concordance_df.rds"))
 lmtb_0_conc_df |>
     arrange(-concordance)
 
+mean(lmtb_0_conc_df$"concordance")
+
 # 43 3 cluster solutions
 nrow(lmtb_0_conc_df)
 
@@ -2061,18 +2051,28 @@ nrow(lmtb_0_conc_df)
 lmtb_l_conc_df |>
     arrange(-concordance)
 
-lmtb_0_conc_df$"group" <- "pre-injury"
-lmtb_l_conc_df$"group" <- "post-injury"
+lmtb_0_conc_df$"group" <- "Pre-injury"
+lmtb_l_conc_df$"group" <- "Post-injury"
 
-# HERE
-
-rbind(lmtb_0_conc_df, lmtb_l_conc_df) |>
+conc_hist <- rbind(lmtb_0_conc_df, lmtb_l_conc_df) |>
     dplyr::mutate(concordance = 100 * concordance) |>
-    ggplot(aes(x = concordance, colour = group)) +
-    geom_density() +
-    labs(x = "Concordance (%)", y = "Density", colour = "Time point") +
+    ggplot(aes(x = concordance)) +
+    geom_histogram(binwidth = 1, colour = "black", fill = "grey") +
+    labs(x = "Concordance (%)", y = "Count") +
+    facet_wrap(~group) +
+    scale_y_continuous(
+        limits = c(0, 10),
+        breaks = seq(0, 10, by = 1),
+        minor_breaks = NULL) +
     theme_bw() +
     theme(text = element_text(size = 14))
+
+ggsave(
+    fig_path("lmtb_conc_hist.png", TRUE),
+    conc_hist,
+    width = 10,
+    height = 4
+)
 
 # 75 3 cluster solutions
 nrow(lmtb_l_conc_df)
