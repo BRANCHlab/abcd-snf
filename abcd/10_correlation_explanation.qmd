@@ -80,32 +80,6 @@ permutation_test_corrs <- function(df1, df2, method, fisher_z, perms) {
     cor1 <- cor1[ofts, nofts]
     cor2 <- calculate_cor_mat(df2, method, fisher_z)[ofts, nofts]
     observed_diff <- mean(abs(cor1 - cor2), na.rm = TRUE)
-    perm_diffs <- numeric(perms)
-    n1 <- nrow(df1)
-    n2 <- nrow(df2)
-    n <- n1 + n2
-    for (i in 1:perms) {
-        merged_df <- rbind(df1, df2)[sample(n), ]
-        perm_cor1 <- calculate_cor_mat(merged_df[1:n1, ], method, fisher_z)[ofts, nofts]
-        perm_cor2 <- calculate_cor_mat(merged_df[(n1+1):n, ], method, fisher_z)[ofts, nofts]
-        perm_diffs[i] <- mean(abs(perm_cor1 - perm_cor2), na.rm = TRUE)
-    }
-    p_value <- mean(perm_diffs >= observed_diff)
-    return(
-        list(
-            observed_diff = observed_diff,
-            p_value = p_value,
-            perm_diffs = perm_diffs
-        )
-    )
-}
-
-permutation_test_corrs2 <- function(df1, df2, method, fisher_z, perms) {
-    cor1 <- calculate_cor_mat(df1, method, fisher_z)
-    nofts <- colnames(cor1)[!colnames(cor1) %in% ofts]
-    cor1 <- cor1[ofts, nofts]
-    cor2 <- calculate_cor_mat(df2, method, fisher_z)[ofts, nofts]
-    observed_diff <- mean(abs(cor1 - cor2), na.rm = TRUE)
     n1 <- nrow(df1)
     n2 <- nrow(df2)
     n <- n1 + n2
@@ -175,7 +149,9 @@ unij_ol_u1 <- all_dls_h_ns$"unij_all_u_ols"$"imp_1"
 matched_unij_dl_dp_p <- readRDS(proc_path("2025_10_01_matched_unij_dl_dp_p.rds"))
 matched_unij_ol_dp_p <- readRDS(proc_path("2025_10_01_matched_unij_ol_dp_p.rds"))
 all_long_dls_h_ns <- readRDS(proc_path("2025_10_03_all_long_dls_h_ns.rds"))
+```
 
+```{r}
 subject_filter_dl <- function(data_list, subject_vector) {
     data_list <- data_list |>
         dlapply(
@@ -326,13 +302,17 @@ ofts <- readRDS(proc_path("2025_09_15_ofts.rds"))
 
 ## 1. Check if the extent of the correlations are significantly different
 
+In this chunk, I compare the average overall strength of correlations.
+The `permutation_test_corrs()` function subtracts two correlation matrices and calculates the mean of the absolute difference across all elements.
+It reveals if the difference in the average strength of correlations in the two compared matrices is significant.
+
 ```{r}
 set.seed(42)
 start <- Sys.time()
 perm_diffs_cor_v_mtbi <- lapply(
     2:length(reduced_dfs),
     function(x) {
-        permutation_test_corrs2(reduced_dfs[[1]], reduced_dfs[[x]], "pearson", TRUE, 5000)
+        permutation_test_corrs(reduced_dfs[[1]], reduced_dfs[[x]], "pearson", TRUE, 5000)
     }
 )
 print(Sys.time() - start)
@@ -343,14 +323,54 @@ saveRDS(perm_diffs_cor_v_mtbi, proc_path("perm_diffs_cor_v_mtbi_fisherz_5000.rds
 ```{r}
 perm_diffs_cor_v_mtbi <- readRDS(proc_path("2025_10_03_perm_diffs_cor_v_mtbi_fisherz_5000.rds"))
 
-# HERE
-lapply(
+length(perm_diffs_cor_v_mtbi)
+
+perm_diffs_cor_v_mtbi |> names()
+
+perm_diffs_cor_v_mtbi[[13]]$
+
+# uncorrected p-values
+uncorrected_pvals <- lapply(
     names(perm_diffs_cor_v_mtbi),
     function(x) {
-        paste0(x, ": ", min(1, 14*perm_diffs_cor_v_mtbi[[x]]$"p_value"))
+        #paste0(x, ": ", min(1, perm_diffs_cor_v_mtbi[[x]]$"p_value"))
+        min(1, perm_diffs_cor_v_mtbi[[x]]$"p_value")
     }
 ) |> unlist()
 
+clean_names <- names(perm_diffs_cor_v_mtbi)
+clean_names <- gsub("_df", "", clean_names)
+clean_names <- gsub("random_unij_", "Random Uninjured Sample ", clean_names)
+clean_names <- gsub("best_matched_uninjured", "Closest Matched Uninjured Sample", clean_names)
+clean_names <- gsub("preinjury", "Longitudinal Concussion Sample, Pre-injury Data", clean_names)
+clean_names <- gsub("postinjury", "Longitudinal Concussion Sample, Post-injury Data", clean_names)
+clean_names
+
+data.frame(
+    Sample = clean_names,
+    p = uncorrected_pvals
+) |>
+    arrange(-p) |>
+    knitr::kable(format = "markdown")
+```
+
+|Sample                                           |      p|
+|:------------------------------------------------|------:|
+|Longitudinal Concussion Sample, Pre-injury Data  | 0.3628|
+|Longitudinal Concussion Sample, Post-injury Data | 0.3062|
+|Closest Matched Uninjured Sample                 | 0.1188|
+|Random Uninjured Sample 1                        | 0.0232|
+|Random Uninjured Sample 4                        | 0.0082|
+|Random Uninjured Sample 3                        | 0.0062|
+|Random Uninjured Sample 5                        | 0.0024|
+|Random Uninjured Sample 7                        | 0.0018|
+|Random Uninjured Sample 10                       | 0.0014|
+|Random Uninjured Sample 9                        | 0.0010|
+|Random Uninjured Sample 8                        | 0.0008|
+|Random Uninjured Sample 6                        | 0.0006|
+|Random Uninjured Sample 2                        | 0.0002|
+
+```{r}
 lapply(perm_diffs_cor_v_mtbi, function(x) x$"p_value")
 
 fdr_adjusted_pvals <- lapply(
@@ -389,7 +409,7 @@ best_matched_uninjured_df: 1
 preinjury_df: 1
 postinjury_df: 1
 
-## 2. If not a generic increase in strength, what is significantly different?
+## 2. What is significantly different?
 
 - Focus on correlations between outcome measures and top 20 most important features for clustering solution only
 
@@ -405,7 +425,7 @@ ofts <- readRDS(proc_path("2025_09_15_ofts.rds"))
 ```
 
 ```{r}
-permutation_test_corrs3 <- function(df1,
+permutation_test_corrs2 <- function(df1,
                                     df2,
                                     method = "pearson",
                                     fisher_z = TRUE,
@@ -457,7 +477,7 @@ start <- Sys.time()
 perm_ele_wise_corrs_v_mtbi_lapply <- lapply(
     2:length(reduced_dfs),
     function(x) {
-        permutation_test_corrs3(
+        permutation_test_corrs2(
             df1 = reduced_dfs[[1]],
             df2 = reduced_dfs[[x]],
             method = "pearson",
@@ -742,7 +762,7 @@ perm_p_df |>
 
 names(reduced_dfs)
 
-pre_v_post_ele_perm <- permutation_test_corrs3(
+pre_v_post_ele_perm <- permutation_test_corrs2(
     df1 = reduced_dfs[["preinjury_df"]],
     df2 = reduced_dfs[["postinjury_df"]],
     method = "pearson",
