@@ -237,7 +237,6 @@ saveRDS(
     ),
     proc_path("lmtb_l_df.rds", TRUE)
 )
-
 ```
 
 ```{r}
@@ -303,7 +302,6 @@ reduced_dfs_in <- lapply(
 )
 
 saveRDS(reduced_dfs_in, proc_path("reduced_dfs_in.rds", TRUE))
-
 ```
 
 ```{r}
@@ -346,7 +344,6 @@ perm_diffs_cor_v_mtbi[[13]]$
 uncorrected_pvals <- lapply(
     names(perm_diffs_cor_v_mtbi),
     function(x) {
-        #paste0(x, ": ", min(1, perm_diffs_cor_v_mtbi[[x]]$"p_value"))
         min(1, perm_diffs_cor_v_mtbi[[x]]$"p_value")
     }
 ) |> unlist()
@@ -398,7 +395,6 @@ fdr_adjusted_pvals <- lapply(
 for (p in fdr_adjusted_pvals) {
     print(p)
 }
-
 ```
 
 Random unij dfs (10/10 significantly different after multiple comparisons corrections):
@@ -429,7 +425,6 @@ postinjury_df: 1
 ```{r}
 # Adding in dummy race variable
 ifts <- readRDS(proc_path("2025_09_15_ifts.rds"))
-#ifts_expand <- ifts[1:25]
 ifts_expand <- ifts[1:10]
 ifts_expand <- unlist(append(ifts_expand, list("race_black", "race_hispanic", "race_other"), after = which(ifts_expand == "race")))
 ifts_expand <- ifts_expand[-which(ifts_expand == "race")]
@@ -602,34 +597,12 @@ perm_p_dfs <- lapply(
 
 names(perm_p_dfs) <- names(reduced_dfs)[2:length(reduced_dfs)]
 
-perm_p_dfs_clean <- lapply(
-    names(perm_p_dfs),
-    function(name) {
-        perm_p_dfs[[name]]$"set" <- name
-        if (isTRUE(as.logical(grep("random_unij", name)))) {
-            perm_p_dfs[[name]]$"set_type" <- "random_unij"
-        } else {
-            perm_p_dfs[[name]]$"set_type" <- name
-        }
-        perm_p_dfs[[name]]$"input" <- unlist(lapply(strsplit(perm_p_dfs[[name]]$"feature", "_vs_"), function(x) x[1]))
-        perm_p_dfs[[name]]$"output" <- unlist(lapply(strsplit(perm_p_dfs[[name]]$"feature", "_vs_"), function(x) x[2]))
-        perm_p_dfs[[name]]
-    }
-)
-perm_p_df <- do.call(
-    rbind,
-    perm_p_dfs_clean
-)
-perm_p_df$"fdr_p" <- p.adjust(perm_p_df$"p_value", method = "fdr") 
-
 saveRDS(perm_p_dfs, proc_path("perm_p_dfs.rds", TRUE))
-saveRDS(perm_p_df, proc_path("perm_p_df.rds", TRUE))
-
-perm_p_dfs <- readRDS(proc_path("2026_01_15_perm_p_dfs.rds"))
-perm_p_df <- readRDS(proc_path("2026_01_15_perm_p_df.rds"))
 ```
 
 ```{r}
+perm_p_dfs <- readRDS(proc_path("2026_01_15_perm_p_dfs.rds"))
+
 perm_p_dfs <- lapply(
     perm_p_dfs,
     function(x) {
@@ -638,405 +611,295 @@ perm_p_dfs <- lapply(
     }
 )
 
-perm_p_dfs |>
-    lapply(
-        function(x) {
-            x |>
-                arrange(fdr_p) |>
-                dplyr::filter(fdr_p <= 0.05) |>
-                print()
-        }
-    )
-
-cor_mat_list |> names()
-
-cor_mat_list$"mtbi_ful_df"["parent_somatic", "cbcl_withdep"]
-cor_mat_list$"preinjury_df"["parent_somatic", "cbcl_withdep"]
-
-cor_mat_list$"mtbi_ful_df"["household_income", "cbcl_withdep"]
-cor_mat_list$"preinjury_df"["household_income", "cbcl_withdep"]
-
-cor_mat_list$"mtbi_ful_df"["activities_last_year", "cbcl_aggressive"]
-cor_mat_list$"preinjury_df"["activities_last_year", "cbcl_aggressive"]
-
-
-cor_mat_list |> names()
-
-v_runij <- perm_p_dfs[1:10]
-v_runij <- lapply(
-    v_runij,
+perm_p_dfs_clean2 <- lapply(
+    perm_p_dfs,
     function(x) {
-    x |>
-        separate(feature, into = c("input", "output"), sep = "_vs_") |>
-        filter(fdr_p <= 0.05) |>
-        arrange(fdr_p)
+        x |>
+            separate(feature, into = c("input", "outcome"), sep = "_vs_") |>
+            filter(fdr_p <= 0.05) |>
+            arrange(fdr_p) |>
+            dplyr::select(-p_value) |>
+            dplyr::rename("p" = "fdr_p")
     }
 )
 
-
-check_strength <- function(runij_idx) {
-    runij_cor_df <- v_runij[[runij_idx]]
+check_strength <- function(idx) {
+    other_cor_df <- perm_p_dfs_clean2[[idx]]
     vals <- c()
     mtbi_cors <- c()
-    runij_cors <- c()
-    for (i in seq_len(nrow(runij_cor_df))) {
-        input <- runij_cor_df$"input"[i]
-        output <- runij_cor_df$"output"[i]
-        mtbi_cor <- cor_mat_list$"mtbi_ful_df"[input, output]
-        runij_cor_mat <- cor_mat_list[[runij_idx + 1]]
-        runij_cor <- runij_cor_mat[input, output]
-        if (abs(mtbi_cor) > abs(runij_cor)) {
-            prefix <- "|M| > |U|, "
+    other_cors <- c()
+    for (i in seq_len(nrow(other_cor_df))) {
+        input <- other_cor_df$"input"[i]
+        outcome <- other_cor_df$"outcome"[i]
+        mtbi_cor <- cor_mat_list$"mtbi_ful_df"[input, outcome]
+        other_cor_mat <- cor_mat_list[[idx + 1]]
+        other_cor <- other_cor_mat[input, outcome]
+        if (mtbi_cor > other_cor) {
+            val <- "M > U"
         } else {
-            prefix <- "|M| < |U|, "
+            val <- "M < U"
         }
-        if (mtbi_cor > 0) {
-            mid <- "+M"
-        } else {
-            mid <- "-M"
-        }
-        if (runij_cor > 0) {
-            suffix <- " vs. +U"
-        } else {
-            suffix <- " vs. -U"
-        }
-        vals <- c(vals, paste0(prefix, mid, suffix))
+        vals <- c(vals, val)
         mtbi_cors <- c(mtbi_cors, mtbi_cor)
-        runij_cors <- c(runij_cors, runij_cor)
+        other_cors <- c(other_cors, other_cor)
     }
-    runij_cor_df$"mtbi_cor" <- mtbi_cors
-    runij_cor_df$"runij_cor" <- runij_cors
-    runij_cor_df$"summary" <- vals
-    return(runij_cor_df)
+    other_cor_df$"mtbi_cor" <- mtbi_cors
+    other_cor_df$"other_cor" <- other_cors
+    other_cor_df$"summary" <- vals
+    return(other_cor_df)
 }
 
-v_runij_summarized <- lapply(
-    1:10,
+reference_dfs <- lapply(
+    seq_along(perm_p_dfs_clean2),
     function(x) {
-       check_strength(x)
+        check_strength(x) |>
+        arrange(input)
     }
 )
+names(reference_dfs) <- names(perm_p_dfs_clean2)
 
-v_runij_summarized
+populated_dfs <- reference_dfs[unlist(lapply(reference_dfs, function(x) nrow(x) > 0))]
 
-do.call("rbind", v_runij_summarized) |>
-    dplyr::group_by(input, output, summary) |>
+populated_dfs_clean <- names(populated_dfs) |>
+    lapply(
+        function(x) {
+            df <- populated_dfs[[x]]
+            x <- gsub("random_unij_", "Random Uninjured ", x)
+            x <- gsub("_df", "", x)
+            x <- gsub("preinjury", "Longitudinal Concussion, Pre-injury", x)
+            df$"*Sample*" <- x
+            df |>
+                dplyr::rename(
+                    "*Input*" = "input",
+                    "*Outcome*" = "outcome",
+                    "*p-value*" = "p",
+                    "*Baseline Concussion Corr.*" = "mtbi_cor",
+                    "*Sample Corr.*" = "other_cor",
+                ) |>
+                dplyr::select("*Sample*", dplyr::everything())
+        }
+    )
+
+do.call("rbind", populated_dfs_clean) |>
+    knitr::kable(format = "markdown", digits = 3)
+```
+    
+|*Sample*                            |*Input*              |*Outcome*       | *p-value*| *Baseline Concussion Corr.*| *Sample Corr.*|summary |
+|:-----------------------------------|:--------------------|:---------------|---------:|---------------------------:|--------------:|:-------|
+|Random Uninjured 1                  |activities_last_year |cbcl_somatic    |     0.022|                      -0.155|          0.059|M < U   |
+|Random Uninjured 1                  |activities_last_year |cbcl_social     |     0.030|                      -0.254|         -0.058|M < U   |
+|Random Uninjured 1                  |activities_last_year |cbcl_thought    |     0.030|                      -0.190|         -0.009|M < U   |
+|Random Uninjured 1                  |activities_last_year |cbcl_aggressive |     0.030|                      -0.284|         -0.083|M < U   |
+|Random Uninjured 1                  |activities_last_year |cbcl_withdep    |     0.037|                      -0.206|         -0.033|M < U   |
+|Random Uninjured 1                  |household_income     |cbcl_rulebreak  |     0.000|                      -0.368|         -0.131|M < U   |
+|Random Uninjured 1                  |household_income     |cbcl_anxdep     |     0.032|                      -0.205|         -0.006|M < U   |
+|Random Uninjured 1                  |household_income     |cbcl_aggressive |     0.046|                      -0.343|         -0.148|M < U   |
+|Random Uninjured 2                  |activities_last_year |cbcl_aggressive |     0.008|                      -0.284|         -0.088|M < U   |
+|Random Uninjured 2                  |activities_last_year |cbcl_attention  |     0.012|                      -0.246|         -0.059|M < U   |
+|Random Uninjured 2                  |activities_last_year |cbcl_withdep    |     0.020|                      -0.206|         -0.028|M < U   |
+|Random Uninjured 2                  |activities_last_year |cbcl_thought    |     0.026|                      -0.190|         -0.037|M < U   |
+|Random Uninjured 2                  |activities_last_year |cbcl_somatic    |     0.041|                      -0.155|          0.010|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_withdep    |     0.008|                      -0.304|         -0.067|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_aggressive |     0.008|                      -0.343|         -0.091|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_thought    |     0.009|                      -0.220|          0.000|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_rulebreak  |     0.012|                      -0.368|         -0.155|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_anxdep     |     0.020|                      -0.205|         -0.028|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_attention  |     0.020|                      -0.259|         -0.064|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_social     |     0.025|                      -0.316|         -0.131|M < U   |
+|Random Uninjured 2                  |household_income     |cbcl_somatic    |     0.026|                      -0.228|         -0.048|M < U   |
+|Random Uninjured 2                  |parent_somatic       |cbcl_aggressive |     0.000|                       0.524|          0.204|M > U   |
+|Random Uninjured 2                  |parent_somatic       |cbcl_social     |     0.008|                       0.491|          0.217|M > U   |
+|Random Uninjured 2                  |parent_somatic       |cbcl_attention  |     0.020|                       0.366|          0.150|M > U   |
+|Random Uninjured 2                  |parent_somatic       |cbcl_withdep    |     0.026|                       0.489|          0.279|M > U   |
+|Random Uninjured 2                  |parent_somatic       |cbcl_anxdep     |     0.049|                       0.424|          0.238|M > U   |
+|Random Uninjured 2                  |race_black           |cbcl_anxdep     |     0.008|                       0.108|         -0.136|M > U   |
+|Random Uninjured 2                  |race_black           |cbcl_withdep    |     0.008|                       0.123|         -0.103|M > U   |
+|Random Uninjured 2                  |race_black           |cbcl_aggressive |     0.008|                       0.179|         -0.067|M > U   |
+|Random Uninjured 2                  |race_black           |cbcl_somatic    |     0.009|                       0.145|         -0.074|M > U   |
+|Random Uninjured 2                  |race_black           |cbcl_social     |     0.025|                       0.231|          0.016|M > U   |
+|Random Uninjured 2                  |race_black           |cbcl_thought    |     0.042|                       0.107|         -0.066|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |cbcl_anxdep     |     0.010|                       0.155|         -0.057|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |cbcl_withdep    |     0.020|                       0.138|         -0.029|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |cbcl_thought    |     0.025|                       0.186|          0.013|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |cbcl_aggressive |     0.025|                       0.276|          0.052|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |cbcl_attention  |     0.033|                       0.157|         -0.003|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |sds_sleep       |     0.042|                       0.177|          0.024|M > U   |
+|Random Uninjured 2                  |weekday_screentime   |cbcl_social     |     0.043|                       0.174|          0.010|M > U   |
+|Random Uninjured 2                  |weekend_screentime   |cbcl_withdep    |     0.042|                       0.094|         -0.036|M > U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_thought    |     0.000|                      -0.190|          0.066|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_aggressive |     0.000|                      -0.284|         -0.022|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_social     |     0.007|                      -0.254|         -0.015|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_attention  |     0.011|                      -0.246|         -0.030|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_withdep    |     0.015|                      -0.206|         -0.003|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_rulebreak  |     0.015|                      -0.240|         -0.049|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_anxdep     |     0.016|                      -0.136|          0.058|M < U   |
+|Random Uninjured 3                  |activities_last_year |cbcl_somatic    |     0.022|                      -0.155|          0.031|M < U   |
+|Random Uninjured 3                  |household_income     |cbcl_rulebreak  |     0.015|                      -0.368|         -0.173|M < U   |
+|Random Uninjured 3                  |household_income     |cbcl_aggressive |     0.016|                      -0.343|         -0.136|M < U   |
+|Random Uninjured 3                  |household_income     |cbcl_attention  |     0.020|                      -0.259|         -0.068|M < U   |
+|Random Uninjured 3                  |household_income     |cbcl_withdep    |     0.028|                      -0.304|         -0.120|M < U   |
+|Random Uninjured 3                  |household_income     |cbcl_thought    |     0.028|                      -0.220|         -0.034|M < U   |
+|Random Uninjured 3                  |race_black           |cbcl_social     |     0.011|                       0.231|         -0.017|M > U   |
+|Random Uninjured 3                  |race_black           |cbcl_attention  |     0.011|                       0.210|         -0.061|M > U   |
+|Random Uninjured 3                  |race_black           |cbcl_anxdep     |     0.015|                       0.108|         -0.097|M > U   |
+|Random Uninjured 4                  |activities_last_year |cbcl_aggressive |     0.000|                      -0.284|         -0.084|M < U   |
+|Random Uninjured 4                  |household_income     |cbcl_rulebreak  |     0.011|                      -0.368|         -0.132|M < U   |
+|Random Uninjured 4                  |household_income     |cbcl_aggressive |     0.014|                      -0.343|         -0.112|M < U   |
+|Random Uninjured 4                  |household_income     |cbcl_anxdep     |     0.043|                      -0.205|         -0.005|M < U   |
+|Random Uninjured 4                  |parent_somatic       |cbcl_aggressive |     0.049|                       0.524|          0.295|M > U   |
+|Random Uninjured 4                  |race_black           |cbcl_somatic    |     0.030|                       0.145|         -0.058|M > U   |
+|Random Uninjured 4                  |weekday_screentime   |cbcl_aggressive |     0.027|                       0.276|          0.036|M > U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_thought    |     0.000|                      -0.190|          0.044|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_rulebreak  |     0.012|                      -0.240|         -0.044|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_social     |     0.014|                      -0.254|         -0.057|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_withdep    |     0.022|                      -0.206|         -0.038|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_anxdep     |     0.024|                      -0.136|          0.039|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_somatic    |     0.024|                      -0.155|          0.024|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_aggressive |     0.024|                      -0.284|         -0.115|M < U   |
+|Random Uninjured 6                  |activities_last_year |cbcl_attention  |     0.047|                      -0.246|         -0.096|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_anxdep     |     0.000|                      -0.205|          0.128|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_thought    |     0.000|                      -0.220|          0.015|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_withdep    |     0.004|                      -0.304|         -0.039|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_aggressive |     0.004|                      -0.343|         -0.099|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_rulebreak  |     0.006|                      -0.368|         -0.158|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_attention  |     0.013|                      -0.259|         -0.053|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_social     |     0.022|                      -0.316|         -0.123|M < U   |
+|Random Uninjured 6                  |household_income     |sds_sleep       |     0.025|                      -0.230|         -0.050|M < U   |
+|Random Uninjured 6                  |household_income     |cbcl_somatic    |     0.034|                      -0.228|         -0.044|M < U   |
+|Random Uninjured 6                  |parent_somatic       |cbcl_aggressive |     0.034|                       0.524|          0.311|M > U   |
+|Random Uninjured 6                  |parent_somatic       |cbcl_withdep    |     0.047|                       0.489|          0.294|M > U   |
+|Random Uninjured 6                  |race_black           |cbcl_anxdep     |     0.000|                       0.108|         -0.161|M > U   |
+|Random Uninjured 6                  |race_black           |cbcl_somatic    |     0.012|                       0.145|         -0.073|M > U   |
+|Random Uninjured 6                  |race_black           |cbcl_attention  |     0.014|                       0.210|         -0.005|M > U   |
+|Random Uninjured 6                  |race_black           |cbcl_social     |     0.022|                       0.231|          0.028|M > U   |
+|Random Uninjured 6                  |race_black           |cbcl_thought    |     0.034|                       0.107|         -0.068|M > U   |
+|Random Uninjured 7                  |activities_last_year |cbcl_thought    |     0.026|                      -0.190|          0.001|M < U   |
+|Random Uninjured 7                  |activities_last_year |cbcl_attention  |     0.031|                      -0.246|         -0.059|M < U   |
+|Random Uninjured 7                  |activities_last_year |cbcl_aggressive |     0.031|                      -0.284|         -0.102|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_attention  |     0.011|                      -0.259|         -0.004|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_aggressive |     0.022|                      -0.343|         -0.112|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_social     |     0.026|                      -0.316|         -0.108|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_anxdep     |     0.031|                      -0.205|         -0.011|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_rulebreak  |     0.031|                      -0.368|         -0.199|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_thought    |     0.034|                      -0.220|         -0.041|M < U   |
+|Random Uninjured 7                  |household_income     |cbcl_somatic    |     0.049|                      -0.228|         -0.045|M < U   |
+|Random Uninjured 7                  |race_black           |cbcl_somatic    |     0.011|                       0.145|         -0.075|M > U   |
+|Random Uninjured 7                  |race_black           |cbcl_anxdep     |     0.031|                       0.108|         -0.090|M > U   |
+|Random Uninjured 7                  |race_black           |cbcl_social     |     0.031|                       0.231|          0.012|M > U   |
+|Random Uninjured 7                  |race_black           |cbcl_attention  |     0.049|                       0.210|          0.030|M > U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_social     |     0.000|                      -0.254|         -0.036|M < U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_thought    |     0.000|                      -0.190|          0.053|M < U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_aggressive |     0.003|                      -0.284|         -0.057|M < U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_rulebreak  |     0.010|                      -0.240|         -0.050|M < U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_withdep    |     0.013|                      -0.206|         -0.024|M < U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_somatic    |     0.019|                      -0.155|          0.029|M < U   |
+|Random Uninjured 8                  |activities_last_year |cbcl_attention  |     0.031|                      -0.246|         -0.074|M < U   |
+|Random Uninjured 8                  |brain_volume         |cbcl_attention  |     0.020|                      -0.049|          0.129|M < U   |
+|Random Uninjured 8                  |household_income     |cbcl_thought    |     0.003|                      -0.220|          0.020|M < U   |
+|Random Uninjured 8                  |household_income     |cbcl_attention  |     0.010|                      -0.259|         -0.051|M < U   |
+|Random Uninjured 8                  |household_income     |cbcl_withdep    |     0.010|                      -0.304|         -0.089|M < U   |
+|Random Uninjured 8                  |household_income     |cbcl_aggressive |     0.032|                      -0.343|         -0.159|M < U   |
+|Random Uninjured 8                  |household_income     |cbcl_rulebreak  |     0.048|                      -0.368|         -0.209|M < U   |
+|Random Uninjured 8                  |parent_somatic       |cbcl_withdep    |     0.003|                       0.489|          0.222|M > U   |
+|Random Uninjured 8                  |parent_somatic       |cbcl_aggressive |     0.017|                       0.524|          0.264|M > U   |
+|Random Uninjured 8                  |parent_somatic       |cbcl_thought    |     0.029|                       0.390|          0.172|M > U   |
+|Random Uninjured 8                  |parent_somatic       |cbcl_social     |     0.032|                       0.491|          0.269|M > U   |
+|Random Uninjured 8                  |parent_somatic       |cbcl_attention  |     0.048|                       0.366|          0.194|M > U   |
+|Random Uninjured 8                  |race_black           |cbcl_social     |     0.003|                       0.231|         -0.022|M > U   |
+|Random Uninjured 8                  |race_black           |cbcl_attention  |     0.003|                       0.210|         -0.031|M > U   |
+|Random Uninjured 8                  |race_black           |cbcl_thought    |     0.005|                       0.107|         -0.141|M > U   |
+|Random Uninjured 8                  |race_black           |cbcl_anxdep     |     0.019|                       0.108|         -0.098|M > U   |
+|Random Uninjured 8                  |race_black           |cbcl_aggressive |     0.036|                       0.179|         -0.006|M > U   |
+|Random Uninjured 8                  |race_black           |cbcl_withdep    |     0.048|                       0.123|         -0.038|M > U   |
+|Random Uninjured 9                  |activities_last_year |cbcl_aggressive |     0.016|                      -0.284|         -0.071|M < U   |
+|Random Uninjured 9                  |activities_last_year |cbcl_rulebreak  |     0.049|                      -0.240|         -0.077|M < U   |
+|Random Uninjured 9                  |household_income     |cbcl_rulebreak  |     0.018|                      -0.368|         -0.150|M < U   |
+|Random Uninjured 9                  |household_income     |cbcl_attention  |     0.028|                      -0.259|         -0.069|M < U   |
+|Random Uninjured 9                  |parent_somatic       |cbcl_aggressive |     0.026|                       0.524|          0.277|M > U   |
+|Random Uninjured 9                  |race_black           |cbcl_somatic    |     0.000|                       0.145|         -0.081|M > U   |
+|Random Uninjured 9                  |race_black           |cbcl_anxdep     |     0.018|                       0.108|         -0.108|M > U   |
+|Random Uninjured 9                  |weekday_screentime   |cbcl_thought    |     0.000|                       0.186|         -0.061|M > U   |
+|Random Uninjured 9                  |weekday_screentime   |cbcl_aggressive |     0.007|                       0.276|          0.018|M > U   |
+|Random Uninjured 9                  |weekday_screentime   |cbcl_anxdep     |     0.026|                       0.155|         -0.042|M > U   |
+|Random Uninjured 9                  |weekday_screentime   |sds_sleep       |     0.026|                       0.177|         -0.020|M > U   |
+|Random Uninjured 9                  |weekday_screentime   |cbcl_attention  |     0.047|                       0.157|         -0.008|M > U   |
+|Random Uninjured 10                 |activities_last_year |cbcl_aggressive |     0.000|                      -0.284|         -0.063|M < U   |
+|Random Uninjured 10                 |activities_last_year |cbcl_thought    |     0.007|                      -0.190|          0.016|M < U   |
+|Random Uninjured 10                 |activities_last_year |cbcl_attention  |     0.031|                      -0.246|         -0.059|M < U   |
+|Random Uninjured 10                 |activities_last_year |cbcl_somatic    |     0.038|                      -0.155|          0.030|M < U   |
+|Random Uninjured 10                 |household_income     |cbcl_aggressive |     0.000|                      -0.343|         -0.076|M < U   |
+|Random Uninjured 10                 |household_income     |cbcl_withdep    |     0.025|                      -0.304|         -0.089|M < U   |
+|Random Uninjured 10                 |household_income     |cbcl_attention  |     0.025|                      -0.259|         -0.056|M < U   |
+|Random Uninjured 10                 |household_income     |cbcl_somatic    |     0.037|                      -0.228|         -0.032|M < U   |
+|Random Uninjured 10                 |household_income     |cbcl_rulebreak  |     0.037|                      -0.368|         -0.191|M < U   |
+|Random Uninjured 10                 |parent_somatic       |cbcl_social     |     0.016|                       0.491|          0.238|M > U   |
+|Random Uninjured 10                 |parent_somatic       |cbcl_aggressive |     0.037|                       0.524|          0.297|M > U   |
+|Random Uninjured 10                 |parent_somatic       |sds_sleep       |     0.040|                       0.446|          0.260|M > U   |
+|Random Uninjured 10                 |race_black           |cbcl_somatic    |     0.040|                       0.145|         -0.028|M > U   |
+|Random Uninjured 10                 |race_black           |cbcl_attention  |     0.040|                       0.210|          0.021|M > U   |
+|Random Uninjured 10                 |race_hispanic        |cbcl_aggressive |     0.035|                       0.080|         -0.104|M > U   |
+|Random Uninjured 10                 |race_hispanic        |cbcl_rulebreak  |     0.038|                       0.055|         -0.114|M > U   |
+|Longitudinal Concussion, Pre-injury |activities_last_year |cbcl_aggressive |     0.036|                      -0.284|         -0.053|M < U   |
+|Longitudinal Concussion, Pre-injury |household_income     |cbcl_withdep    |     0.011|                      -0.304|         -0.006|M < U   |
+|Longitudinal Concussion, Pre-injury |parent_somatic       |cbcl_withdep    |     0.000|                       0.489|          0.091|M > U   |
+
+```{r}
+do.call("rbind", populated_dfs[1:9]) |>
+    dplyr::group_by(input, outcome, summary) |>
     summarize(n = n()) |>
     arrange(-n) |>
-    data.frame()
-```
-
-
-```{r}
-# Everything
-for (i in unique(perm_p_df$"set_type")) {
-    mini_df <- perm_p_df |> dplyr::filter(set_type == i)
-    mini_df |>
-        dplyr::group_by(feature, input, output, set_type) |>
-        dplyr::summarize(mean = mean(fdr_p)) |>
-        dplyr::arrange(mean) |>
-        dplyr::filter(mean < 0.05) |>
-        dplyr::ungroup() |>
-        dplyr::select(-feature) |>
-        data.frame() |>
-        dplyr::select(set_type, dplyr::everything()) |>
-        dplyr::rename(
-            "*Group*" = "set_type",
-            "*Input Feature*" = "input",
-            "*Outcome Feature*" = "output",
-            "*p-value*" = "mean"
-        ) |>
-        knitr::kable(format = "markdown", digits = 4) |>
-        print()
-}
-
-perm_p_df |>
-    dplyr::group_by(feature, input, output, set_type) |>
-    dplyr::summarize(mean = mean(fdr_p)) |>
-    dplyr::arrange(mean) |>
-    dplyr::filter(mean < 0.05) |>
-    dplyr::ungroup() |>
-    dplyr::select(-feature) |>
     data.frame() |>
-    knitr::kable(format = "markdown", digits = 4)
-
-perm_p_df |>
-    dplyr::group_by(feature, input, output, set_type) |>
-    dplyr::summarize(mean = mean(fdr_p)) |>
-    dplyr::arrange(mean) |>
-    dplyr::filter(mean < 0.05) |>
-    dplyr::ungroup() |>
-    dplyr::select(-feature) |>
-    data.frame() |>
-    dplyr::filter(set_type == "random_unij") |>
-    dplyr::arrange(input)
-```
-
-                  input          output                  set_type        mean
-1        parent_somatic    cbcl_withdep              preinjury_df 0.000000000
-2   private_instruction cbcl_aggressive              preinjury_df 0.000000000
-3      extracurriculars cbcl_aggressive              preinjury_df 0.005318182
-4      household_income    cbcl_withdep              preinjury_df 0.005318182
-5   private_instruction cbcl_aggressive best_matched_uninjured_df 0.005318182
-6   private_instruction  cbcl_rulebreak              preinjury_df 0.005318182
-7      extracurriculars cbcl_aggressive               random_unij 0.006433632
-8      household_income    cbcl_thought               random_unij 0.007816359
-9      household_income cbcl_aggressive               random_unij 0.008879989
-10 activities_last_year cbcl_aggressive               random_unij 0.009327785
-11  private_instruction    cbcl_withdep             postinjury_df 0.011700000
-12 activities_last_year cbcl_aggressive best_matched_uninjured_df 0.013664234
-13 activities_last_year cbcl_aggressive             postinjury_df 0.013664234
-14     extracurriculars    cbcl_somatic             postinjury_df 0.013664234
-15  private_instruction    cbcl_withdep best_matched_uninjured_df 0.013664234
-16     household_income     cbcl_anxdep               random_unij 0.017178958
-17 activities_last_year cbcl_aggressive              preinjury_df 0.017550000
-18  private_instruction cbcl_aggressive               random_unij 0.019172319
-19 activities_last_year     cbcl_social best_matched_uninjured_df 0.019384615
-20     extracurriculars cbcl_aggressive best_matched_uninjured_df 0.019384615
-21  private_instruction    cbcl_withdep              preinjury_df 0.021517241
-22  private_instruction  cbcl_rulebreak best_matched_uninjured_df 0.023142857
-23     household_income    cbcl_withdep               random_unij 0.023790351
-24     household_income  cbcl_attention               random_unij 0.023911780
-25  private_instruction  cbcl_rulebreak               random_unij 0.024018424
-26     extracurriculars cbcl_aggressive             postinjury_df 0.024502618
-27     extracurriculars    cbcl_withdep best_matched_uninjured_df 0.025485149
-28     extracurriculars  cbcl_rulebreak               random_unij 0.027664824
-29     household_income     cbcl_social               random_unij 0.032231645
-30 activities_last_year     cbcl_social             postinjury_df 0.036310345
-31  private_instruction cbcl_aggressive             postinjury_df 0.036310345
-32     extracurriculars     cbcl_social best_matched_uninjured_df 0.040114286
-33     household_income    cbcl_withdep best_matched_uninjured_df 0.040114286
-34     household_income    cbcl_withdep             postinjury_df 0.040695652
-35         brain_volume     cbcl_anxdep              preinjury_df 0.042046875
-36 activities_last_year    cbcl_thought               random_unij 0.042116119
-37     parent_anxdisord    cbcl_withdep              preinjury_df 0.044150943
-38     household_income       sds_sleep               random_unij 0.044587490
-39 activities_last_year    cbcl_withdep best_matched_uninjured_df 0.045234201
-
-```{r}
-# Distribution of inputs
-perm_p_df |>
-    dplyr::group_by(feature, input, output, set_type) |>
-    dplyr::summarize(mean = mean(fdr_p)) |>
-    dplyr::arrange(mean) |>
-    dplyr::filter(mean < 0.05) |>
-    dplyr::ungroup() |>
-    dplyr::select(-feature) |>
-    data.frame() |>
-    dplyr::select(input) |> table()
-```
-
-activities_last_year     extracurriculars     household_income
-                   5                    6                    4
-      parent_somatic  private_instruction
-                   1                    9
-
-
-```{r}
-# In just pre-injury / post-injury
-perm_p_df |>
-    dplyr::filter(set_type %in% c("preinjury_df")) |>
-    dplyr::group_by(feature, input, output, set_type) |>
-    dplyr::summarize(mean = mean(fdr_p)) |>
-    dplyr::arrange(mean) |>
-    dplyr::filter(mean < 0.05) |>
-    dplyr::ungroup() |>
-    dplyr::select(-feature) |>
-    data.frame()
-
-perm_p_df |>
-    dplyr::filter(set_type %in% c("postinjury_df")) |>
-    dplyr::group_by(feature, input, output, set_type) |>
-    dplyr::summarize(mean = mean(fdr_p)) |>
-    dplyr::arrange(mean) |>
-    dplyr::filter(mean < 0.05) |>
-    dplyr::ungroup() |>
-    dplyr::select(-feature) |>
-    data.frame()
+    dplyr::rename(
+        "*Input*" = "input",
+        "*Outcome*" = "outcome",
+        "*Summary*" = "summary",
+        "*n*" = "n"
+    ) |>
+    knitr::kable(format = "markdown")
 
 ```
-                 input          output     set_type        mean
-1       parent_somatic    cbcl_withdep preinjury_df 0.000000000
-2  private_instruction cbcl_aggressive preinjury_df 0.000000000
-3     extracurriculars cbcl_aggressive preinjury_df 0.005318182
-4     household_income    cbcl_withdep preinjury_df 0.005318182
-5  private_instruction  cbcl_rulebreak preinjury_df 0.005318182
-6 activities_last_year cbcl_aggressive preinjury_df 0.017550000
-7  private_instruction    cbcl_withdep preinjury_df 0.021517241
-8         brain_volume     cbcl_anxdep preinjury_df 0.042046875
-9     parent_anxdisord    cbcl_withdep preinjury_df 0.044150943
 
-                 input          output      set_type       mean
-1  private_instruction    cbcl_withdep postinjury_df 0.01170000
-2 activities_last_year cbcl_aggressive postinjury_df 0.01366423
-3     extracurriculars    cbcl_somatic postinjury_df 0.01366423
-4     extracurriculars cbcl_aggressive postinjury_df 0.02450262
-5 activities_last_year     cbcl_social postinjury_df 0.03631034
-6  private_instruction cbcl_aggressive postinjury_df 0.03631034
-7     household_income    cbcl_withdep postinjury_df 0.04069565
-
-```{r}
-# A quick check of pre vs post
-
-names(reduced_dfs)
-
-pre_v_post_ele_perm <- permutation_test_corrs2(
-    df1 = reduced_dfs[["preinjury_df"]],
-    df2 = reduced_dfs[["postinjury_df"]],
-    method = "pearson",
-    fisher_z = TRUE,
-    perms = 5000,
-    style = "lapply"
-)
-
-pre_v_post_flat <- flatten_mats(pre_v_post_ele_perm)
-
-names(pre_v_post_flat)
-
-pre_v_post_p_values <- lapply(
-    pre_v_post_flat,
-    function(perm_vector) {
-        # base the comparison on sign of the first element
-        # which is the actual observed difference
-        if (perm_vector[1] >= 0) {
-            return(mean(perm_vector[-1] >= perm_vector[1]))
-        } else {
-            return(mean(perm_vector[-1] <= perm_vector[1]))
-        }
-    }
-) |> unlist()
-
-pre_v_post_df <- data.frame(
-    "feature" = names(pre_v_post_p_values),
-    "p_value" = pre_v_post_p_values
-)
-pre_v_post_df$"input" <- unlist(lapply(strsplit(pre_v_post_df$"feature", "_vs_"), function(x) x[1]))
-pre_v_post_df$"output" <- unlist(lapply(strsplit(pre_v_post_df$"feature", "_vs_"), function(x) x[2]))
-rownames(pre_v_post_df) <- NULL
-pre_v_post_df <- pre_v_post_df |> dplyr::select(-feature)
-pre_v_post_df$"fdr_p" <- p.adjust(pre_v_post_df$"p_value", method = "fdr")
-
-saveRDS(pre_v_post_df, proc_path("pre_v_post_df.rds", TRUE))
-
-pre_v_post_df <- readRDS(proc_path("2025_06_20_pre_v_post_df.rds"))
-
-pre_v_post_df |>
-    dplyr::arrange(p_value)
-```
-
-Nothing remained significant following FDR multiple comparisons corrections.
-
-
-Checking our main results with some plots:
-
-```{r}
-names(reduced_dfs)
-
-# significant!!!
-plot_df <- function(group1, group2) {
-    df <- rbind(
-        dplyr::mutate(reduced_dfs[[group1]], group = names(reduced_dfs)[group1]),
-        dplyr::mutate(reduced_dfs[[group2]], group = names(reduced_dfs)[group2])
-    )
-    print(
-        summary(
-            lm(cbcl_aggressive ~ household_income * group, data = df)
-        )
-    )
-    df |>
-        ggplot(
-            aes(
-                x = household_income,
-                y = cbcl_aggressive,
-                colour = group
-            )
-        ) +
-        geom_jitter(height = 0.1, width = 0.1, alpha = 0.5) +
-        geom_smooth(method = "lm", se = FALSE) +
-        theme_bw()
-}
-
-z1 <- plot_df(1, 13)
-z2 <- plot_df(1, 14)
-
-ggsave(
-    fig_path("income_vs_aggressive_cor_mtbi_vs_lmtb.png", TRUE),
-    wrap_plots(list(z1, z2)),
-    width = 10,
-    height = 4
-)
-
-plot_df2 <- function(group1, group2) {
-    df <- rbind(
-        dplyr::mutate(reduced_dfs[[group1]], group = names(reduced_dfs)[group1]),
-        dplyr::mutate(reduced_dfs[[group2]], group = names(reduced_dfs)[group2])
-    )
-    print(
-        summary(
-            lm(cbcl_aggressive ~ extracurriculars * group, data = df)
-        )
-    )
-    df |>
-        ggplot(
-            aes(
-                x = extracurriculars,
-                y = cbcl_aggressive,
-                colour = group
-            )
-        ) +
-        geom_jitter(height = 0.1, width = 0.1, alpha = 0.5) +
-        geom_smooth(method = "lm", se = FALSE) +
-        theme_bw()
-}
-
-z1 <- plot_df2(1, 13)
-z2 <- plot_df2(1, 14)
-
-ggsave(
-    fig_path("extracurricular_vs_aggressive_cor_mtbi_vs_lmtb.png", TRUE),
-    wrap_plots(list(z1, z2)),
-    width = 10,
-    height = 4
-)
-
-names(reduced_dfs)
-```
-
-```{r}
-|*Group*     |*Input Feature*      |*Outcome Feature* | *p-value*|
-|:-----------|:--------------------|:-----------------|---------:|
-|random_unij |private_instruction  |cbcl_aggressive   |    0.0101|
-|random_unij |activities_last_year |cbcl_aggressive   |    0.0174|
-|random_unij |private_instruction  |cbcl_rulebreak    |    0.0182|
-|random_unij |extracurriculars     |cbcl_aggressive   |    0.0205|
-|random_unij |extracurriculars     |cbcl_rulebreak    |    0.0268|
-|random_unij |household_income     |cbcl_aggressive   |    0.0300|
-|random_unij |household_income     |cbcl_rulebreak    |    0.0316|
-|random_unij |activities_last_year |cbcl_thought      |    0.0372|
-|random_unij |private_instruction  |cbcl_withdep      |    0.0420|
-|random_unij |household_income     |cbcl_attention    |    0.0432|
-|random_unij |extracurriculars     |cbcl_somatic      |    0.0443|
-|random_unij |private_instruction  |cbcl_thought      |    0.0447|
-
-|*Group*                   |*Input Feature*  |*Outcome Feature* | *p-value*|
-|:-------------------------|:----------------|:-----------------|---------:|
-|best_matched_uninjured_df |extracurriculars |cbcl_aggressive   |    0.0419|
-
-|*Group*      |*Input Feature*      |*Outcome Feature* | *p-value*|
-|:------------|:--------------------|:-----------------|---------:|
-|preinjury_df |parent_somatic       |cbcl_withdep      |    0.0000|
-|preinjury_df |private_instruction  |cbcl_aggressive   |    0.0000|
-|preinjury_df |extracurriculars     |cbcl_aggressive   |    0.0096|
-|preinjury_df |household_income     |cbcl_withdep      |    0.0096|
-|preinjury_df |activities_last_year |cbcl_aggressive   |    0.0245|
-|preinjury_df |private_instruction  |cbcl_rulebreak    |    0.0245|
-|preinjury_df |private_instruction  |cbcl_withdep      |    0.0277|
-
-|*Group*       |*Input Feature*      |*Outcome Feature* | *p-value*|
-|:-------------|:--------------------|:-----------------|---------:|
-|postinjury_df |activities_last_year |cbcl_aggressive   |    0.0177|
-|postinjury_df |private_instruction  |cbcl_withdep      |    0.0177|
-|postinjury_df |private_instruction  |cbcl_aggressive   |    0.0399|
-|postinjury_df |extracurriculars     |cbcl_aggressive   |    0.0409|
-|postinjury_df |activities_last_year |cbcl_social       |    0.0488|
-```
+|*Input*              |*Outcome*       |*Summary* | *n*|
+|:--------------------|:---------------|:---------|---:|
+|activities_last_year |cbcl_aggressive |M < U     |   9|
+|household_income     |cbcl_rulebreak  |M < U     |   9|
+|household_income     |cbcl_aggressive |M < U     |   8|
+|activities_last_year |cbcl_thought    |M < U     |   7|
+|household_income     |cbcl_attention  |M < U     |   7|
+|activities_last_year |cbcl_attention  |M < U     |   6|
+|activities_last_year |cbcl_somatic    |M < U     |   6|
+|parent_somatic       |cbcl_aggressive |M > U     |   6|
+|race_black           |cbcl_anxdep     |M > U     |   6|
+|race_black           |cbcl_somatic    |M > U     |   6|
+|activities_last_year |cbcl_withdep    |M < U     |   5|
+|household_income     |cbcl_anxdep     |M < U     |   5|
+|household_income     |cbcl_thought    |M < U     |   5|
+|household_income     |cbcl_withdep    |M < U     |   5|
+|race_black           |cbcl_attention  |M > U     |   5|
+|race_black           |cbcl_social     |M > U     |   5|
+|activities_last_year |cbcl_rulebreak  |M < U     |   4|
+|activities_last_year |cbcl_social     |M < U     |   4|
+|household_income     |cbcl_somatic    |M < U     |   4|
+|household_income     |cbcl_social     |M < U     |   3|
+|parent_somatic       |cbcl_social     |M > U     |   3|
+|parent_somatic       |cbcl_withdep    |M > U     |   3|
+|race_black           |cbcl_thought    |M > U     |   3|
+|weekday_screentime   |cbcl_aggressive |M > U     |   3|
+|activities_last_year |cbcl_anxdep     |M < U     |   2|
+|parent_somatic       |cbcl_attention  |M > U     |   2|
+|race_black           |cbcl_aggressive |M > U     |   2|
+|race_black           |cbcl_withdep    |M > U     |   2|
+|weekday_screentime   |cbcl_anxdep     |M > U     |   2|
+|weekday_screentime   |cbcl_attention  |M > U     |   2|
+|weekday_screentime   |cbcl_thought    |M > U     |   2|
+|weekday_screentime   |sds_sleep       |M > U     |   2|
+|brain_volume         |cbcl_attention  |M < U     |   1|
+|household_income     |sds_sleep       |M < U     |   1|
+|parent_somatic       |cbcl_anxdep     |M > U     |   1|
+|parent_somatic       |cbcl_thought    |M > U     |   1|
+|parent_somatic       |sds_sleep       |M > U     |   1|
+|race_hispanic        |cbcl_aggressive |M > U     |   1|
+|race_hispanic        |cbcl_rulebreak  |M > U     |   1|
+|weekday_screentime   |cbcl_social     |M > U     |   1|
+|weekday_screentime   |cbcl_withdep    |M > U     |   1|
+|weekend_screentime   |cbcl_withdep    |M > U     |   1|

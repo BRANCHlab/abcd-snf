@@ -1,0 +1,143 @@
+```{r}
+library(abcdutils)
+library(here)
+library(dplyr)
+library(readr)
+library(metasnf)
+library(fastDummies)
+library(patchwork)
+library(tidyr)
+library(ggplot2)
+
+source("abcd/helper_functions.R")
+
+input_path <- path_maker(here("data/abcd/inputs"))
+core_path <- path_maker(here("data/abcd/core"))
+sub_path <- path_maker(here("data/abcd/subjects"))
+fig_path <- path_maker(here("data/abcd/results/figures"))
+proc_path <- path_maker(here("data/abcd/results/processed"))
+```
+
+```{r}
+# baseline concussion sample pre-imputation
+mtbi_train_df <- data.frame(read_csv(proc_path("2025_09_11_mtbi_train_df.csv")))
+mtbi_test_df <- data.frame(read_csv(proc_path("2025_09_11_mtbi_test_df.csv")))
+
+# baseline uninjured sample pre-imputation
+unij_df <- data.frame(read_csv(proc_path("2025_09_11_unij_df.csv")))
+
+# baseline concussion sample post-imputation
+# baseline uninjured sample post-imputation
+all_dls <- readRDS(input_path("2025_09_11_all_dls.rds"))
+
+# baseline concussion sample post-imputation, post-harmonization
+# baseline uninjured sample post-imputation, post-harmonization
+all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
+```
+
+```{r}
+
+mtbi_train_df |> colnames()
+
+characterize_sex <- function(df) {
+    sex_df <- data.frame(table(df$"sex")) |>
+        dplyr::mutate(
+            Var1 = c("F", "M"),
+            Freq = paste0(Freq, " (", signif(100 * Freq / nrow(df), 3), "%)")
+        ) |>
+        dplyr::rename("label" = "Var1", "value" = "Freq")
+    sex_df <- rbind(data.frame("label" = "*Sex*", value = ""), sex_df)
+    return(sex_df)
+}
+
+characterize_age <- function(df) {
+    if ("interview_age" %in% colnames(df)) {
+        age <- df$"interview_age"
+    } else {
+        age <- df$"age"
+    }
+    age_df <- data.frame(
+        label = c("*Age*", "Mean (SD)"),
+        value = c(
+            "",
+            paste0(signif(mean(age), 3), " (", signif(sd(age), 2), ")")
+        )
+    )
+    return(age_df)
+}
+
+characterize_mtbi_count <- function(df) {
+    count <- df$"mtbi_count"
+    mtbi_count_df <- data.frame(
+        label = c(
+            "Prior concussions",
+            "Mean (SD)",
+            "Range"
+        ),
+        value = c(
+            "",
+            paste0(signif(mean(count), 3), " (", signif(sd(count), 2), ")"),
+            paste0(min(count), " - ", max(count))
+        )
+    )
+    return(mtbi_count_df)
+}
+
+characterize_generic_mean_sd
+
+mtbi_train_df |> colnames()
+
+characterize_sex(mtbi_train_df)
+characterize_age(mtbi_train_df)
+characterize_mtbi_count(mtbi_train_df)
+
+
+sample_characterize <- function(df) {
+    sex_df   <- characterize_sex(df)
+    age_df   <- characterize_age(df)
+    count_df <- characterize_mtbi_count(df)
+    income_df <- data.frame(table(df$"household_income")) |>
+        dplyr::mutate(
+            Var1 = dplyr::case_when(
+                Var1 == 1 ~ "<$50,000",
+                Var1 == 2 ~ "$50,000-$100,000",
+                Var1 == 3 ~ ">$100,000",
+                TRUE ~ NA
+            ),
+            Freq = paste0(Freq, " (", signif(100 * Freq / nrow(data), 3), "%)")
+        ) |>
+        dplyr::rename("label" = "Var1", "value" = "Freq")
+    income_df <- rbind(
+        data.frame("label" = "*Income*", value = ""),
+        income_df
+    )
+    # 5. Race 
+    race_names <- names(table(df$"race"))
+    race_counts <- as.numeric(table(df$"race"))
+    race_pcts <- race_counts / nrow(df) * 100
+    race_df <- lapply(
+        1:length(race_pcts),
+        function(x) {
+            data.frame(
+                label = race_names[x],
+                value = paste0(race_counts[x], " (", signif(race_pcts[x], 3), "%)")
+            )
+        }
+    ) |> do.call(what = rbind)
+    race_df <- rbind(
+        data.frame("label" = "*Race*", value = ""),
+        race_df
+    )
+    return(
+        list(
+            sex_df,
+            age_df,
+            income_df,
+            race_df
+        ) |>
+        do.call(what = rbind)
+    )
+}
+
+
+```
