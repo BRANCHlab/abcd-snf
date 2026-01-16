@@ -429,7 +429,8 @@ postinjury_df: 1
 ```{r}
 # Adding in dummy race variable
 ifts <- readRDS(proc_path("2025_09_15_ifts.rds"))
-ifts_expand <- ifts[1:15]
+#ifts_expand <- ifts[1:25]
+ifts_expand <- ifts[1:10]
 ifts_expand <- unlist(append(ifts_expand, list("race_black", "race_hispanic", "race_other"), after = which(ifts_expand == "race")))
 ifts_expand <- ifts_expand[-which(ifts_expand == "race")]
 ifts_expand
@@ -485,8 +486,6 @@ permutation_test_corrs2 <- function(df1,
     )
 }
 
-reduced_dfs |> names()
-
 set.seed(42)
 start <- Sys.time()
 perm_ele_wise_corrs_v_mtbi_lapply <- lapply(
@@ -535,7 +534,6 @@ saveRDS(
         TRUE
     )
 )
-
 # Checking for pre-injured data
 set.seed(42)
 start <- Sys.time()
@@ -611,8 +609,6 @@ perm_ele_flat_pi <- lapply(
     }
 )
 
-perm_ele_flat[[1]][[1]][1] > perm_ele_flat[[1]][[1]][-1]
-
 # this object is a list of 13 sets of group comparisons
 # each set of comparison is a list of 180 pairwise correlations
 # each pairwise correlation si a vector of 5001 values
@@ -621,12 +617,10 @@ saveRDS(
     perm_ele_flat,
     proc_path("perm_ele_flat_v_mtbi_fisherz_5000.rds", TRUE)
 )
-
 saveRDS(
     perm_ele_flat_bm,
     proc_path("perm_ele_flat_v_bm_fisherz_5000.rds", TRUE)
 )
-
 saveRDS(
     perm_ele_flat_pi,
     proc_path("perm_ele_flat_v_pi_fisherz_5000.rds", TRUE)
@@ -690,12 +684,10 @@ saveRDS(
     perm_p_values,
     proc_path("perm_p_values_v_mtbi_fisherz_5000.rds", TRUE)
 )
-
 saveRDS(
     perm_p_values_bm,
     proc_path("perm_p_values_v_bm_fisherz_5000.rds", TRUE)
 )
-
 saveRDS(
     perm_p_values_pi,
     proc_path("perm_p_values_v_pi_fisherz_5000.rds", TRUE)
@@ -804,11 +796,10 @@ perm_p_dfs <- readRDS(proc_path("2026_01_15_perm_p_dfs.rds"))
 perm_p_dfs_bm <- readRDS(proc_path("2026_01_15_perm_p_dfs_bm.rds"))
 perm_p_dfs_pi <- readRDS(proc_path("2026_01_15_perm_p_dfs_pi.rds"))
 
-perm_p_df <- readRDS(proc_path("2025_10_06_perm_p_df.rds"))
+perm_p_df <- readRDS(proc_path("2026_01_15_perm_p_df.rds"))
 perm_p_df_bm <- readRDS(proc_path("2026_01_15_perm_p_df_bm.rds"))
 perm_p_df_pi <- readRDS(proc_path("2026_01_15_perm_p_df_pi.rds"))
 ```
-
 
 ```{r}
 perm_p_dfs <- lapply(
@@ -835,6 +826,16 @@ perm_p_dfs_pi <- lapply(
     }
 )
 
+perm_p_dfs |>
+    lapply(
+        function(x) {
+            x |>
+                arrange(fdr_p) |>
+                dplyr::filter(fdr_p <= 0.05) |>
+                print()
+        }
+    )
+
 perm_p_dfs_bm |>
     lapply(
         function(x) {
@@ -850,7 +851,7 @@ perm_p_dfs_pi |>
         function(x) {
             x |>
                 arrange(fdr_p) |>
-                dplyr::filter(p_value <= 0.05) |>
+                dplyr::filter(fdr_p <= 0.05) |>
                 print()
         }
     )
