@@ -510,54 +510,18 @@ saveRDS(
     )
 )
 
-# Checking for best matched uninjured sample
-set.seed(42)
-start <- Sys.time()
-perm_ele_wise_corrs_v_bestmatched_lapply <- lapply(
-    (1:length(reduced_dfs))[-c(1, 12)],
+perm_ele_wise_corrs_v_mtbi_lapply[[1]]$"obs_diff"
+
+cor_mat_list <- lapply(
+    reduced_dfs,
     function(x) {
-        permutation_test_corrs2(
-            df1 = reduced_dfs[[12]],
-            df2 = reduced_dfs[[x]],
-            method = "pearson",
-            fisher_z = TRUE,
-            perms = 5000,
-            style = "lapply"
-        )
+        calculate_cor_mat(x, "pearson", TRUE)[ifts_expand, ofts]
     }
 )
-print(Sys.time() - start)
-saveRDS(
-    perm_ele_wise_corrs_v_bestmatched_lapply,
-    proc_path(
-        "perm_ele_wise_corrs_v_bestmatched_lapply_fisherz_5000.rds",
-        TRUE
-    )
-)
-# Checking for pre-injured data
-set.seed(42)
-start <- Sys.time()
-perm_ele_wise_corrs_v_preinj_lapply <- lapply(
-    (1:length(reduced_dfs))[-c(1, 12, 13)],
-    function(x) {
-        permutation_test_corrs2(
-            df1 = reduced_dfs[[13]],
-            df2 = reduced_dfs[[x]],
-            method = "pearson",
-            fisher_z = TRUE,
-            perms = 5000,
-            style = "lapply"
-        )
-    }
-)
-print(Sys.time() - start)
-saveRDS(
-    perm_ele_wise_corrs_v_preinj_lapply,
-    proc_path(
-        "perm_ele_wise_corrs_v_preinj_lapply_fisherz_5000.rds",
-        TRUE
-    )
-)
+
+saveRDS(cor_mat_list, proc_path("cor_mat_list.rds", TRUE))
+
+cor_mat_list <- readRDS(proc_path("2026_01_15_cor_mat_list.rds"))
 ```
 
 ```{r}
@@ -595,20 +559,6 @@ perm_ele_flat <- lapply(
     }
 )
 
-perm_ele_flat_bm <- lapply(
-    perm_ele_wise_corrs_v_bestmatched_lapply,
-    function(x) {
-        flatten_mats(x)
-    }
-)
-
-perm_ele_flat_pi <- lapply(
-    perm_ele_wise_corrs_v_preinj_lapply,
-    function(x) {
-        flatten_mats(x)
-    }
-)
-
 # this object is a list of 13 sets of group comparisons
 # each set of comparison is a list of 180 pairwise correlations
 # each pairwise correlation si a vector of 5001 values
@@ -616,14 +566,6 @@ perm_ele_flat_pi <- lapply(
 saveRDS(
     perm_ele_flat,
     proc_path("perm_ele_flat_v_mtbi_fisherz_5000.rds", TRUE)
-)
-saveRDS(
-    perm_ele_flat_bm,
-    proc_path("perm_ele_flat_v_bm_fisherz_5000.rds", TRUE)
-)
-saveRDS(
-    perm_ele_flat_pi,
-    proc_path("perm_ele_flat_v_pi_fisherz_5000.rds", TRUE)
 )
 
 perm_p_values <- lapply(
@@ -644,53 +586,9 @@ perm_p_values <- lapply(
     }
 )
 
-perm_p_values_bm <- lapply(
-    perm_ele_flat_bm,
-    function(group_comparison) {
-        lapply(
-            group_comparison,
-            function(perm_vector) {
-                # base the comparison on sign of the first element
-                # which is the actual observed difference
-                if (perm_vector[1] >= 0) {
-                    return(mean(perm_vector[-1] >= perm_vector[1]))
-                } else {
-                    return(mean(perm_vector[-1] <= perm_vector[1]))
-                }
-            }
-        ) |> unlist()
-    }
-)
-
-perm_p_values_pi <- lapply(
-    perm_ele_flat_pi,
-    function(group_comparison) {
-        lapply(
-            group_comparison,
-            function(perm_vector) {
-                # base the comparison on sign of the first element
-                # which is the actual observed difference
-                if (perm_vector[1] >= 0) {
-                    return(mean(perm_vector[-1] >= perm_vector[1]))
-                } else {
-                    return(mean(perm_vector[-1] <= perm_vector[1]))
-                }
-            }
-        ) |> unlist()
-    }
-)
-
 saveRDS(
     perm_p_values,
     proc_path("perm_p_values_v_mtbi_fisherz_5000.rds", TRUE)
-)
-saveRDS(
-    perm_p_values_bm,
-    proc_path("perm_p_values_v_bm_fisherz_5000.rds", TRUE)
-)
-saveRDS(
-    perm_p_values_pi,
-    proc_path("perm_p_values_v_pi_fisherz_5000.rds", TRUE)
 )
 
 perm_p_dfs <- lapply(
@@ -702,27 +600,7 @@ perm_p_dfs <- lapply(
     }
 )
 
-perm_p_dfs_bm <- lapply(
-    perm_p_values_bm,
-    function(x) {
-        df <- data.frame("feature" = names(x), "p_value" = x)
-        rownames(df) <- NULL
-        df
-    }
-)
-
-perm_p_dfs_pi <- lapply(
-    perm_p_values_pi,
-    function(x) {
-        df <- data.frame("feature" = names(x), "p_value" = x)
-        rownames(df) <- NULL
-        df
-    }
-)
-
 names(perm_p_dfs) <- names(reduced_dfs)[2:length(reduced_dfs)]
-names(perm_p_dfs_bm) <- names(reduced_dfs)[-c(1, 12)]
-names(perm_p_dfs_pi) <- names(reduced_dfs)[-c(1, 12, 13)]
 
 perm_p_dfs_clean <- lapply(
     names(perm_p_dfs),
@@ -744,82 +622,16 @@ perm_p_df <- do.call(
 )
 perm_p_df$"fdr_p" <- p.adjust(perm_p_df$"p_value", method = "fdr") 
 
-perm_p_dfs_bm_clean <- lapply(
-    names(perm_p_dfs_bm),
-    function(name) {
-        perm_p_dfs_bm[[name]]$"set" <- name
-        if (isTRUE(as.logical(grep("random_unij", name)))) {
-            perm_p_dfs_bm[[name]]$"set_type" <- "random_unij"
-        } else {
-            perm_p_dfs_bm[[name]]$"set_type" <- name
-        }
-        perm_p_dfs_bm[[name]]$"input" <- unlist(lapply(strsplit(perm_p_dfs_bm[[name]]$"feature", "_vs_"), function(x) x[1]))
-        perm_p_dfs_bm[[name]]$"output" <- unlist(lapply(strsplit(perm_p_dfs_bm[[name]]$"feature", "_vs_"), function(x) x[2]))
-        perm_p_dfs_bm[[name]]
-    }
-)
-perm_p_df_bm <- do.call(
-    rbind,
-    perm_p_dfs_bm_clean
-)
-perm_p_df_bm$"fdr_p" <- p.adjust(perm_p_df_bm$"p_value", method = "fdr") 
-
-perm_p_dfs_pi_clean <- lapply(
-    names(perm_p_dfs_pi),
-    function(name) {
-        perm_p_dfs_pi[[name]]$"set" <- name
-        if (isTRUE(as.logical(grep("random_unij", name)))) {
-            perm_p_dfs_pi[[name]]$"set_type" <- "random_unij"
-        } else {
-            perm_p_dfs_pi[[name]]$"set_type" <- name
-        }
-        perm_p_dfs_pi[[name]]$"input" <- unlist(lapply(strsplit(perm_p_dfs_pi[[name]]$"feature", "_vs_"), function(x) x[1]))
-        perm_p_dfs_pi[[name]]$"output" <- unlist(lapply(strsplit(perm_p_dfs_pi[[name]]$"feature", "_vs_"), function(x) x[2]))
-        perm_p_dfs_pi[[name]]
-    }
-)
-perm_p_df_pi <- do.call(
-    rbind,
-    perm_p_dfs_pi_clean
-)
-perm_p_df_pi$"fdr_p" <- p.adjust(perm_p_df_pi$"p_value", method = "fdr") 
-
 saveRDS(perm_p_dfs, proc_path("perm_p_dfs.rds", TRUE))
-saveRDS(perm_p_dfs_bm, proc_path("perm_p_dfs_bm.rds", TRUE))
-saveRDS(perm_p_dfs_pi, proc_path("perm_p_dfs_pi.rds", TRUE))
-
 saveRDS(perm_p_df, proc_path("perm_p_df.rds", TRUE))
-saveRDS(perm_p_df_bm, proc_path("perm_p_df_bm.rds", TRUE))
-saveRDS(perm_p_df_pi, proc_path("perm_p_df_pi.rds", TRUE))
 
 perm_p_dfs <- readRDS(proc_path("2026_01_15_perm_p_dfs.rds"))
-perm_p_dfs_bm <- readRDS(proc_path("2026_01_15_perm_p_dfs_bm.rds"))
-perm_p_dfs_pi <- readRDS(proc_path("2026_01_15_perm_p_dfs_pi.rds"))
-
 perm_p_df <- readRDS(proc_path("2026_01_15_perm_p_df.rds"))
-perm_p_df_bm <- readRDS(proc_path("2026_01_15_perm_p_df_bm.rds"))
-perm_p_df_pi <- readRDS(proc_path("2026_01_15_perm_p_df_pi.rds"))
 ```
 
 ```{r}
 perm_p_dfs <- lapply(
     perm_p_dfs,
-    function(x) {
-        x$"fdr_p" <- p.adjust(x$"p_value", method = "fdr") 
-        x
-    }
-)
-
-perm_p_dfs_bm <- lapply(
-    perm_p_dfs_bm,
-    function(x) {
-        x$"fdr_p" <- p.adjust(x$"p_value", method = "fdr") 
-        x
-    }
-)
-
-perm_p_dfs_pi <- lapply(
-    perm_p_dfs_pi,
     function(x) {
         x$"fdr_p" <- p.adjust(x$"p_value", method = "fdr") 
         x
@@ -836,27 +648,82 @@ perm_p_dfs |>
         }
     )
 
-perm_p_dfs_bm |>
-    lapply(
-        function(x) {
-            x |>
-                arrange(fdr_p) |>
-                dplyr::filter(fdr_p <= 0.05) |>
-                print()
+cor_mat_list |> names()
+
+cor_mat_list$"mtbi_ful_df"["parent_somatic", "cbcl_withdep"]
+cor_mat_list$"preinjury_df"["parent_somatic", "cbcl_withdep"]
+
+cor_mat_list$"mtbi_ful_df"["household_income", "cbcl_withdep"]
+cor_mat_list$"preinjury_df"["household_income", "cbcl_withdep"]
+
+cor_mat_list$"mtbi_ful_df"["activities_last_year", "cbcl_aggressive"]
+cor_mat_list$"preinjury_df"["activities_last_year", "cbcl_aggressive"]
+
+
+cor_mat_list |> names()
+
+v_runij <- perm_p_dfs[1:10]
+v_runij <- lapply(
+    v_runij,
+    function(x) {
+    x |>
+        separate(feature, into = c("input", "output"), sep = "_vs_") |>
+        filter(fdr_p <= 0.05) |>
+        arrange(fdr_p)
+    }
+)
+
+
+check_strength <- function(runij_idx) {
+    runij_cor_df <- v_runij[[runij_idx]]
+    vals <- c()
+    mtbi_cors <- c()
+    runij_cors <- c()
+    for (i in seq_len(nrow(runij_cor_df))) {
+        input <- runij_cor_df$"input"[i]
+        output <- runij_cor_df$"output"[i]
+        mtbi_cor <- cor_mat_list$"mtbi_ful_df"[input, output]
+        runij_cor_mat <- cor_mat_list[[runij_idx + 1]]
+        runij_cor <- runij_cor_mat[input, output]
+        if (abs(mtbi_cor) > abs(runij_cor)) {
+            prefix <- "|M| > |U|, "
+        } else {
+            prefix <- "|M| < |U|, "
         }
-    )
-
-perm_p_dfs_pi |>
-    lapply(
-        function(x) {
-            x |>
-                arrange(fdr_p) |>
-                dplyr::filter(fdr_p <= 0.05) |>
-                print()
+        if (mtbi_cor > 0) {
+            mid <- "+M"
+        } else {
+            mid <- "-M"
         }
-    )
+        if (runij_cor > 0) {
+            suffix <- " vs. +U"
+        } else {
+            suffix <- " vs. -U"
+        }
+        vals <- c(vals, paste0(prefix, mid, suffix))
+        mtbi_cors <- c(mtbi_cors, mtbi_cor)
+        runij_cors <- c(runij_cors, runij_cor)
+    }
+    runij_cor_df$"mtbi_cor" <- mtbi_cors
+    runij_cor_df$"runij_cor" <- runij_cors
+    runij_cor_df$"summary" <- vals
+    return(runij_cor_df)
+}
 
+v_runij_summarized <- lapply(
+    1:10,
+    function(x) {
+       check_strength(x)
+    }
+)
 
+v_runij_summarized
+
+do.call("rbind", v_runij_summarized) |>
+    dplyr::group_by(input, output, summary) |>
+    summarize(n = n()) |>
+    arrange(-n) |>
+    data.frame()
 ```
 
 
@@ -966,7 +833,7 @@ activities_last_year     extracurriculars     household_income
 
 
 ```{r}
-# In just pre-injury / post-injry
+# In just pre-injury / post-injury
 perm_p_df |>
     dplyr::filter(set_type %in% c("preinjury_df")) |>
     dplyr::group_by(feature, input, output, set_type) |>
