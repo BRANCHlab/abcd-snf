@@ -124,7 +124,7 @@ mtbi_subs_t1 <- get_mtbi_subjects(
     unlist() |>
     as.character()
 
-length(mtbi_subs_t1) # 131
+length(mtbi_subs_t1) # 130
 
 sum(mtbi_subs_t1 %in% mtbi_subs_t0) # 23
 sum(mtbi_subs_t0 %in% mtbi_subs_t1) # 23
@@ -144,6 +144,10 @@ length(mtbi_subs_t2) # 144
 
 # subs who had an mtbi pre-1yfu, but not pre-baseline (t1 only)
 mtbi_subs_t1o <- mtbi_subs_t1[!mtbi_subs_t1 %in% mtbi_subs_t0]
+
+bad_sub <- "NDAR_INVV9LM0ZAG"
+
+bad_sub %in% mtbi_subs_t1
 
 # subs who had an mtbi between 1yfu and 2yfu, but not pre-baseline (t2 only)
 mtbi_subs_t2o <- mtbi_subs_t2[!mtbi_subs_t2 %in% mtbi_subs_t0]
@@ -336,6 +340,11 @@ lmtb_as_loc_l1 <- get_mtbi_loc(
     t1_latest,
     t = 1
 )
+
+
+max(lmtb_as_loc_l1$"latest_mtbi_loc") # 2???
+
+dplyr::filter(lmtb_as_loc_l1, latest_mtbi_loc == 2) #NDAR_INVV9LM0ZAG
 
 lmtb_as_loc_l2 <- get_mtbi_loc(
     ph_p_otbi,

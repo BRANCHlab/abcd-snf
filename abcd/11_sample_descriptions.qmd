@@ -33,111 +33,253 @@ all_dls <- readRDS(input_path("2025_09_11_all_dls.rds"))
 # baseline concussion sample post-imputation, post-harmonization
 # baseline uninjured sample post-imputation, post-harmonization
 all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
+
+all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
+
+iread <- function(path) {
+    return(read_csv(input_path(path)))
+}
+
+# longitudinal data frames, pre-imputation
+lmtb_0_df <- data.frame(iread("2025_09_15_lmtb_0_df.csv"))
+lmtb_l_df <- data.frame(iread("2025_09_15_lmtb_l_df.csv"))
+mtbi_l_df <- data.frame(iread("2025_09_15_mtbi_l_df.csv"))
+unij_l_df <- data.frame(iread("2025_09_15_unij_l_df.csv"))
+
+# longitudinal data frames, post-impotation, post-harmonization
+all_long_dls_h_ns <- readRDS(proc_path("2025_10_03_all_long_dls_h_ns.rds"))
 ```
 
 ```{r}
+mtbi_der_u1 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_u_dls"[[1]], all_dls_h_ns$"mtbi_der_u_ols"[[1]]))
+mtbi_der_u2 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_u_dls"[[2]], all_dls_h_ns$"mtbi_der_u_ols"[[2]]))
+mtbi_der_u3 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_u_dls"[[3]], all_dls_h_ns$"mtbi_der_u_ols"[[3]]))
+mtbi_der_u4 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_u_dls"[[4]], all_dls_h_ns$"mtbi_der_u_ols"[[4]]))
+mtbi_der_u5 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_u_dls"[[5]], all_dls_h_ns$"mtbi_der_u_ols"[[5]]))
+mtbi_val_u1 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_u_dls"[[1]], all_dls_h_ns$"mtbi_val_u_ols"[[1]]))
+mtbi_val_u2 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_u_dls"[[2]], all_dls_h_ns$"mtbi_val_u_ols"[[2]]))
+mtbi_val_u3 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_u_dls"[[3]], all_dls_h_ns$"mtbi_val_u_ols"[[3]]))
+mtbi_val_u4 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_u_dls"[[4]], all_dls_h_ns$"mtbi_val_u_ols"[[4]]))
+mtbi_val_u5 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_u_dls"[[5]], all_dls_h_ns$"mtbi_val_u_ols"[[5]]))
 
-mtbi_train_df |> colnames()
+mtbi_der_p1 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_p_dls"[[1]], all_dls_h_ns$"mtbi_der_p_ols"[[1]]))
+mtbi_der_p2 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_p_dls"[[2]], all_dls_h_ns$"mtbi_der_p_ols"[[2]]))
+mtbi_der_p3 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_p_dls"[[3]], all_dls_h_ns$"mtbi_der_p_ols"[[3]]))
+mtbi_der_p4 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_p_dls"[[4]], all_dls_h_ns$"mtbi_der_p_ols"[[4]]))
+mtbi_der_p5 <- as.data.frame(c(all_dls_h_ns$"mtbi_der_p_dls"[[5]], all_dls_h_ns$"mtbi_der_p_ols"[[5]]))
+mtbi_val_p1 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_p_dls"[[1]], all_dls_h_ns$"mtbi_val_p_ols"[[1]]))
+mtbi_val_p2 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_p_dls"[[2]], all_dls_h_ns$"mtbi_val_p_ols"[[2]]))
+mtbi_val_p3 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_p_dls"[[3]], all_dls_h_ns$"mtbi_val_p_ols"[[3]]))
+mtbi_val_p4 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_p_dls"[[4]], all_dls_h_ns$"mtbi_val_p_ols"[[4]]))
+mtbi_val_p5 <- as.data.frame(c(all_dls_h_ns$"mtbi_val_p_dls"[[5]], all_dls_h_ns$"mtbi_val_p_ols"[[5]]))
 
-characterize_sex <- function(df) {
-    sex_df <- data.frame(table(df$"sex")) |>
-        dplyr::mutate(
-            Var1 = c("F", "M"),
-            Freq = paste0(Freq, " (", signif(100 * Freq / nrow(df), 3), "%)")
-        ) |>
-        dplyr::rename("label" = "Var1", "value" = "Freq")
-    sex_df <- rbind(data.frame("label" = "*Sex*", value = ""), sex_df)
-    return(sex_df)
-}
+names(all_dls_h_ns)
 
-characterize_age <- function(df) {
-    if ("interview_age" %in% colnames(df)) {
-        age <- df$"interview_age"
-    } else {
-        age <- df$"age"
+mtbi_u1 <- rbind(mtbi_der_u1, mtbi_val_u1)
+mtbi_u2 <- rbind(mtbi_der_u2, mtbi_val_u2)
+mtbi_u3 <- rbind(mtbi_der_u3, mtbi_val_u3)
+mtbi_u4 <- rbind(mtbi_der_u4, mtbi_val_u4)
+mtbi_u5 <- rbind(mtbi_der_u5, mtbi_val_u5)
+mtbi_p1 <- rbind(mtbi_der_p1, mtbi_val_p1)
+mtbi_p2 <- rbind(mtbi_der_p2, mtbi_val_p2)
+mtbi_p3 <- rbind(mtbi_der_p3, mtbi_val_p3)
+mtbi_p4 <- rbind(mtbi_der_p4, mtbi_val_p4)
+mtbi_p5 <- rbind(mtbi_der_p5, mtbi_val_p5)
+
+unij_u_df <- data.frame(
+    c(all_dls_h_ns$"unij_all_u_dls"[[1]], all_dls_h_ns$"unij_all_u_ols"[[1]])
+)
+unij_p_df <- data.frame(
+    c(all_dls_h_ns$"unij_all_p_dls"[[1]], all_dls_h_ns$"unij_all_p_ols"[[1]])
+)
+
+
+lmtb_0_df <- data.frame(iread("2025_09_15_lmtb_0_df.csv"))
+lmtb_l_df <- data.frame(iread("2025_09_15_lmtb_l_df.csv"))
+mtbi_l_df <- data.frame(iread("2025_09_15_mtbi_l_df.csv"))
+unij_l_df <- data.frame(iread("2025_09_15_unij_l_df.csv"))
+
+lmtb_0_df_imp <- c(all_long_dls_h_ns$"lmtb_0_dls"[[1]], all_long_dls_h_ns$"lmtb_0_ols"[[1]]) |> as.data.frame()
+lmtb_l_df_imp <- c(all_long_dls_h_ns$"lmtb_l_dls"[[1]], all_long_dls_h_ns$"lmtb_l_ols"[[1]]) |> as.data.frame()
+```
+
+```{r}
+# Complex helper function to produce summary tables
+characterize_feature_prop <- function(df, ft_name, clean) {
+    if ("latest_mtbi_mechanism" %in% colnames(df)) {
+        df$"mtbi_mechanism" <- df$"latest_mtbi_mechanism"
+        df$"mtbi_loc" <- df$"latest_mtbi_loc"
+        df$"mtbi_mem_daze" <- df$"latest_mtbi_mem_daze"
     }
-    age_df <- data.frame(
-        label = c("*Age*", "Mean (SD)"),
-        value = c(
-            "",
-            paste0(signif(mean(age), 3), " (", signif(sd(age), 2), ")")
-        )
-    )
-    return(age_df)
-}
-
-characterize_mtbi_count <- function(df) {
-    count <- df$"mtbi_count"
-    mtbi_count_df <- data.frame(
-        label = c(
-            "Prior concussions",
-            "Mean (SD)",
-            "Range"
-        ),
-        value = c(
-            "",
-            paste0(signif(mean(count), 3), " (", signif(sd(count), 2), ")"),
-            paste0(min(count), " - ", max(count))
-        )
-    )
-    return(mtbi_count_df)
-}
-
-characterize_generic_mean_sd
-
-mtbi_train_df |> colnames()
-
-characterize_sex(mtbi_train_df)
-characterize_age(mtbi_train_df)
-characterize_mtbi_count(mtbi_train_df)
-
-
-sample_characterize <- function(df) {
-    sex_df   <- characterize_sex(df)
-    age_df   <- characterize_age(df)
-    count_df <- characterize_mtbi_count(df)
-    income_df <- data.frame(table(df$"household_income")) |>
-        dplyr::mutate(
-            Var1 = dplyr::case_when(
-                Var1 == 1 ~ "<$50,000",
-                Var1 == 2 ~ "$50,000-$100,000",
-                Var1 == 3 ~ ">$100,000",
-                TRUE ~ NA
-            ),
-            Freq = paste0(Freq, " (", signif(100 * Freq / nrow(data), 3), "%)")
-        ) |>
-        dplyr::rename("label" = "Var1", "value" = "Freq")
-    income_df <- rbind(
-        data.frame("label" = "*Income*", value = ""),
-        income_df
-    )
-    # 5. Race 
-    race_names <- names(table(df$"race"))
-    race_counts <- as.numeric(table(df$"race"))
-    race_pcts <- race_counts / nrow(df) * 100
-    race_df <- lapply(
-        1:length(race_pcts),
-        function(x) {
-            data.frame(
-                label = race_names[x],
-                value = paste0(race_counts[x], " (", signif(race_pcts[x], 3), "%)")
+    if (!"mtbi_mechanism" %in% colnames(df)) {
+        df$"mtbi_mechanism" <- "N/A"
+        df$"mtbi_loc" <- "N/A"
+    }
+    if (ft_name == "household_income") {
+        df <- df |>
+            dplyr::mutate(
+                household_income = dplyr::case_when(
+                    household_income == 1 ~ "<$50,000",
+                    household_income == 2 ~ "$50,000-$100,000",
+                    household_income == 3 ~ ">$100,000",
+                    is.na(household_income) ~ "missing",
+                    TRUE ~ NA
+                )
             )
+        df$"household_income" <- factor(df$"household_income", levels = c("<$50,000", "$50,000-$100,000", ">$100,000", "Missing"))
+    }
+    if (ft_name == "sex") {
+        df$"sex"[is.na(df$"sex")] <- "Missing"
+    }
+    ft <- df[[ft_name]]
+    count <- table(ft)
+    props <- prop.table(count)
+    df <- dplyr::inner_join(data.frame(count), data.frame(props), by = "ft") |>
+        dplyr::mutate(
+            "Frequency" = paste0(Freq.x, " (", round(Freq.y, 2)*100, "%)"),
+            .keep = "unused"
+        )
+    colnames(df)[1] <- clean
+    if (ft_name == "sex") {
+        df <- df |>
+            dplyr::mutate(
+                "*Sex*" = dplyr::case_when(
+                    `*Sex*` == 0 ~ "F",
+                    `*Sex*` == 1 ~ "M",
+                    `*Sex*` == "Missing" ~ "Missing",
+                    TRUE ~ NA
+                )
+            )
+    }
+    if (is.character(ft)) {
+        df[[clean]] <- stringr::str_to_sentence(df[[clean]])
+    }
+    if (ft_name == "mtbi_loc") {
+        if (identical(df$"*LOC*", "N/a")) {
+            df2 <- data.frame("a" = c(0, 1), "b" = c(0, 0))
+            colnames(df2) <- c("*LOC*", "Frequency")
+            df <- rbind(df, df2)
+        } else {
+            df2 <- data.frame("a" = "N/a", "b" = 0)
+            colnames(df2) <- c("*LOC*", "Frequency")
+            df <- rbind(df2, df)
         }
-    ) |> do.call(what = rbind)
-    race_df <- rbind(
-        data.frame("label" = "*Race*", value = ""),
-        race_df
-    )
+    }
     return(
-        list(
+        data.frame(
+            label = c(clean, as.character(df[[clean]])),
+            value = c("<", df$"Frequency")
+        )
+    )
+}
+
+characterize_feature_mean <- function(df, ft_name, clean) {
+    if ("previous_mtbis" %in% colnames(df)) {
+        df$"mtbi_count" <- df$"previous_mtbis"
+    } else {
+        if (!"mtbi_count" %in% colnames(df)) {
+            df$"mtbi_count" <- 0
+            df$"mtbi_age" <- 0
+        }
+    }
+    if ("latest_mtbi_age" %in% colnames(df)) {
+        df$"mtbi_age" <- df$"latest_mtbi_age"
+    }
+    df$"total_impairments" <- df |>
+        dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+        rowSums()
+    df$"total_parent_psych" <- df |>
+        dplyr::select(dplyr::starts_with("parent")) |>
+        rowSums()
+    if (ft_name == "age") {
+        if ("interview_age" %in% colnames(df)) {
+            ft <- df$"interview_age"
+        } else {
+            ft <- df$"age"
+        }
+    } else {
+        ft <- df[[ft_name]]
+    }
+    n_missing <- sum(is.na(ft))
+    ft <- na.omit(ft)
+    x <- signif(mean(ft, na.rm = FALSE), 3)
+    s <- signif(sd(ft, na.rm = FALSE), 3)
+    l <- min(ft, na.rm = FALSE)
+    u <- max(ft, na.rm = FALSE) 
+    df <- data.frame(
+            label = c(clean, "Mean (SD)", "Range", "Missing"),
+            value = c(
+                "<",
+                paste0(x, " (", s, ")"),
+                paste0(l, " - ", u),
+                n_missing
+            )
+        )
+    return(df)
+}
+
+sample_characterize <- function(df, name) {
+    sex_df <- characterize_feature_prop(df, "sex", "*Sex*")
+    age_df <- characterize_feature_mean(df, "age", "*Age (months)*")
+    inc_df <- characterize_feature_prop(df, "household_income", "*Household income*")
+    rac_df <- characterize_feature_prop(df, "race", "*Race*")
+    cnt_df <- characterize_feature_mean(df, "mtbi_count", "*Prior concussions*")
+    mag_df <- characterize_feature_mean(df, "mtbi_age", "*Age at last injury*")
+    loc_df <- characterize_feature_prop(df, "mtbi_loc", "*LOC*")
+    mec_df <- characterize_feature_prop(df, "mtbi_mechanism", "*Mechanism of injury*")
+    imp_df <- characterize_feature_mean(df, "total_impairments", "*Total CBCL/SDS*")
+    n_df <- data.frame(
+        label = "*N*",
+        value = nrow(df)
+    )
+    new_df <- list(
+            n_df,
             sex_df,
             age_df,
-            income_df,
-            race_df
+            inc_df,
+            rac_df,
+            cnt_df,
+            mag_df,
+            loc_df,
+            mec_df,
+            imp_df
         ) |>
         do.call(what = rbind)
-    )
+    colnames(new_df) <- c("", name)
+    return(new_df)
 }
-
-
 ```
+
+```{r}
+names(all_dls_h_ns)
+
+# baseline concussion sample pre-imputation
+mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
+
+sample_characterize(mtbi_df, "BC, Pre-I/C/S., T = 0")
+
+# baseline uninjured sample pre-imputation
+sample_characterize(unij_df, "BU, Pre-I/C/S., T = 0")
+
+# baseline concussion derivation samples post-imputation
+sample_characterize(mtbi_der_u1, "BCD Unpooled")
+sample_characterize(mtbi_der_p1, "BCD Pooled")
+sample_characterize(rbind(mtbi_der_u1, mtbi_val_u1), "BC Post-I/C/S")
+
+# baseline uninjured sample post-imputation
+sample_characterize(unij_u_df, "BU Unpooled")
+sample_characterize(unij_p_df, "BU Pooled")
+
+sample_characterize(lmtb_0_df, "LC, Pre-I/C/S, T = 0")
+sample_characterize(lmtb_l_df, "LC, Pre-I/C/S, T = 2")
+sample_characterize(mtbi_l_df, "BC, Pre-I/C/S, T = 2")
+sample_characterize(unij_l_df, "BU, Pre-I/C/S, T = 2")
+
+sample_characterize(lmtb_0_df_imp, "LC, Post-I/C/S, T = 0")
+
+sample_characterize(lmtb_l_df_imp, "LC, Post-I/C/S, T = 2")
+
+lmtb_l_df_imp$"mtbi_loc"
+```
+
+
