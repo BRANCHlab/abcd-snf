@@ -21,6 +21,7 @@ library(metasnf)
 library(visdat)
 library(ggplot2)
 library(mice)
+library(ggsignif)
 library(fastDummies)
 library(randomForest)
 library(patchwork)
@@ -47,8 +48,8 @@ read <- function(path) {
 
 ```{r}
 mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
-all_long_dls_h_ns <- readRDS(proc_path("2025_10_03_all_long_dls_h_ns.rds"))
-all_long_dls_h <- readRDS(proc_path("2025_09_29_all_long_dls_h.rds"))
+all_long_dls_h_ns <- readRDS(proc_path("2026_01_19_all_long_dls_h_ns.rds"))
+all_long_dls_h <- readRDS(proc_path("2026_01_19_all_long_dls_h.rds"))
 all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
 all_dls_h <- readRDS(proc_path("2025_09_11_all_dls_h.rds"))
 ```
@@ -153,7 +154,7 @@ mtbi_long_changes$"cluster" <- as.factor(mtbi_long_changes$"cluster")
 
 saveRDS(mtbi_long_changes, proc_path("mtbi_long_changes.rds", TRUE))
 
-mtbi_long_changes <- readRDS(proc_path("2025_10_06_mtbi_long_changes.rds"))
+mtbi_long_changes <- readRDS(proc_path("2026_01_19_mtbi_long_changes.rds"))
 ```
 
 ```{r}
@@ -455,7 +456,7 @@ Cluster is never a significant feature in predicting longitudinal outcome given 
 In this section, I first adjust CBCL values by age and sex, bin them according to their quantiles within the entire ABCD dataset, and then check to see how profiles based on those bins differ across the clusters.
 
 ```{r}
-mtbi_long_changes <- readRDS(proc_path("2025_10_06_mtbi_long_changes.rds"))
+mtbi_long_changes <- readRDS(proc_path("2026_01_19_mtbi_long_changes.rds"))
 
 # Separating by time
 df0 <- mtbi_long_changes |>
@@ -722,8 +723,8 @@ saveRDS(adj_df_w_covs, proc_path("df_w_covs_adj.rds", TRUE))
 ```
 
 ```{r}
-all_out_adj <- readRDS(proc_path("2025_10_06_all_out_adj.rds"))
-adj_df_w_covs <- readRDS(proc_path("2025_10_06_df_w_covs_adj.rds"))
+all_out_adj <- readRDS(proc_path("2026_01_19_all_out_adj.rds"))
+adj_df_w_covs <- readRDS(proc_path("2026_01_19_df_w_covs_adj.rds"))
 
 all_out_adj |> colnames()
 
@@ -832,7 +833,7 @@ saveRDS(
     proc_path("adj_df_cat_annotated.rds", TRUE)
 )
 
-adj_df_cat_annotated <- readRDS(proc_path("2025_10_06_adj_df_cat_annotated.rds"))
+adj_df_cat_annotated <- readRDS(proc_path("2026_01_19_adj_df_cat_annotated.rds"))
 
 colnames(adj_df_cat_annotated)
 
@@ -994,8 +995,8 @@ p_df |>
 saveRDS(p_df, proc_path("outcome_transition_pvals.rds", TRUE))
 saveRDS(pl, proc_path("outcome_transition_plots.rds", TRUE))
 
-p_df <- readRDS(proc_path("2025_10_06_outcome_transition_pvals.rds"))
-pl <- readRDS(proc_path("2025_10_06_outcome_transition_plots.rds"))
+p_df <- readRDS(proc_path("2026_01_19_outcome_transition_pvals.rds"))
+pl <- readRDS(proc_path("2026_01_19_outcome_transition_plots.rds"))
 
 pl[[1]]
 
@@ -1013,7 +1014,7 @@ pl[[1]]
 Checking again, but now rather than high-high/high-low, examining if there is differences in high that went down vs. high that stayed same or went up.
 
 ```{r}
-adj_df_cat_annotated <- readRDS(proc_path("2025_10_06_adj_df_cat_annotated.rds"))
+adj_df_cat_annotated <- readRDS(proc_path("2026_01_19_adj_df_cat_annotated.rds"))
 
 t0_df <- adj_df_cat_annotated |>
     dplyr::filter(t == 0)
@@ -1311,10 +1312,8 @@ ggsave(
 |cbcl_rulebreak  |         0.782927|
 
 ```{r}
-
 pl$"cbcl_somatic"
 pl_2$"cbcl_thought"
-
 #
 #pl <- readRDS(fig_path("2025_07_14_high_change_figs_pl.rds"))
 #p_df <- readRDS(proc_path("2025_07_14_high_change_p_df.rds"))
@@ -1328,11 +1327,11 @@ pl_2$"cbcl_thought"
 #
 #p_df |>
 #    knitr::kable(format = "markdown", digits = 5)
-
-    
 ```
 
 ## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
+
+(Old analysis - not yet re-run)
 
 ```{r}
 matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
@@ -1609,6 +1608,7 @@ lmtb_0_sol_df_u4 <- batch_snf(dl = lmtb_0_dls[[4]], sc = lmtb_config, processes 
 saveRDS(lmtb_0_sol_df_u4, proc_path("lmtb_0_sol_df_u4.rds", TRUE))
 lmtb_0_sol_df_u5 <- batch_snf(dl = lmtb_0_dls[[5]], sc = lmtb_config, processes = 48)
 saveRDS(lmtb_0_sol_df_u5, proc_path("lmtb_0_sol_df_u5.rds", TRUE))
+
 lmtb_l_sol_df_u1 <- batch_snf(dl = lmtb_l_dls[[1]], sc = lmtb_config, processes = 48)
 saveRDS(lmtb_l_sol_df_u1, proc_path("lmtb_l_sol_df_u1.rds", TRUE))
 lmtb_l_sol_df_u2 <- batch_snf(dl = lmtb_l_dls[[2]], sc = lmtb_config, processes = 48)
@@ -1622,11 +1622,11 @@ saveRDS(lmtb_l_sol_df_u5, proc_path("lmtb_l_sol_df_u5.rds", TRUE))
 ```
 
 ```{r}
-lmtb_0_sol_df_u1 <- readRDS(proc_path("2025_10_01_lmtb_0_sol_df_u1.rds"))
-lmtb_0_sol_df_u2 <- readRDS(proc_path("2025_10_01_lmtb_0_sol_df_u2.rds"))
-lmtb_0_sol_df_u3 <- readRDS(proc_path("2025_10_01_lmtb_0_sol_df_u3.rds"))
-lmtb_0_sol_df_u4 <- readRDS(proc_path("2025_10_01_lmtb_0_sol_df_u4.rds"))
-lmtb_0_sol_df_u5 <- readRDS(proc_path("2025_10_01_lmtb_0_sol_df_u5.rds"))
+lmtb_0_sol_df_u1 <- readRDS(proc_path("2026_01_19_lmtb_0_sol_df_u1.rds"))
+lmtb_0_sol_df_u2 <- readRDS(proc_path("2026_01_19_lmtb_0_sol_df_u2.rds"))
+lmtb_0_sol_df_u3 <- readRDS(proc_path("2026_01_19_lmtb_0_sol_df_u3.rds"))
+lmtb_0_sol_df_u4 <- readRDS(proc_path("2026_01_19_lmtb_0_sol_df_u4.rds"))
+lmtb_0_sol_df_u5 <- readRDS(proc_path("2026_01_19_lmtb_0_sol_df_u5.rds"))
 
 lmtb_0_sol_df <- do.call(
     "rbind",
@@ -1653,11 +1653,11 @@ write_csv(data.frame(lmtb_0_ari_order), proc_path("lmtb_0_ari_order.csv", TRUE))
 ```
 
 ```{r}
-lmtb_l_sol_df_u1 <- readRDS(proc_path("2025_10_01_lmtb_l_sol_df_u1.rds"))
-lmtb_l_sol_df_u2 <- readRDS(proc_path("2025_10_01_lmtb_l_sol_df_u2.rds"))
-lmtb_l_sol_df_u3 <- readRDS(proc_path("2025_10_01_lmtb_l_sol_df_u3.rds"))
-lmtb_l_sol_df_u4 <- readRDS(proc_path("2025_10_01_lmtb_l_sol_df_u4.rds"))
-lmtb_l_sol_df_u5 <- readRDS(proc_path("2025_10_01_lmtb_l_sol_df_u5.rds"))
+lmtb_l_sol_df_u1 <- readRDS(proc_path("2026_01_19_lmtb_l_sol_df_u1.rds"))
+lmtb_l_sol_df_u2 <- readRDS(proc_path("2026_01_19_lmtb_l_sol_df_u2.rds"))
+lmtb_l_sol_df_u3 <- readRDS(proc_path("2026_01_19_lmtb_l_sol_df_u3.rds"))
+lmtb_l_sol_df_u4 <- readRDS(proc_path("2026_01_19_lmtb_l_sol_df_u4.rds"))
+lmtb_l_sol_df_u5 <- readRDS(proc_path("2026_01_19_lmtb_l_sol_df_u5.rds"))
 
 lmtb_l_sol_df <- do.call(
     "rbind",
@@ -1681,14 +1681,14 @@ write_csv(data.frame(lmtb_l_ari_order), proc_path("lmtb_l_ari_order.csv", TRUE))
 
 ```{r}
 # CHECKPOINT
-lmtb_0_sol_df <- readRDS(proc_path("2025_10_02_lmtb_0_sol_df.rds"))
-lmtb_0_ari <- readRDS(proc_path("2025_10_02_lmtb_0_ari.rds"))
-lmtb_0_ari_order <- unlist(read_csv(proc_path("2025_10_02_lmtb_0_ari_order.csv")))
+lmtb_0_sol_df <- readRDS(proc_path("2026_01_19_lmtb_0_sol_df.rds"))
+lmtb_0_ari <- readRDS(proc_path("2026_01_19_lmtb_0_ari.rds"))
+lmtb_0_ari_order <- unlist(read_csv(proc_path("2026_01_19_lmtb_0_ari_order.csv")))
 names(lmtb_0_ari_order) <- NULL
 
-lmtb_l_sol_df <- readRDS(proc_path("2025_10_02_lmtb_l_sol_df.rds"))
-lmtb_l_ari <- readRDS(proc_path("2025_10_02_lmtb_l_ari.rds"))
-lmtb_l_ari_order <- unlist(read_csv(proc_path("2025_10_02_lmtb_l_ari_order.csv")))
+lmtb_l_sol_df <- readRDS(proc_path("2026_01_19_lmtb_l_sol_df.rds"))
+lmtb_l_ari <- readRDS(proc_path("2026_01_19_lmtb_l_ari.rds"))
+lmtb_l_ari_order <- unlist(read_csv(proc_path("2026_01_19_lmtb_l_ari_order.csv")))
 names(lmtb_l_ari_order) <- NULL
 ```
 
@@ -1791,11 +1791,11 @@ saveRDS(lmtb_l_ext_sol_df_u5, proc_path("lmtb_l_ext_sol_df_u5.rds", TRUE))
 ```
 
 ```{r}
-lmtb_0_ext_sol_df_u1 <- readRDS(proc_path("2025_10_02_lmtb_0_ext_sol_df_u1.rds"))
-lmtb_0_ext_sol_df_u2 <- readRDS(proc_path("2025_10_02_lmtb_0_ext_sol_df_u2.rds"))
-lmtb_0_ext_sol_df_u3 <- readRDS(proc_path("2025_10_02_lmtb_0_ext_sol_df_u3.rds"))
-lmtb_0_ext_sol_df_u4 <- readRDS(proc_path("2025_10_02_lmtb_0_ext_sol_df_u4.rds"))
-lmtb_0_ext_sol_df_u5 <- readRDS(proc_path("2025_10_02_lmtb_0_ext_sol_df_u5.rds"))
+lmtb_0_ext_sol_df_u1 <- readRDS(proc_path("2026_01_19_lmtb_0_ext_sol_df_u1.rds"))
+lmtb_0_ext_sol_df_u2 <- readRDS(proc_path("2026_01_19_lmtb_0_ext_sol_df_u2.rds"))
+lmtb_0_ext_sol_df_u3 <- readRDS(proc_path("2026_01_19_lmtb_0_ext_sol_df_u3.rds"))
+lmtb_0_ext_sol_df_u4 <- readRDS(proc_path("2026_01_19_lmtb_0_ext_sol_df_u4.rds"))
+lmtb_0_ext_sol_df_u5 <- readRDS(proc_path("2026_01_19_lmtb_0_ext_sol_df_u5.rds"))
 
 lmtb_0_ext_sol_df <- do.call(
     "rbind",
@@ -1811,11 +1811,11 @@ lmtb_0_ext_sol_df <- do.call(
     )
 )
 
-lmtb_l_ext_sol_df_u1 <- readRDS(proc_path("2025_10_02_lmtb_l_ext_sol_df_u1.rds"))
-lmtb_l_ext_sol_df_u2 <- readRDS(proc_path("2025_10_02_lmtb_l_ext_sol_df_u2.rds"))
-lmtb_l_ext_sol_df_u3 <- readRDS(proc_path("2025_10_02_lmtb_l_ext_sol_df_u3.rds"))
-lmtb_l_ext_sol_df_u4 <- readRDS(proc_path("2025_10_02_lmtb_l_ext_sol_df_u4.rds"))
-lmtb_l_ext_sol_df_u5 <- readRDS(proc_path("2025_10_02_lmtb_l_ext_sol_df_u5.rds"))
+lmtb_l_ext_sol_df_u1 <- readRDS(proc_path("2026_01_19_lmtb_l_ext_sol_df_u1.rds"))
+lmtb_l_ext_sol_df_u2 <- readRDS(proc_path("2026_01_19_lmtb_l_ext_sol_df_u2.rds"))
+lmtb_l_ext_sol_df_u3 <- readRDS(proc_path("2026_01_19_lmtb_l_ext_sol_df_u3.rds"))
+lmtb_l_ext_sol_df_u4 <- readRDS(proc_path("2026_01_19_lmtb_l_ext_sol_df_u4.rds"))
+lmtb_l_ext_sol_df_u5 <- readRDS(proc_path("2026_01_19_lmtb_l_ext_sol_df_u5.rds"))
 
 lmtb_l_ext_sol_df <- do.call(
     "rbind",
@@ -1834,8 +1834,8 @@ lmtb_l_ext_sol_df <- do.call(
 saveRDS(lmtb_0_ext_sol_df, proc_path("lmtb_0_ext_sol_df.rds", TRUE))
 saveRDS(lmtb_l_ext_sol_df, proc_path("lmtb_l_ext_sol_df.rds", TRUE))
 
-lmtb_0_ext_sol_df <- readRDS(proc_path("2025_10_02_lmtb_0_ext_sol_df.rds"))
-lmtb_l_ext_sol_df <- readRDS(proc_path("2025_10_02_lmtb_l_ext_sol_df.rds"))
+lmtb_0_ext_sol_df <- readRDS(proc_path("2026_01_19_lmtb_0_ext_sol_df.rds"))
+lmtb_l_ext_sol_df <- readRDS(proc_path("2026_01_19_lmtb_l_ext_sol_df.rds"))
 ```
 
 ```{r}
@@ -1981,13 +1981,14 @@ mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
 
 dl_idx <- c(rep(1, 200), rep(2, 200), rep(3, 200), rep(4, 200), rep(5, 200))
 
+set.seed(42)
 conc_df <- data.frame()
 for (i in 1:1000) {
     print(i)
     idx <- dl_idx[[i]]
-    if (lmtb_0_ext_sol_df[i, ]$"nclust" == 3) {
+    if (lmtb_0_sol_df[i, ]$"nclust" == 3) {
         lmtb_0_pl_df <- auto_plot(
-            lmtb_0_ext_sol_df[i, ],
+            lmtb_0_sol_df[i, ],
             dl = c(lmtb_0_dls[[idx]], lmtb_0_ols[[idx]]),
             return_plots = FALSE
         )
@@ -2007,13 +2008,14 @@ for (i in 1:1000) {
 }
 saveRDS(conc_df, proc_path("lmtb_0_concordance_df.rds", TRUE))
 
+lmtb_l_dls |> length()
 conc_df <- data.frame()
 for (i in 1:1000) {
     print(i)
     idx <- dl_idx[[i]]
-    if (lmtb_l_ext_sol_df[i, ]$"nclust" == 3) {
+    if (lmtb_l_sol_df[i, ]$"nclust" == 3) {
         lmtb_l_pl_df <- auto_plot(
-            lmtb_l_ext_sol_df[i, ],
+            lmtb_l_sol_df[i, ],
             dl = c(lmtb_l_dls[[idx]], lmtb_l_ols[[idx]]),
             return_plots = FALSE
         )
@@ -2033,23 +2035,26 @@ for (i in 1:1000) {
 }
 saveRDS(conc_df, proc_path("lmtb_l_concordance_df.rds", TRUE))
 
-# HERE
+lmtb_0_conc_df <- readRDS(proc_path("2026_01_19_lmtb_0_concordance_df.rds"))
 
-lmtb_0_conc_df <- readRDS(proc_path("2025_10_02_lmtb_0_concordance_df.rds"))
-lmtb_l_conc_df <- readRDS(proc_path("2025_10_02_lmtb_l_concordance_df.rds"))
+lmtb_l_conc_df <- readRDS(proc_path("2026_01_19_lmtb_l_concordance_df.rds"))
 
-# max is 76.2%
-lmtb_0_conc_df |>
-    arrange(-concordance)
+
+# max is 87.3%
+#lmtb_0_conc_df |>
+conc_df |>
+    arrange(-concordance) |>
+    head()
 
 mean(lmtb_0_conc_df$"concordance")
 
-# 43 3 cluster solutions
+# 44 3 cluster solutions
 nrow(lmtb_0_conc_df)
 
-# max is 73.0%
+# max is 75.4%??
 lmtb_l_conc_df |>
-    arrange(-concordance)
+    arrange(-concordance) |>
+    head()
 
 lmtb_0_conc_df$"group" <- "Pre-injury"
 lmtb_l_conc_df$"group" <- "Post-injury"
