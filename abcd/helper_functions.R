@@ -751,4 +751,34 @@ tri_plot <- function(pl,
     return(wrap_plots(patch_plot))
 }
 
-
+uni_plot <- function(pl,
+                     feature,
+                     ft_name = NULL,
+                     scale_fill_labels = NULL,
+                     ylims = NULL) {
+    if (is.null(ft_name)) {
+        ft_name <- feature
+    }
+    ###########################################################################
+    p3 <- pl[[3]][[feature]] +
+        ggplot2::theme(
+            axis.title.y = ggplot2::element_text(size = 16)
+        )
+    if (class(pl[[3]][[feature]]$layers[[1]]$geom)[[1]] == "GeomBar") {
+        p3 <- p3 + ggplot2::labs(fill = ft_name)
+    } else {
+        print("why")
+        p3 <- p3 + ggplot2::labs(y = ft_name)
+    }
+    if (!is.null(scale_fill_labels)) {
+        p3 <- p3 + ggplot2::scale_fill_discrete(labels = scale_fill_labels)
+    }
+    if (!is.null(ylims)) {
+        p3 <- p3 + ggplot2::ylim(ylims[[1]], ylims[[2]])
+    }
+    ###########################################################################
+    p3 <- p3 +
+        ggplot2::labs(x = "Cluster") +
+        ggplot2::theme(text = ggplot2::element_text(size = 16))
+    return(p3)
+}

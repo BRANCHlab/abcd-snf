@@ -41,8 +41,8 @@ iread <- function(path) {
 }
 
 # longitudinal data frames, pre-imputation
-lmtb_0_df <- data.frame(iread("2025_09_15_lmtb_0_df.csv"))
-lmtb_l_df <- data.frame(iread("2025_09_15_lmtb_l_df.csv"))
+lmtb_0_df <- data.frame(iread("2026_01_19_lmtb_0_df.csv"))
+lmtb_l_df <- data.frame(iread("2026_01_19_lmtb_l_df.csv"))
 mtbi_l_df <- data.frame(iread("2025_09_15_mtbi_l_df.csv"))
 unij_l_df <- data.frame(iread("2025_09_15_unij_l_df.csv"))
 
@@ -100,15 +100,15 @@ lmtb_l_df_imp <- c(all_long_dls_h_ns$"lmtb_l_dls"[[1]], all_long_dls_h_ns$"lmtb_
 
 ```{r}
 # Complex helper function to produce summary tables
-characterize_feature_prop <- function(df, ft_name, clean) {
+characterize_feature_prop <- function(df, ft_name, clean, missing = "") {
     if ("latest_mtbi_mechanism" %in% colnames(df)) {
         df$"mtbi_mechanism" <- df$"latest_mtbi_mechanism"
         df$"mtbi_loc" <- df$"latest_mtbi_loc"
         df$"mtbi_mem_daze" <- df$"latest_mtbi_mem_daze"
     }
     if (!"mtbi_mechanism" %in% colnames(df)) {
-        df$"mtbi_mechanism" <- "N/A"
-        df$"mtbi_loc" <- "N/A"
+        df$"mtbi_mechanism" <- "Missing mechanism"
+        df$"mtbi_loc" <- "Missing LOC"
     }
     if (ft_name == "household_income") {
         df <- df |>
@@ -117,14 +117,14 @@ characterize_feature_prop <- function(df, ft_name, clean) {
                     household_income == 1 ~ "<$50,000",
                     household_income == 2 ~ "$50,000-$100,000",
                     household_income == 3 ~ ">$100,000",
-                    is.na(household_income) ~ "missing",
+                    is.na(household_income) ~ "Missing income",
                     TRUE ~ NA
                 )
             )
-        df$"household_income" <- factor(df$"household_income", levels = c("<$50,000", "$50,000-$100,000", ">$100,000", "Missing"))
+        df$"household_income" <- factor(df$"household_income", levels = c("<$50,000", "$50,000-$100,000", ">$100,000", "Missing income"))
     }
     if (ft_name == "sex") {
-        df$"sex"[is.na(df$"sex")] <- "Missing"
+        df$"sex"[is.na(df$"sex")] <- "Missing sex"
     }
     ft <- df[[ft_name]]
     count <- table(ft)
@@ -141,24 +141,65 @@ characterize_feature_prop <- function(df, ft_name, clean) {
                 "*Sex*" = dplyr::case_when(
                     `*Sex*` == 0 ~ "F",
                     `*Sex*` == 1 ~ "M",
-                    `*Sex*` == "Missing" ~ "Missing",
-                    TRUE ~ NA
+                    is.na(`*Sex*`) ~ "Missing sex",
+                    TRUE ~ `*Sex*`
                 )
             )
     }
     if (is.character(ft)) {
         df[[clean]] <- stringr::str_to_sentence(df[[clean]])
+        df[[clean]] <- gsub("_loc", " LOC", df[[clean]])
+        df[[clean]] <- gsub("Missing loc", "Missing LOC", df[[clean]])
+        df[[clean]] <- gsub("Fall_hit", "Fall/hit", df[[clean]])
+        df[[clean]] <- gsub("Hosp_er", "Hosp/ER", df[[clean]])
+    }
+    if (ft_name == "sex") {
+        demo_df <- data.frame(
+            v1 = c("F", "M", "Missing sex"),
+            v2 = c("0 (0%)", "0 (0%)", "0 (0%)")
+        )
+        colnames(demo_df) <- colnames(df)
+        df_vals <- df[, 1]
+        demo_df <- demo_df[!demo_df[, 1] %in% df[, 1], ]
+        # Move missing row to bottom
+        df <- rbind(df, demo_df) %>%
+            dplyr::arrange(.[[1]] == "Missing sex")
+    }
+    if (ft_name == "pubertal_status_p" | ft_name == "pubertal_status_y") {
+        demo_df <- data.frame(
+            v1 = c("1", "2", "3", "4"),
+            v2 = c("0 (0%)", "0 (0%)", "0 (0%)", "0 (0%)")
+        )
+        colnames(demo_df) <- colnames(df)
+        df_vals <- df[, 1]
+        demo_df <- demo_df[!demo_df[, 1] %in% df[, 1], ]
+        # Move missing row to bottom
+        df <- rbind(df, demo_df) %>%
+            dplyr::arrange(.[[1]] == "Missing LOC")
     }
     if (ft_name == "mtbi_loc") {
-        if (identical(df$"*LOC*", "N/a")) {
-            df2 <- data.frame("a" = c(0, 1), "b" = c(0, 0))
-            colnames(df2) <- c("*LOC*", "Frequency")
-            df <- rbind(df, df2)
-        } else {
-            df2 <- data.frame("a" = "N/a", "b" = 0)
-            colnames(df2) <- c("*LOC*", "Frequency")
-            df <- rbind(df2, df)
-        }
+        demo_df <- data.frame(
+            v1 = c("0", "1", "Missing LOC"),
+            v2 = c("0 (0%)", "0 (0%)", "0 (0%)")
+        )
+        colnames(demo_df) <- colnames(df)
+        df_vals <- df[, 1]
+        demo_df <- demo_df[!demo_df[, 1] %in% df[, 1], ]
+        # Move missing row to bottom
+        df <- rbind(df, demo_df) %>%
+            dplyr::arrange(.[[1]] == "Missing LOC")
+    }
+    if (ft_name == "mtbi_mechanism") {
+        demo_df <- data.frame(
+            v1 = c("Fall/hit", "Hosp/ER", "Multi", "Other LOC", "Vehicle", "Violent", "Missing mechanism"),
+            v2 = c("0 (0%)", "0 (0%)", "0 (0%)", "0 (0%)", "0 (0%)", "0 (0%)", "0 (0%)")
+        )
+        colnames(demo_df) <- colnames(df)
+        df_vals <- df[, 1]
+        demo_df <- demo_df[!demo_df[, 1] %in% df[, 1], ]
+        # Move missing row to bottom
+        df <- rbind(df, demo_df) %>%
+            dplyr::arrange(.[[1]] == "Missing mechanism")
     }
     return(
         data.frame(
@@ -168,7 +209,7 @@ characterize_feature_prop <- function(df, ft_name, clean) {
     )
 }
 
-characterize_feature_mean <- function(df, ft_name, clean) {
+characterize_feature_mean <- function(df, ft_name, clean, missing = "") {
     if ("previous_mtbis" %in% colnames(df)) {
         df$"mtbi_count" <- df$"previous_mtbis"
     } else {
@@ -201,8 +242,11 @@ characterize_feature_mean <- function(df, ft_name, clean) {
     s <- signif(sd(ft, na.rm = FALSE), 3)
     l <- min(ft, na.rm = FALSE)
     u <- max(ft, na.rm = FALSE) 
+    if (is.character(ft)) {
+        df[[clean]] <- gsub("_", " ", df[[clean]])
+    }
     df <- data.frame(
-            label = c(clean, "Mean (SD)", "Range", "Missing"),
+            label = c(clean, "Mean (SD)", "Range", paste0("Missing", missing)),
             value = c(
                 "<",
                 paste0(x, " (", s, ")"),
@@ -213,16 +257,21 @@ characterize_feature_mean <- function(df, ft_name, clean) {
     return(df)
 }
 
+colnames(mtbi_train_df)
+
+characterize_feature_prop(mtbi_train_df, "mtbi_mechanism", "*Mechanism of injury*", " mechanism")
+
 sample_characterize <- function(df, name) {
     sex_df <- characterize_feature_prop(df, "sex", "*Sex*")
-    age_df <- characterize_feature_mean(df, "age", "*Age (months)*")
+    age_df <- characterize_feature_mean(df, "age", "*Age (months)*", " age")
+    pdy_df <- characterize_feature_prop(df, "pubertal_status_y", "*Pubertal status - YR*")
     inc_df <- characterize_feature_prop(df, "household_income", "*Household income*")
     rac_df <- characterize_feature_prop(df, "race", "*Race*")
-    cnt_df <- characterize_feature_mean(df, "mtbi_count", "*Prior concussions*")
-    mag_df <- characterize_feature_mean(df, "mtbi_age", "*Age at last injury*")
+    cnt_df <- characterize_feature_mean(df, "mtbi_count", "*Prior concussions*", " prior concussions")
+    mag_df <- characterize_feature_mean(df, "mtbi_age", "*Age at last injury*", " injury age")
     loc_df <- characterize_feature_prop(df, "mtbi_loc", "*LOC*")
-    mec_df <- characterize_feature_prop(df, "mtbi_mechanism", "*Mechanism of injury*")
-    imp_df <- characterize_feature_mean(df, "total_impairments", "*Total CBCL/SDS*")
+    mec_df <- characterize_feature_prop(df, "mtbi_mechanism", "*Mechanism of injury*", " mechanism")
+    imp_df <- characterize_feature_mean(df, "total_impairments", "*Total CBCL/SDS*", " CBCL/SDS")
     n_df <- data.frame(
         label = "*N*",
         value = nrow(df)
@@ -231,6 +280,7 @@ sample_characterize <- function(df, name) {
             n_df,
             sex_df,
             age_df,
+            pdy_df,
             inc_df,
             rac_df,
             cnt_df,
@@ -246,35 +296,89 @@ sample_characterize <- function(df, name) {
 ```
 
 ```{r}
-names(all_dls_h_ns)
+mtbi_0_df <- rbind(mtbi_der_u1, mtbi_val_u1)
+mtbi_l_df <- data.frame(
+    c(
+        all_long_dls_h_ns$"mtbi_l_dls"[[1]],
+        all_long_dls_h_ns$"mtbi_l_ols"[[1]]
+    )
+)
 
-# baseline concussion sample pre-imputation
-mtbi_df <- rbind(mtbi_train_df, mtbi_test_df)
+best_matched_uninjured_df <- readRDS(proc_path("2025_10_03_best_matched_uninjured_df.rds"))
+random_unij_1_df <- readRDS(proc_path("2025_10_03_random_unij_1_df.rds"))
 
-sample_characterize(mtbi_df, "BC, Pre-I/C/S., T = 0")
+mtbi_0_characterized <- sample_characterize(mtbi_0_df, "BC T0")
+mtbi_l_characterized <- sample_characterize(mtbi_l_df, "BC T2")
+unij_0_characterized <- sample_characterize(unij_u_df, "BU T0")
+lmtb_0_characterized <- sample_characterize(lmtb_0_df_imp, "LC T0")
+lmtb_l_characterized <- sample_characterize(lmtb_l_df_imp, "LC T2")
+bunj_0_characterized <- sample_characterize(best_matched_uninjured_df, "BMU T0")
+runj_0_characterized <- sample_characterize(random_unij_1_df, "RMU T0")
 
-# baseline uninjured sample pre-imputation
-sample_characterize(unij_df, "BU, Pre-I/C/S., T = 0")
+merged <- cbind(
+    mtbi_0_characterized,
+    mtbi_l_characterized[, 2],
+    unij_0_characterized[, 2],
+    bunj_0_characterized[, 2],
+    runj_0_characterized[, 2],
+    lmtb_0_characterized[, 2],
+    lmtb_l_characterized[, 2]
+)
+colnames(merged) <- c("Feature", "BC T0", "BC T2", "BU T0", "BMU T0", "RMU T0", "LC T0", "LC T2")
 
-# baseline concussion derivation samples post-imputation
-sample_characterize(mtbi_der_u1, "BCD Unpooled")
-sample_characterize(mtbi_der_p1, "BCD Pooled")
-sample_characterize(rbind(mtbi_der_u1, mtbi_val_u1), "BC Post-I/C/S")
-
-# baseline uninjured sample post-imputation
-sample_characterize(unij_u_df, "BU Unpooled")
-sample_characterize(unij_p_df, "BU Pooled")
-
-sample_characterize(lmtb_0_df, "LC, Pre-I/C/S, T = 0")
-sample_characterize(lmtb_l_df, "LC, Pre-I/C/S, T = 2")
-sample_characterize(mtbi_l_df, "BC, Pre-I/C/S, T = 2")
-sample_characterize(unij_l_df, "BU, Pre-I/C/S, T = 2")
-
-sample_characterize(lmtb_0_df_imp, "LC, Post-I/C/S, T = 0")
-
-sample_characterize(lmtb_l_df_imp, "LC, Post-I/C/S, T = 2")
-
-lmtb_l_df_imp$"mtbi_loc"
+merged |>
+    knitr::kable(format = "markdown")
+ 
+options(width = 200)
 ```
 
-
+|Feature                   |BC T0        |BC T2      |BU T0       |BMU T0     |RMU T0      |LC T0       |LC T2        |
+|:-------------------------|:------------|:----------|:-----------|:----------|:-----------|:-----------|:------------|
+|*N*                       |438          |403        |7905        |438        |438         |217         |217          |
+|*Sex*                     |<            |<          |<           |<          |<           |<           |<            |
+|F                         |171 (39%)    |162 (40%)  |3949 (50%)  |168 (38%)  |229 (52%)   |85 (39%)    |85 (39%)     |
+|M                         |267 (61%)    |241 (60%)  |3956 (50%)  |270 (62%)  |209 (48%)   |132 (61%)   |132 (61%)    |
+|Missing sex               |0 (0%)       |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |0 (0%)       |
+|*Age (months)*            |<            |<          |<           |<          |<           |<           |<            |
+|Mean (SD)                 |120 (7.47)   |145 (8.06) |119 (7.44)  |120 (7.5)  |118 (7.34)  |120 (7.51)  |145 (7.81)   |
+|Range                     |107 - 132    |127 - 165  |107 - 133   |107 - 133  |107 - 132   |107 - 131   |129 - 166    |
+|Missing age               |0            |0          |0           |0          |0           |0           |0            |
+|*Pubertal status - YR*    |<            |<          |<           |<          |<           |<           |<            |
+|1                         |136 (31%)    |55 (14%)   |2203 (28%)  |132 (30%)  |130 (30%)   |66 (30%)    |30 (14%)     |
+|2                         |169 (39%)    |113 (28%)  |2961 (37%)  |166 (38%)  |167 (38%)   |81 (37%)    |68 (31%)     |
+|3                         |133 (30%)    |156 (39%)  |2741 (35%)  |140 (32%)  |141 (32%)   |70 (32%)    |80 (37%)     |
+|4                         |0 (0%)       |79 (20%)   |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |39 (18%)     |
+|*Household income*        |<            |<          |<           |<          |<           |<           |<            |
+|<$50,000                  |102 (23%)    |82 (20%)   |2631 (33%)  |99 (23%)   |162 (37%)   |35 (16%)    |38 (18%)     |
+|$50,000-$100,000          |122 (28%)    |102 (25%)  |2203 (28%)  |122 (28%)  |108 (25%)   |70 (32%)    |47 (22%)     |
+|>$100,000                 |214 (49%)    |219 (54%)  |3071 (39%)  |217 (50%)  |168 (38%)   |112 (52%)   |132 (61%)    |
+|Missing income            |0 (0%)       |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |0 (0%)       |
+|*Race*                    |<            |<          |<           |<          |<           |<           |<            |
+|Black                     |38 (9%)      |30 (7%)    |1307 (17%)  |36 (8%)    |79 (18%)    |18 (8%)     |18 (8%)      |
+|Hispanic                  |70 (16%)     |63 (16%)   |1714 (22%)  |68 (16%)   |97 (22%)    |30 (14%)    |30 (14%)     |
+|Other                     |50 (11%)     |47 (12%)   |1008 (13%)  |47 (11%)   |52 (12%)    |30 (14%)    |30 (14%)     |
+|White                     |280 (64%)    |263 (65%)  |3876 (49%)  |287 (66%)  |210 (48%)   |139 (64%)   |139 (64%)    |
+|*Prior concussions*       |<            |<          |<           |<          |<           |<           |<            |
+|Mean (SD)                 |1.32 (0.508) |0 (0)      |0 (0)       |0 (0)      |0 (0)       |0 (0)       |1.37 (0.588) |
+|Range                     |1 - 3        |0 - 0      |0 - 0       |0 - 0      |0 - 0       |0 - 0       |1 - 4        |
+|Missing prior concussions |0            |0          |0           |0          |0           |0           |0            |
+|*Age at last injury*      |<            |<          |<           |<          |<           |<           |<            |
+|Mean (SD)                 |74.1 (32.7)  |0 (0)      |0 (0)       |0 (0)      |0 (0)       |0 (0)       |129 (10.7)   |
+|Range                     |0 - 120      |0 - 0      |0 - 0       |0 - 0      |0 - 0       |0 - 0       |108 - 156    |
+|Missing injury age        |0            |0          |0           |0          |0           |0           |0            |
+|*LOC*                     |<            |<          |<           |<          |<           |<           |<            |
+|0                         |316 (72%)    |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |164 (76%)    |
+|1                         |122 (28%)    |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |53 (24%)     |
+|Missing LOC               |0 (0%)       |403 (100%) |7905 (100%) |438 (100%) |438 (100%)  |217 (100%)  |0 (0%)       |
+|*Mechanism of injury*     |<            |<          |<           |<          |<           |<           |<            |
+|Fall/hit                  |135 (31%)    |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |89 (41%)     |
+|Hosp/ER                   |273 (62%)    |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |103 (47%)    |
+|Multi                     |3 (1%)       |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |9 (4%)       |
+|Other LOC                 |6 (1%)       |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |13 (6%)      |
+|Vehicle                   |16 (4%)      |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |3 (1%)       |
+|Violent                   |5 (1%)       |0 (0%)     |0 (0%)      |0 (0%)     |0 (0%)      |0 (0%)      |0 (0%)       |
+|Missing mechanism         |0 (0%)       |403 (100%) |7905 (100%) |438 (100%) |438 (100%)  |217 (100%)  |0 (0%)       |
+|*Total CBCL/SDS*          |<            |<          |<           |<          |<           |<           |<            |
+|Mean (SD)                 |62.2 (29.1)  |57.6 (26)  |51.2 (20.9) |55.9 (24)  |51.3 (21.9) |54.4 (20.6) |55.5 (22.6)  |
+|Range                     |26 - 191     |27 - 177   |26 - 202    |26 - 185   |26 - 161    |27 - 134    |27 - 168     |
+|Missing CBCL/SDS          |0            |0          |0           |0          |0           |0           |0            |
