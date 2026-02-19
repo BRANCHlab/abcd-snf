@@ -307,6 +307,7 @@ mtbi_l_df <- data.frame(
 best_matched_uninjured_df <- readRDS(proc_path("2025_10_03_best_matched_uninjured_df.rds"))
 random_unij_1_df <- readRDS(proc_path("2025_10_03_random_unij_1_df.rds"))
 
+
 mtbi_0_characterized <- sample_characterize(mtbi_0_df, "BC T0")
 mtbi_l_characterized <- sample_characterize(mtbi_l_df, "BC T2")
 unij_0_characterized <- sample_characterize(unij_u_df, "BU T0")
@@ -382,3 +383,101 @@ options(width = 200)
 |Mean (SD)                 |62.2 (29.1)  |57.6 (26)  |51.2 (20.9) |55.9 (24)  |51.3 (21.9) |54.4 (20.6) |55.5 (22.6)  |
 |Range                     |26 - 191     |27 - 177   |26 - 202    |26 - 185   |26 - 161    |27 - 134    |27 - 168     |
 |Missing CBCL/SDS          |0            |0          |0           |0          |0           |0           |0            |
+
+Stats comparing baseline concussion sample with baseline uninjured sample:
+
+```{r}
+
+colnames(mtbi_0_df)
+colnames(unij_u_df)
+
+sum(mtbi_0_df$"sex")
+sum(unij_u_df$"sex")
+
+
+run_stats <- function(df1, df2) {
+    sex_stats <- calc_propes(df1$"sex", df2$"sex")
+    cat(
+        "\nSex (> 1 means df1 has more males):",
+        "\n    OR: ", sex_stats$"es", " [", sex_stats$"l", ", ", sex_stats$"u", "]\n",
+        sep = ""
+    )
+    # D 0.14 [0.04, 0.23] p = 0.01
+    age_stats <- calc_des_wp(df1$"age", df2$"age")
+    cat(
+        "\nage (+d means df1 is older):",
+        "\n    d: ", age_stats$"es", " [", age_stats$"l", ", ", age_stats$"u", "]",
+        "\n    p: ", age_stats$"p", "\n",
+        sep = ""
+    )
+    # D -0.1 [-0.19, 0] p = 0.05 (n.s.)
+    pds_stats <- calc_des_wp(df1$"pubertal_status_y", df2$"pubertal_status_y")
+    cat(
+        "\npds (+d means df1 is higher pds):",
+        "\n    d: ", pds_stats$"es", " [", pds_stats$"l", ", ", pds_stats$"u", "]",
+        "\n    p: ", pds_stats$"p", "\n",
+        sep = ""
+    )
+    # D 0.24 [0.14, 0.33] p < 0.01
+    # positive D means first sample higher
+    income_stats <- calc_des_wp(df1$"household_income", df2$"household_income")
+    cat(
+        "\nincome (+d means df1 is higher income):",
+        "\n    d: ", income_stats$"es", " [", income_stats$"l", ", ", income_stats$"u", "]",
+        "\n    p: ", income_stats$"p", "\n",
+        sep = ""
+    )
+    # OR 1.84 [1.51, 2.25]
+    race_white_stats <- calc_propes(
+        pull(dummy_cols(df1, select_columns = "race"), race_white),
+        pull(dummy_cols(df2, select_columns = "race"), race_white)
+    )
+    cat(
+        "\n% white (> 1 means df1 has more % white):",
+        "\n    OR: ", race_white_stats$"es", " [", race_white_stats$"l", ", ", race_white_stats$"u", "]\n",
+        sep = ""
+    )
+    # OR 0.48 [0.34, 0.67]
+    race_black_stats <- calc_propes(
+        pull(dummy_cols(df1, select_columns = "race"), race_black),
+        pull(dummy_cols(df2, select_columns = "race"), race_black)
+    )
+    cat(
+        "\n% black (> 1 means df1 has more % black):",
+        "\n    OR: ", race_black_stats$"es", " [", race_black_stats$"l", ", ", race_black_stats$"u", "]\n",
+        sep = ""
+    )
+    # OR 0.69 [0.53, 0.89]
+    race_hispanic_stats <- calc_propes(
+        pull(dummy_cols(df1, select_columns = "race"), race_hispanic),
+        pull(dummy_cols(df2, select_columns = "race"), race_hispanic)
+    )
+    cat(
+        "\n% hispanic (> 1 means df1 has more % hispanic):",
+        "\n    OR: ", race_hispanic_stats$"es", " [", race_hispanic_stats$"l", ", ", race_hispanic_stats$"u", "]\n",
+        sep = ""
+    )
+    # OR 0.88 [0.65, 1.19] n.s.
+    race_other_stats <- calc_propes(
+        pull(dummy_cols(df1, select_columns = "race"), race_other),
+        pull(dummy_cols(df2, select_columns = "race"), race_other)
+    )
+    cat(
+        "\n% other (> 1 means df1 has more % other):",
+        "\n    OR: ", race_other_stats$"es", " [", race_other_stats$"l", ", ", race_other_stats$"u", "]\n",
+        sep = ""
+    )
+    # 0.51 [0.42, 0.61], p < 0.01
+    impairment_stats <- calc_des_wp(
+        rowSums(dplyr::select(df1, dplyr::starts_with("cbcl"), dplyr::starts_with("sds"))),
+        rowSums(dplyr::select(df2, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+    )
+    cat(
+        "\nimpairment (+d means df1 is higher impairment):",
+        "\n    d: ", impairment_stats$"es", " [", impairment_stats$"l", ", ", impairment_stats$"u", "]",
+        "\n    p: ", impairment_stats$"p", "\n",
+        sep = ""
+    )
+}
+run_stats(mtbi_0_df, unij_u_df)
+```
