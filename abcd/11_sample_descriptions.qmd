@@ -481,3 +481,50 @@ run_stats <- function(df1, df2) {
 }
 run_stats(mtbi_0_df, unij_u_df)
 ```
+
+Validating the sentence:
+
+"the differences between the subtypes across outcome measures far exceeds ABCD-wide effects of sex, suggesting that sex at birth alone does not nearly fully explain the inter-subtype variation in outcomes."
+
+
+```{r}
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+```
+
+```{r}
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+
+
+cbcl <- get_cbcl_syndrome_scale(mh_p_cbcl, raw = TRUE, t = 0)
+sds <- get_sleep_disturbance(ph_p_sds, t = 0)
+sex <- get_sex(gish_p_gi, t = 0, as_numeric = TRUE, only_m_f = TRUE)
+
+my_df <- dplyr::inner_join(cbcl, sds, by = "subjectkey") |>
+    dplyr::inner_join(sex, by = "subjectkey") |>
+    na.omit()
+
+m_df <- dplyr::filter(my_df, sex == 1)
+f_df <- dplyr::filter(my_df, sex == 0)
+
+colnames(my_df)
+
+nrow(my_df)
+
+calc_des_wp(m_df$"sds_p_ss_total", f_df$"sds_p_ss_total")
+
+for (i in colnames(my_df)[2:10]) {
+    print(paste0(i, " - ", calc_des_wp(m_df[, i], f_df[, i])$"es"))
+}
+
+calc_des_wp(m_df$"cbcl_scr_syn_aggressive_r", f_df$"cbcl_scr_syn_aggressive_r")
+
+mean(m_df$"cbcl_scr_syn_attention_r")
+
+mean(f_df$"cbcl_scr_syn_attention_r")
+
+
+```
