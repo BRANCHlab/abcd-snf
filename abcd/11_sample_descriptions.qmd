@@ -387,7 +387,6 @@ options(width = 200)
 Stats comparing baseline concussion sample with baseline uninjured sample:
 
 ```{r}
-
 colnames(mtbi_0_df)
 colnames(unij_u_df)
 
@@ -479,8 +478,107 @@ run_stats <- function(df1, df2) {
         sep = ""
     )
 }
+
+# mTBI vs. unij:
 run_stats(mtbi_0_df, unij_u_df)
+
+mtbi_m <- dplyr::filter(mtbi_0_df, sex == 1)
+mtbi_f <- dplyr::filter(mtbi_0_df, sex == 0)
+
+unij_m <- dplyr::filter(unij_u_df, sex == 1)
+unij_f <- dplyr::filter(unij_u_df, sex == 0)
+
+
+# d: 0.1 [-0.09, 0.3], p = 0.29
+run_stats(mtbi_m, mtbi_f)
+
+# d: 0.15 [0.11, 0.19], p < 0.01
+run_stats(unij_m, unij_f)
+
+# check individual features
 ```
+
+This indicates that although in the ABCD sample, total impairments are generally worse in males, within the concussion sample, this gap is reduced (hence, the outcomes for concussion are generally worse for females).
+
+```{r}
+mtbi_0_df$"group" <- "Concussion"
+unij_u_df$"group" <- "Uninjured"
+mtbi_0_df <- mtbi_0_df[, colnames(unij_u_df)]
+joint_df <- rbind(mtbi_0_df, unij_u_df)
+joint_df <- joint_df |>
+    dplyr::mutate(sex = dplyr::case_when(sex == 1 ~ "M", sex == 0 ~ "F"))
+joint_df$"group" <- paste0(joint_df$"sex", " - ", joint_df$"group")
+joint_df$"group" <- factor(
+    joint_df$"group",
+    levels = c(
+        "F - Uninjured",
+        "M - Uninjured",
+        "F - Concussion",
+        "M - Concussion"
+    )
+)
+
+compare_sex_total_impair <- function(df, feature = "total_impairment") {
+    df$"total_impairment" <- df |>
+        dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+        rowSums()
+    my_palette <- c(
+        "F - Concussion" = "red",
+        "M - Concussion" = "orange",
+        "F - Uninjured" = "cadetblue",
+        "M - Uninjured" = "darkolivegreen3"
+    )
+    df |>
+        ggplot(aes(x = .data[[feature]], colour = group)) +
+        geom_density(alpha = 0, linewidth = 1) +
+        theme_classic() +
+        scale_x_continuous(expand = c(0, 0)) +
+        labs(x = "Total problem score across CBCL and SDS measures", y = "Density", colour = "Group") +
+        scale_colour_manual(values = my_palette)
+}
+compare_sex_total_impair(joint_df, "sds_sleep")
+
+colnames(joint_df)
+
+compare_sex_total_impair(unij_u_df)
+
+# 52.7
+unij_u_df |>
+    dplyr::filter(sex == 1) |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums() |>
+    mean()
+
+# 49.6
+unij_u_df |>
+    dplyr::filter(sex == 0) |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums() |>
+    mean()
+
+
+# 63.4
+mtbi_0_df |>
+    dplyr::filter(sex == 1) |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums() |>
+    mean()
+
+# 60.3
+mtbi_0_df |>
+    dplyr::filter(sex == 0) |>
+    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
+    rowSums() |>
+    mean()
+
+
+
+
+
+```
+
+
+
 
 Validating the sentence:
 
@@ -525,6 +623,4 @@ calc_des_wp(m_df$"cbcl_scr_syn_aggressive_r", f_df$"cbcl_scr_syn_aggressive_r")
 mean(m_df$"cbcl_scr_syn_attention_r")
 
 mean(f_df$"cbcl_scr_syn_attention_r")
-
-
 ```

@@ -535,7 +535,8 @@ calc_des_wp <- function(x1, x2) {
         d,
         n1,
         n2,
-        verbose = FALSE
+        verbose = FALSE,
+        dig = 6
     )
     return(
         list(
