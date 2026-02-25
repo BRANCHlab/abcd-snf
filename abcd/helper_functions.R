@@ -578,6 +578,38 @@ calc_propes <- function(x1, x2) {
     )
 }
 
+calc_propes_wp <- function(x1, x2) {
+    success_1 <- sum(x1, na.rm = TRUE)
+    success_2 <- sum(x2, na.rm = TRUE)
+    if (success_1 == 0 || success_1 == length(x1) || success_2 == 0 || success_2 == length(x2)) {
+        m1 <- (success_1 + 0.5) / (length(x1) + 1)
+        m2 <- (success_2 + 0.5) / (length(x2) + 1)
+        n1 <- length(x1) + 1
+        n2 <- length(x2) + 1
+    } else {
+        m1 <- success_1 / length(x1)
+        m2 <- success_2 / length(x2)
+        n1 <- length(x1)
+        n2 <- length(x2)
+    }
+    d_full <- compute.es::propes(
+        m1,
+        m2,
+        n1,
+        n2,
+        verbose = FALSE,
+        dig = 6
+    )
+    return(
+        list(
+            "es" = d_full$"OR",
+            "l" = d_full$"l.or",
+            "u" = d_full$"u.or",
+            "p" = d_full$"pval.or"
+        )
+    )
+}
+
 dummy_non_numeric <- function(df) {
     to_dummy <- colnames(df)[!sapply(df, is.numeric)]
     if (length(to_dummy) == 0) {

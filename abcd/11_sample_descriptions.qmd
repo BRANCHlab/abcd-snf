@@ -9,7 +9,7 @@ library(patchwork)
 library(tidyr)
 library(ggplot2)
 
-source("abcd/helper_functions.R")
+source("helper_functions.R")
 
 input_path <- path_maker(here("data/abcd/inputs"))
 core_path <- path_maker(here("data/abcd/core"))
@@ -393,7 +393,6 @@ colnames(unij_u_df)
 sum(mtbi_0_df$"sex")
 sum(unij_u_df$"sex")
 
-
 run_stats <- function(df1, df2) {
     sex_stats <- calc_propes(df1$"sex", df2$"sex")
     cat(
@@ -484,10 +483,8 @@ run_stats(mtbi_0_df, unij_u_df)
 
 mtbi_m <- dplyr::filter(mtbi_0_df, sex == 1)
 mtbi_f <- dplyr::filter(mtbi_0_df, sex == 0)
-
 unij_m <- dplyr::filter(unij_u_df, sex == 1)
 unij_f <- dplyr::filter(unij_u_df, sex == 0)
-
 
 # d: 0.1 [-0.09, 0.3], p = 0.29
 run_stats(mtbi_m, mtbi_f)
@@ -495,89 +492,136 @@ run_stats(mtbi_m, mtbi_f)
 # d: 0.15 [0.11, 0.19], p < 0.01
 run_stats(unij_m, unij_f)
 
-# check individual features
+n_mtbi_m <- nrow(mtbi_m)
+n_mtbi_f <- nrow(mtbi_m)
+n_unij_m <- nrow(unij_m)
+n_unij_f <- nrow(unij_m)
+
+set.seed(42)
+perm_diffs <- vector(mode = "numeric", length = 1000)
+mtbi_m_x <- rowSums(dplyr::select(mtbi_m, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+mtbi_f_x <- rowSums(dplyr::select(mtbi_f, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+unij_m_x <- rowSums(dplyr::select(unij_m, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+unij_f_x <- rowSums(dplyr::select(unij_f, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+m_pool <- c(mtbi_m_x, unij_m_x)
+f_pool <- c(mtbi_f_x, unij_f_x)
+for (i in 1:1000) {
+    m_perm <- sample(m_pool)
+    f_perm <- sample(f_pool)
+    mock_mtbi_m <- m_perm[1:n_mtbi_m]
+    mock_mtbi_f <- f_perm[1:n_mtbi_f]
+    mock_unij_m <- m_perm[(1 + n_mtbi_m):length(m_perm)]
+    mock_unij_f <- f_perm[(1 + n_mtbi_f):length(f_perm)]
+    mtbi_m_worse <- calc_des_wp(mock_mtbi_m, mock_mtbi_f)$"es" # positive means m worse
+    unij_m_worse <- calc_des_wp(mock_unij_m, mock_unij_f)$"es" # positive means m worse
+    diff <- unij_m_worse - mtbi_m_worse # positive means m more worse in unij
+    perm_diffs[i] <- diff
+}
+mtbi_m_worse <- calc_des_wp(mtbi_m_x, mtbi_f_x)$"es"
+unij_m_worse <- calc_des_wp(unij_m_x, unij_f_x)$"es"
+observed_diff <- unij_m_worse - mtbi_m_worse
+print(out)
+print(mean(observed_diff < perm_diffs)) # 0.307
 ```
 
-This indicates that although in the ABCD sample, total impairments are generally worse in males, within the concussion sample, this gap is reduced (hence, the outcomes for concussion are generally worse for females).
+So it's not significantly different.
+
+What about for individual features?
 
 ```{r}
-mtbi_0_df$"group" <- "Concussion"
-unij_u_df$"group" <- "Uninjured"
-mtbi_0_df <- mtbi_0_df[, colnames(unij_u_df)]
-joint_df <- rbind(mtbi_0_df, unij_u_df)
-joint_df <- joint_df |>
-    dplyr::mutate(sex = dplyr::case_when(sex == 1 ~ "M", sex == 0 ~ "F"))
-joint_df$"group" <- paste0(joint_df$"sex", " - ", joint_df$"group")
-joint_df$"group" <- factor(
-    joint_df$"group",
-    levels = c(
-        "F - Uninjured",
-        "M - Uninjured",
-        "F - Concussion",
-        "M - Concussion"
-    )
-)
-
-compare_sex_total_impair <- function(df, feature = "total_impairment") {
-    df$"total_impairment" <- df |>
-        dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
-        rowSums()
-    my_palette <- c(
-        "F - Concussion" = "red",
-        "M - Concussion" = "orange",
-        "F - Uninjured" = "cadetblue",
-        "M - Uninjured" = "darkolivegreen3"
-    )
-    df |>
-        ggplot(aes(x = .data[[feature]], colour = group)) +
-        geom_density(alpha = 0, linewidth = 1) +
-        theme_classic() +
-        scale_x_continuous(expand = c(0, 0)) +
-        labs(x = "Total problem score across CBCL and SDS measures", y = "Density", colour = "Group") +
-        scale_colour_manual(values = my_palette)
+outs <- colnames(dplyr::select(mtbi_m, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+outs
+# check individual features
+out_df <- data.frame()
+for (out in outs) {
+    mtbi_m_x <- rowSums(dplyr::select(mtbi_m, all_of(out)))
+    mtbi_f_x <- rowSums(dplyr::select(mtbi_f, all_of(out)))
+    unij_m_x <- rowSums(dplyr::select(unij_m, all_of(out)))
+    unij_f_x <- rowSums(dplyr::select(unij_f, all_of(out)))
+    m_pool <- c(mtbi_m_x, unij_m_x)
+    f_pool <- c(mtbi_f_x, unij_f_x)
+    for (i in 1:1000) {
+        m_perm <- sample(m_pool)
+        f_perm <- sample(f_pool)
+        mock_mtbi_m <- m_perm[1:n_mtbi_m]
+        mock_mtbi_f <- f_perm[1:n_mtbi_f]
+        mock_unij_m <- m_perm[(1 + n_mtbi_m):length(m_perm)]
+        mock_unij_f <- f_perm[(1 + n_mtbi_f):length(f_perm)]
+        mtbi_m_worse <- calc_des_wp(mock_mtbi_m, mock_mtbi_f)$"es" # positive means m worse
+        unij_m_worse <- calc_des_wp(mock_unij_m, mock_unij_f)$"es" # positive means m worse
+        diff <- unij_m_worse - mtbi_m_worse # positive means m more worse in unij
+        perm_diffs[i] <- diff
+    }
+    mtbi_m_worse <- calc_des_wp(mtbi_m_x, mtbi_f_x)$"es"
+    unij_m_worse <- calc_des_wp(unij_m_x, unij_f_x)$"es"
+    observed_diff <- unij_m_worse - mtbi_m_worse
+    print(out)
+    print(mean(observed_diff < perm_diffs))
+    print("----")
+    out_df <- rbind(out_df, data.frame(outcome = out, p = mean(observed_diff < perm_diffs)))
 }
-compare_sex_total_impair(joint_df, "sds_sleep")
-
-colnames(joint_df)
-
-compare_sex_total_impair(unij_u_df)
-
-# 52.7
-unij_u_df |>
-    dplyr::filter(sex == 1) |>
-    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
-    rowSums() |>
-    mean()
-
-# 49.6
-unij_u_df |>
-    dplyr::filter(sex == 0) |>
-    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
-    rowSums() |>
-    mean()
-
-
-# 63.4
-mtbi_0_df |>
-    dplyr::filter(sex == 1) |>
-    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
-    rowSums() |>
-    mean()
-
-# 60.3
-mtbi_0_df |>
-    dplyr::filter(sex == 0) |>
-    dplyr::select(dplyr::starts_with("cbcl"), dplyr::starts_with("sds")) |>
-    rowSums() |>
-    mean()
-
-
-
-
-
 ```
 
+Maybe need to adjust for race?
 
+```{r}
+
+mtbi_0_df$"group" <- "mtbi"
+unij_u_df$"group" <- "unij"
+
+joint_df <- rbind(mtbi_0_df[, colnames(unij_u_df)], unij_u_df)
+
+joint_df$"race" <- factor(joint_df$"race")
+
+model <- lm(outs[1] ~ race, data = joint_df)
+
+for (out in outs) {
+    model <- lm(as.formula(paste0(out, " ~ race")), data = joint_df)
+    joint_df[, out] <- resid(model)
+}
+
+mtbi_m_adj <- dplyr::filter(joint_df, sex == 1, group == "mtbi")
+mtbi_f_adj <- dplyr::filter(joint_df, sex == 0, group == "mtbi")
+unij_m_adj <- dplyr::filter(joint_df, sex == 1, group == "unij")
+unij_f_adj <- dplyr::filter(joint_df, sex == 0, group == "unij")
+
+n_mtbi_m <- nrow(mtbi_m)
+n_mtbi_f <- nrow(mtbi_m)
+n_unij_m <- nrow(unij_m)
+n_unij_f <- nrow(unij_m)
+
+set.seed(42)
+perm_diffs_adj <- vector(mode = "numeric", length = 1000)
+mtbi_m_x_adj <- rowSums(dplyr::select(mtbi_m_adj, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+mtbi_f_x_adj <- rowSums(dplyr::select(mtbi_f_adj, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+unij_m_x_adj <- rowSums(dplyr::select(unij_m_adj, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+unij_f_x_adj <- rowSums(dplyr::select(unij_f_adj, dplyr::starts_with("cbcl"), dplyr::starts_with("sds")))
+m_pool_adj <- c(mtbi_m_x_adj, unij_m_x_adj)
+f_pool_adj <- c(mtbi_f_x_adj, unij_f_x_adj)
+for (i in 1:1000) {
+    m_perm_adj <- sample(m_pool_adj)
+    f_perm_adj <- sample(f_pool_adj)
+    mock_mtbi_m_adj <- m_perm_adj[1:n_mtbi_m]
+    mock_mtbi_f_adj <- f_perm_adj[1:n_mtbi_f]
+    mock_unij_m_adj <- m_perm_adj[(1 + n_mtbi_m):length(m_perm_adj)]
+    mock_unij_f_adj <- f_perm_adj[(1 + n_mtbi_f):length(f_perm_adj)]
+    mtbi_m_worse_adj <- calc_des_wp(mock_mtbi_m_adj, mock_mtbi_f_adj)$"es" # positive means m worse
+    unij_m_worse_adj <- calc_des_wp(mock_unij_m_adj, mock_unij_f_adj)$"es" # positive means m worse
+    diff_adj <- unij_m_worse_adj - mtbi_m_worse_adj # positive means m more worse in unij
+    perm_diffs_adj[i] <- diff_adj
+}
+mtbi_m_worse_adj <- calc_des_wp(mtbi_m_x_adj, mtbi_f_x_adj)$"es"
+unij_m_worse_adj <- calc_des_wp(unij_m_x_adj, unij_f_x_adj)$"es"
+observed_diff_adj <- unij_m_worse_adj - mtbi_m_worse_adj
+print(mean(observed_diff_adj < perm_diffs_adj))
+
+m_pool_adj |> mean()
+f_pool_adj |> mean()
+
+observed_diff_adj # 0.292
+```
+
+These analyses indicate that the M vs. F overall outcome measures at baseline are worse in M than F regardless of mTBI or uninjured status, and that this gap is not bigger in the injured group than the uninjured group.
 
 
 Validating the sentence:

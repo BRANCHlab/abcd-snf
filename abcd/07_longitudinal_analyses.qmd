@@ -1015,7 +1015,6 @@ Checking again, but now rather than high-high/high-low, examining if there is di
 
 ```{r}
 adj_df_cat_annotated <- readRDS(proc_path("2026_01_19_adj_df_cat_annotated.rds"))
-
 t0_df <- adj_df_cat_annotated |>
     dplyr::filter(t == 0)
 t2_df <- adj_df_cat_annotated |>
@@ -1055,7 +1054,8 @@ pretty_features <- c(
     "sds_sleep"       = "SDS Sleep"
 )
 
-plot_high_change <- function(df, feature) {
+sex_pval_df <- data.frame()
+plot_high_change <- function(df, feature, sex_pval_df) {
     pretty_feature <- gsub("cbcl_", "CBCL ", feature)
     category_name <- paste0(feature, "_cat_t0")
     name_t0 <- paste0("adj_", feature, "_t0")
@@ -1103,6 +1103,52 @@ plot_high_change <- function(df, feature) {
             )
         )
     fisher_p_value <- fisher.test(table(stacked_df_analysis$diff_cat_bin, stacked_df_analysis$cluster))$"p.value"
+    #------------------------------------------------------------------------------
+    # side analysis examining sex
+    stacked_df_analysis1 <- stacked_df_analysis |> dplyr::filter(cluster == 1)
+    stacked_df_analysis2 <- stacked_df_analysis |> dplyr::filter(cluster == 2)
+    stacked_df_analysis3 <- stacked_df_analysis |> dplyr::filter(cluster == 3)
+    stacked_df_analysism <- stacked_df_analysis |> dplyr::filter(sex == "M")
+    stacked_df_analysis1m <- stacked_df_analysis |> dplyr::filter(cluster == 1, sex == "M")
+    stacked_df_analysis2m <- stacked_df_analysis |> dplyr::filter(cluster == 2, sex == "M")
+    stacked_df_analysis3m <- stacked_df_analysis |> dplyr::filter(cluster == 3, sex == "M")
+    stacked_df_analysisf <- stacked_df_analysis |> dplyr::filter(sex == "F")
+    stacked_df_analysis1f <- stacked_df_analysis |> dplyr::filter(cluster == 1, sex == "F")
+    stacked_df_analysis2f <- stacked_df_analysis |> dplyr::filter(cluster == 2, sex == "F")
+    stacked_df_analysis3f <- stacked_df_analysis |> dplyr::filter(cluster == 3, sex == "F")
+    cor <- calc_propes_wp(stacked_df_analysism$"diff_cat_bin", stacked_df_analysisf$"diff_cat_bin")
+    c1or <- calc_propes_wp(stacked_df_analysis1m$"diff_cat_bin", stacked_df_analysis1f$"diff_cat_bin")
+    c2or <- calc_propes_wp(stacked_df_analysis2m$"diff_cat_bin", stacked_df_analysis2f$"diff_cat_bin")
+    c3or <- calc_propes_wp(stacked_df_analysis3m$"diff_cat_bin", stacked_df_analysis3f$"diff_cat_bin")
+    sex_p <-  tryCatch({fisher.test(table(stacked_df_analysis$diff_cat_bin,  stacked_df_analysis$sex))$"p.value"}, error = function(e) {999})
+    sex_p1 <- tryCatch({fisher.test(table(stacked_df_analysis1$diff_cat_bin, stacked_df_analysis1$sex))$"p.value"}, error = function(e) {999})
+    sex_p2 <- tryCatch({fisher.test(table(stacked_df_analysis2$diff_cat_bin, stacked_df_analysis2$sex))$"p.value"}, error = function(e) {999})
+    sex_p3 <- tryCatch({fisher.test(table(stacked_df_analysis3$diff_cat_bin, stacked_df_analysis3$sex))$"p.value"}, error = function(e) {999})
+    sex_pval_df <- rbind(
+        sex_pval_df,
+        data.frame(
+            feature = c(feature, feature, feature, feature),
+            group = c("all", "1", "2", "3"),
+            or = c(cor$"es", c1or$"es", c2or$"es", c3or$"es"),
+            l = c(cor$"l", c1or$"l", c2or$"l", c3or$"l"),
+            u = c(cor$"u", c1or$"u", c2or$"u", c3or$"u"),
+            p_or = c(cor$"p", c1or$"p", c2or$"p", c3or$"p"),
+            p_fisher = c(sex_p, sex_p1, sex_p2, sex_p3),
+            m_mean = c(
+                mean(stacked_df_analysism$"diff_cat_bin"),
+                mean(stacked_df_analysis1m$"diff_cat_bin"),
+                mean(stacked_df_analysis2m$"diff_cat_bin"),
+                mean(stacked_df_analysis3m$"diff_cat_bin")
+            ),
+            f_mean = c(
+                mean(stacked_df_analysisf$"diff_cat_bin"),
+                mean(stacked_df_analysis1f$"diff_cat_bin"),
+                mean(stacked_df_analysis2f$"diff_cat_bin"),
+                mean(stacked_df_analysis3f$"diff_cat_bin")
+            )
+        )
+    )
+    #------------------------------------------------------------------------------
     df_12 <- stacked_df_analysis |>
         dplyr::filter(cluster != 3)
     df_13 <- stacked_df_analysis |>
@@ -1156,22 +1202,76 @@ plot_high_change <- function(df, feature) {
             labels = c("improved" = "Improved", "not_improved" = "Not Improved")
         )
     return(
-        list(point_plot,  prop_plot, p_df, pairwise_df)
+        list(point_plot,  prop_plot, p_df, pairwise_df, sex_pval_df)
     )
 }
-
 p_df <- data.frame()
 pairwise_df <- data.frame()
 pl <- list()
 pl_2 <- list()
 for (i in 1:9) {
-    print(i)
-    high_change_results <- plot_high_change(merged_df, outcome_fts[[i]])
+    #print(i)
+    high_change_results <- plot_high_change(merged_df, outcome_fts[[i]], sex_pval_df)
     pl[[i]] <- high_change_results[[1]]
     pl_2[[i]] <- high_change_results[[2]]
     p_df <- rbind(p_df, high_change_results[[3]])
     pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
+    sex_pval_df <- high_change_results[[5]]
 }
+print(sex_pval_df)
+```
+
+brief aside:
+```{r}
+
+
+?p.adjust
+sex_pval_df$"p_or_adj" <- p.adjust(sex_pval_df$"p_or", method = "fdr")
+sex_pval_df$"p_fisher_adj" <- p.adjust(sex_pval_df$"p_fisher", method = "fdr")
+
+sex_pval_df <- sex_pval_df |>
+    dplyr::mutate(better = dplyr::case_when(m_mean > f_mean ~ "M", f_mean > m_mean ~ "F", TRUE ~ NA))
+
+#sex_pval_df |>
+#    dplyr::filter(p_or_adj < 0.05) |>
+#    dplyr::select(-p_fisher, -p_or, -p_fisher_adj) |>
+#    dplyr::rename("p" = "p_or_adj") |>
+#    arrange(better) |>
+#    print(digits = 3)
+
+sex_pval_df |>
+    dplyr::filter(p_fisher_adj < 0.05) |>
+    dplyr::select(-p_fisher, -p_or, -p_or_adj) |>
+    dplyr::rename("p" = "p_fisher_adj") |>
+    arrange(better) |>
+    print(digits = 3)
+
+```
+
+*F better*:
+
+         feature group       or       l        u m_mean f_mean        p better
+1   cbcl_somatic     1    0.225  0.0780 6.49e-01  0.474  0.800 2.17e-02      F
+2 cbcl_attention   all    0.426  0.2256 8.05e-01  0.694  0.842 3.86e-02      F
+3 cbcl_attention     3    0.100  0.0281 3.56e-01  0.333  0.833 5.55e-03      F
+4      sds_sleep     3    0.287  0.1276 6.47e-01  0.333  0.635 2.17e-02      F
+
+*M better:*
+
+         feature group       or       l        u m_mean f_mean        p better
+5    cbcl_anxdep     3   14.830  0.8649 2.54e+02  1.000  0.737 3.24e-02      M
+6   cbcl_somatic     2 1441.000 25.9911 7.99e+04  1.000  0.000 2.97e-06      M
+7   cbcl_thought   all    2.833  1.4266 5.63e+00  0.919  0.800 2.17e-02      M
+8 cbcl_rulebreak     2   41.000  1.9530 8.61e+02  0.800  0.000 2.12e-02      M
+
+The means in those tables correspond to improvement.
+
+Groups with higher mean scores had a higher proportion of children who improved out of that category.
+
+
+
+```{r}
+
 names(pl) <- outcome_fts
 names(pl_2) <- outcome_fts
 p_df$"p_fisher_adj" <- p.adjust(p_df$"p_fisher", method = "fdr")
@@ -1314,6 +1414,40 @@ ggsave(
 |cbcl_aggressive |         0.640358|
 |cbcl_attention  |         0.782927|
 |cbcl_rulebreak  |         0.782927|
+
+Question: where there worse outcomes for girls or boys?
+
+```{r}
+"sex_t0" %in% colnames(merged_df)
+
+merged_df |>
+
+check_prop_high <- function(df, feature) {
+    category_name <- paste0(feature, "_cat_t0")
+    name_t0 <- paste0("adj_", feature, "_t0")
+    name_t2 <- paste0("adj_", feature, "_t2")
+    df_labeled <- df |>
+        dplyr::filter(
+            .data[[category_name]] %in% c("high_high", "high_low")
+        ) |>
+        dplyr::mutate(
+            diff_improved = dplyr::case_when(
+                .data[[name_t2]] < .data[[name_t0]] ~ 1,
+                TRUE ~ 0
+            )
+        )
+    df_labeled
+}
+
+z <- check_prop_high(merged_df, "cbcl_anxdep")
+
+zm <- z |> dplyr::filter(sex_t0 == "M")
+zf <- z |> dplyr::filter(sex_t0 == "F")
+
+
+
+```
+
 
 ```{r}
 pl$"cbcl_somatic"
