@@ -1067,7 +1067,6 @@ calc_fisher_p <- function(df, f1, f2) {
     return(result)
 }
 
-sex_pval_df <- data.frame()
 plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     # formatting feature names
     pretty_feature <- gsub("cbcl_", "CBCL ", feature)
@@ -1180,6 +1179,7 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     sex_p1 <- calc_fisher_p(stacked_df_analysis1, "diff_cat_bin", "sex")
     sex_p2 <- calc_fisher_p(stacked_df_analysis2, "diff_cat_bin", "sex")
     sex_p3 <- calc_fisher_p(stacked_df_analysis3, "diff_cat_bin", "sex")
+    browser()
     sex_pval_df <- rbind(
         sex_pval_df,
         data.frame(
@@ -1195,11 +1195,23 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
                 mean(stacked_df_analysis2m$"diff_cat_bin"),
                 mean(stacked_df_analysis3m$"diff_cat_bin")
             ),
+            m_sum = c(
+                sum(stacked_df_analysism$"diff_cat_bin"),
+                sum(stacked_df_analysis1m$"diff_cat_bin"),
+                sum(stacked_df_analysis2m$"diff_cat_bin"),
+                sum(stacked_df_analysis3m$"diff_cat_bin")
+            ),
             f_mean = c(
                 mean(stacked_df_analysisf$"diff_cat_bin"),
                 mean(stacked_df_analysis1f$"diff_cat_bin"),
                 mean(stacked_df_analysis2f$"diff_cat_bin"),
                 mean(stacked_df_analysis3f$"diff_cat_bin")
+            ),
+            f_sum = c(
+                sum(stacked_df_analysisf$"diff_cat_bin"),
+                sum(stacked_df_analysis1f$"diff_cat_bin"),
+                sum(stacked_df_analysis2f$"diff_cat_bin"),
+                sum(stacked_df_analysis3f$"diff_cat_bin")
             )
         )
     )
@@ -1266,110 +1278,86 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     )
 }
 
-# generating plots
+sex_pval_df <- data.frame()
+p_df <- data.frame()
+pairwise_df <- data.frame()
+pl <- list()
+pl_2 <- list()
+for (i in 1:9) {
+    print(i)
+    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "high")
+    pl[[i]]   <- high_change_results[[1]]
+    pl_2[[i]] <- high_change_results[[2]]
+    p_df <- rbind(p_df, high_change_results[[3]])
+    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
+    sex_pval_df <- high_change_results[[5]]
+}
 
 all_change_plots <- function(mode = "high") {
-    whole_p_df <- data.frame()
-    pairwise_df <- data.frame()
     sex_p_df <- data.frame()
+    overall_p_df <- data.frame()
+    pairwise_p_df <- data.frame()
     pl_pnt <- list()
     pl_bar <- list()
     for (i in 1:9) {
         print(i)
-        change_results <- plot_change(
-            merged_df,
-            outcome_fts[[i]],
-            sex_p_df,
-            mode = mode
-        )
+        change_results <- plot_change(merged_df, outcome_fts[[i]], sex_p_df, mode = mode)
         pl_pnt[[i]]   <- change_results[[1]]
         pl_bar[[i]] <- change_results[[2]]
-        whole_p_df <- rbind(whole_p_df, change_results[[3]])
-        pairwise_df <- rbind(pairwise_df, change_results[[4]])
+        overall_p_df <- rbind(overall_p_df, change_results[[3]])
+        pairwise_p_df <- rbind(pairwise_p_df, change_results[[4]])
         sex_p_df <- change_results[[5]]
     }
-    if (mode == "high") {
-        sex_p_df <- sex_p_df |>
-            dplyr::mutate(
-                better = dplyr::case_when(
-                    m_mean > f_mean ~ "M",
-                    f_mean > m_mean ~ "F",
-                    TRUE ~ NA
-                ),
-                better_type = "more_recovery"
-            )
-    } else if (mode == "low") {
-        sex_p_df <- sex_p_df |>
-            dplyr::mutate(
-                better = dplyr::case_when(
-                    m_mean > f_mean ~ "F",
-                    f_mean > m_mean ~ "M",
-                    TRUE ~ NA
-                ),
-                better_type = "less_worsening"
-            )
-    }
+    sex_p_df$"p_adj" <- p.adjust(sex_p_df$"p_fisher", method = "fdr")
     return(
         list(
             "pl_pnt" = pl_pnt,
             "pl_bar" = pl_bar,
-            "whole_p_df" = whole_p_df,
-            "pairwise_df" = pairwise_df,
+            "overall_p_df" = overall_p_df,
+            "pairwise_p_df" = pairwise_p_df,
             "sex_p_df" = sex_p_df
         )
     )
 }
 
-high_recover_data <- all_change_plots(mode = "high")
-low_worsen_data <- all_change_plots(mode = "low")
+high_data <- all_change_plots(mode = "high")
 
-z <- rbind(
-    high_recover_data$"sex_p_df",
-    low_worsen_data$"sex_p_df"
-)
+low_data <- all_change_plots(mode = "low")
 
+# those who started high and became normal
+high_data$"sex_p_df" |> dplyr::filter(p_adj < 0.05)
 
-sum(p.adjust(high_recover_data$"sex_p_df"$"p_fisher") < 0.05)
+# those who started normal and became high
+low_data$"sex_p_df" |> dplyr::filter(p_adj < 0.05)
 
-sum(p.adjust(low_worsen_data$"sex_p_df"$"p_fisher") < 0.05)
+stacked_df_analysis
 
-low_worsen_data$"sex_p_df"
-
-z$"p_adj" <- p.adjust(z$"p_fisher")
-
-z |> dplyr::filter(p_adj < 0.05)
+nrow(stacked_df)
 
 
-#p_df <- data.frame()
-#pairwise_df <- data.frame()
-#pl <- list()
-#pl_2 <- list()
-#for (i in 1:9) {
-#    print(i)
-#    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "high")
-#    pl[[i]]   <- high_change_results[[1]]
-#    pl_2[[i]] <- high_change_results[[2]]
-#    p_df <- rbind(p_df, high_change_results[[3]])
-#    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
-#    sex_pval_df <- high_change_results[[5]]
-#}
 ```
+
+In the high_data group, a higher mean indicates higher proportion improved.
+
+In the low_data group, a higher mean indicates higher proportion worsened.
+
 
 separate sex analysis:
 
 ```{r}
-q <- high_recover_data$"sex_p_df"
-
-q$"p_fisher_adj" <- p.adjust(q$"p_fisher", method = "fdr")
-q <- q |>
+sex_pval_df$"p_fisher_adj" <- p.adjust(sex_pval_df$"p_fisher", method = "fdr")
+sex_pval_df <- sex_pval_df |>
     dplyr::mutate(
         better = dplyr::case_when(
             m_mean > f_mean ~ "M",
             f_mean > m_mean ~ "F",
             TRUE ~ NA
-        ),
-        better_type = "more_recovery"
+        )
     )
+sex_pval_df |>
+    dplyr::filter(p_fisher_adj < 0.05) |>
+    nrow()
+
 
 sex_pval_df |>
     dplyr::filter(p_fisher_adj < 0.05) |>
@@ -1446,8 +1434,6 @@ sex_pval_df |>
 ```{r}
 names(pl) <- outcome_fts
 names(pl_2) <- outcome_fts
-
-# p_df is based on overall features fisher test
 p_df$"p_fisher_adj" <- p.adjust(p_df$"p_fisher", method = "fdr")
 
 p_df
@@ -1478,15 +1464,7 @@ p_df |>
 
 sig_fts <- p_df |>
     dplyr::filter(p_fisher_adj < 0.05) |>
-    dplyr::pull(feature)
-
-p.adjust(pairwise_df$"p", method = "fdr") < 0.05
-
-z <- pairwise_df
-
-z$"padj" <- p.adjust(z$"p", method = "fdr")
-
-z |> dplyr::filter(padj < 0.05)
+    dplyr::pull(feature) |>
 
 pairwise_df_sig <- pairwise_df |>
     dplyr::filter(feature %in% sig_fts)
