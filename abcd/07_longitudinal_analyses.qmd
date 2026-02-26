@@ -1054,28 +1054,61 @@ pretty_features <- c(
     "sds_sleep"       = "SDS Sleep"
 )
 
+
+calc_fisher_p <- function(df, f1, f2) {
+    tab <- table(df[, f1], df[, f2])
+    result <- tryCatch(
+        {
+            fisher.test(tab)$"p.value"
+        }, error = function(e) {
+            999
+        }
+    )
+    return(result)
+}
+
 sex_pval_df <- data.frame()
-plot_high_change <- function(df, feature, sex_pval_df) {
+plot_change <- function(df, feature, sex_pval_df, mode = "high") {
+    # formatting feature names
     pretty_feature <- gsub("cbcl_", "CBCL ", feature)
     category_name <- paste0(feature, "_cat_t0")
     name_t0 <- paste0("adj_", feature, "_t0")
     name_t2 <- paste0("adj_", feature, "_t2")
     name <- paste0("adj_", feature)
-    df_labeled <- df |>
-        dplyr::filter(
-            .data[[category_name]] %in% c("high_high", "high_low")
-        ) |>
-        dplyr::mutate(
-            diff_cat = dplyr::case_when(
-                .data[[name_t2]] < .data[[name_t0]] ~ "improved",
-                TRUE ~ "not_improved"
+    # identifying rows that went maintained a high level or improved
+    if (mode == "high") {
+        df_labeled <- df |>
+            dplyr::filter(
+                .data[[category_name]] %in% c("high_high", "high_low")
+            ) |>
+            dplyr::mutate(
+                diff_cat = dplyr::case_when(
+                    .data[[name_t2]] < .data[[name_t0]] ~ "improved",
+                    TRUE ~ "not_improved"
+                )
+            ) |>
+            dplyr::select(
+                uid,
+                diff_cat,
+                dplyr::contains(c("cluster", "imputation", "t", feature))
             )
-        ) |>
-        dplyr::select(
-            uid,
-            diff_cat,
-            dplyr::contains(c("cluster", "imputation", "t", feature))
-        )
+    } else if (mode == "low") {
+        df_labeled <- df |>
+            dplyr::filter(
+                .data[[category_name]] %in% c("low_low", "low_high")
+            ) |>
+            dplyr::mutate(
+                diff_cat = dplyr::case_when(
+                    .data[[name_t2]] > .data[[name_t0]] ~ "worsened",
+                    TRUE ~ "not_worsened"
+                )
+            ) |>
+            dplyr::select(
+                uid,
+                diff_cat,
+                dplyr::contains(c("cluster", "imputation", "t", feature))
+            )
+    }
     df_0 <- df_labeled |>
         dplyr::select(
             uid,
@@ -1094,36 +1127,59 @@ plot_high_change <- function(df, feature, sex_pval_df) {
     colnames(df_2) <- gsub("_t2$", "", colnames(df_2))
     stacked_df <- rbind(df_0, df_2)
     pd <- position_dodge(width = 0.2)
-    stacked_df_analysis <- stacked_df |>
-        dplyr::filter(t == 0) |>
-        dplyr::mutate(
-            diff_cat_bin = dplyr::case_when(
-                diff_cat == "improved" ~ 1,
-                diff_cat == "not_improved" ~ 0
+    if (mode == "high") {
+        stacked_df_analysis <- stacked_df |>
+            dplyr::filter(t == 0) |>
+            dplyr::mutate(
+                diff_cat_bin = dplyr::case_when(
+                    diff_cat == "improved" ~ 1,
+                    diff_cat == "not_improved" ~ 0
+                )
             )
-        )
-    fisher_p_value <- fisher.test(table(stacked_df_analysis$diff_cat_bin, stacked_df_analysis$cluster))$"p.value"
+    } else if (mode == "low") {
+        stacked_df_analysis <- stacked_df |>
+            dplyr::filter(t == 0) |>
+            dplyr::mutate(
+                diff_cat_bin = dplyr::case_when(
+                    diff_cat == "worsened" ~ 1,
+                    diff_cat == "not_worsened" ~ 0
+                )
+            )
+    }
+    fisher_p_value <- calc_fisher_p(stacked_df_analysis, "diff_cat_bin", "cluster")
     #------------------------------------------------------------------------------
     # side analysis examining sex
-    stacked_df_analysis1 <- stacked_df_analysis |> dplyr::filter(cluster == 1)
-    stacked_df_analysis2 <- stacked_df_analysis |> dplyr::filter(cluster == 2)
-    stacked_df_analysis3 <- stacked_df_analysis |> dplyr::filter(cluster == 3)
-    stacked_df_analysism <- stacked_df_analysis |> dplyr::filter(sex == "M")
-    stacked_df_analysis1m <- stacked_df_analysis |> dplyr::filter(cluster == 1, sex == "M")
-    stacked_df_analysis2m <- stacked_df_analysis |> dplyr::filter(cluster == 2, sex == "M")
-    stacked_df_analysis3m <- stacked_df_analysis |> dplyr::filter(cluster == 3, sex == "M")
-    stacked_df_analysisf <- stacked_df_analysis |> dplyr::filter(sex == "F")
-    stacked_df_analysis1f <- stacked_df_analysis |> dplyr::filter(cluster == 1, sex == "F")
-    stacked_df_analysis2f <- stacked_df_analysis |> dplyr::filter(cluster == 2, sex == "F")
-    stacked_df_analysis3f <- stacked_df_analysis |> dplyr::filter(cluster == 3, sex == "F")
-    cor <- calc_propes_wp(stacked_df_analysism$"diff_cat_bin", stacked_df_analysisf$"diff_cat_bin")
-    c1or <- calc_propes_wp(stacked_df_analysis1m$"diff_cat_bin", stacked_df_analysis1f$"diff_cat_bin")
-    c2or <- calc_propes_wp(stacked_df_analysis2m$"diff_cat_bin", stacked_df_analysis2f$"diff_cat_bin")
-    c3or <- calc_propes_wp(stacked_df_analysis3m$"diff_cat_bin", stacked_df_analysis3f$"diff_cat_bin")
-    sex_p <-  tryCatch({fisher.test(table(stacked_df_analysis$diff_cat_bin,  stacked_df_analysis$sex))$"p.value"}, error = function(e) {999})
-    sex_p1 <- tryCatch({fisher.test(table(stacked_df_analysis1$diff_cat_bin, stacked_df_analysis1$sex))$"p.value"}, error = function(e) {999})
-    sex_p2 <- tryCatch({fisher.test(table(stacked_df_analysis2$diff_cat_bin, stacked_df_analysis2$sex))$"p.value"}, error = function(e) {999})
-    sex_p3 <- tryCatch({fisher.test(table(stacked_df_analysis3$diff_cat_bin, stacked_df_analysis3$sex))$"p.value"}, error = function(e) {999})
+    stacked_df_analysis1  <- stacked_df_analysis |> filter(cluster == 1)
+    stacked_df_analysis2  <- stacked_df_analysis |> filter(cluster == 2)
+    stacked_df_analysis3  <- stacked_df_analysis |> filter(cluster == 3)
+    stacked_df_analysism  <- stacked_df_analysis |> filter(sex == "M")
+    stacked_df_analysisf  <- stacked_df_analysis |> filter(sex == "F")
+    stacked_df_analysis1m <- stacked_df_analysis |> filter(cluster == 1, sex == "M")
+    stacked_df_analysis2m <- stacked_df_analysis |> filter(cluster == 2, sex == "M")
+    stacked_df_analysis3m <- stacked_df_analysis |> filter(cluster == 3, sex == "M")
+    stacked_df_analysis1f <- stacked_df_analysis |> filter(cluster == 1, sex == "F")
+    stacked_df_analysis2f <- stacked_df_analysis |> filter(cluster == 2, sex == "F")
+    stacked_df_analysis3f <- stacked_df_analysis |> filter(cluster == 3, sex == "F")
+    cor <- calc_propes_wp(
+        stacked_df_analysism$"diff_cat_bin",
+        stacked_df_analysisf$"diff_cat_bin"
+    )
+    c1or <- calc_propes_wp(
+        stacked_df_analysis1m$"diff_cat_bin",
+        stacked_df_analysis1f$"diff_cat_bin"
+    )
+    c2or <- calc_propes_wp(
+        stacked_df_analysis2m$"diff_cat_bin",
+        stacked_df_analysis2f$"diff_cat_bin"
+    )
+    c3or <- calc_propes_wp(
+        stacked_df_analysis3m$"diff_cat_bin",
+        stacked_df_analysis3f$"diff_cat_bin"
+    )
+    sex_p <-  calc_fisher_p(stacked_df_analysis, "diff_cat_bin", "sex")
+    sex_p1 <- calc_fisher_p(stacked_df_analysis1, "diff_cat_bin", "sex")
+    sex_p2 <- calc_fisher_p(stacked_df_analysis2, "diff_cat_bin", "sex")
+    sex_p3 <- calc_fisher_p(stacked_df_analysis3, "diff_cat_bin", "sex")
     sex_pval_df <- rbind(
         sex_pval_df,
         data.frame(
@@ -1132,7 +1188,6 @@ plot_high_change <- function(df, feature, sex_pval_df) {
             or = c(cor$"es", c1or$"es", c2or$"es", c3or$"es"),
             l = c(cor$"l", c1or$"l", c2or$"l", c3or$"l"),
             u = c(cor$"u", c1or$"u", c2or$"u", c3or$"u"),
-            p_or = c(cor$"p", c1or$"p", c2or$"p", c3or$"p"),
             p_fisher = c(sex_p, sex_p1, sex_p2, sex_p3),
             m_mean = c(
                 mean(stacked_df_analysism$"diff_cat_bin"),
@@ -1149,12 +1204,10 @@ plot_high_change <- function(df, feature, sex_pval_df) {
         )
     )
     #------------------------------------------------------------------------------
-    df_12 <- stacked_df_analysis |>
-        dplyr::filter(cluster != 3)
-    df_13 <- stacked_df_analysis |>
-        dplyr::filter(cluster != 2)
-    df_23 <- stacked_df_analysis |>
-        dplyr::filter(cluster != 1)
+    # analyses checking if the clusters significantly differed
+    df_12 <- stacked_df_analysis |> dplyr::filter(cluster != 3)
+    df_13 <- stacked_df_analysis |> dplyr::filter(cluster != 2)
+    df_23 <- stacked_df_analysis |> dplyr::filter(cluster != 1)
     ft_12 <- fisher.test(table(df_12$"diff_cat_bin", as.factor(as.character(df_12$"cluster"))))
     ft_13 <- fisher.test(table(df_13$"diff_cat_bin", as.factor(as.character(df_13$"cluster"))))
     ft_23 <- fisher.test(table(df_23$"diff_cat_bin", as.factor(as.character(df_23$"cluster"))))
@@ -1170,6 +1223,13 @@ plot_high_change <- function(df, feature, sex_pval_df) {
         p_fisher = fisher_p_value,
         feature = feature
     )
+    if (mode == "high") {
+        vals <- c("improved" = "darkgreen", "not_improved" = "firebrick")
+        labs <- c("improved" = "Improved", "not_improved" = "Not Improved")
+    } else if (mode == "low") {
+        vals = c("not_worsened" = "darkgreen", "worsened" = "firebrick")
+        labs = c("not_worsened" = "Improved", "worsened" = "Not Improved")
+    }
     point_plot <- stacked_df |>
         dplyr::filter(imputation == 1) |>
         ggplot(
@@ -1185,8 +1245,8 @@ plot_high_change <- function(df, feature, sex_pval_df) {
         facet_wrap(~ cluster) +
         theme_bw() +
         scale_colour_manual(
-            values = c("improved" = "darkgreen", "not_improved" = "firebrick"),
-            labels = c("improved" = "Improved", "not_improved" = "Not Improved")
+            values = vals,
+            labels = labs
         ) +
         labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL)
     prop_plot <- stacked_df |>
@@ -1198,20 +1258,160 @@ plot_high_change <- function(df, feature, sex_pval_df) {
         theme_classic() + 
         labs(y = "Proportion", x = "Cluster", fill = "Transition") +
         scale_fill_manual(
-            values = c("improved" = "darkgreen", "not_improved" = "firebrick"),
-            labels = c("improved" = "Improved", "not_improved" = "Not Improved")
+            values = vals,
+            labels = labs
         )
     return(
         list(point_plot,  prop_plot, p_df, pairwise_df, sex_pval_df)
     )
 }
+
+# generating plots
+
+all_change_plots <- function(mode = "high") {
+    whole_p_df <- data.frame()
+    pairwise_df <- data.frame()
+    sex_p_df <- data.frame()
+    pl_pnt <- list()
+    pl_bar <- list()
+    for (i in 1:9) {
+        print(i)
+        change_results <- plot_change(
+            merged_df,
+            outcome_fts[[i]],
+            sex_p_df,
+            mode = mode
+        )
+        pl_pnt[[i]]   <- change_results[[1]]
+        pl_bar[[i]] <- change_results[[2]]
+        whole_p_df <- rbind(whole_p_df, change_results[[3]])
+        pairwise_df <- rbind(pairwise_df, change_results[[4]])
+        sex_p_df <- change_results[[5]]
+    }
+    if (mode == "high") {
+        sex_p_df <- sex_p_df |>
+            dplyr::mutate(
+                better = dplyr::case_when(
+                    m_mean > f_mean ~ "M",
+                    f_mean > m_mean ~ "F",
+                    TRUE ~ NA
+                ),
+                better_type = "more_recovery"
+            )
+    } else if (mode == "low") {
+        sex_p_df <- sex_p_df |>
+            dplyr::mutate(
+                better = dplyr::case_when(
+                    m_mean > f_mean ~ "F",
+                    f_mean > m_mean ~ "M",
+                    TRUE ~ NA
+                ),
+                better_type = "less_worsening"
+            )
+    }
+    return(
+        list(
+            "pl_pnt" = pl_pnt,
+            "pl_bar" = pl_bar,
+            "whole_p_df" = whole_p_df,
+            "pairwise_df" = pairwise_df,
+            "sex_p_df" = sex_p_df
+        )
+    )
+}
+
+high_recover_data <- all_change_plots(mode = "high")
+low_worsen_data <- all_change_plots(mode = "low")
+
+z <- rbind(
+    high_recover_data$"sex_p_df",
+    low_worsen_data$"sex_p_df"
+)
+
+
+sum(p.adjust(high_recover_data$"sex_p_df"$"p_fisher") < 0.05)
+
+sum(p.adjust(low_worsen_data$"sex_p_df"$"p_fisher") < 0.05)
+
+low_worsen_data$"sex_p_df"
+
+z$"p_adj" <- p.adjust(z$"p_fisher")
+
+z |> dplyr::filter(p_adj < 0.05)
+
+
+#p_df <- data.frame()
+#pairwise_df <- data.frame()
+#pl <- list()
+#pl_2 <- list()
+#for (i in 1:9) {
+#    print(i)
+#    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "high")
+#    pl[[i]]   <- high_change_results[[1]]
+#    pl_2[[i]] <- high_change_results[[2]]
+#    p_df <- rbind(p_df, high_change_results[[3]])
+#    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
+#    sex_pval_df <- high_change_results[[5]]
+#}
+```
+
+separate sex analysis:
+
+```{r}
+q <- high_recover_data$"sex_p_df"
+
+q$"p_fisher_adj" <- p.adjust(q$"p_fisher", method = "fdr")
+q <- q |>
+    dplyr::mutate(
+        better = dplyr::case_when(
+            m_mean > f_mean ~ "M",
+            f_mean > m_mean ~ "F",
+            TRUE ~ NA
+        ),
+        better_type = "more_recovery"
+    )
+
+sex_pval_df |>
+    dplyr::filter(p_fisher_adj < 0.05) |>
+    dplyr::select(-p_fisher) |>
+    dplyr::rename("p" = "p_fisher_adj") |>
+    arrange(better) |>
+    print(digits = 3)
+
+```
+
+*F better*:
+
+2 cbcl_attention   all    0.426  0.2256 8.05e-01  0.694  0.842 3.86e-02      F
+7   cbcl_thought   all    2.833  1.4266 5.63e+00  0.919  0.800 2.17e-02      M
+
+         feature group       or       l        u m_mean f_mean        p better
+1   cbcl_somatic     1    0.225  0.0780 6.49e-01  0.474  0.800 2.17e-02      F
+3 cbcl_attention     3    0.100  0.0281 3.56e-01  0.333  0.833 5.55e-03      F
+4      sds_sleep     3    0.287  0.1276 6.47e-01  0.333  0.635 2.17e-02      F
+
+*M better:*
+
+         feature group       or       l        u m_mean f_mean        p better
+6   cbcl_somatic     2 1441.000 25.9911 7.99e+04  1.000  0.000 2.97e-06      M
+8 cbcl_rulebreak     2   41.000  1.9530 8.61e+02  0.800  0.000 2.12e-02      M
+5    cbcl_anxdep     3   14.830  0.8649 2.54e+02  1.000  0.737 3.24e-02      M
+
+The means in those tables correspond to improvement.
+
+Groups with higher mean scores had a higher proportion of children who improved out of that category.
+
+
+Another check examining low-low to low-high
+
+```{r}
+sex_pval_df <- data.frame()
 p_df <- data.frame()
 pairwise_df <- data.frame()
 pl <- list()
 pl_2 <- list()
 for (i in 1:9) {
-    #print(i)
-    high_change_results <- plot_high_change(merged_df, outcome_fts[[i]], sex_pval_df)
+    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "low")
     pl[[i]] <- high_change_results[[1]]
     pl_2[[i]] <- high_change_results[[2]]
     p_df <- rbind(p_df, high_change_results[[3]])
@@ -1221,60 +1421,37 @@ for (i in 1:9) {
 print(sex_pval_df)
 ```
 
-brief aside:
+separate sex analysis:
+
 ```{r}
-
-
-?p.adjust
-sex_pval_df$"p_or_adj" <- p.adjust(sex_pval_df$"p_or", method = "fdr")
 sex_pval_df$"p_fisher_adj" <- p.adjust(sex_pval_df$"p_fisher", method = "fdr")
-
 sex_pval_df <- sex_pval_df |>
-    dplyr::mutate(better = dplyr::case_when(m_mean > f_mean ~ "M", f_mean > m_mean ~ "F", TRUE ~ NA))
-
-#sex_pval_df |>
-#    dplyr::filter(p_or_adj < 0.05) |>
-#    dplyr::select(-p_fisher, -p_or, -p_fisher_adj) |>
-#    dplyr::rename("p" = "p_or_adj") |>
-#    arrange(better) |>
-#    print(digits = 3)
-
+    dplyr::mutate(
+        better = dplyr::case_when(
+            m_mean > f_mean ~ "F",
+            f_mean > m_mean ~ "M",
+            TRUE ~ NA
+        )
+    )
 sex_pval_df |>
     dplyr::filter(p_fisher_adj < 0.05) |>
-    dplyr::select(-p_fisher, -p_or, -p_or_adj) |>
+    dplyr::select(-p_fisher) |>
     dplyr::rename("p" = "p_fisher_adj") |>
     arrange(better) |>
     print(digits = 3)
-
 ```
-
-*F better*:
-
-         feature group       or       l        u m_mean f_mean        p better
-1   cbcl_somatic     1    0.225  0.0780 6.49e-01  0.474  0.800 2.17e-02      F
-2 cbcl_attention   all    0.426  0.2256 8.05e-01  0.694  0.842 3.86e-02      F
-3 cbcl_attention     3    0.100  0.0281 3.56e-01  0.333  0.833 5.55e-03      F
-4      sds_sleep     3    0.287  0.1276 6.47e-01  0.333  0.635 2.17e-02      F
-
-*M better:*
-
-         feature group       or       l        u m_mean f_mean        p better
-5    cbcl_anxdep     3   14.830  0.8649 2.54e+02  1.000  0.737 3.24e-02      M
-6   cbcl_somatic     2 1441.000 25.9911 7.99e+04  1.000  0.000 2.97e-06      M
-7   cbcl_thought   all    2.833  1.4266 5.63e+00  0.919  0.800 2.17e-02      M
-8 cbcl_rulebreak     2   41.000  1.9530 8.61e+02  0.800  0.000 2.12e-02      M
-
-The means in those tables correspond to improvement.
-
-Groups with higher mean scores had a higher proportion of children who improved out of that category.
 
 
 
 ```{r}
-
 names(pl) <- outcome_fts
 names(pl_2) <- outcome_fts
+
+# p_df is based on overall features fisher test
 p_df$"p_fisher_adj" <- p.adjust(p_df$"p_fisher", method = "fdr")
+
+p_df
+
 pl_annotated <- lapply(
     1:9,
     function(i) {
@@ -1292,28 +1469,6 @@ pl_annotated <- lapply(
              coord_cartesian(ylim = c(0, 1.2))
     }
 )
-#merged_plots <- wrap_plots(pl, ncol = 1) | wrap_plots(pl_annotated, ncol = 1)
-#merged_plots <- merged_plots + plot_layout(widths = c(2, 1))
-#saveRDS(merged_plots, fig_path("high_change_figs_pl.rds", TRUE))
-#ggsave(
-#    filename = fig_path("high_change_plot.png", TRUE),
-#    plot = merged_plots,
-#    height = 20,
-#    width = 10
-#)
-#p_df <- p_df |>
-#    arrange(p_adj) |>
-#    dplyr::select(feature, comparison, p, p_adj)
-#
-#saveRDS(pl, fig_path("high_change_figs_pl.rds", TRUE))
-#saveRDS(pl_2, fig_path("high_change_figs_pl_2.rds", TRUE))
-#saveRDS(p_df, proc_path("high_change_p_df.rds", TRUE))
-#saveRDS(p_df_2, proc_path("high_change_p_df_2.rds", TRUE))
-#
-#pl <- readRDS(fig_path("2025_07_17_high_change_figs_pl.rds"))
-#pl_2 <- readRDS(fig_path("2025_07_17_high_change_figs_pl_2.rds"))
-#p_df <- readRDS(proc_path("2025_07_17_high_change_p_df.rds"))
-#p_df_2 <- readRDS(proc_path("2025_07_17_high_change_p_df_2.rds"))
 
 p_df |>
     dplyr::arrange(p_fisher_adj) |>
@@ -1323,12 +1478,21 @@ p_df |>
 
 sig_fts <- p_df |>
     dplyr::filter(p_fisher_adj < 0.05) |>
-    dplyr::select(feature) |>
-    unlist() |>
-    as.character()
+    dplyr::pull(feature)
+
+p.adjust(pairwise_df$"p", method = "fdr") < 0.05
+
+z <- pairwise_df
+
+z$"padj" <- p.adjust(z$"p", method = "fdr")
+
+z |> dplyr::filter(padj < 0.05)
+
 pairwise_df_sig <- pairwise_df |>
     dplyr::filter(feature %in% sig_fts)
+
 pairwise_df_sig$"p_adj" <- p.adjust(pairwise_df_sig$p, method = "fdr")
+
 pairwise_df_sig |>
     dplyr::mutate(es = paste0(
         round(estimate, 2),
@@ -1350,10 +1514,7 @@ pairwise_df_sig |>
     knitr::kable(format = "markdown", digits = 5)
 
 sig_plots <- lapply(
-    c(
-        "cbcl_thought",
-        "cbcl_somatic"
-    ),
+    c("cbcl_thought", "cbcl_somatic"),
     function(x) {
         (pl[[x]] | pl_2[[x]]) + plot_layout(widths = c(2, 1))
     }
