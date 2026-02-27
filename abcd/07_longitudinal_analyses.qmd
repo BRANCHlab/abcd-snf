@@ -1287,7 +1287,12 @@ all_change_plots <- function(mode = "high") {
     pl_bar <- list()
     for (i in 1:9) {
         print(i)
-        change_results <- plot_change(merged_df, outcome_fts[[i]], sex_p_df, mode = mode)
+        change_results <- plot_change(
+            dplyr::filter(merged_df),
+            outcome_fts[[i]],
+            sex_p_df,
+            mode = mode
+        )
         pl_pnt[[i]]   <- change_results[[1]]
         pl_bar[[i]] <- change_results[[2]]
         overall_p_df <- rbind(overall_p_df, change_results[[3]])
@@ -1295,12 +1300,26 @@ all_change_plots <- function(mode = "high") {
         sex_p_df <- change_results[[5]]
     }
     sex_p_df$"p_adj" <- p.adjust(sex_p_df$"p_fisher", method = "fdr")
-
-In the high_data group, a higher mean indicates higher proportion improved.
-In the low_data group, a higher mean indicates higher proportion worsened.
     if (mode == "high") {
         sex_p_df <- sex_p_df |>
-            dplyr::mutate()
+            dplyr::mutate(
+                better = dplyr::case_when(
+                    m_mean > f_mean ~ "M",
+                    f_mean > m_mean ~ "F",
+                    TRUE ~ NA
+                ),
+                mode = "high"
+            )
+    } else if (mode == "low") {
+        sex_p_df <- sex_p_df |>
+            dplyr::mutate(
+                better = dplyr::case_when(
+                    m_mean > f_mean ~ "F",
+                    f_mean > m_mean ~ "M",
+                    TRUE ~ NA
+                ),
+                mode = "high"
+            )
     }
     return(
         list(
@@ -1314,134 +1333,32 @@ In the low_data group, a higher mean indicates higher proportion worsened.
 }
 
 high_data <- all_change_plots(mode = "high")
-
 low_data <- all_change_plots(mode = "low")
-
-options(width = 200)
-
-# those who started high and became normal
-high_data$"sex_p_df" |> dplyr::filter(p_adj < 0.05)
-
-# those who started normal and became high
-low_data$"sex_p_df" |> dplyr::filter(p_adj < 0.05)
-
-stacked_df_analysis
-
-nrow(stacked_df)
-
-
-```
-
-In the high_data group, a higher mean indicates higher proportion improved.
-In the low_data group, a higher mean indicates higher proportion worsened.
-
-
-separate sex analysis:
-
-```{r}
-sex_pval_df$"p_fisher_adj" <- p.adjust(sex_pval_df$"p_fisher", method = "fdr")
-sex_pval_df <- sex_pval_df |>
-    dplyr::mutate(
-        better = dplyr::case_when(
-            m_mean > f_mean ~ "M",
-            f_mean > m_mean ~ "F",
-            TRUE ~ NA
-        )
-    )
-sex_pval_df |>
-    dplyr::filter(p_fisher_adj < 0.05) |>
-    nrow()
-
-
-sex_pval_df |>
-    dplyr::filter(p_fisher_adj < 0.05) |>
-    dplyr::select(-p_fisher) |>
-    dplyr::rename("p" = "p_fisher_adj") |>
-    arrange(better) |>
-    print(digits = 3)
-
-```
-
-*F better*:
-
-2 cbcl_attention   all    0.426  0.2256 8.05e-01  0.694  0.842 3.86e-02      F
-7   cbcl_thought   all    2.833  1.4266 5.63e+00  0.919  0.800 2.17e-02      M
-
-         feature group       or       l        u m_mean f_mean        p better
-1   cbcl_somatic     1    0.225  0.0780 6.49e-01  0.474  0.800 2.17e-02      F
-3 cbcl_attention     3    0.100  0.0281 3.56e-01  0.333  0.833 5.55e-03      F
-4      sds_sleep     3    0.287  0.1276 6.47e-01  0.333  0.635 2.17e-02      F
-
-*M better:*
-
-         feature group       or       l        u m_mean f_mean        p better
-6   cbcl_somatic     2 1441.000 25.9911 7.99e+04  1.000  0.000 2.97e-06      M
-8 cbcl_rulebreak     2   41.000  1.9530 8.61e+02  0.800  0.000 2.12e-02      M
-5    cbcl_anxdep     3   14.830  0.8649 2.54e+02  1.000  0.737 3.24e-02      M
-
-The means in those tables correspond to improvement.
-
-Groups with higher mean scores had a higher proportion of children who improved out of that category.
-
-
-Another check examining low-low to low-high
-
-```{r}
-sex_pval_df <- data.frame()
-p_df <- data.frame()
-pairwise_df <- data.frame()
-pl <- list()
-pl_2 <- list()
-for (i in 1:9) {
-    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "low")
-    pl[[i]] <- high_change_results[[1]]
-    pl_2[[i]] <- high_change_results[[2]]
-    p_df <- rbind(p_df, high_change_results[[3]])
-    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
-    sex_pval_df <- high_change_results[[5]]
-}
-print(sex_pval_df)
-```
-
-separate sex analysis:
-
-```{r}
-sex_pval_df$"p_fisher_adj" <- p.adjust(sex_pval_df$"p_fisher", method = "fdr")
-sex_pval_df <- sex_pval_df |>
-    dplyr::mutate(
-        better = dplyr::case_when(
-            m_mean > f_mean ~ "F",
-            f_mean > m_mean ~ "M",
-            TRUE ~ NA
-        )
-    )
-sex_pval_df |>
-    dplyr::filter(p_fisher_adj < 0.05) |>
-    dplyr::select(-p_fisher) |>
-    dplyr::rename("p" = "p_fisher_adj") |>
-    arrange(better) |>
-    print(digits = 3)
 ```
 
 
-
 ```{r}
-names(pl) <- outcome_fts
-names(pl_2) <- outcome_fts
-p_df$"p_fisher_adj" <- p.adjust(p_df$"p_fisher", method = "fdr")
 
-p_df
+names(high_data)
+
+pl_pnt <- high_data$"pl_pnt"
+pl_bar <- high_data$"pl_bar"
+overall_p_df <- high_data$"overall_p_df"
+pairwise_p_df <- high_data$"pairwise_p_df"
+names(pl_pnt) <- outcome_fts
+names(pl_bar) <- outcome_fts
+overall_p_df$"p_fisher_adj" <- p.adjust(overall_p_df$"p_fisher", method = "fdr")
 
 pl_annotated <- lapply(
     1:9,
     function(i) {
-        pl_2[[i]] +
+        pl_bar[[i]] +
             annotate(
                 "text",
                 x = 2,
                 y = 1.13,
                 label = paste0(
-                    "\nFDR Fisher p: ", signif(p_df$"p_fisher_adj"[[i]], 3)
+                    "\nFDR Fisher p: ", signif(overall_p_df$"p_fisher_adj"[[i]], 3)
                 ),
                 colour = "black",
                 size = 3
@@ -1450,17 +1367,17 @@ pl_annotated <- lapply(
     }
 )
 
-p_df |>
+overall_p_df |>
     dplyr::arrange(p_fisher_adj) |>
     dplyr::rename("Adjusted p-value" = "p_fisher_adj", "Feature" = "feature") |>
     dplyr::select(-p_fisher) |>
     knitr::kable(format = "markdown", digits = 6)
 
-sig_fts <- p_df |>
+sig_fts <- overall_p_df |>
     dplyr::filter(p_fisher_adj < 0.05) |>
-    dplyr::pull(feature) |>
+    dplyr::pull(feature)
 
-pairwise_df_sig <- pairwise_df |>
+pairwise_df_sig <- pairwise_p_df |>
     dplyr::filter(feature %in% sig_fts)
 
 pairwise_df_sig$"p_adj" <- p.adjust(pairwise_df_sig$p, method = "fdr")
@@ -1488,7 +1405,7 @@ pairwise_df_sig |>
 sig_plots <- lapply(
     c("cbcl_thought", "cbcl_somatic"),
     function(x) {
-        (pl[[x]] | pl_2[[x]]) + plot_layout(widths = c(2, 1))
+        (pl_pnt[[x]] | pl_bar[[x]]) + plot_layout(widths = c(2, 1))
     }
 )
 
@@ -1553,8 +1470,6 @@ Question: where there worse outcomes for girls or boys?
 ```{r}
 "sex_t0" %in% colnames(merged_df)
 
-merged_df |>
-
 check_prop_high <- function(df, feature) {
     category_name <- paste0(feature, "_cat_t0")
     name_t0 <- paste0("adj_", feature, "_t0")
@@ -1576,28 +1491,6 @@ z <- check_prop_high(merged_df, "cbcl_anxdep")
 
 zm <- z |> dplyr::filter(sex_t0 == "M")
 zf <- z |> dplyr::filter(sex_t0 == "F")
-
-
-
-```
-
-
-```{r}
-pl$"cbcl_somatic"
-pl_2$"cbcl_thought"
-#
-#pl <- readRDS(fig_path("2025_07_14_high_change_figs_pl.rds"))
-#p_df <- readRDS(proc_path("2025_07_14_high_change_p_df.rds"))
-#
-#ggsave(
-#    filename = fig_path("high_change_plot.png", TRUE),
-#    wrap_plots(pl),
-#    width = 20,
-#    height = 7
-#)
-#
-#p_df |>
-#    knitr::kable(format = "markdown", digits = 5)
 ```
 
 ## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
