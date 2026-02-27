@@ -28,7 +28,7 @@ library(patchwork)
 library(tidyr)
 library(ComplexHeatmap)
 
-source("abcd/helper_functions.R")
+source("helper_functions.R")
 ```
 
 ## Establishing file paths
@@ -1054,7 +1054,6 @@ pretty_features <- c(
     "sds_sleep"       = "SDS Sleep"
 )
 
-
 calc_fisher_p <- function(df, f1, f2) {
     tab <- table(df[, f1], df[, f2])
     result <- tryCatch(
@@ -1179,7 +1178,6 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     sex_p1 <- calc_fisher_p(stacked_df_analysis1, "diff_cat_bin", "sex")
     sex_p2 <- calc_fisher_p(stacked_df_analysis2, "diff_cat_bin", "sex")
     sex_p3 <- calc_fisher_p(stacked_df_analysis3, "diff_cat_bin", "sex")
-    browser()
     sex_pval_df <- rbind(
         sex_pval_df,
         data.frame(
@@ -1195,23 +1193,11 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
                 mean(stacked_df_analysis2m$"diff_cat_bin"),
                 mean(stacked_df_analysis3m$"diff_cat_bin")
             ),
-            m_sum = c(
-                sum(stacked_df_analysism$"diff_cat_bin"),
-                sum(stacked_df_analysis1m$"diff_cat_bin"),
-                sum(stacked_df_analysis2m$"diff_cat_bin"),
-                sum(stacked_df_analysis3m$"diff_cat_bin")
-            ),
             f_mean = c(
                 mean(stacked_df_analysisf$"diff_cat_bin"),
                 mean(stacked_df_analysis1f$"diff_cat_bin"),
                 mean(stacked_df_analysis2f$"diff_cat_bin"),
                 mean(stacked_df_analysis3f$"diff_cat_bin")
-            ),
-            f_sum = c(
-                sum(stacked_df_analysisf$"diff_cat_bin"),
-                sum(stacked_df_analysis1f$"diff_cat_bin"),
-                sum(stacked_df_analysis2f$"diff_cat_bin"),
-                sum(stacked_df_analysis3f$"diff_cat_bin")
             )
         )
     )
@@ -1278,20 +1264,20 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     )
 }
 
-sex_pval_df <- data.frame()
-p_df <- data.frame()
-pairwise_df <- data.frame()
-pl <- list()
-pl_2 <- list()
-for (i in 1:9) {
-    print(i)
-    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "high")
-    pl[[i]]   <- high_change_results[[1]]
-    pl_2[[i]] <- high_change_results[[2]]
-    p_df <- rbind(p_df, high_change_results[[3]])
-    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
-    sex_pval_df <- high_change_results[[5]]
-}
+#sex_pval_df <- data.frame()
+#p_df <- data.frame()
+#pairwise_df <- data.frame()
+#pl <- list()
+#pl_2 <- list()
+#for (i in 1:9) {
+#    print(i)
+#    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "high")
+#    pl[[i]]   <- high_change_results[[1]]
+#    pl_2[[i]] <- high_change_results[[2]]
+#    p_df <- rbind(p_df, high_change_results[[3]])
+#    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
+#    sex_pval_df <- high_change_results[[5]]
+#}
 
 all_change_plots <- function(mode = "high") {
     sex_p_df <- data.frame()
@@ -1309,6 +1295,13 @@ all_change_plots <- function(mode = "high") {
         sex_p_df <- change_results[[5]]
     }
     sex_p_df$"p_adj" <- p.adjust(sex_p_df$"p_fisher", method = "fdr")
+
+In the high_data group, a higher mean indicates higher proportion improved.
+In the low_data group, a higher mean indicates higher proportion worsened.
+    if (mode == "high") {
+        sex_p_df <- sex_p_df |>
+            dplyr::mutate()
+    }
     return(
         list(
             "pl_pnt" = pl_pnt,
@@ -1324,6 +1317,8 @@ high_data <- all_change_plots(mode = "high")
 
 low_data <- all_change_plots(mode = "low")
 
+options(width = 200)
+
 # those who started high and became normal
 high_data$"sex_p_df" |> dplyr::filter(p_adj < 0.05)
 
@@ -1338,7 +1333,6 @@ nrow(stacked_df)
 ```
 
 In the high_data group, a higher mean indicates higher proportion improved.
-
 In the low_data group, a higher mean indicates higher proportion worsened.
 
 
