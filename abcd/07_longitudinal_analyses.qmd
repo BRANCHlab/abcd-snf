@@ -1037,6 +1037,196 @@ outcome_fts <- c(
     "sds_sleep"
 )
 
+
+```
+
+```{r}
+for (ft in outcome_fts) {
+    ftname <- paste0(ft, "_cat_t0")
+    p <- merged_df |>
+        dplyr::filter(imputation == 1) |>
+        dplyr::select(all_of(ftname), cluster_t0) |>
+        dplyr::filter(.data[[ftname]] %in% c("high_high", "high_low")) |>
+        table() |>
+        fisher.test()
+    p <- p$p
+    print(p)
+}
+
+# checking people who start low and enter high or remain low
+all_p_vals <- data.frame()
+for (ft in outcome_fts) {
+    ftname <- paste0(ft, "_cat_t0")
+    p <- merged_df |>
+        dplyr::filter(imputation == 1) |>
+        dplyr::select(all_of(ftname), cluster_t0) |>
+        dplyr::filter(.data[[ftname]] %in% c("low_high", "low_low")) |>
+        table() |>
+        fisher.test()
+    p <- p$p
+    all_p_vals <- rbind(
+        all_p_vals,
+        data.frame(feature = ft, p = p)
+    )
+    if (p < 0.05) {
+        print(ftname)
+        merged_df |>
+            dplyr::filter(imputation == 1) |>
+            dplyr::select(all_of(ftname), cluster_t0) |>
+            dplyr::filter(.data[[ftname]] %in% c("low_high", "low_low")) |>
+            table() |>
+            prop.table() |>
+            print()
+    }
+}
+all_p_vals$"p_adj" <- p.adjust(all_p_vals$p, method = "fdr")
+
+all_p_vals |> dplyr::filter(p_adj < 0.05)
+
+```
+
+CBCL social (p = 0.02) and thought problems (p = 0.03) have significant p values.
+CBCL somatic was significant prior to multiple comparisons corrections.
+
+```{r}
+plot_and_stat <- function(df, feature, imp = 1, mode = "low") {
+    df <- dplyr::filter(df, imputation == imp)
+    cat_ft <- paste0(feature, "_cat_t0")
+    if (mode == "high") {
+        filter_vals <- c("low_high", "low_low")
+        vals <- c("low_low" = "darkgreen", "low_high" = "firebrick")
+        labs <- c("low_low" = "Did not worsen", "low_high" = "Worsened")
+    } else {
+        filter_vals <- c("high_high", "high_low")
+        vals <- c("high_low" = "darkgreen", "high_high" = "firebrick")
+        labs <- c("high_low" = "Improved", "high_high" = "Did not improve")
+    }
+    df <- df |> dplyr::filter(.data[[cat_ft]] %in% filter_vals)
+    df_12 <- df |> dplyr::filter(cluster_t0 != 3)
+    df_13 <- df |> dplyr::filter(cluster_t0 != 2)
+    df_23 <- df |> dplyr::filter(cluster_t0 != 1)
+    # levels are ordered by badness
+    tab_12 <- table(df_12[, cat_ft], factor(df_12[, "cluster_t0"], levels = c("1", "2")))
+    tab_13 <- table(df_13[, cat_ft], factor(df_13[, "cluster_t0"], levels = c("1", "3")))
+    tab_23 <- table(df_23[, cat_ft], factor(df_23[, "cluster_t0"], levels = c("3", "2")))
+    print(prop.table(tab_12))
+    print(tab_12)
+    test_12 <- fisher.test(tab_12)
+    print(paste0("p = ", round(test_12$p, 4)))
+    print(paste0(round(test_12$"estimate", 4), " [", round(test_12$"conf.int"[1],4), ", ", round(test_12$"conf.int"[2], 4), "]"))
+    cat("\n")
+    print(prop.table(tab_13))
+    print(tab_13)
+    test_13 <- fisher.test(tab_13)
+    print(paste0("p = ", round(test_13$p, 4)))
+    print(paste0(round(test_13$"estimate", 4), " [", round(test_13$"conf.int"[1],4), ", ", round(test_13$"conf.int"[2], 4), "]"))
+    cat("\n")
+    print(prop.table(tab_23))
+    print(tab_23)
+    test_23 <- fisher.test(tab_23)
+    print(paste0("p = ", round(test_23$p, 4)))
+    print(paste0(round(test_23$"estimate", 4), " [", round(test_23$"conf.int"[1],4), ", ", round(test_23$"conf.int"[2], 4), "]"))
+    cat("\n")
+    #------------------------------------------------------------------------------
+    df_0 <- df |> dplyr::select(uid, dplyr::ends_with("_t0"))
+    df_2 <- df |> dplyr::select(uid, dplyr::ends_with("_t2"))
+    colnames(df_0) <- gsub("_t0$", "", colnames(df_0))
+    colnames(df_2) <- gsub("_t2$", "", colnames(df_2))
+    joint_df <- rbind(df_0, df_2)
+    cat_no_t <- paste0(feature, "_cat")
+    pd <- position_dodge(width = 0.2)
+    point_plot <- joint_df |>
+        ggplot(
+            aes(
+                x = factor(t),
+                y = .data[[feature]],
+                group = uid,
+                colour = .data[[cat_no_t]]
+            )
+        ) +
+        geom_point(size = 3, position = pd, alpha = 0.5) +
+        geom_line(position = pd, alpha = 0.5) +
+        facet_wrap(~ cluster) +
+        theme_bw() +
+        scale_colour_manual(
+            values = vals,
+            labels = labs
+        ) +
+        labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL)
+    prop_plot <- joint_df |>
+        count(cluster, .data[[cat_no_t]]) |>
+        group_by(cluster) |>
+        mutate(prop = n / sum(n)) |>
+        ggplot(aes(x = cluster, y = prop, fill = .data[[cat_no_t]])) +
+        geom_col(position = "fill") +
+        theme_classic() + 
+        labs(y = "Proportion", x = "Cluster", fill = "Transition") +
+        scale_fill_manual(
+            values = vals,
+            labels = labs
+        ) +
+        theme(text = element_text(size = 16))
+    return(list(point_plot, prop_plot))
+}
+
+# p 12 is 0.008 i.e. < 0.01 (**) | OR of 12.8258 [1.396, 615.7036] (5/62 got worse in C1 vs. 1/161 in C2)
+# p 23 is 0.003 i.e. < 0.01 (**) | OR of 12.6518 [1.6662, 567.6938] (8/101 got worse in C3 vs. 1/161 in C2)
+social_plots <- plot_and_stat(merged_df, "cbcl_social")
+
+# p 12 is 0.0066 i.e. < 0.01 (**) | OR of 5.9488 [1.3749, 35.8701] (8/68 worse in C1, 3/153 worse in C2)
+# p 23 is 0.0163 i.e. < 0.05 (*) | OR of 4.7042 [1.1377, 27.6754] (9/97 worse in C1, 3/153 worse in C2)
+thought_plots <- plot_and_stat(merged_df, "cbcl_thought")
+
+
+# n.s. from the overall tests
+
+somatic_plots <- plot_and_stat(merged_df, "cbcl_somatic")
+
+anxdep_plots <- plot_and_stat(merged_df, "cbcl_anxdep")
+
+anxdep_plots[2]
+
+somatic_plots[[1]]
+
+somatic_plots[[2]]
+
+
+format_plots <- function(plots) {
+    plots[[1]] | plots [[2]] + plot_layout(widths = c(2, 1))
+}
+
+my_sig <- function(comparisons, annotations, y_position) {
+    geom_signif(
+        comparisons = comparisons,
+        annotations = annotations,
+        y_position = y_position,
+        textsize = 8,
+        tip_length = 0,
+        vjust = 0.3
+    )
+}
+
+social_plots[[2]] +
+    my_sig(list(c("1", "2"), c("2", "3")), c("**", "**"), c(1.03, 1.06)) +
+    coord_cartesian(ylim = c(0, 1.15)) +
+    scale_y_continuous(breaks = seq(0, 1, by = 0.25))
+
+social_plots[[2]] +
+    annotate(
+        "text",
+        x = 2,
+        y = 1.13,
+        label = "hi"
+    )
+
+thought_plots <- plot_and_stat(merged_df, "cbcl_thought")
+
+somatic_plots <- plot_and_stat(merged_df, "cbcl_somatic")
+```
+
+
+
+```{r}
 library(ggplot2)
 library(multcomp)
 library(patchwork)
@@ -1212,9 +1402,13 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     ft_12 <- fisher.test(ft_12_tab, alternative = "greater")
     ft_13 <- fisher.test(ft_13_tab, alternative = "greater")
     ft_23 <- fisher.test(ft_23_tab, alternative = "less")
+    z12 <- fisher.test(table(df_12[, cat_name], as.factor(as.character(df_12$"cluster"))))$p
+    z13 <- fisher.test(table(df_13[, cat_name], as.factor(as.character(df_13$"cluster"))))$p
+    z23 <- fisher.test(table(df_23[, cat_name], as.factor(as.character(df_23$"cluster"))))$p
     pairwise_df <- data.frame(
         comparison = c("12", "13", "23"),
         p = c(ft_12$p.value, ft_13$p.value, ft_23$p.value),
+        other_p = c(z12, z13, z23),
         estimate = c(ft_12$estimate, ft_13$estimate, ft_23$estimate),
         conf_int_low = c(ft_12$conf.int[1], ft_13$conf.int[1], ft_23$conf.int[1]),
         conf_int_high = c(ft_12$conf.int[2], ft_13$conf.int[2], ft_23$conf.int[2]),
@@ -1225,7 +1419,6 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
         feature = feature
     )
     if (feature == "cbcl_social") {
-        browser()
         fisher.test(
             table(df_12$"cbcl_social_cat", as.factor(as.character(df_12$"cluster"))),
             alternative = "greater"
@@ -1235,7 +1428,6 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
             alternative = "greater"
         )
         table(df_12$"diff_cat_bin", df_12$"cbcl_social_cat")
-        d
         ft_12$p.value
     }
     if (mode == "high") {
@@ -1280,20 +1472,6 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
         list(point_plot,  prop_plot, p_df, pairwise_df, sex_pval_df)
     )
 }
-#sex_pval_df <- data.frame()
-#p_df <- data.frame()
-#pairwise_df <- data.frame()
-#pl <- list()
-#pl_2 <- list()
-#for (i in 1:9) {
-#    print(i)
-#    high_change_results <- plot_change(merged_df, outcome_fts[[i]], sex_pval_df, mode = "high")
-#    pl[[i]]   <- high_change_results[[1]]
-#    pl_2[[i]] <- high_change_results[[2]]
-#    p_df <- rbind(p_df, high_change_results[[3]])
-#    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
-#    sex_pval_df <- high_change_results[[5]]
-#}
 all_change_plots <- function(mode = "high", full_df) {
     sex_p_df <- data.frame()
     overall_p_df <- data.frame()
@@ -1332,8 +1510,12 @@ all_change_plots <- function(mode = "high", full_df) {
         )
     )
 }
+
 low_data_i1 <- all_change_plots(mode = "low", dplyr::filter(merged_df, imputation == 1))
+
 low_data_i1$"pairwise_p_df" |> dplyr::filter(p < 0.05)
+
+low_data_i1[[1]]
 
 
 
@@ -1344,6 +1526,7 @@ low_data_i1$"pairwise_p_df" |> dplyr::filter(p < 0.05)
 
 
 ```{r}
+
 # among those who started high, % that improved
 plot_change2 <- function(df, feature, sex_pval_df, mode = "high") {
     # formatting feature names
@@ -1431,39 +1614,12 @@ plot_change2 <- function(df, feature, sex_pval_df, mode = "high") {
     ft_13_tab <- table(df_13$"diff_cat_bin", as.factor(as.character(df_13$"cluster")))
     ft_23_tab <- table(df_23$"diff_cat_bin", as.factor(as.character(df_23$"cluster")))
     cat_name <- paste0(feature, "_cat")
-    if (mode == "low") {
-        ft_12 <- fisher.test(ft_12_tab, alternative = "greater")
-        ft_13 <- fisher.test(ft_13_tab, alternative = "greater")
-        ft_23 <- fisher.test(ft_23_tab, alternative = "less")
-        z12 <- fisher.test(
-            table(df_12[, cat_name], as.factor(as.character(df_12$"cluster"))),
-            alternative = "greater"
-        )$p
-        z13 <- fisher.test(
-            table(df_13[, cat_name], as.factor(as.character(df_13$"cluster"))),
-            alternative = "greater"
-        )$p
-        z23 <- fisher.test(
-            table(df_23[, cat_name], as.factor(as.character(df_23$"cluster"))),
-            alternative = "less"
-        )$p
-    } else if (mode == "high") {
-        ft_12 <- fisher.test(ft_12_tab, alternative = "less")
-        ft_13 <- fisher.test(ft_13_tab, alternative = "less")
-        ft_23 <- fisher.test(ft_23_tab, alternative = "greater")
-        z12 <- fisher.test(
-            table(df_12[, cat_name], as.factor(as.character(df_12$"cluster"))),
-            alternative = "less"
-        )$p
-        z13 <- fisher.test(
-            table(df_13[, cat_name], as.factor(as.character(df_13$"cluster"))),
-            alternative = "less"
-        )$p
-        z23 <- fisher.test(
-            table(df_23[, cat_name], as.factor(as.character(df_23$"cluster"))),
-            alternative = "greater"
-        )$p
-    }
+    ft_12 <- fisher.test(ft_12_tab)
+    ft_13 <- fisher.test(ft_13_tab)
+    ft_23 <- fisher.test(ft_23_tab)
+    z12 <- fisher.test(table(df_12[, cat_name], as.factor(as.character(df_12$"cluster"))))$p
+    z13 <- fisher.test(table(df_13[, cat_name], as.factor(as.character(df_13$"cluster"))))$p
+    z23 <- fisher.test(table(df_23[, cat_name], as.factor(as.character(df_23$"cluster"))))$p
     pairwise_df <- data.frame(
         comparison = c("12", "13", "23"),
         p = c(ft_12$p.value, ft_13$p.value, ft_23$p.value),
@@ -1503,24 +1659,6 @@ plot_change2 <- function(df, feature, sex_pval_df, mode = "high") {
             labels = labs
         ) +
         labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL)
-    browser()
-
-
-        37/41
-
-        105/56
-
-stacked_df |> 
-    dplyr::filter(t == 0)
-
-
-    stacked_df |>
-        count(cluster, diff_cat) |>
-        group_by(cluster) |>
-        mutate(prop = n / sum(n))
-
-
-
     prop_plot <- stacked_df |>
         count(cluster, diff_cat) |>
         group_by(cluster) |>
@@ -1533,10 +1671,12 @@ stacked_df |>
             values = vals,
             labels = labs
         )
+    browser()
     return(
         list(point_plot, prop_plot, p_df, pairwise_df)
     )
 }
+
 all_change_plots2 <- function(mode = "high", full_df) {
     overall_p_df <- data.frame()
     pairwise_p_df <- data.frame()
@@ -1564,21 +1704,21 @@ all_change_plots2 <- function(mode = "high", full_df) {
         )
     )
 }
-low_data_i1_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 1))
-#low_data_i1_v2$"pl_pnt"[[4]]
-low_data_i1_v2$"pl_bar"[[4]]
 
+low_data_i1_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 1))
 
 low_data_i2_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 2))
 low_data_i3_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 3))
 low_data_i4_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 4))
 low_data_i5_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 5))
 
-low_data_i1_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
-low_data_i2_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
-low_data_i3_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
-low_data_i4_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
-low_data_i5_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
+low_data_i1_v2$"pairwise_p_df" |> dplyr::filter(p_adj_other < 0.05)
+low_data_i2_v2$"pairwise_p_df" |> dplyr::filter(p_adj_other < 0.05)
+low_data_i3_v2$"pairwise_p_df" |> dplyr::filter(p_adj_other < 0.05)
+low_data_i4_v2$"pairwise_p_df" |> dplyr::filter(p_adj_other < 0.05)
+low_data_i5_v2$"pairwise_p_df" |> dplyr::filter(p_adj_other < 0.05)
+
+low_data_i5_v2$"pl_pnt"[[1]]
 
 high_data_i1_v2 <- all_change_plots2(mode = "high", dplyr::filter(merged_df, imputation == 1))
 high_data_i2_v2 <- all_change_plots2(mode = "high", dplyr::filter(merged_df, imputation == 2))
@@ -1586,12 +1726,11 @@ high_data_i3_v2 <- all_change_plots2(mode = "high", dplyr::filter(merged_df, imp
 high_data_i4_v2 <- all_change_plots2(mode = "high", dplyr::filter(merged_df, imputation == 4))
 high_data_i5_v2 <- all_change_plots2(mode = "high", dplyr::filter(merged_df, imputation == 5))
 
-high_data_i1_v2$"pairwise_p_df" |> dplyr::filter(p < 0.05 | p_adj_other < 0.05)
-
-high_data_i2_v2$"pairwise_p_df" |> dplyr::filter(p < 0.05 | p_adj_other < 0.05)
-high_data_i3_v2$"pairwise_p_df" |> dplyr::filter(p < 0.05 | p_adj_other < 0.05)
-high_data_i4_v2$"pairwise_p_df" |> dplyr::filter(p < 0.05 | p_adj_other < 0.05)
-high_data_i5_v2$"pairwise_p_df" |> dplyr::filter(p < 0.05 | p_adj_other < 0.05)
+high_data_i1_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
+high_data_i2_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
+high_data_i3_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
+high_data_i4_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
+high_data_i5_v2$"pairwise_p_df" |> dplyr::filter(p_adj < 0.05 | p_adj_other < 0.05)
 
 
 low_data_i1_v2$"pl_pnt"[[4]]
