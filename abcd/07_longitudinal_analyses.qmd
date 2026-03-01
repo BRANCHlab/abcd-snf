@@ -1485,13 +1485,13 @@ plot_change2 <- function(df, feature, sex_pval_df, mode = "high") {
         labs = c("not_worsened" = "Not Worsened", "worsened" = "Worsened")
     }
     point_plot <- stacked_df |>
-        dplyr::filter(imputation == 1) |>
+        dplyr::filter(imputation == 1, t == 0) |>
         ggplot(
             aes(
                 x = factor(t),
                 y = .data[[name]],
                 group = uid,
-                colour = diff_cat
+                colour = diff_cat_bin
             )
         ) +
         geom_point(size = 3, position = pd, alpha = 0.5) +
@@ -1503,6 +1503,24 @@ plot_change2 <- function(df, feature, sex_pval_df, mode = "high") {
             labels = labs
         ) +
         labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL)
+    browser()
+
+
+        37/41
+
+        105/56
+
+stacked_df |> 
+    dplyr::filter(t == 0)
+
+
+    stacked_df |>
+        count(cluster, diff_cat) |>
+        group_by(cluster) |>
+        mutate(prop = n / sum(n))
+
+
+
     prop_plot <- stacked_df |>
         count(cluster, diff_cat) |>
         group_by(cluster) |>
@@ -1516,7 +1534,7 @@ plot_change2 <- function(df, feature, sex_pval_df, mode = "high") {
             labels = labs
         )
     return(
-        list(point_plot,  prop_plot, p_df, pairwise_df)
+        list(point_plot, prop_plot, p_df, pairwise_df)
     )
 }
 all_change_plots2 <- function(mode = "high", full_df) {
@@ -1547,7 +1565,7 @@ all_change_plots2 <- function(mode = "high", full_df) {
     )
 }
 low_data_i1_v2 <- all_change_plots2(mode = "low", dplyr::filter(merged_df, imputation == 1))
-low_data_i1_v2$"pl_pnt"[[4]]
+#low_data_i1_v2$"pl_pnt"[[4]]
 low_data_i1_v2$"pl_bar"[[4]]
 
 
