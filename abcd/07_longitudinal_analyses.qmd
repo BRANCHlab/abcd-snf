@@ -1041,6 +1041,7 @@ outcome_fts <- c(
 ```
 
 ```{r}
+all_p_vals_high <- data.frame()
 for (ft in outcome_fts) {
     ftname <- paste0(ft, "_cat_t0")
     p <- merged_df |>
@@ -1050,8 +1051,14 @@ for (ft in outcome_fts) {
         table() |>
         fisher.test()
     p <- p$p
+    all_p_vals_high <- rbind(
+        all_p_vals_high,
+        data.frame(feature = ft, p = p)
+    )
+    print(ftname)
     print(p)
 }
+all_p_vals_high$"p_adj" <- p.adjust(all_p_vals_high$"p", method = "fdr")
 
 # checking people who start low and enter high or remain low
 all_p_vals <- data.frame()
@@ -1092,16 +1099,19 @@ CBCL somatic was significant prior to multiple comparisons corrections.
 plot_and_stat <- function(df, feature, imp = 1, mode = "low") {
     df <- dplyr::filter(df, imputation == imp)
     cat_ft <- paste0(feature, "_cat_t0")
-    if (mode == "high") {
+    if (mode == "low") {
         filter_vals <- c("low_high", "low_low")
         vals <- c("low_low" = "darkgreen", "low_high" = "firebrick")
         labs <- c("low_low" = "Did not worsen", "low_high" = "Worsened")
-    } else {
+    } else if (mode == "high") {
         filter_vals <- c("high_high", "high_low")
         vals <- c("high_low" = "darkgreen", "high_high" = "firebrick")
         labs <- c("high_low" = "Improved", "high_high" = "Did not improve")
     }
-    df <- df |> dplyr::filter(.data[[cat_ft]] %in% filter_vals)
+    df <- df |>
+        dplyr::filter(
+            .data[[cat_ft]] %in% filter_vals
+        )
     df_12 <- df |> dplyr::filter(cluster_t0 != 3)
     df_13 <- df |> dplyr::filter(cluster_t0 != 2)
     df_23 <- df |> dplyr::filter(cluster_t0 != 1)
@@ -1152,13 +1162,14 @@ plot_and_stat <- function(df, feature, imp = 1, mode = "low") {
             values = vals,
             labels = labs
         ) +
-        labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL)
+        labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL) +
+        theme(text = element_text(size = 16))
     prop_plot <- joint_df |>
         count(cluster, .data[[cat_no_t]]) |>
         group_by(cluster) |>
         mutate(prop = n / sum(n)) |>
         ggplot(aes(x = cluster, y = prop, fill = .data[[cat_no_t]])) +
-        geom_col(position = "fill") +
+        geom_col(position = "fill") +  # stacked proportion bars
         theme_classic() + 
         labs(y = "Proportion", x = "Cluster", fill = "Transition") +
         scale_fill_manual(
@@ -1171,30 +1182,10 @@ plot_and_stat <- function(df, feature, imp = 1, mode = "low") {
 
 # p 12 is 0.008 i.e. < 0.01 (**) | OR of 12.8258 [1.396, 615.7036] (5/62 got worse in C1 vs. 1/161 in C2)
 # p 23 is 0.003 i.e. < 0.01 (**) | OR of 12.6518 [1.6662, 567.6938] (8/101 got worse in C3 vs. 1/161 in C2)
-social_plots <- plot_and_stat(merged_df, "cbcl_social")
-
+social_plots <- plot_and_stat(merged_df, "cbcl_social", mode = "low")
 # p 12 is 0.0066 i.e. < 0.01 (**) | OR of 5.9488 [1.3749, 35.8701] (8/68 worse in C1, 3/153 worse in C2)
 # p 23 is 0.0163 i.e. < 0.05 (*) | OR of 4.7042 [1.1377, 27.6754] (9/97 worse in C1, 3/153 worse in C2)
-thought_plots <- plot_and_stat(merged_df, "cbcl_thought")
-
-
-# n.s. from the overall tests
-
-somatic_plots <- plot_and_stat(merged_df, "cbcl_somatic")
-
-anxdep_plots <- plot_and_stat(merged_df, "cbcl_anxdep")
-
-anxdep_plots[2]
-
-somatic_plots[[1]]
-
-somatic_plots[[2]]
-
-
-format_plots <- function(plots) {
-    plots[[1]] | plots [[2]] + plot_layout(widths = c(2, 1))
-}
-
+thought_plots <- plot_and_stat(merged_df, "cbcl_thought", mode = "low")
 my_sig <- function(comparisons, annotations, y_position) {
     geom_signif(
         comparisons = comparisons,
@@ -1205,23 +1196,30 @@ my_sig <- function(comparisons, annotations, y_position) {
         vjust = 0.3
     )
 }
+social_plots[[2]] <- social_plots[[2]] +
+    my_sig(list(c("1", "2"), c("2", "3")), c("**", "**"), c(1.02, 1.07)) +
+    coord_cartesian(ylim = c(0, 1.2)) +
+    scale_y_continuous(breaks = seq(0, 1.2, by = 0.25))
+thought_plots[[2]] <- thought_plots[[2]] +
+    my_sig(list(c("1", "2"), c("2", "3")), c("**", "*"), c(1.02, 1.07)) +
+    coord_cartesian(ylim = c(0, 1.2)) +
+    scale_y_continuous(breaks = seq(0, 1.2, by = 0.25))
+format_plots <- function(plots) {
+    plots[[1]] | plots [[2]] + plot_layout(widths = c(1, 0.1))
+}
+social_plots_f <- format_plots(social_plots)
+thought_plots_f <- format_plots(thought_plots)
+formatted_plot <- wrap_plots(
+    list(social_plots_f, thought_plots_f),
+    ncol = 1
+)
+ggsave(
+    filename = fig_path("low_change_plot_clean.png", TRUE),
+    plot = formatted_plot,
+    height = 7,
+    width = 11
+)
 
-social_plots[[2]] +
-    my_sig(list(c("1", "2"), c("2", "3")), c("**", "**"), c(1.03, 1.06)) +
-    coord_cartesian(ylim = c(0, 1.15)) +
-    scale_y_continuous(breaks = seq(0, 1, by = 0.25))
-
-social_plots[[2]] +
-    annotate(
-        "text",
-        x = 2,
-        y = 1.13,
-        label = "hi"
-    )
-
-thought_plots <- plot_and_stat(merged_df, "cbcl_thought")
-
-somatic_plots <- plot_and_stat(merged_df, "cbcl_somatic")
 ```
 
 
