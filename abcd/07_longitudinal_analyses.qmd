@@ -728,7 +728,6 @@ adj_df_w_covs <- readRDS(proc_path("2026_01_19_df_w_covs_adj.rds"))
 
 all_out_adj |> colnames()
 
-
 #df0_adj <- readRDS(proc_path("2025_07_08_df0_w_covs_adj.rds"))
 #dfl_adj <- readRDS(proc_path("2025_07_08_dfl_w_covs_adj.rds"))
 #
@@ -1130,8 +1129,8 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
             dplyr::filter(t == 0) |>
             dplyr::mutate(
                 diff_cat_bin = dplyr::case_when(
-                    diff_cat == "improved" ~ 1,
-                    diff_cat == "not_improved" ~ 0
+                    diff_cat == "improved" ~ 0,
+                    diff_cat == "not_improved" ~ 1
                 )
             )
     } else if (mode == "low") {
@@ -1206,9 +1205,31 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
     df_12 <- stacked_df_analysis |> dplyr::filter(cluster != 3)
     df_13 <- stacked_df_analysis |> dplyr::filter(cluster != 2)
     df_23 <- stacked_df_analysis |> dplyr::filter(cluster != 1)
-    ft_12 <- fisher.test(table(df_12$"diff_cat_bin", as.factor(as.character(df_12$"cluster"))))
-    ft_13 <- fisher.test(table(df_13$"diff_cat_bin", as.factor(as.character(df_13$"cluster"))))
-    ft_23 <- fisher.test(table(df_23$"diff_cat_bin", as.factor(as.character(df_23$"cluster"))))
+    ft_12_tab <- table(df_12$"diff_cat_bin", as.factor(as.character(df_12$"cluster")))
+    ft_13_tab <- table(df_13$"diff_cat_bin", as.factor(as.character(df_13$"cluster")))
+    ft_23_tab <- table(df_23$"diff_cat_bin", as.factor(as.character(df_23$"cluster")))
+    ft_12 <- fisher.test(ft_12_tab, alternative = "greater")
+    ft_13 <- fisher.test(ft_13_tab, alternative = "greater")
+    ft_23 <- fisher.test(ft_23_tab, alternative = "less")
+    if (feature == "cbcl_social") {
+        browser()
+    }
+
+    z1 <- df_12 |> dplyr::filter(cluster == 1)
+    z2 <- df_12 |> dplyr::filter(cluster == 2)
+
+    fisher.test(table(stacked_df_analysis$"cbcl_social_cat", stacked_df_analysis$"cluster"))
+
+    table(stacked_df_analysis$"diff_cat_bin", stacked_df_analysis$"cbcl_social_cat")
+
+    calc_fisher_p(stacked_df_analysis, "diff_cat_bin", "cluster")
+
+    fisher_p_value
+
+    prop.table(table(z1$"cbcl_social_cat"))
+
+    prop.table(table(z2$"cbcl_social_cat"))
+
     pairwise_df <- data.frame(
         comparison = c("12", "13", "23"),
         p = c(ft_12$p.value, ft_13$p.value, ft_23$p.value),
@@ -1226,7 +1247,7 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
         labs <- c("improved" = "Improved", "not_improved" = "Not Improved")
     } else if (mode == "low") {
         vals = c("not_worsened" = "darkgreen", "worsened" = "firebrick")
-        labs = c("not_worsened" = "Improved", "worsened" = "Not Improved")
+        labs = c("not_worsened" = "Not Worsened", "worsened" = "Worsened")
     }
     point_plot <- stacked_df |>
         dplyr::filter(imputation == 1) |>
@@ -1263,7 +1284,6 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
         list(point_plot,  prop_plot, p_df, pairwise_df, sex_pval_df)
     )
 }
-
 #sex_pval_df <- data.frame()
 #p_df <- data.frame()
 #pairwise_df <- data.frame()
@@ -1278,8 +1298,7 @@ plot_change <- function(df, feature, sex_pval_df, mode = "high") {
 #    pairwise_df <- rbind(pairwise_df, high_change_results[[4]])
 #    sex_pval_df <- high_change_results[[5]]
 #}
-
-all_change_plots <- function(mode = "high") {
+all_change_plots <- function(mode = "high", full_df) {
     sex_p_df <- data.frame()
     overall_p_df <- data.frame()
     pairwise_p_df <- data.frame()
@@ -1288,7 +1307,7 @@ all_change_plots <- function(mode = "high") {
     for (i in 1:9) {
         print(i)
         change_results <- plot_change(
-            dplyr::filter(merged_df),
+            dplyr::filter(full_df),
             outcome_fts[[i]],
             sex_p_df,
             mode = mode
@@ -1300,27 +1319,14 @@ all_change_plots <- function(mode = "high") {
         sex_p_df <- change_results[[5]]
     }
     sex_p_df$"p_adj" <- p.adjust(sex_p_df$"p_fisher", method = "fdr")
-    if (mode == "high") {
-        sex_p_df <- sex_p_df |>
-            dplyr::mutate(
-                better = dplyr::case_when(
-                    m_mean > f_mean ~ "M",
-                    f_mean > m_mean ~ "F",
-                    TRUE ~ NA
-                ),
-                mode = "high"
+    sex_p_df <- sex_p_df |>
+        dplyr::mutate(
+            better = dplyr::case_when(
+                m_mean > f_mean ~ "F",
+                f_mean > m_mean ~ "M",
+                TRUE ~ NA
             )
-    } else if (mode == "low") {
-        sex_p_df <- sex_p_df |>
-            dplyr::mutate(
-                better = dplyr::case_when(
-                    m_mean > f_mean ~ "F",
-                    f_mean > m_mean ~ "M",
-                    TRUE ~ NA
-                ),
-                mode = "high"
-            )
-    }
+        )
     return(
         list(
             "pl_pnt" = pl_pnt,
@@ -1332,8 +1338,74 @@ all_change_plots <- function(mode = "high") {
     )
 }
 
-high_data <- all_change_plots(mode = "high")
-low_data <- all_change_plots(mode = "low")
+low_data_i1 <- all_change_plots(mode = "low", dplyr::filter(merged_df, imputation == 1))
+
+low_data_i2 <- all_change_plots(mode = "low", dplyr::filter(merged_df, imputation == 2))
+low_data_i3 <- all_change_plots(mode = "low", dplyr::filter(merged_df, imputation == 3))
+low_data_i4 <- all_change_plots(mode = "low", dplyr::filter(merged_df, imputation == 4))
+low_data_i5 <- all_change_plots(mode = "low", dplyr::filter(merged_df, imputation == 5))
+
+high_data_i1 <- all_change_plots(mode = "high", dplyr::filter(merged_df, imputation == 1))
+high_data_i2 <- all_change_plots(mode = "high", dplyr::filter(merged_df, imputation == 2))
+high_data_i3 <- all_change_plots(mode = "high", dplyr::filter(merged_df, imputation == 3))
+high_data_i4 <- all_change_plots(mode = "high", dplyr::filter(merged_df, imputation == 4))
+high_data_i5 <- all_change_plots(mode = "high", dplyr::filter(merged_df, imputation == 5))
+
+phdf <- high_data_i1$"pairwise_p_df"
+
+check_pairwise_df <- function(df) {
+    df$"p_adj" <- p.adjust(df$"p", method = "fdr")
+    dplyr::filter(df, p_adj < 0.05)
+}
+
+check_pairwise_df(low_data_i6$"pairwise_p_df")
+
+check_pairwise_df(high_data_i5$"pairwise_p_df")
+
+low_data_i1$"pl_pnt"[4]
+
+low_data_i1$"pl_bar"[4]
+
+high_data_i1$"pairwise_p_df" |> arrange(p)
+
+low_data_i1$"pairwise_p_df" |> arrange(p)
+
+p.adjust(low_data_i1$"pairwise_p_df"$p, method = "fdr")
+
+high_data_i2$"pairwise_p_df"
+low_data_i2$"pairwise_p_df"
+
+high_data_12 <- dplyr::filter(phdf, comparison == "12")
+high_data_13 <- dplyr::filter(phdf, comparison == "13")
+high_data_23 <- dplyr::filter(phdf, comparison == "23")
+low_data_12 <- dplyr::filter(pldf, comparison == "12")
+low_data_13 <- dplyr::filter(pldf, comparison == "13")
+low_data_23 <- dplyr::filter(pldf, comparison == "23")
+
+high_data_12
+
+
+low_data_12 |> dplyr::filter(p < 0.05)
+
+min(p.adjust(low_data_12$"p", method = "fdr"))
+
+min(p.adjust(low_data_13$"p", method = "fdr"))
+
+min(p.adjust(low_data_23$"p", method = "fdr"))
+
+rbind(high_data$"pairwise_p_df", low_data$"pairwise_p_df")
+
+rbind(high_data$"overall_p_df", low_data$"overall_p_df") |>
+
+low_data$"overall_p_df" |>
+    pull(p_fisher) |>
+    p.adjust(method = "fdr")
+
+high_data$"overall_p_df" |>
+    pull(p_fisher) |>
+    p.adjust(method = "fdr")
+
+
 ```
 
 
@@ -1498,7 +1570,7 @@ zf <- z |> dplyr::filter(sex_t0 == "F")
 (Old analysis - not yet re-run)
 
 ```{r}
-matched_unij_nearest_esdf <- readRDS(proc_path("2025_02_16_matched_unij_nearest_esdf.rds"))
+matched_unij_nearest_esdf <- readRDS(proc_path("2025_10_02_matched_unij_nearest_esdf.rds"))
 
 # Those who exhibited heterogeneity most similar to the baseline mTBI group
 matched_subs <- uids(matched_unij_nearest_esdf)
@@ -1506,19 +1578,18 @@ matched_subs <- gsub("uid_", "", matched_subs)
 
 # Those who never sustained a head injury prior to T2
 # N = 7678
-long_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs_0_to_2.csv"))
+lunj_subs_wt2 <- readRDS(sub_path("2025_09_15_lunj_subs_wt2.rds"))
 
 # Those who sustained a head injury between 0 and T2
 # N = 220
-long_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs_0_to_2.csv"))
+lmtb_subs_wt2 <- readRDS(sub_path("2026_01_19_lmtb_subs_wt2.rds"))
 
 # The pool of all baseline uninjured subjects
-# N = 9349
-base_unij_subs <- read_subjects(sub_path("2025_02_07_unij_subs.csv"))
+unij_subs_wt2 <- readRDS(sub_path("2025_09_15_unij_subs_wt2.rds")) # 8572
 
-non_matched_subs <- setdiff(base_unij_subs, matched_subs)
+non_matched_subs <- setdiff(unij_subs_wt2, matched_subs)
 
-base_mtbi_subs <- read_subjects(sub_path("2025_02_07_mtbi_subs.csv"))
+mtbi_subs_wt2 <- readRDS(sub_path("2025_09_15_mtbi_subs_wt2.rds"))
 ```
 
 Let's consider being in the matched group vs. not being in the matched group as exposed vs. unexposed, and ending up in the mTBI sample as outcome vs. no outcome.
