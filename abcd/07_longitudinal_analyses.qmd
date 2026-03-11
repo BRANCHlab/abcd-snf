@@ -28,7 +28,7 @@ library(patchwork)
 library(tidyr)
 library(ComplexHeatmap)
 
-source("helper_functions.R")
+source("abcd/helper_functions.R")
 ```
 
 ## Establishing file paths
@@ -528,8 +528,6 @@ all_age_l <- get_interview_age(abcd_y_lt = abcd_y_lt, t = 2, as_years = FALSE) |
     dplyr::rename("age" = "interview_age") |>
     dplyr::select(-subjectkey)
 
-source("abcd/helper_functions.R")
-
 all_out_0 <- dplyr::inner_join(
     all_sex_0,
     all_cbcl_0,
@@ -586,8 +584,6 @@ all_out_l <- dplyr::inner_join(
     ) |>
     dplyr::mutate(cluster = sex)
 
-# top, bottom, mid quantiles - do profiles shift?
-
 # Constructing adjustment models for each outcome for each timepoint
 out_cols <- grep("^(cbcl|sds)", names(all_out_0), value = TRUE)
 
@@ -605,24 +601,6 @@ models <- lapply(
 )
 names(models) <- out_cols
 
-#models_0 <- lapply(
-#    out_cols,
-#    function(col) {
-#        formula <- as.formula(paste(col, "~ age + sex"))
-#        lm(formula, data = all_out_0)
-#    }
-#)
-#names(models_0) <- out_cols
-#
-#models_l <- lapply(
-#    out_cols,
-#    function(col) {
-#        formula <- as.formula(paste(col, "~ age + sex"))
-#        lm(formula, data = all_out_l)
-#    }
-#)
-#names(models_l) <- out_cols
-
 df0_w_covs <- df0 |>
     as.data.frame() |>
     dplyr::inner_join(all_sex_0) |>
@@ -637,61 +615,7 @@ df_w_covs <- rbind(df0_w_covs, dfl_w_covs)
 
 df_w_covs$"t" <- as.numeric(df_w_covs$"t")
 
-#df0_w_covs
-
-#df0_w_covs_adj <- df0_w_covs
-#dfl_w_covs_adj <- dfl_w_covs
-
-#dfl_w_covs_adj |> head()
-#
 dfl_w_covs |> head()
-
-#for (col in out_cols) {
-#  # Predicted values based on reference model
-#  predicted <- predict(models_0[[col]], newdata = df0_w_covs)
-#  # Residuals: actual - predicted
-#  df0_w_covs_adj[[paste0("adj_", col)]] <- df0_w_covs[[col]] - predicted
-#}
-#
-#for (col in out_cols) {
-#  # Predicted values based on reference model
-#  predicted <- predict(models_l[[col]], newdata = dfl_w_covs)
-#  # Residuals: actual - predicted
-#  dfl_w_covs_adj[[paste0("adj_", col)]] <- dfl_w_covs[[col]] - predicted
-#}
-
-#for (col in out_cols) {
-#  # Predicted values based on reference model
-#  predicted <- predict(models_l[[col]], newdata = dfl_w_covs)
-#  # Residuals: actual - predicted
-#  dfl_w_covs_adj[[paste0("adj_", col)]] <- dfl_w_covs[[col]] - predicted
-#}
-
-#df_adj <- rbind(df0_w_covs_adj, dfl_w_covs_adj)
-
-#saveRDS(df0_w_covs_adj, proc_path("df0_w_covs_adj.rds", TRUE))
-#saveRDS(dfl_w_covs_adj, proc_path("dfl_w_covs_adj.rds", TRUE))
-
-#saveRDS(df_adj, proc_path("df_adj.rds", TRUE))
-
-# Storing the quantiles
-
-#all_out_0_adj <- all_out_0
-#all_out_l_adj <- all_out_l
-
-#for (col in out_cols) {
-#  # Predicted values based on reference model
-#  predicted <- predict(models_0[[col]], newdata = all_out_0)
-#  # Residuals: actual - predicted
-#  all_out_0_adj[[paste0("adj_", col)]] <- all_out_0[[col]] - predicted
-#}
-#
-#for (col in out_cols) {
-#  # Predicted values based on reference model
-#  predicted <- predict(models_l[[col]], newdata = all_out_l)
-#  # Residuals: actual - predicted
-#  all_out_l_adj[[paste0("adj_", col)]] <- all_out_l[[col]] - predicted
-#}
 
 all_out_adj <- all_out
 
@@ -728,14 +652,8 @@ adj_df_w_covs <- readRDS(proc_path("2026_01_19_df_w_covs_adj.rds"))
 
 all_out_adj |> colnames()
 
-#df0_adj <- readRDS(proc_path("2025_07_08_df0_w_covs_adj.rds"))
-#dfl_adj <- readRDS(proc_path("2025_07_08_dfl_w_covs_adj.rds"))
-#
-#df_adj <- readRDS(proc_path("2025_07_08_df_adj.rds"))
-
 out_cols
-#------------------------------------------------------------------------------
-#library(dplyr)
+
 library(purrr)
 
 # 1. Vector of CBCL columns
@@ -1025,6 +943,8 @@ t2_df <- dplyr::rename(t2_df, "uid" = "uid_t2", "imputation" = "imputation_t2")
 
 merged_df <- dplyr::inner_join(t0_df, t2_df, by = c("uid", "imputation"))
 
+colnames(merged_df)
+
 outcome_fts <- c(
     "cbcl_anxdep",
     "cbcl_withdep",
@@ -1036,8 +956,6 @@ outcome_fts <- c(
     "cbcl_aggressive",
     "sds_sleep"
 )
-
-
 ```
 
 ```{r}
@@ -1089,7 +1007,6 @@ for (ft in outcome_fts) {
 all_p_vals$"p_adj" <- p.adjust(all_p_vals$p, method = "fdr")
 
 all_p_vals |> dplyr::filter(p_adj < 0.05)
-
 ```
 
 CBCL social (p = 0.02) and thought problems (p = 0.03) have significant p values.
