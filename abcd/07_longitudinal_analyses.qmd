@@ -660,6 +660,8 @@ library(purrr)
 cbcl_cols <- paste0("adj_", out_cols[1:8])
 sds_cols <- "adj_sds_sleep"
 
+all_out_adj |> colnames()
+
 quantile_cbcl <- map(
     cbcl_cols,
     function(col) {
@@ -958,7 +960,140 @@ outcome_fts <- c(
 )
 ```
 
+Useful function for calculating fisher exact test values:
+
 ```{r}
+fisher_all_p <- function(df, cat_ft) {
+    result_all <- df |> 
+        table() |>
+        fisher.test()
+    print(table(df))
+    df_12 <- dplyr::filter(df, cluster_t0 != 3)
+    df_13 <- dplyr::filter(df, cluster_t0 != 2)
+    df_23 <- dplyr::filter(df, cluster_t0 != 1)
+    tab_12 <- table(df_12[, cat_ft], factor(df_12[, "cluster_t0"], levels = c("1", "2")))
+    tab_13 <- table(df_13[, cat_ft], factor(df_13[, "cluster_t0"], levels = c("1", "3")))
+    tab_23 <- table(df_23[, cat_ft], factor(df_23[, "cluster_t0"], levels = c("3", "2")))
+    result_12 <- fisher.test(tab_12)
+    result_13 <- fisher.test(tab_13)
+    result_23 <- fisher.test(tab_23)
+    results <- data.frame(
+        ft = cat_ft,
+        comparison = c("all", "12", "13", "23"),
+        p = c(
+            result_all$"p",
+            result_12$"p",
+            result_13$"p",
+            result_23$"p"
+        ),
+        estimate = c(
+            NA,
+            round(result_12$"estimate", 4),
+            round(result_13$"estimate", 4),
+            round(result_23$"estimate", 4)
+        ),
+        ci_low = c(
+            NA,
+            round(result_12$"conf.int"[1], 4),
+            round(result_13$"conf.int"[1], 4),
+            round(result_23$"conf.int"[1], 4)
+        ),
+        ci_high = c(
+            NA,
+            round(result_12$"conf.int"[2], 4),
+            round(result_13$"conf.int"[2], 4),
+            round(result_23$"conf.int"[2], 4)
+        )
+    )
+    return(results)
+}
+```
+
+The "smidge" approach: any improvement (no matter how small) is considered improvement:
+
+```{r}
+results_df <- data.frame()
+improve_df <- merged_df
+for (ft in outcome_fts) {
+    ft_t0 <- paste0("adj_", ft, "_t0")
+    ft_t2 <- paste0("adj_", ft, "_t2")
+    ft_cat <- paste0(ft, "_cat_t0")
+    improve_df <- improve_df |>
+        dplyr::mutate(
+            any_improve = dplyr::case_when(
+                .data[[ft_t2]] < .data[[ft_t0]] ~ 1,
+                TRUE ~ 0
+            )
+        )
+    new_name <- paste0(ft, "_any_improved")
+    colnames(improve_df)[colnames(improve_df) == "any_improve"] <- new_name
+    improve_df_high_high <- improve_df |>
+        dplyr::filter(
+            .data[[ft_cat]] %in% c("high_high", "high_low")
+        ) |>
+        dplyr::select(cluster_t0, all_of(new_name))
+    results_df <- rbind(
+        results_df,
+        fisher_all_p(improve_df_high_high, new_name)
+    )
+}
+
+z <- results_df |> dplyr::filter(comparison == "all") 
+z$"p_adj" <- p.adjust(z$"p", method = "fdr")
+z |> dplyr::filter(p_adj < 0.05)
+
+z |> dplyr::filter(p < 0.05)
+
+```
+
+While anxdep, withdep, thought, and (uncorrected) sleep are significant here, the smidge approach does not really correspond to clinically meaningful changes.
+
+The cutoff approach: things must cross their appropriate clinical thresholds.
+
+```{r}
+
+high_to_low <- data.frame()
+for (ft in outcome_fts) {
+    ftname <- paste0(ft, "_cat_t0")
+    high_df <- merged_df |>
+        dplyr::filter(imputation == 1) |>
+        dplyr::select(all_of(ftname), cluster_t0) |>
+        dplyr::filter(.data[[ftname]] %in% c("high_high", "high_low"))
+    high_to_low <- rbind(
+        high_to_low,
+        fisher_all_p(high_df, ftname)
+    )
+}
+
+low_to_high <- data.frame()
+for (ft in outcome_fts) {
+    ftname <- paste0(ft, "_cat_t0")
+    low_df <- merged_df |>
+        dplyr::filter(imputation == 1) |>
+        dplyr::select(all_of(ftname), cluster_t0) |>
+        dplyr::filter(.data[[ftname]] %in% c("low_low", "low_high"))
+    low_to_high <- rbind(
+        low_to_high,
+        fisher_all_p(low_df, ftname)
+    )
+}
+
+low_to_high |> dplyr::filter(comparison == "all")
+
+comparison_all <- function(comparison_df) {
+    df <- dplyr::filter(
+        comparison_df,
+        comparison == "all"
+    )
+    df$"p_adj" <- p.adjust(df$"p", method = "fdr")
+    return(df)
+}
+
+comparison_all(low_to_high) |> dplyr::filter(p_adj < 0.05)
+
+comparison_all(high_to_low) |> dplyr::filter(p_adj < 0.05)
+
+
 all_p_vals_high <- data.frame()
 for (ft in outcome_fts) {
     ftname <- paste0(ft, "_cat_t0")
@@ -986,27 +1121,36 @@ for (ft in outcome_fts) {
         dplyr::filter(imputation == 1) |>
         dplyr::select(all_of(ftname), cluster_t0) |>
         dplyr::filter(.data[[ftname]] %in% c("low_high", "low_low")) |>
-        table() |>
-        fisher.test()
+        table()
+    print(p)
+    p <- fisher.test(p)
     p <- p$p
-    all_p_vals <- rbind(
-        all_p_vals,
-        data.frame(feature = ft, p = p)
-    )
-    if (p < 0.05) {
-        print(ftname)
-        merged_df |>
-            dplyr::filter(imputation == 1) |>
-            dplyr::select(all_of(ftname), cluster_t0) |>
-            dplyr::filter(.data[[ftname]] %in% c("low_high", "low_low")) |>
-            table() |>
-            prop.table() |>
-            print()
-    }
+    all_p_vals <- rbind(all_p_vals, data.frame(feature = ft, p = p))
+    #if (p < 0.05) {
+    #    print(ftname)
+    #    merged_df |>
+    #        dplyr::filter(imputation == 1) |>
+    #        dplyr::select(all_of(ftname), cluster_t0) |>
+    #        dplyr::filter(.data[[ftname]] %in% c("low_high", "low_low")) |>
+    #        table() |>
+    #        prop.table() |>
+    #        print()
+    #}
 }
 all_p_vals$"p_adj" <- p.adjust(all_p_vals$p, method = "fdr")
-
 all_p_vals |> dplyr::filter(p_adj < 0.05)
+
+z1 <- all_p_vals |> dplyr::select(-p_adj)
+z2 <- low_to_high |> dplyr::filter(comparison == "all")
+
+
+p.adjust(z1$"p", method = "fdr")
+
+
+p.adjust(z2$"p", method = "fdr")
+
+z2
+
 ```
 
 CBCL social (p = 0.02) and thought problems (p = 0.03) have significant p values.
