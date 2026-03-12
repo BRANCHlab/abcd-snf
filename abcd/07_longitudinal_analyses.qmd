@@ -1045,6 +1045,12 @@ z |> dplyr::filter(p_adj < 0.05)
 z |> dplyr::filter(p < 0.05)
 ```
 
+                         ft comparison            p estimate ci_low ci_high        p_adj
+1 cbcl_withdep_any_improved        all 3.225291e-02       NA     NA      NA 9.197637e-02
+2 cbcl_somatic_any_improved        all 7.500648e-09       NA     NA      NA 6.750583e-08
+3 cbcl_thought_any_improved        all 7.917421e-06       NA     NA      NA 3.562839e-05
+4    sds_sleep_any_improved        all 4.087839e-02       NA     NA      NA 9.197637e-02
+
 While anxdep, withdep, thought, and (uncorrected) sleep are significant here, the smidge approach does not really correspond to clinically meaningful changes.
 
 The cutoff approach: things must cross their appropriate clinical thresholds.
@@ -1087,9 +1093,11 @@ comparison_all <- function(comparison_df) {
     return(df)
 }
 
-comparison_all(low_to_high) |> dplyr::filter(p_adj < 0.05)
+comparison_all(low_to_high) |> dplyr::filter(p_adj < 0.05) # social and thought
 
-comparison_all(high_to_low) |> dplyr::filter(p_adj < 0.05)
+comparison_all(low_to_high) |> dplyr::filter(p < 0.05) # also somatic
+
+comparison_all(high_to_low) |> dplyr::filter(p < 0.05) # nothing
 
 all_p_vals_high <- data.frame()
 for (ft in outcome_fts) {
@@ -1136,18 +1144,6 @@ for (ft in outcome_fts) {
 }
 all_p_vals$"p_adj" <- p.adjust(all_p_vals$p, method = "fdr")
 all_p_vals |> dplyr::filter(p_adj < 0.05)
-
-z1 <- all_p_vals |> dplyr::select(-p_adj)
-z2 <- low_to_high |> dplyr::filter(comparison == "all")
-
-
-p.adjust(z1$"p", method = "fdr")
-
-
-p.adjust(z2$"p", method = "fdr")
-
-z2
-
 ```
 
 CBCL social (p = 0.02) and thought problems (p = 0.03) have significant p values.
@@ -1220,7 +1216,7 @@ plot_and_stat <- function(df, feature, imp = 1, mode = "low") {
             values = vals,
             labels = labs
         ) +
-        labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = NULL) +
+        labs(colour = "Transition", title = pretty_features[[feature]], x = "Time point", y = "Adjusted Score") +
         theme(text = element_text(size = 16))
     prop_plot <- joint_df |>
         count(cluster, .data[[cat_no_t]]) |>
@@ -1254,6 +1250,7 @@ my_sig <- function(comparisons, annotations, y_position) {
         vjust = 0.3
     )
 }
+
 social_plots[[2]] <- social_plots[[2]] +
     my_sig(list(c("1", "2"), c("2", "3")), c("**", "**"), c(1.02, 1.07)) +
     coord_cartesian(ylim = c(0, 1.2)) +
@@ -1277,7 +1274,6 @@ ggsave(
     height = 7,
     width = 11
 )
-
 ```
 
 
