@@ -1,0 +1,63 @@
+Did the parent and youth report of the pubertal development scale agree?
+
+```{r}
+library(abcdutils)
+library(here)
+library(metasnf)
+library(ggplot2)
+
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+
+all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
+```
+
+```{r}
+
+mtbi_der_u_dls <- all_dls_h_ns$"mtbi_der_u_dls"
+mtbi_val_u_dls <- all_dls_h_ns$"mtbi_val_u_dls"
+
+mtbi_der_u_dls[[1]]$"d_pubertal"
+
+mtbi_der_pubertal <- lapply(
+    mtbi_der_u_dls,
+    function(x) {
+        x$"d_pubertal"$"data"
+    }
+)
+
+mtbi_val_pubertal <- lapply(
+    mtbi_val_u_dls,
+    function(x) {
+        x$"d_pubertal"$"data"
+    }
+)
+
+mtbi_pubertal_1 <- rbind(mtbi_der_pubertal[[1]], mtbi_val_pubertal[[1]])
+mtbi_pubertal_2 <- rbind(mtbi_der_pubertal[[2]], mtbi_val_pubertal[[2]])
+mtbi_pubertal_3 <- rbind(mtbi_der_pubertal[[3]], mtbi_val_pubertal[[3]])
+mtbi_pubertal_4 <- rbind(mtbi_der_pubertal[[4]], mtbi_val_pubertal[[4]])
+mtbi_pubertal_5 <- rbind(mtbi_der_pubertal[[5]], mtbi_val_pubertal[[5]])
+
+cors <- lapply(
+    list(
+        mtbi_pubertal_1,
+        mtbi_pubertal_2,
+        mtbi_pubertal_3,
+        mtbi_pubertal_4,
+        mtbi_pubertal_5
+    ),
+    function(x) {
+        cor(x$"pubertal_status_p", x$"pubertal_status_y")
+    }
+) |> unlist()
+
+cors
+
+mtbi_pubertal_1 |> 
+    ggplot(
+        aes(x = pubertal_status_p, pubertal_status_y)
+    ) +
+    geom_jitter() +
+    geom_smooth(method = "lm") + 
+    theme_bw()
+```

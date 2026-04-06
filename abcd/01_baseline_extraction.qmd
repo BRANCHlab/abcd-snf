@@ -555,9 +555,7 @@ Variables of interest related to brain structure and function include:
 #### Structural MRI
 
 The sMRI variables of interest include subcortical volumes, and cortical thicknesses, and cortical surface areas.
-
 For cortical surface areas, the relevant file is abcd_mrisdp10201, which contains the cortical surface areas of ~150 regions (variables `mrisdp_*` where * ranges from 1 to 151).
-
 For cortical thicknesses, the relevant file is abcd_mrisdp10201, which contains the cortical thickness of ~150 regions (variables `mrisdp_*` where * ranges from 303 to 453).
 
 ##### Subcortical volume
@@ -1028,6 +1026,27 @@ readr::write_csv(
 
 #### Parent psychopathology
 
+Raw scores for:
+    
+- personal strength
+- anxious/depressed problems
+- withdrawn problems
+- somatic complaints
+- thought problems
+- attention problems
+- aggressive behaviour,
+- intrusive thoughts,
+- depressive problems
+- anxiety problems
+- avoidant problems,
+- antisocial problems,
+- hyperactive problems
+
+
+search_dd("asr_scr_") |>
+    dplyr::select(-notes, -table_name_nda, -table_name) |>
+    data.frame()
+
 ```{r}
 mtbi_p_parent_psych <- get_parent_psychopathology(
     mh_p_asr,
@@ -1035,6 +1054,8 @@ mtbi_p_parent_psych <- get_parent_psychopathology(
     t = 0,
     raw = TRUE
 )
+
+colnames(mtbi_p_parent_psych)
 
 dplyr::tibble(mtbi_p_parent_psych)
 
