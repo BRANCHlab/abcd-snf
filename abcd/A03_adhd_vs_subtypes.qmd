@@ -1,0 +1,57 @@
+Did subtyping detect an ADHD group?
+
+```{r}
+library(abcdutils)
+library(here)
+library(metasnf)
+library(ggplot2)
+
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+proc_path <- path_maker(here(paste0("data/abcd/results/processed")))
+core_path <- path_maker(here("data/abcd/core"))
+fig_path <- path_maker(here::here("data/abcd/results/figures"))
+
+#all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
+
+mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+
+adhd_plot <- mh_p_cbcl |>
+    filter_timepoint(0) |>
+    filter_subjects(gsub("uid_", "", mtbi_ful_df$"uid")) |>
+    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
+    dplyr::select(uid, "cbcl_scr_dsm5_adhd_r", "cbcl_scr_dsm5_adhd_t") |>
+    dplyr::inner_join(mtbi_ful_df) |>
+    ggplot(
+        aes(
+            x = cluster,
+            y = cbcl_scr_dsm5_adhd_r,
+            colour = cluster
+        )
+    ) +
+    geom_violin() +
+    geom_jitter(
+        size = 3,
+        height = 0.1,
+        width = 0.3,
+        alpha = 0.5
+    ) +
+    labs(
+        y = "CBCL DSM5 ADHD Raw",
+        x = "Cluster",
+        colour = "Cluster"
+    ) +
+    theme_bw()
+
+# Does not seem like an ADHD group was detected
+
+ggsave(
+    fig_path("adhd_cluster.png", TRUE),
+    adhd_plot,
+    width = 4,
+    height = 3.5
+)
+```
