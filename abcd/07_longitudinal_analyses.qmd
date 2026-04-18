@@ -2053,8 +2053,6 @@ zf <- z |> dplyr::filter(sex_t0 == "F")
 
 ## Q2. Did the matched uninjured subjects experience more mTBIs by T2 than the other uninjured subjects?
 
-(Old analysis - not yet re-run)
-
 ```{r}
 matched_unij_nearest_esdf <- readRDS(proc_path("2025_10_02_matched_unij_nearest_esdf.rds"))
 
@@ -2082,11 +2080,60 @@ Let's consider being in the matched group vs. not being in the matched group as 
 Then I calculate the odds ratio and 95% CI of being in the mTBI sample based on being in the matched group.
 
 ```{r}
+
+
+
+# 2026-04-17 side analysis:
+matched_subs # 438
+non_matched_subs # 8169
+lunj_subs_wt2 # 7610
+
+mean(matched_subs %in% lunj_subs_wt2) # 80.37%
+mean(non_matched_subs %in% lunj_subs_wt2) # 88.85%!
+
+prop.test(
+    x = c(
+        sum(matched_subs %in% lunj_subs_wt2),
+        sum(non_matched_subs %in% lunj_subs_wt2)
+    ),
+    n = c(length(matched_subs), length(non_matched_subs))
+)
+
+# looks like the matched sample is at a higher risk of sustaining a concussion
+
+
+ph_p_otbi <- read("physical-health/ph_p_otbi.csv")
+abcd_y_lt <- read("abcd-general/abcd_y_lt.csv")
+
+head_injury_info <- ph_p_otbi |>
+    filter_subjects(c(matched_subs, non_matched_subs)) |>
+    detail_mtbi(abcd_y_lt, t = 2) |>
+    identify_injured()
+
+head_injury_info |>
+    dplyr::mutate(
+        matched = dplyr::case_when(
+            subjectkey %in% matched_subs ~ "Yes", TRUE ~ "No")
+        ) |>
+    dplyr::select(matched, any_headneck_inj) |> 
+    table(useNA = "always")
+```
+
+2026-04-17: 
+
+matched TRUE <NA>
+   No    334 7777
+   Yes    26  377
+   <NA>    0    0
+
+```{r}
+
 # Calculation 1: Explicitly looking for people that ended up in mTBI sample
-matched_that_became_mtbi <- sum(matched_subs %in% long_mtbi_subs)
-unmatched_that_became_mtbi <- sum(non_matched_subs %in% long_mtbi_subs)
-matched_that_remained_unij <- sum(!matched_subs %in% long_mtbi_subs)
-unmatched_that_remained_unij <- sum(!non_matched_subs %in% long_mtbi_subs)
+matched_that_became_mtbi <- sum(matched_subs %in% lmtb_subs_wt2)
+unmatched_that_became_mtbi <- sum(non_matched_subs %in% lmtb_subs_wt2)
+
+matched_that_remained_unij <- sum(!matched_subs %in% lmtb_subs_wt2)
+unmatched_that_remained_unij <- sum(!non_matched_subs %in% lmtb_subs_wt2)
 
 odds_ratio <- function(de, he, dn, hn) {
     numerator <- de / he
@@ -2114,6 +2161,8 @@ odds_ratio(
 ```
 
 No significant difference in the proportion of matched uninjured subjects to unmatched uninjured subjects that ended up in the longitudinal mTBI group (1.3% vs. 1.6%, uncorrected Chi-squared test p-value = 0.6565).
+
+NOTE FOR FUTURE: Could try checking any head injury, not just if they ended up in 
 
 ### Extra: Correlations with membership in longitudinal mTBI sample
 
