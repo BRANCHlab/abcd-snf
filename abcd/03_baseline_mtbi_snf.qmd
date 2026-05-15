@@ -2267,16 +2267,9 @@ min(double_demo_adj_rep_solutions$"mean_pval") # The lowest mean p-value is 0.21
 ```{r}
 # CHECKPOINT
 mtbi_top_solution <- readRDS(proc_path("2025_09_16_mtbi_top_solution.rds"))
-
 mtbi_ol_1 <- readRDS(input_path("2025_09_15_mtbi_ol_1.rds"))
-
 dl_corrected <- readRDS(proc_path("2025_09_23_dl_corrected.rds"))
-
 dl_demo <- readRDS(proc_path("2025_09_23_dl_demo.rds"))
-
-uids(dl_corrected)
-
-data.frame(dl_corrected) |> 
 
 # demographic adjusted inputs + demographics vars
 full_corrected_df <- dplyr::inner_join(
@@ -2286,14 +2279,26 @@ full_corrected_df <- dplyr::inner_join(
 ) |> 
     data.frame()
 
-full_corrected_df |>
+sex_adj_plot <- full_corrected_df |>
     ggplot(
-        aes(x = factor(sex), y = cortical_sa)
+        aes(x = factor(sex), y = brain_volume)
     ) +
     geom_jitter(width = 0.1) +
     theme_bw()
 
-colnames()
+race_adj_plot <- full_corrected_df |>
+    ggplot(
+        aes(x = factor(race), y = brain_volume)
+    ) +
+    geom_jitter(width = 0.1) +
+    theme_bw()
+
+pds_adj_plot <- full_corrected_df |>
+    ggplot(
+        aes(x = factor(pubertal_status_p), y = brain_volume)
+    ) +
+    geom_jitter(width = 0.1) +
+    theme_bw()
 
 plot_list <- auto_plot(
     sol_df_row = mtbi_top_solution,
@@ -2303,6 +2308,8 @@ plot_list <- auto_plot(
     ),
     verbose = TRUE
 )
+
+names(plot_list)
 
 plot_list[6:17]
 
@@ -2329,6 +2336,17 @@ mtbi_top_solution[, 1:444] |>
         "fmri_fpn_ramyg_cor_pval",
         "same_sex_friend_pval"
     ) |> p.adjust(method = "BH")
+
+neuro_demo_adj_plot <- wrap_plots(plot_list[c("brain_volume", "cortical_sa")]) /
+wrap_plots(list(sex_adj_plot, race_adj_plot, pds_adj_plot))
+
+ggsave(
+    plot = neuro_demo_adj_plot,
+    filename = fig_path("neuro_demo_adj_plot.png", TRUE),
+    width = 10,
+    height = 8,
+    dpi = 300
+)
 ```
 
-When regressing out
+When regressing out effects of demographic variables on neuroimaging covariates, it seems cortical SA and cortical T still show significant differences.
