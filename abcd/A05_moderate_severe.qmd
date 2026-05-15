@@ -1,0 +1,123 @@
+# Moderate/Severe TBI examination
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(here)
+library(abcdutils)
+library(visdat)
+
+core_path <- path_maker(here::here("data/abcd/core"))
+input_path <- path_maker(here::here("data/abcd/inputs"))
+sub_path <- path_maker(here::here("data/abcd/subjects"))
+fig_path <- path_maker(here::here("data/abcd/results/figures"))
+
+core_path <- path_maker(here::here("data/abcd/core"))
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+```
+
+## Import raw data
+
+This chunk loads in raw ABCD 5.1 CSVs into data frames.
+
+```{r}
+# Ohio TBI screen
+ph_p_otbi <- import("physical-health/ph_p_otbi.csv")
+# Age, family ID, site ID
+abcd_y_lt <- import("abcd-general/abcd_y_lt.csv")
+# Pubertal development scale, youth report
+ph_y_pds <- import("physical-health/ph_y_pds.csv")
+# Pubertal development scale, parent report
+ph_p_pds <- import("physical-health/ph_p_pds.csv")
+# Parent report of gender identity
+gish_p_gi <- import("gender-identity-sexual-health/gish_p_gi.csv")
+# Demographic data
+abcd_p_demo <- import("abcd-general/abcd_p_demo.csv")
+# Medical history
+ph_p_mhx <- import("physical-health/ph_p_mhx.csv")
+# Subcortical volumes (ASEG)
+mri_y_smr_vol_aseg <- import("imaging/mri_y_smr_vol_aseg.csv")
+# Desikan cortical thicknesses
+mri_y_smr_thk_dsk <- import("imaging/mri_y_smr_thk_dsk.csv")
+# Desikan cortical surface areas
+mri_y_smr_area_dsk <- import("imaging/mri_y_smr_area_dsk.csv")
+# Neurite density (AtlasTrack, all fibers)
+mri_y_rsi_rnd_at <- import("imaging/mri_y_rsi_rnd_at.csv")
+# Neurite density (Desikan, peri-cortical WM)
+mri_y_rsi_rnd_wm_dsk <- import("imaging/mri_y_rsi_rnd_wm_dsk.csv")
+# Neurite density (Destriux, peri-cortical WM)
+mri_y_rsi_rnd_wm_dst <- import("imaging/mri_y_rsi_rnd_wm_dst.csv")
+# rs-fMRI cortical-cortical correlations
+mri_y_rsfmr_cor_gp_gp <- import("imaging/mri_y_rsfmr_cor_gp_gp.csv")
+# rs-fMRI cortical-subcortical correlations
+mri_y_rsfmr_cor_gp_aseg <- import("imaging/mri_y_rsfmr_cor_gp_aseg.csv")
+# Number of friends
+mh_y_or <- import("mental-health/mh_y_or.csv")
+# Screen time
+nt_p_stq <- import("novel-technologies/nt_p_stq.csv")
+# Participation in sports and activities
+ph_p_saiq <- import("physical-health/ph_p_saiq.csv")
+# Exercise habits
+ph_y_yrb <- import("physical-health/ph_y_yrb.csv")
+# Youth report of prosocial behaviour
+ce_y_psb <- import("culture-environment/ce_y_psb.csv")
+# Parent report of prosocial behaviour
+ce_p_psb <- import("culture-environment/ce_p_psb.csv")
+# Youth report of family function
+ce_y_fes <- import("culture-environment/ce_y_fes.csv")
+# Parent report of family function
+ce_p_fes <- import("culture-environment/ce_p_fes.csv")
+# Parent ASEBA self-report (psychopathology)
+mh_p_asr <- import("mental-health/mh_p_asr.csv")
+# Parent report of child behaviour (CBCL)
+mh_p_cbcl <- import("mental-health/mh_p_cbcl.csv")
+# Sleep disturbance scale
+ph_p_sds <- import("physical-health/ph_p_sds.csv")
+# Scanner ID
+mri_y_adm_info <- import("imaging/mri_y_adm_info.csv")
+```
+
+## Sample identification
+
+All information required for identifying children following mTBI as of baseline data collection is available in the `ph_p_otbi.csv` file.
+The structure of the Ohio State TBI screen as used for ABCD data collection was not completely compatible with the most commonly used definition of mTBI [@blennow_traumatic_2016], which requires at least one of the following:
+
+* Any period of loss of consciousness
+* Any loss of memory
+* Any alteration in mental state
+* Focal neurological deficits
+
+But none of the following:
+
+* LOC over 30 minutes
+* A Glasgow Coma Scale score below 13
+* Post-traumatic amnesia (PTA) greater than 24 hours
+
+A few aspects of the data collection process in the ABCD study precluded the usage of this definition:
+
+* No information was collected regarding the GCS
+* Feeling dazed and PTA were combined into a single variable, making it unclear which combination of symptoms was present
+* No information was collected regarding the duration of feeling dazed or experiencing PTA
+
+Consequently, I defined mTBI as any injury that resulted in **either**:
+
+1. LOC for less than 30 minutes (including 0 minutes) **AND** any duration of memory loss / feeling dazed
+2. LOC for less than 30 minutes but greater than 0 minutes
+
+The fixed nature of the questionnaire also meant that some information about multiple mTBIs sustained in the same way or about a very large number of mTBIs throughout a child's life could have been lost (see the previous section on identifying children with a history of mTBI).
+For my analyses, I assume these edge cases are not common enough to meaningfully change any obtained conclusions.
+
+```{r}
+# 11864 total children included in baseline TBI data
+ph_p_otbi |>
+    filter_timepoint(0) |>
+    nrow()
+
+detail_mtbi(ph_p_otbi, abcd_y_lt) |>
+    dplyr::filter(moderate_tbi | severe_tbi)
+```
+
+There are only 7 children with moderate and/or severe TBI as of baseline.
