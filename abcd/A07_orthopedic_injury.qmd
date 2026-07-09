@@ -1,0 +1,123 @@
+# Orthopedic injury matching
+
+```{r}
+library(readr)
+library(abcdutils)
+library(here)
+library(metasnf)
+library(MatchIt)
+library(tibble)
+library(ggplot2)
+library(fastDummies)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library(ComplexHeatmap)
+
+input_path   <- path_maker(here(paste0("data/abcd/inputs")))
+proc_path    <- path_maker(here(paste0("data/abcd/results/processed")))
+fig_path     <- path_maker(here(paste0("data/abcd/results/figures")))
+sub_path     <- path_maker(here(paste0("data/abcd/subjects")))
+model_path   <- path_maker(here(paste0("data/abcd/results/models")))
+unij_ns_subs <- readRDS(sub_path("2025_09_11_unij_no_sibs_subs.rds"))
+
+core_path <- path_maker(here("data/abcd/core"))
+import <- function(path) {
+    return(abcd_load(core_path(path)))
+}
+
+ph_p_mhx <- import("physical-health/ph_p_mhx.csv")
+
+oi_controls <- ph_p_mhx |> 
+    filter_timepoint(0) |>
+    filter_subjects(unij_ns_subs) |>
+    dplyr::filter(medhx_6a == 1) |>
+    pull(subjectkey)
+
+length(oi_controls) # n = 1108
+
+set.seed(42)
+random_oi_subs <- sample(oi_controls, size = 438)
+
+matched_config <- readRDS(proc_path("2025_10_01_matched_config.rds"))
+
+subject_filter_dl <- function(data_list, subject_vector) {
+    data_list <- data_list |>
+        dlapply(
+            function(x) {
+                keep_subs <- x$"data"$"uid" %in% subject_vector
+                x$"data" <- x$"data"[keep_subs, ]
+                return(x)
+            }
+        )
+    return(data_list)
+}
+
+all_dls_h_ns <- readRDS(proc_path("2025_09_11_all_dls_h_no_sibs.rds"))
+unij_dl_u1 <- all_dls_h_ns$"unij_all_u_dls"$"imp_1"
+unij_ol_u1 <- all_dls_h_ns$"unij_all_u_ols"$"imp_1"
+
+random_oi_dl <- subject_filter_dl(
+    unij_dl_u1,
+    paste0("uid_", random_oi_subs)
+)
+
+random_oi_ol <- subject_filter_dl(
+    unij_ol_u1,
+    paste0("uid_", random_oi_subs)
+)
+
+random_oi_sol_df <- progressr::with_progress(
+    batch_snf(
+        random_oi_dl,
+        matched_config,
+        processes = 48
+    )
+)
+
+saveRDS(random_oi_sol_df, proc_path("random_oi_sol_df", TRUE))
+
+random_oi_ext_sol_df <- extend_solutions(
+    random_oi_sol_df,
+    dl = random_oi_dl,
+    target_dl = random_oi_ol,
+    min_pval = 1e-10,
+    processes = 48
+)
+saveRDS(random_oi_ext_sol_df, proc_path("random_oi_ext_sol_df.rds", TRUE))
+
+
+random_oi_ext_sol_df_3c <- random_oi_ext_sol_df |>
+    dplyr::filter(nclust == 3)
+
+random_oi_dfs <- lapply(
+    seq_len(nrow(random_oi_ext_sol_df_3c)),
+    function(x) {
+        auto_plot(
+            random_oi_ext_sol_df_3c[x, ],
+            dl = c(random_oi_dl, random_oi_ol),
+            return_plots = FALSE
+        )
+    }
+)
+
+random_oi_dfs[[1]] |> topologizer()
+
+mtbi_gen_fts_table_hits_t <- read_csv(proc_path("2025_09_22_mtbi_gen_fts_table_hits_t.csv"))
+mtbi_gen_long <- na.omit(mtbi_gen_fts_table_hits_t)
+
+
+random_oi_dfs[[1]]
+
+oi_concordances <- lapply(
+    random_oi_dfs,
+    function(x) {
+        concordance_w_mtbi_quick(x, mtbi_data = mtbi_gen_long)
+    }
+) |> unlist()
+saveRDS(oi_concordances, proc_path("oi_concordances.rds", TRUE))
+
+print(oi_concordances)
+
+max(oi_concordances) # max concordance of 61%
+```

@@ -16,6 +16,12 @@ core_path <- path_maker(here("data/abcd/core"))
 sub_path <- path_maker(here("data/abcd/subjects"))
 fig_path <- path_maker(here("data/abcd/results/figures"))
 proc_path <- path_maker(here("data/abcd/results/processed"))
+
+input_path <- path_maker(here("local-data/abcd/inputs"))
+core_path <- path_maker(here("local-data/abcd/core"))
+sub_path <- path_maker(here("local-data/abcd/subjects"))
+fig_path <- path_maker(here("local-data/abcd/results/figures"))
+proc_path <- path_maker(here("local-data/abcd/results/processed"))
 ```
 
 ```{r}
@@ -215,6 +221,9 @@ characterize_feature_mean <- function(df, ft_name, clean, missing = "") {
     } else {
         if (!"mtbi_count" %in% colnames(df)) {
             df$"mtbi_count" <- 0
+            print("!!!")
+            print(unique(df$"latest_mtbi_age"))
+            print("!!!")
             df$"mtbi_age" <- 0
         }
     }
@@ -229,12 +238,16 @@ characterize_feature_mean <- function(df, ft_name, clean, missing = "") {
         rowSums()
     if (ft_name == "age") {
         if ("interview_age" %in% colnames(df)) {
-            ft <- df$"interview_age"
+            df$"age" <- df$"interview_age"
+            ft <- df$"age"
         } else {
             ft <- df$"age"
         }
     } else {
         ft <- df[[ft_name]]
+    }
+    if (ft_name == "time_post_injury") {
+        ft <- df$"age" - df$"mtbi_age" 
     }
     n_missing <- sum(is.na(ft))
     ft <- na.omit(ft)
@@ -266,6 +279,7 @@ sample_characterize <- function(df, name) {
     rac_df <- characterize_feature_prop(df, "race", "*Race*")
     cnt_df <- characterize_feature_mean(df, "mtbi_count", "*Prior concussions*", " prior concussions")
     mag_df <- characterize_feature_mean(df, "mtbi_age", "*Age at last injury*", " injury age")
+    tpi_df <- characterize_feature_mean(df, "time_post_injury", "*Time since last injury*", " time since last injury")
     loc_df <- characterize_feature_prop(df, "mtbi_loc", "*LOC*")
     mec_df <- characterize_feature_prop(df, "mtbi_mechanism", "*Mechanism of injury*", " mechanism")
     #imp_df <- characterize_feature_mean(df, "total_impairments", "*Total CBCL/SDS*", " CBCL/SDS")
@@ -286,6 +300,7 @@ sample_characterize <- function(df, name) {
             n_df,
             sex_df,
             age_df,
+            tpi_df,
             pdy_df,
             pdp_df,
             inc_df,
@@ -324,6 +339,11 @@ random_unij_1_df <- readRDS(proc_path("2025_10_03_random_unij_1_df.rds"))
 ```
 
 ```{r}
+
+options(width = 100)
+
+colnames(mtbi_0_df)
+
 mtbi_0_characterized <- sample_characterize(mtbi_0_df, "BC T0")
 mtbi_l_characterized <- sample_characterize(mtbi_l_df, "BC T2")
 unij_0_characterized <- sample_characterize(unij_u_df, "BU T0")
@@ -383,6 +403,9 @@ options(width = 200)
 |*Age at last injury*      |<            |<           |<            |<           |<           |<            |<            |
 |Mean (SD)                 |74.1 (32.7)  |0 (0)       |0 (0)        |0 (0)       |0 (0)       |0 (0)        |129 (10.7)   |
 |Range                     |0 - 120      |0 - 0       |0 - 0        |0 - 0       |0 - 0       |0 - 0        |108 - 156    |
+|*Time since last injury*  |<            |<           |<            |<           |<           |<            |<            |
+|Mean (SD)                 |45.7 (32)    |145 (8.06)  |119 (7.44)   |120 (7.5)   |118 (7.34)  |120 (7.51)   |15.9 (8.16)  |
+|Range                     |0 - 130      |127 - 165   |107 - 133    |107 - 133   |107 - 132   |107 - 131    |0 - 39       |
 |*LOC*                     |<            |<           |<            |<           |<           |<            |<            |
 |0                         |316 (72%)    |0 (0%)      |0 (0%)       |0 (0%)      |0 (0%)      |0 (0%)       |164 (76%)    |
 |1                         |122 (28%)    |0 (0%)      |0 (0%)       |0 (0%)      |0 (0%)      |0 (0%)       |53 (24%)     |
