@@ -1097,6 +1097,8 @@ matched_pl_dfs <- lapply(
 names(matched_pl_dfs) <- names(matched_unij_ext_sol_df_list_3c)
 matched_pl_dfs <- unlist(matched_pl_dfs, recursive = FALSE)
 
+
+
 saveRDS(matched_pl_dfs, proc_path("matched_pl_dfs.rds", TRUE))
 
 matched_pl_dfs <- readRDS(proc_path("2026_01_09_matched_pl_dfs.rds"))
@@ -1210,6 +1212,90 @@ write_csv(concordance_df, proc_path("matched_unij_concordance.csv", TRUE))
 
 concordance_df <- read_csv(proc_path("2026_01_12_matched_unij_concordance.csv"))
 
+
+concordance_df |>
+    dplyr::filter(grepl("d_", unij_set)) # u8 is the highest concordance example
+
+# finding the solution back in the original ext sol dfs
+best_d_match <- matched_pl_dfs$d_u8
+z <- best_d_match$"cluster"
+for (i in 1:200) {
+    my_match <- all.equal(
+        t(matched_unij_ext_sol_df_list$d_u[i, ])[, 2],
+        as.numeric(z)
+    )
+    if (isTRUE(my_match)) {
+        print(i)
+    }
+}
+best_d_match_esdf <- matched_unij_ext_sol_df_list$d_u[69, ]
+
+best_d_match_pl <- auto_plot(
+    best_d_match_esdf,
+    dl = c(
+        matched_unij_dls$"d_u",
+        matched_unij_ols$"d_u"
+    )
+)
+
+light_fts <- c(
+    "sex",
+    "brain_volume",
+    "household_income",
+    "race",
+    "parent_antisocial",
+    "weekday_screentime",
+    "activities_last_year",
+    "cbcl_aggressive",
+    "sds_sleep"
+)
+
+best_d_unij_plots <- best_d_match_pl[light_fts]
+newsize <- 3
+best_d_unij_plots <- lapply(
+    seq_along(best_d_unij_plots),
+    function(x) {
+        best_d_unij_plots[[x]] <- best_d_unij_plots[[x]] + theme(
+            legend.title = element_text(size = 14),
+            legend.text = element_text(size = 14),
+            axis.title.x = element_blank()
+        )
+        if (x %in% c(2, 3, 5, 6, 7, 8, 9)) {
+            # Categorical features
+            best_d_unij_plots[[x]]$"layers"[[3]]$"aes_params"$"size" <- 3
+        }
+        if (x %in% c(1, 4)) {
+            # Continuous / numeric features
+            best_d_unij_plots[[x]]$"layers"[[2]]$"aes_params"$"size" <- 5
+        }
+        best_d_unij_plots[[x]]
+    }
+)
+names(best_d_unij_plots) <- light_fts
+axis_fs <- 14
+best_d_unij_plots$"sex" <- best_d_unij_plots$"sex" +
+    labs(fill = "Sex", y = "%") +
+    scale_fill_discrete(labels = c("F", "M")) +
+    theme(axis.title.y = ggplot2::element_text(size = axis_fs, angle = 90), legend.position = "left")
+best_d_unij_plots$"brain_volume" <- best_d_unij_plots$"brain_volume" + labs(y = "Brain\nVolume (cm³)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs)) + scale_y_continuous(labels = function(x) x / 1000)
+best_d_unij_plots$"household_income" <- best_d_unij_plots$"household_income" + labs(y = "Household\nIncome") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+best_d_unij_plots$"activities_last_year" <- best_d_unij_plots$"activities_last_year" + labs(y = "Activities Last\nYear (Quartile)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+best_d_unij_plots$"parent_antisocial" <- best_d_unij_plots$"parent_antisocial" + labs(y = "Parent\nAntisocial") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+best_d_unij_plots$"race" <- best_d_unij_plots$"race" + labs(fill = "Race", y = "%") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "left")
+best_d_unij_plots$"weekday_screentime" <- best_d_unij_plots$"weekday_screentime" + labs(y = "Weekday\nScreentime\n(hours)") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+best_d_unij_plots$"cbcl_aggressive" <- best_d_unij_plots$"cbcl_aggressive" + labs(y = "CBCL\nAggressive") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs))
+best_d_unij_plots$"sds_sleep" <- best_d_unij_plots$"sds_sleep" + labs(y = "Total Sleeping\nProblems") + theme(axis.title.y = ggplot2::element_text(angle = 90, size = axis_fs), legend.position = "none")
+best_d_unij_plots$"race" <- best_d_unij_plots$"race" + scale_fill_discrete(labels = c("Black", "Hispanic", "Other", "White"))
+
+best_d_unij_plots |>
+    wrap_plots() |>
+    ggsave(
+        filename = fig_path("best_d_unij.png", TRUE),
+        w = 10,
+        h = 6,
+        dpi = 300
+    )
+
 concordance_df_summary <- concordance_df |>
     dplyr::mutate(
         match = dplyr::case_when(
@@ -1257,6 +1343,8 @@ concordance_df_summary |>
     ) |>
         writeLines(proc_path("matched_unij_concordance_summary.txt", TRUE))
 
+concordance_df_summary
+
 ```
 
 
@@ -1268,6 +1356,17 @@ concordance_df
 matched_unij_ext_sol_df_list_3c$"dp_p"[13, ]
 
 matched_unij_nearest_esdf
+
+# Loose requirement: -log10(pval) > 1
+matched_unij_ext_sol_df_3c_list_loose <- lapply(
+    matched_unij_ext_sol_df_list,
+    function(x) {
+        x <- x[x$"nclust" == 3 & -log10(x$"mean_pval") > 1, ]
+        if (nrow(x) > 0) {
+            return(x)
+        } 
+    }
+)
 
 saveRDS(
     matched_unij_ext_sol_df_3c_list_loose$"dp_p"[13, ],

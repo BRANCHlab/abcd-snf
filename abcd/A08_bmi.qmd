@@ -3,33 +3,85 @@ library(abcdutils)
 library(here)
 library(ggplot2)
 
-core_path <- path_maker(here("data/abcd/core"))
+core_path <- path_maker(here("local-data/abcd/core"))
 import <- function(path) {
     return(abcd_load(core_path(path)))
 }
-
-proc_path       <- path_maker(here(paste0("data/abcd/results/processed")))
+proc_path <- path_maker(here(paste0("local-data/abcd/results/processed")))
 
 mtbi_ful_df <- readRDS(proc_path("2025_09_16_mtbi_ful_df.rds"))
 
-mtbi_ful_df$"uid"
+colnames(mtbi_ful_df)
+
+mtbi_ful_df$sex
 
 ph_y_anthro <- import("physical-health/ph_y_anthro.csv")
 
 anthro_data <- ph_y_anthro |>
     filter_timepoint(0) |>
-    dplyr::select(subjectkey, anthroheightcalc, anthroweightcalc) |>
-    dplyr::mutate(uid = paste0("uid_", subjectkey)) |>
-    dplyr::select(-subjectkey)
-
+    dplyr::select(
+        subjectkey,
+        anthroheightcalc,
+        anthroweightcalc
+    ) |>
+    dplyr::mutate(
+        uid = paste0("uid_", subjectkey),
+        bmi = anthroweightcalc * 703 / (anthroheightcalc * anthroheightcalc)
+    ) |>
+    dplyr::select(-subjectkey) |>
     dplyr::inner_join(mtbi_ful_df, by = "uid")
 
 anthro_data |>
-    ggplot(aes(x = cluster, y = anthroweightcalc)) +
-    geom_boxplot()
+    ggplot(aes(x = cluster, y = bmi)) +
+    geom_boxplot() +
+    theme_bw() +
+    theme(text = element_text(size = 20)) +
+    labs(x = "Subtype", y = "BMI")
 
-search_dd("anthroheightcalc")
+summary(aov(bmi ~ cluster, data = anthro_data))
 
-search_dd("anthroweightcalc")
+TukeyHSD(aov(bmi ~ cluster + age, data = anthro_data))
 
+summary(lm(bmi ~ age + race + sex + cluster, data = anthro_data))
 ```
+
+> summary(aov(bmi ~ cluster, data = anthro_data))
+             Df Sum Sq Mean Sq F value Pr(>F)
+cluster       2    113   56.68   3.797 0.0232 *
+Residuals   435   6494   14.93
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> TukeyHSD(aov(bmi ~ cluster, data = anthro_data))
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = bmi ~ cluster, data = anthro_data)
+
+$cluster
+          diff        lwr        upr     p adj
+2-1 -1.2327905 -2.2933868 -0.1721941 0.0178761
+3-1 -0.5954584 -1.7321170  0.5412003 0.4349146
+3-2  0.6373321 -0.3991987  1.6738629 0.3182703
+
+lm(formula = bmi ~ age + race + sex + cluster, data = anthro_data)
+
+Residuals:
+     Min       1Q   Median       3Q      Max
+-12.5507  -2.2666  -0.8309   1.5065  23.7855
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept)  10.17035    3.00041   3.390 0.000764 ***
+age           0.07930    0.02476   3.203 0.001461 **
+racehispanic -0.06751    0.77689  -0.087 0.930797
+raceother     0.07409    0.83851   0.088 0.929632
+racewhite    -1.08789    0.69697  -1.561 0.119287
+sex           0.12670    0.48574   0.261 0.794337
+cluster2     -1.00123    0.48443  -2.067 0.039349 *
+cluster3     -0.47421    0.58167  -0.815 0.415384
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 3.809 on 430 degrees of freedom
+Multiple R-squared:  0.05576,   Adjusted R-squared:  0.04039
+F-statistic: 3.627 on 7 and 430 DF,  p-value: 0.000819
