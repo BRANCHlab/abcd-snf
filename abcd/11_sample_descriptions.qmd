@@ -734,3 +734,29 @@ mean(m_df$"cbcl_scr_syn_attention_r")
 
 mean(f_df$"cbcl_scr_syn_attention_r")
 ```
+
+# Bonus PCA check
+
+```{r}
+
+colnames(mtbi_der_u1)
+
+
+mtbi_der_dummy <- dummy_cols(
+    mtbi_der_u1,
+    select_columns = c(
+        "race",
+        "mtbi_mechanism"
+    ),
+    remove_first_dummy = TRUE,
+    remove_selected_columns = TRUE
+) |>
+    dplyr::select(-uid)
+
+pca <- prcomp(mtbi_der_dummy, scale. = TRUE)
+
+summary(pca)
+# requires around 29 PCAs to exceed 70% cumulative variance
+
+# requires around 53 PCAs to exceed 90% cumulative variance
+```
