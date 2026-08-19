@@ -24,10 +24,10 @@ library(tidyr)
 library(nnet)
 library(ComplexHeatmap)
 
-input_path      <- path_maker(here(paste0("data/abcd/inputs")))
-proc_path       <- path_maker(here(paste0("data/abcd/results/processed")))
-fig_path        <- path_maker(here(paste0("data/abcd/results/figures")))
-sub_path        <- path_maker(here(paste0("data/abcd/subjects")))
+input_path      <- path_maker(here(paste0("local-data/abcd/inputs")))
+proc_path       <- path_maker(here(paste0("local-data/abcd/results/processed")))
+fig_path        <- path_maker(here(paste0("local-data/abcd/results/figures")))
+sub_path        <- path_maker(here(paste0("local-data/abcd/subjects")))
 
 mtbi_ns_der_subs <- readRDS(sub_path("2025_09_11_mtbi_der_no_sibs_subs.rds"))
 mtbi_ns_val_subs <- readRDS(sub_path("2025_09_11_mtbi_val_no_sibs_subs.rds"))
@@ -1038,6 +1038,7 @@ mtbi_top_manhattan <- mc_manhattan_plot(
         "B" = "#ff3131"
     )
 )
+
 mtbi_top_manhattan
 
 ggsave(
@@ -1047,6 +1048,23 @@ ggsave(
     height = 5,
     dpi = 120
 )
+
+mtbi_top_man_rot <- mtbi_top_manhattan +
+    coord_flip() +
+    theme(
+        strip.text = element_blank(),
+        axis.text.x = element_text(angle = 0)
+    )
+
+ggsave(
+    plot = mtbi_top_man_rot,
+    filename = fig_path("mtbi_top_manhattan_rot.png", TRUE),
+    width = 8,
+    height = 18,
+    dpi = 120
+)
+
+
 
 mtbi_der_numerator <- mtbi_der_manhattan + theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
