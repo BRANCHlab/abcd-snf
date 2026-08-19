@@ -52,8 +52,6 @@ reduced_sample <- readRDS(proc_path("2025_10_02_reduced_sample.rds"))
 reduced_dls <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_dls"]], reduced_sample)
 reduced_ols <- batch_uid_replace(all_dls_h_ns[["mtbi_der_u_ols"]], reduced_sample)
 
-reduced_dls[[1]]
-
 reduced_sol_df_1 <- progressr::with_progress({
     batch_snf(
         dl = reduced_dls[[1]],
@@ -159,7 +157,6 @@ saveRDS(reduced_esdf_5, proc_path("reduced_esdf_5.rds", TRUE))
 ```
 
 ```{r}
-# HERE 2025-10-02
 reduced_esdf_1 <- readRDS(proc_path("2025_10_02_reduced_esdf_1.rds"))
 reduced_esdf_2 <- readRDS(proc_path("2025_10_02_reduced_esdf_2.rds"))
 reduced_esdf_3 <- readRDS(proc_path("2025_10_02_reduced_esdf_3.rds"))
@@ -199,8 +196,6 @@ reduced_esdf <- do.call(
 saveRDS(reduced_esdf, proc_path("2025_10_02_reduced_esdf.rds"))
 reduced_esdf <- readRDS(proc_path("2025_10_02_reduced_esdf.rds"))
 
-reduced_esdf
-
 reduced_esdf$"impairment_separation" <- -log10(reduced_esdf$"mean_pval")
 
 split_vector <- c(
@@ -229,7 +224,6 @@ reduced_ari_hm <- meta_cluster_heatmap(
         )
     )
 )
-reduced_ari_hm
 
 save_heatmap(
     heatmap = reduced_ari_hm,
@@ -245,14 +239,10 @@ reduced_mc_df <- label_meta_clusters(
     split_vector = split_vector
 )
 
-reduced_mc_df
-
 reduced_rep_solutions <- get_representative_solutions(
     reduced_ari,
     reduced_mc_df
 )
-
-reduced_rep_solutions
 
 top_reduced_solution <- reduced_rep_solutions[reduced_rep_solutions$"mc" == "E", ]
 
@@ -316,9 +306,6 @@ reduced_conc <- concordance_w_mtbi(reduced_cluster_df, iters = 1000, procs = 5)
 saveRDS(reduced_conc, proc_path("reduced_conc.rds", TRUE))
 reduced_conc <- readRDS(proc_path("2025_10_03_reduced_conc.rds"))
 
-
-reduced_conc
-
 # 87.0
 mean(na.omit(reduced_conc))
 
@@ -361,14 +348,7 @@ saveRDS(reduced_vs_lmtb_l_test, proc_path("reduced_vs_lmtb_l_test.rds", TRUE))
 quantile(reduced_vs_lmtb_l_test, probs = c(0.025, 0.975), na.rm = TRUE)
 ```
 
-
 ```{r}
-afts
-
-reduced_pl$"household_income"
-
-names(reduced_pl)
-
 reduced_pl_wrapped <- wrap_plots(reduced_pl[afts])
 
 # Demonstration that the three cluster solution in N = 218 is possible
